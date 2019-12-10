@@ -496,7 +496,8 @@
 
       /** Whether the user has edit permissions for this node. */
       this.canEdit = function () {
-        return CATMAID.session.is_superuser || CATMAID.session.domain.has(this.user_id);
+        return CATMAID.session.is_superuser || CATMAID.session.domain.has(this.user_id)
+            || CATMAID.session.deferredPermissionCheckObjects.has(this.id);
       };
 
       /** Draw a line with the other node if this or the other should be displayed. */

@@ -5,7 +5,7 @@ from itertools import groupby
 import json
 import re
 from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
-
+from psycopg2.errors import ProgrammingError
 
 from guardian.core import ObjectPermissionChecker
 from guardian.models import UserObjectPermission, GroupObjectPermission
@@ -394,15 +394,17 @@ def can_edit_class_instance_or_fail(user, ci_id, name='object') -> bool:
 
             raise PermissionError('User %s with id #%s cannot edit %s #%s' % \
                 (user.username, user.id, name, ci_id))
-        # The class instance is locked by user or not locked at all
+
+        # The class instance is locked by user or not locked at all.
         return True
     raise ObjectDoesNotExist('Could not find %s #%s' % (name, ci_id))
 
 def can_edit_or_fail(user, ob_id:int, table_name) -> bool:
-    """ Returns true if the user owns the object or if the user is a superuser.
-    Raises an Exception if the user cannot edit the object
-    or if the object does not exist.
-    Expects the ob_id to be an integer. """
+    """Returns true if the user owns the object, if the user is a superuser or
+    if the current user imported the element. Raises an Exception if the user
+    cannot edit the object or if the object does not exist.  Expects the ob_id
+    to be an integer.
+    """
     # Sanitize arguments -- can't give them to django to sanitize,
     # for django will quote the table name
     ob_id = int(ob_id)
@@ -424,58 +426,195 @@ def can_edit_or_fail(user, ob_id:int, table_name) -> bool:
             # Check if the user belongs to a group with the name of the owner
             if user_can_edit(cursor, user.id, owner_id):
                 return True
+            # If the object was created as part of an import transaction by this
+            # user, grant permission too.
+            if user_has_imported(user.id, ob_id, table_name, cursor):
+                return True
 
         raise PermissionError('User %s with id #%s cannot edit object #%s (from user #%s) from table %s' % (user.username, user.id, ob_id, rows[0][0], table_name))
     raise ObjectDoesNotExist('Object #%s not found in table %s' % (ob_id, table_name))
 
 
 def can_edit_all_or_fail(user, ob_ids, table_name) -> bool:
-    """ Returns true if the user owns all the objects or if the user is a superuser.
-    Raises an Exception if the user cannot edit the object
-    or if the object does not exist."""
+    """ Returns true if the user owns all the objects or if the user is a
+    superuser or if the objects have been imported by the user. Raises an
+    Exception if the user cannot edit the object or if the object does not
+    exist.
+    """
     # Sanitize arguments -- can't give them to django to sanitize,
     # for django will quote the table name
-    ob_ids = set(ob_ids)
-    str_ob_ids = ','.join(str(int(x)) for x in ob_ids)
     if not re.match('^[a-z_]+$', table_name):
         raise Exception('Invalid table name: %s' % table_name)
 
+    if user.is_superuser:
+        return True
+
+    ob_ids = list(ob_ids)
+
     cursor = connection.cursor()
-    cursor.execute("SELECT user_id, count(*) FROM %s WHERE id IN (%s) GROUP BY user_id" % (table_name, str_ob_ids))
+    #cursor.execute("SELECT user_id, count(*) FROM %s WHERE id IN (%s) GROUP BY user_id" % (table_name, str_ob_ids))
+    cursor.execute(f"""
+        SELECT user_id, count(*)
+        FROM {table_name} t
+        JOIN UNNEST(%(obj_ids)s::bigint[]) obj(id)
+            ON obj.id = t.id
+        GROUP BY user_id
+    """, {
+        'obj_ids': ob_ids,
+    })
     rows = tuple(cursor.fetchall())
     # Check that all ids to edit exist
     if rows and len(ob_ids) == sum(row[1] for row in rows):
-        if user.is_superuser:
-            return True
         if 1 == len(rows) and rows[0][0] == user.id:
             return True
-        # If more than one user, check if the request.user can edit them all
-        # In other words, check if the set of user_id associated with ob_ids is a subset of the user's domain (the set of user_id that the user can edit)
-        if set(row[0] for row in rows).issubset(user_domain(cursor, user.id)):
+        # If more than one user, check if the request.user can edit them all In
+        # other words, check if the set of user_id associated with ob_ids is a
+        # subset of the user's domain (the set of user_id that the user can edit)
+        domain = user_domain(cursor, user.id)
+        if set(row[0] for row in rows).issubset(domain):
+            return True
+        # If a user imported all all objects, edit permission is granted. To
+        # only check the nodes that aren't already allowed from above tests,
+        # find unapproved nodes:
+        cursor.execute(f"""
+            SELECT array_agg(t.id)
+            FROM {table_name} t
+            JOIN UNNEST(%(obj_ids)s::bigint[]) obj(id)
+                ON obj.id = t.id
+            WHERE user_id <> ANY(%(user_ids)s::integer[])
+        """, {
+            'obj_ids': ob_ids,
+            'user_ids': list(domain),
+        })
+        no_permission_ids = cursor.fetchall()[0][0]
+        if no_permission_ids and user_has_imported_all(user.id, no_permission_ids, table_name, cursor):
             return True
 
         raise PermissionError('User %s cannot edit all of the %s unique objects from table %s' % (user.username, len(ob_ids), table_name))
     raise ObjectDoesNotExist('One or more of the %s unique objects were not found in table %s' % (len(ob_ids), table_name))
 
 def user_can_edit(cursor, user_id, other_user_id) -> bool:
-    """ Determine whether the user with id 'user_'id' can edit the work of the user with id 'other_user_id'. This will be the case when the user_id belongs to a group whose name is identical to ther username of other_user_id.
-    This function is equivalent to 'other_user_id in user_domain(cursor, user_id), but consumes less resources."""
-    # The group with identical name to the username is implicit, doesn't have to exist. Therefore, check this edge case before querying:
+    """ determine whether the user with id 'user_'id' can edit the work of the user with id 'other_user_id'. this will be the case when the user_id belongs to a group whose name is identical to ther username of other_user_id.
+    this function is equivalent to 'other_user_id in user_domain(cursor, user_id), but consumes less resources."""
+    # the group with identical name to the username is implicit, doesn't have to exist. therefore, check this edge case before querying:
     if user_id == other_user_id:
-        return True
-    # Retrieve a row when the user_id belongs to a group with name equal to that associated with other_user_id
+        return true
+    # retrieve a row when the user_id belongs to a group with name equal to that associated with other_user_id
     cursor.execute("""
-    SELECT 1
-    FROM auth_user u,
+    select 1
+    from auth_user u,
          auth_group g,
          auth_user_groups ug
-    WHERE u.id = %s
-      AND u.username = g.name
-      AND g.id = ug.group_id
-      AND ug.user_id = %s
-    LIMIT 1
+    where u.id = %s
+      and u.username = g.name
+      and g.id = ug.group_id
+      and ug.user_id = %s
+    limit 1
     """ % (other_user_id, user_id))
     return cursor.rowcount > 0
+
+
+def user_has_imported(user_id:int, obj_id:int, table_name:str, cursor=None) -> bool:
+    """Determine whether the user with ID <user_id> imported the object with ID
+    <obj_id> in table <table_name>. This is done by looking at the oldest known
+    instance of this object and whether the respective transactin it was created
+    in is a skeletons.import annotation. Therefore, this currently has only a
+    meaning for objects related to a skeleton import.
+    """
+    if not re.match('^[a-z_]+$', table_name):
+        raise Exception(f'Invalid table name: {table_name}')
+    if not cursor:
+        cursor = connection.cursor()
+
+    try:
+        # retrieve a row when the user_id belongs to a group with name equal to that associated with other_user_id
+        cursor.execute(f"""
+            SELECT 1
+            FROM (
+                SELECT txid, edition_time
+                FROM {table_name}__with_history th
+                WHERE th.id = %(obj_id)s
+                ORDER BY edition_time ASC
+                LIMIT 1
+            ) t_origin
+            JOIN LATERAL (
+                SELECT 1
+                FROM catmaid_transaction_info cti
+                WHERE cti.transaction_id = t_origin.txid
+                    -- Transaction ID wraparound match protection. A transaction
+                    -- ID is only unique together with a date.
+                    AND cti.execution_time = t_origin.edition_time
+                    AND label = 'skeletons.import'
+                    AND user_id = %(user_id)s
+                LIMIT 1
+            ) t_origin_tx
+                ON TRUE
+        """, {
+            'obj_id': obj_id,
+            'user_id': user_id,
+        })
+        return cursor.rowcount > 0
+    except ProgrammingError as e:
+        # In case of a non existent target table, we assume this table is
+        # unsupported. This import check works currently only for tables with
+        # history tracking.
+        if '__with_history" does not exist' in e.message:
+            return False
+        raise
+
+
+def user_has_imported_all(user_id:int, obj_ids:[int], table_name:str, cursor=None) -> bool:
+    """Determine whether the user with ID <user_id> imported the object with ID
+    <obj_id> in table <table_name>. This is done by looking at the oldest known
+    instance of this object and whether the respective transactin it was created
+    in is a skeletons.import annotation. Therefore, this currently has only a
+    meaning for objects related to a skeleton import.
+    """
+    if not re.match('^[a-z_]+$', table_name):
+        raise ValueError(f'Invalid table name: {table_name}')
+    if not cursor:
+        cursor = connection.cursor()
+
+    if not obj_ids:
+        raise ValueError('Need at least one object to test')
+
+    try:
+        # retrieve a row when the user_id belongs to a group with name equal to that associated with other_user_id
+        cursor.execute(f"""
+            SELECT 1
+            FROM UNNEST(%(obj_ids)s::bigint[]) t(id)
+            JOIN LATERAL (
+                SELECT txid, edition_time
+                FROM {table_name}__with_history th
+                WHERE th.id = t.id
+                ORDER BY edition_time ASC
+                LIMIT 1
+            ) t_origin
+                ON TRUE
+            JOIN LATERAL (
+                SELECT 1
+                FROM catmaid_transaction_info cti
+                WHERE cti.transaction_id = t_origin.txid
+                    -- Transaction ID wraparound match protection. A transaction
+                    -- ID is only unique together with a date.
+                    AND cti.execution_time = t_origin.edition_time
+                    AND label = 'skeletons.import'
+                    AND user_id = %(user_id)s
+                LIMIT 1
+            ) t_origin_label
+                ON TRUE
+        """, {
+            'obj_ids': obj_ids,
+            'user_id': user_id,
+        })
+        return cursor.rowcount == len(obj_ids)
+    except ProgrammingError as e:
+        # In case of a non existent target table, we assume this table is
+        # unsupported. This import check works currently only for tables with
+        # history tracking.
+        if '__with_history" does not exist' in e.message:
+            return False
+        raise
 
 
 def user_domain(cursor, user_id) -> Set:

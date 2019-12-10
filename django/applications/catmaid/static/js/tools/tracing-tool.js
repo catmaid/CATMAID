@@ -640,6 +640,18 @@
           self._updateMoreToolsMenu();
           self.lastActiveNodeWasLocal = isLocal;
         }
+
+        // Retrieve additional permission information for the active node.
+        if (!CATMAID.session.deferredPermissionCheckObjects.has(node.id)) {
+          CATMAID.session.deferredPermissionCheckObjects.clear();
+          CATMAID.Treenodes.getImportingUser(project.id, node.id, true)
+            .then(result => {
+              if (result.importing_user_id == CATMAID.session.userid) {
+                CATMAID.session.deferredPermissionCheckObjects.add(node.id);
+              }
+            })
+            .catch(CATMAID.handleError);
+        }
       } else {
         clearTopbars();
         if (!self.lastActiveNodeWasLocal) {

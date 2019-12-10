@@ -28,6 +28,21 @@
     info: function(projectId, treenodeId) {
       return CATMAID.fetch(`${projectId}/treenodes/${treenodeId}/info`);
     },
+
+    /**
+     * Check whether this node was imported by the current user. This request
+     * happens in parallel by default.
+     */
+    getImportingUser: function(projectId, nodeId, replace = false, parallel = true, api = undefined) {
+      return CATMAID.fetch({
+        url: `${projectId}/treenodes/${nodeId}/importing-user`,
+        method: 'GET',
+        replace: replace,
+        id: 'treenodes-importing-user',
+        parallel: parallel,
+        api: api,
+      });
+    },
   };
 
   CATMAID.Treenodes = Treenodes;

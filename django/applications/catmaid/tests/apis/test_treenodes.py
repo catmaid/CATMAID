@@ -2,10 +2,14 @@
 
 import json
 
+from io import StringIO
 from operator import itemgetter
 
 from django.shortcuts import get_object_or_404
+from guardian.shortcuts import assign_perm
 
+from catmaid.control.authentication import (can_edit_all_or_fail,
+    can_edit_or_fail, PermissionError)
 from catmaid.control.common import get_relation_to_id_map, get_class_to_id_map
 from catmaid.models import ClassInstance, ClassInstanceClassInstance, Log
 from catmaid.models import Treenode, TreenodeClassInstance, TreenodeConnector
@@ -1193,3 +1197,118 @@ class TreenodesApiTests(CatmaidApiTestCase):
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(expected_result,
                 sorted(parsed_response, key=itemgetter(0)))
+
+    def test_non_available_import_user(self):
+        self.fake_authentication()
+        response = self.client.post(
+                f'/{self.test_project_id}/treenodes/compact-detail',
+                {
+                    'skeleton_ids': [235],
+                })
+        self.assertStatus(response)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        for tn in parsed_response:
+            node_response = self.client.get(f'/{self.test_project_id}/treenodes/{tn[0]}/importing-user')
+            self.assertStatus(response)
+            parsed_node_response = json.loads(node_response.content.decode('utf-8'))
+            self.assertEqual(parsed_node_response['importing_user_id'], None)
+
+    def test_import_user(self):
+        self.fake_authentication()
+
+        # Get skeleton
+        url = '/%d/skeleton/235/swc' % (self.test_project_id,)
+        response = self.client.get(url)
+        self.assertStatus(response)
+        orig_swc_string = response.content.decode('utf-8')
+
+        # Add permission to import
+        swc_file = StringIO(orig_swc_string)
+        assign_perm('can_import', self.test_user, self.test_project)
+
+        # Import
+        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
+                {'file.swc': swc_file, 'name': 'test'})
+
+        self.assertStatus(response)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        new_skeleton_id = parsed_response['skeleton_id']
+        id_map = parsed_response['node_id_map']
+
+        # Get nodes
+        response = self.client.post(
+                f'/{self.test_project_id}/treenodes/compact-detail',
+                {
+                    'skeleton_ids': [new_skeleton_id],
+                })
+        self.assertStatus(response)
+
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        # Check import user
+        for tn in parsed_response:
+            node_response = self.client.get(f'/{self.test_project_id}/treenodes/{tn[0]}/importing-user')
+            self.assertStatus(response)
+            parsed_node_response = json.loads(node_response.content.decode('utf-8'))
+            self.assertEqual(parsed_node_response['importing_user_id'], self.test_user.id)
+
+    def test_import_user_permissions(self):
+        self.fake_authentication()
+
+        # Get skeleton
+        url = '/%d/skeleton/2364/eswc' % (self.test_project_id,)
+        response = self.client.get(url)
+        self.assertStatus(response)
+        orig_eswc_string = response.content.decode('utf-8')
+
+        # Add permission to import
+        eswc_file = StringIO(orig_eswc_string)
+        assign_perm('can_import', self.test_user, self.test_project)
+
+        # Import
+        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
+                {'file.eswc': eswc_file, 'name': 'test'})
+
+        self.assertStatus(response)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        new_skeleton_id = parsed_response['skeleton_id']
+        id_map = parsed_response['node_id_map']
+
+        # Get nodes
+        response = self.client.post(
+                f'/{self.test_project_id}/treenodes/compact-detail',
+                {
+                    'skeleton_ids': [new_skeleton_id],
+                })
+        self.assertStatus(response)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+
+        # To make sense, the imported user should not be the same as the test
+        # user for this test.
+        skeleton_user_ids = [2, 5]
+        self.assertNotIn(self.test_user.id, skeleton_user_ids)
+        for tn in parsed_response:
+            self.assertIn(tn[-1], skeleton_user_ids)
+
+        # Check if import user can edit, both all and individually. These
+        # functions raise an error if they fail.
+        treenode_ids = [tn[0] for tn in parsed_response]
+        can_edit_all_or_fail(self.test_user, treenode_ids, 'treenode')
+        for tn in parsed_response:
+            can_edit_or_fail(self.test_user, tn[0], 'treenode')
+
+        # To make sure the test user cannot just edit alll nodes, test also
+        # against the original, non-imported version of the skeleton.
+
+        original_nodes_response = self.client.post(
+                f'/{self.test_project_id}/treenodes/compact-detail',
+                {
+                    'skeleton_ids': [2364],
+                })
+        self.assertStatus(original_nodes_response)
+        original_nodes_parsed_response = json.loads(original_nodes_response.content.decode('utf-8'))
+        original_treenode_ids = [tn[0] for tn in original_nodes_parsed_response]
+        with self.assertRaises(PermissionError, msg="Should not be able to edit other user's skeletons."):
+            can_edit_all_or_fail(self.test_user, original_treenode_ids, 'treenode')
+        with self.assertRaises(PermissionError, msg="Should not be able to edit other user's skeletons."):
+            for tn in original_treenode_ids:
+                can_edit_or_fail(self.test_user, tn, 'treenode')

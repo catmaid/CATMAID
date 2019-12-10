@@ -1276,3 +1276,50 @@ def find_next_branchnode_or_end(request:HttpRequest, project_id=None, treenode_i
         return JsonResponse(branches, safe=False)
     except Exception as e:
         raise ValueError('Could not obtain next branch node or leaf: ' + str(e))
+
+
+def _importing_user(project_id, treenode_id):
+    cursor = connection.cursor()
+    cursor.execute(f"""
+        SELECT t_origin_tx.user_id
+        FROM (
+            SELECT txid, edition_time
+            FROM treenode__with_history th
+            WHERE th.id = %(obj_id)s
+            ORDER BY edition_time ASC
+            LIMIT 1
+        ) t_origin
+        JOIN LATERAL (
+            SELECT cti.user_id
+            FROM catmaid_transaction_info cti
+            WHERE cti.transaction_id = t_origin.txid
+                -- Transaction ID wraparound match protection. A transaction
+                -- ID is only unique together with a date.
+                AND cti.execution_time = t_origin.edition_time
+                AND label = 'skeletons.import'
+            LIMIT 1
+        ) t_origin_tx
+            ON TRUE
+    """, {
+        'obj_id': treenode_id,
+    })
+    result = cursor.fetchone()
+    return result[0] if result else None
+
+
+@api_view(['GET'])
+@requires_user_role([UserRole.Annotate, UserRole.Browse])
+def importing_user(request:HttpRequest, project_id:int, treenode_id:int) -> JsonResponse:
+    """Retrieve the user ID of the user who imported the passed in treenode. If
+    this node wasn't imported, return None.
+    ---
+    type:
+      importing_user:
+        description: ID of the importer of this node
+        type: integer
+        required: true
+    """
+    importing_user_id = _importing_user(int(project_id), int(treenode_id))
+    return JsonResponse({
+        'importing_user_id': importing_user_id,
+    })

@@ -263,6 +263,7 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/treenodes/radius$', record_view("treenodes.update_radius")(treenode.update_radii)),
     url(r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/previous-branch-or-root$', treenode.find_previous_branchnode_or_root),
     url(r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/next-branch-or-end$', treenode.find_next_branchnode_or_end),
+    url(r'^(?P<project_id>\d+)/treenodes/(?P<treenode_id>\d+)/importing-user$', treenode.importing_user),
 ]
 
 # Suppressed virtual treenode access

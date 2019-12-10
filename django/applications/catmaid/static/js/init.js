@@ -920,6 +920,7 @@ var project;
   function handleSessionChange(e) {
     CATMAID.session = e;
     CATMAID.session.domain = new Set(e.domain);
+    CATMAID.session.deferredPermissionCheckObjects = new Set();
 
     if (edit_domain_timeout) {
       window.clearTimeout(edit_domain_timeout);

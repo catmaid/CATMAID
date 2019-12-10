@@ -73,3 +73,13 @@ default, users can't edit data of each other. However, they are allowed to to so
 if they are member of a group with a name matching the data creator's login
 name. So user A can edit user B's data if user A is member of a group named B.
 Superusers can edit data of everyone.
+
+Additionally, there is the special case of imported data. When skeleton data is
+imported from a remote source, CATMAID will try to keep the original creator and
+editor information in tact. With the rules above, this can possibly have the
+effect that the user who imported a skeleton can't edit it or even remove it, if
+it was imported by accident. This happens if the importing users has no
+permission over data of the users who originally created the imported skeleton.
+To avoid this, there is the following extra rule: a user who imported a node or
+skeleton has full permissions over it, just as if it was their own. No
+permissions are granted this way on the imported data of other users.

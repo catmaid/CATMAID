@@ -6,7 +6,7 @@ from django.http import HttpRequest, JsonResponse
 from django.shortcuts import get_object_or_404
 
 from catmaid.models import UserRole, Project
-from catmaid.control.authentication import requires_user_role 
+from catmaid.control.authentication import requires_user_role
 from catmaid.control.graph import _skeleton_graph
 from catmaid.control.skeleton import _skeleton_info_raw
 
@@ -39,7 +39,7 @@ def export_jsongraph(request:HttpRequest, project_id) -> JsonResponse:
         incoming, outgoing = skeleton_info['incoming'], skeleton_info['outgoing']
         skeletonlist = set( skeletonlist ).union( set(incoming.keys()) ).union( set(outgoing.keys()) )
         order -= 1
-    
+
     circuit = _skeleton_graph(project_id, skeletonlist, confidence_threshold, bandwidth, set(), compute_risk, cable_spread, path_confluence)
     newgraph = nx.DiGraph()
     for digraph, props in circuit.nodes_iter(data=True):
@@ -51,11 +51,15 @@ def export_jsongraph(request:HttpRequest, project_id) -> JsonResponse:
     for g1, g2, props in circuit.edges_iter(data=True):
         id1 = circuit.node[g1]['id']
         id2 = circuit.node[g2]['id']
-        newgraph.add_edge( id1, id2, {
-           'id': '%s-%s' % (id1, id2),
-           'weight': props['c'],
-           'label': str(props['c']) if props['directed'] else None,
-           'directed': props['directed'] })
+        newgraph.add_edge(
+            id1, id2,
+            {
+                'id': '%s-%s' % (id1, id2),
+                'weight': props['c'],
+                'label': str(props['c']) if props['directed'] else None,
+                'directed': props['directed'],
+            },
+        )
 
     return JsonResponse(json_graph.node_link_data(newgraph), safe=False,
             json_dumps_params={'indent': 2})

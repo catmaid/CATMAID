@@ -1459,7 +1459,7 @@ class DirtyNodeGridCacheCell(models.Model):
     """A dirty cache grid cell. Referential integrety is taken care of on the
     database level.
     """
-    #grid_cell = models.OneToOneField(NodeGridCacheCell, on_delete=models.DO_NOTHING, primary_key=True)
+    # grid_cell = models.OneToOneField(NodeGridCacheCell, on_delete=models.DO_NOTHING, primary_key=True)
     grid = models.ForeignKey(NodeGridCache, on_delete=models.DO_NOTHING)
     x_index = models.IntegerField(null=False)
     y_index = models.IntegerField(null=False)
@@ -1716,10 +1716,11 @@ class ChangeRequest(UserFocusedModel):
             # The action is required to set a value for the is_valid variable.
             try:
                 _locals:Dict = {}
+                # FIXME: this directly manipulates Python's scope, preventing static analysis
                 exec(self.validate_action, globals(), _locals)
                 if 'is_valid' not in _locals:
                     raise Exception('validation action did not define is_valid')
-                if not is_valid: # type: ignore
+                if not is_valid: # type: ignore # noqa: F821
                     # Cache the result so we don't have to do the exec next time.
                     # TODO: can a request ever be temporarily invalid?
                     self.status = ChangeRequest.INVALID
@@ -1750,7 +1751,7 @@ class ChangeRequest(UserFocusedModel):
             message = self.recipient.get_full_name() + ' has approved your ' + self.type.lower() + ' request.'
             notify_user(self.user, title, message)
         except Exception as e:
-            raise Exception('Failed to approve change request: %s' % str(e))
+            raise Exception(f'Failed to approve change request: {e}')
 
     def reject(self, *args, **kwargs) -> None:
         if not self.is_valid():
@@ -1775,7 +1776,7 @@ class ChangeRequest(UserFocusedModel):
 def validate_change_request(sender, **kwargs) -> None:
     # Make sure the validate action defines is_valid.
     cr = kwargs['instance']
-    if re.search('is_valid\s=', cr.validate_action) is None:
+    if re.search(r'is_valid\s=', cr.validate_action) is None:
         raise Exception('The validate action of a ChangeRequest must assign a value to the is_valid variable.')
 
 

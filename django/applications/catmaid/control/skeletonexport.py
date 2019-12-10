@@ -211,12 +211,16 @@ def export_skeleton_response(request:HttpRequest, project_id=None, skeleton_id=N
         linearize_ids = get_request_bool(request.GET, 'linearize_ids', False)
         soma_markers = get_request_list(request.GET, 'soma_markers', [])
         user_map = dict(User.objects.all().values_list('id', 'username'))
+
         def get_extra_cols(treenode):
-            return [f'{user_map[treenode.user_id]}',
-                    f'{treenode.creation_time.isoformat()}',
-            f'{user_map[treenode.editor_id]}',
-            f'{treenode.edition_time.isoformat()}',
-            f'{treenode.confidence}']
+            return [
+                str(user_map[treenode.user_id]),
+                str(treenode.creation_time.isoformat()),
+                str(user_map[treenode.editor_id]),
+                str(treenode.edition_time.isoformat()),
+                str(treenode.confidence),
+            ]
+
         return HttpResponse(get_swc_string(project_id, skeleton_id, treenode_qs,
                 linearize_ids, soma_markers, get_extra_cols=get_extra_cols),
                 content_type='text/plain')
@@ -602,7 +606,7 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
         })
 
         if with_merge_history:
-            query =  '''
+            query = '''
                 {query}
                 UNION ALL
                 SELECT
@@ -866,7 +870,7 @@ def _compact_arbor(project_id=None, skeleton_id=None, with_nodes=None,
     project_id = int(project_id)
     skeleton_id = int(skeleton_id)
     with_nodes = int(with_nodes)
-    with_connectors  = int(with_connectors)
+    with_connectors = int(with_connectors)
     with_tags = int(with_tags)
 
     cursor = connection.cursor()
@@ -1128,7 +1132,8 @@ def skeleton_with_metadata(request:HttpRequest, project_id=None, skeleton_id=Non
 
     def default(obj) -> int:
         """Default JSON serializer."""
-        import calendar, datetime
+        import calendar
+        import datetime
 
         if isinstance(obj, datetime.datetime):
             if obj.utcoffset() is not None:
@@ -1139,12 +1144,14 @@ def skeleton_with_metadata(request:HttpRequest, project_id=None, skeleton_id=Non
             )
         return millis
 
-    return JsonResponse(_skeleton_for_3d_viewer(skeleton_id, project_id, \
-        with_connectors=True, lean=0, all_field=True), safe=True,
+    return JsonResponse(
+        _skeleton_for_3d_viewer(skeleton_id, project_id, with_connectors=True, lean=0, all_field=True),
+        safe=True,
         json_dumps_params={
             'separators': (',', ':'),
             'default': default
-        })
+        },
+    )
 
 def _measure_skeletons(skeleton_ids) -> Dict[Any, Any]:
     if not skeleton_ids:
@@ -1172,8 +1179,7 @@ def _measure_skeletons(skeleton_ids) -> Dict[Any, Any]:
             self.wx = x  # weighted average of itself and neighbors
             self.wy = y
             self.wz = z
-            self.children:Dict[Any, float] = {}
-                                # node ID vs distance - is first type an int or an str?
+            self.children:Dict[Any, float] = {}  # node ID vs distance - is first type an int or an str?
 
     class Skeleton():
         def __init__(self):
@@ -1186,8 +1192,7 @@ def _measure_skeletons(skeleton_ids) -> Dict[Any, Any]:
             self.n_pre = 0
             self.n_post = 0
 
-    skeletons:Dict[Any, Skeleton] = {}
-                   # skeleton ID vs (node ID vs Node)
+    skeletons:Dict[Any, Skeleton] = {}  # skeleton ID vs (node ID vs Node)
     for row in cursor.fetchall():
         if row[2] not in skeletons:
             skeleton = Skeleton()
@@ -1301,6 +1306,7 @@ def _measure_skeletons(skeleton_ids) -> Dict[Any, Any]:
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def measure_skeletons(request:HttpRequest, project_id=None) -> JsonResponse:
     skeleton_ids = tuple(int(v) for k,v in request.POST.items() if k.startswith('skeleton_ids['))
+
     def asRow(skid, sk):
         return (skid, int(sk.raw_cable), int(sk.smooth_cable), sk.n_pre, sk.n_post, len(sk.nodes), sk.n_branch, sk.n_ends, sk.principal_branch_cable)
     return JsonResponse([asRow(skid, sk) for skid, sk in _measure_skeletons(skeleton_ids).items()], safe=False)
@@ -1852,10 +1858,7 @@ def connector_polyadicity(request:HttpRequest, project_id=None) -> JsonResponse:
         ) sub
         JOIN relation r
             ON r.id = relation_id
-    '''.format(**{
-        'extra_conditions': ('AND' + ' AND '.join(extra_conditions)) \
-                if extra_conditions else ''
-    }), {
+    '''.format(extra_conditions='AND' + ' AND '.join(extra_conditions) if extra_conditions else '',), {
         'project_id': project_id,
         'skeleton_ids': skeleton_ids,
         'self_relation_name': self_relation_name,

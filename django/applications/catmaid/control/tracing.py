@@ -113,11 +113,11 @@ def check_tracing_setup_detailed(project_id, opt_class_map=None,
     missing_classinstances = []
 
     for c in needed_classes:
-        if not c in class_map:
+        if c not in class_map:
             all_good = False
             missing_classes.append(c)
     for r in needed_relations:
-        if not r in relation_map:
+        if r not in relation_map:
             all_good = False
             missing_relations.append(r)
     # Check if the root node is there if requested
@@ -130,7 +130,7 @@ def check_tracing_setup_detailed(project_id, opt_class_map=None,
                 all_good = False
                 missing_classinstances.append('root')
         else:
-                missing_classinstances.append('root')
+            missing_classinstances.append('root')
 
     return all_good, missing_classes, missing_relations, missing_classinstances
 

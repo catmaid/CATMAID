@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import re
-import cProfile, pstats
+import cProfile
+import pstats
 import logging
 
 from traceback import format_exc
@@ -103,7 +104,8 @@ class AjaxExceptionMiddleware(object):
             'meta': getattr(exception, 'meta', None),
         }
         if settings.DEBUG:
-            import sys, traceback
+            import sys
+            import traceback
             (exc_type, exc_info, tb) = sys.exc_info()
             response['info'] = str(exc_info)
             response['traceback'] = ''.join(traceback.format_tb(tb))
@@ -216,8 +218,7 @@ class ProfilingMiddleware(object):
             response = JsonResponse(data)
 
             if hasattr(request, 'profile-to-disk'):
-                labels = (request.META['REMOTE_ADDR'], datetime.now())
-                request.profiler.dump_stats('/tmp/catmaid-%s-%s.profile' % labels)
+                request.profiler.dump_stats(f'/tmp/catmaid-{request.META["REMOTE_ADDR"]}-{datetime.now()}.profile')
 
         return response
 

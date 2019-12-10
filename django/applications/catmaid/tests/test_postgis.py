@@ -195,7 +195,7 @@ class PostGISTests(CatmaidTestCase):
         treenode_connector = TreenodeConnector.objects.get(id=treenode_connector_id)
         treenode_connector.treenode_id = new_treenode.treenode_id
         treenode_connector.skeleton_id = new_treenode.skeleton_id
-        treenode_connector.save();
+        treenode_connector.save()
 
         cursor.execute("""
             SELECT bool_and(x)

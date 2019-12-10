@@ -208,8 +208,13 @@ class LocationQuery(object):
 
 
 class LocationRef(object):
-    def __init__(self, d, key): self.d, self.key = d, key
-    def get(self): return self.d[self.key].get()
+    def __init__(self, d, key):
+        self.d = d
+        self.key = key
+
+    def get(self):
+        return self.d[self.key].get()
+
 
 location_queries:Dict = {}
 location_queries.update({

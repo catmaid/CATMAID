@@ -27,9 +27,9 @@ class StacksApiTests(CatmaidApiTestCase):
                 "z": 460
             },
             "comment": '<p>&copy;2009 <a href="http://people.epfl.ch/graham.knott">Graham '
-                'Knott</a>.</p> <p>Public INCF data set available at the <a '
-                'href="http://www.incf.org/about/nodes/switzerland/data">Swiss '
-                'INCF Node</a>.</p>',
+                       'Knott</a>.</p> <p>Public INCF data set available at the <a '
+                       'href="http://www.incf.org/about/nodes/switzerland/data">Swiss '
+                       'INCF Node</a>.</p>',
             "description": "",
             "metadata": None,
             "num_zoom_levels": -1,

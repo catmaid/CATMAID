@@ -148,8 +148,7 @@ def delete_neuron(request:HttpRequest, project_id=None, neuron_id=None) -> JsonR
 
     return JsonResponse({
         'skeleton_ids': list(skeleton_ids),
-        'success': "Deleted neuron #%s as well as its skeletons and " \
-                "annotations." % neuron_id
+        'success': "Deleted neuron #%s as well as its skeletons and annotations." % neuron_id
     })
 
 @requires_user_role(UserRole.Annotate)
@@ -248,7 +247,7 @@ def rename_neuron(request:HttpRequest, project_id=None, neuron_id=None) -> JsonR
 
     # Insert log entry and return successfully
     insert_into_log(project_id, request.user.id, "rename_neuron", None,
-                    "Renamed neuron with ID %s from %s to %s" % (neuron.id , old_name, new_name))
+                    f"Renamed neuron with ID {neuron.id} from {old_name} to {new_name}")
 
     return JsonResponse({
         'success': True,

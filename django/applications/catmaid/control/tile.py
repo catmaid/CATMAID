@@ -63,8 +63,8 @@ def get_tile(request:HttpRequest, project_id=None, stack_id=None) -> HttpRespons
         return response
 
     with closing(h5py.File(fpath, 'r')) as hfile:
-        #import math
-        #zoomlevel = math.log(int(scale), 2)
+        # import math
+        # zoomlevel = math.log(int(scale), 2)
         hdfpath = '/' + str(int(scale)) + '/' + str(z) + '/data'
         if not str(int(scale)) in hfile['/'].keys():
             data=np.zeros( (height, width) )

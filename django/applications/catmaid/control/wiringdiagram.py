@@ -23,7 +23,7 @@ def get_wiring_diagram(project_id=None, lower_treenode_number_limit=0) -> Dict[s
         relation__relation_name = 'presynaptic_to'
     )
     for e in qs:
-        if not e.connector_id in tmp:
+        if e.connector_id not in tmp:
             tmp[e.connector_id]=e.skeleton_id
             result[e.skeleton_id]={}
         else:
@@ -77,10 +77,10 @@ def get_wiring_diagram(project_id=None, lower_treenode_number_limit=0) -> Dict[s
     nodes=[]
     for k,v in nodes_tmp.items():
         nodes.append(
-                {
+            {
                 "id": str(k),
                 "label": "Skeleton "+str(k),
-                'node_count': skeletons[k]
+                'node_count': skeletons[k],
             }
         )
 

@@ -84,10 +84,9 @@ def user_list_datatable(request:HttpRequest) -> JsonResponse:
 
     for annotation in annotations:
         user_query = user_query.filter(
-                classinstanceclassinstance__relation__relation_name = \
-                     'annotated_with',
-                classinstanceclassinstance__class_instance_b__name = \
-                     annotation)
+            classinstanceclassinstance__relation__relation_name='annotated_with',
+            classinstanceclassinstance__class_instance_b__name=annotation
+        )
         # Make sure we only get distinct user names
         distinct = True
 
@@ -96,10 +95,9 @@ def user_list_datatable(request:HttpRequest) -> JsonResponse:
     neuron_annotated = request.POST.get('neuron_id', None)
     if neuron_annotated:
         user_query = user_query.filter(
-                classinstanceclassinstance__relation__relation_name = \
-                     'annotated_with',
-                classinstanceclassinstance__class_instance_a__id = \
-                     neuron_annotated)
+            classinstanceclassinstance__relation__relation_name='annotated_with',
+            classinstanceclassinstance__class_instance_a__id=neuron_annotated
+        )
         # Make sure we only get distinct user names
         distinct = True
 

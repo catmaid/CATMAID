@@ -92,6 +92,3 @@ def neuron_treenode_counts(neuron_ids) -> DefaultDict[Any, List]:
     counts[0] = list(neuron_ids - neurons_with_treenodes)
 
     return counts
-
-
-

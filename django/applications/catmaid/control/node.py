@@ -217,7 +217,7 @@ class CachedMsgpackNodeProvder(CachedNodeProvider):
             if explicit_treenode_ids or explicit_connector_ids:
                 extra_tuples, extra_type = get_extra_nodes(params, project_id,
                     explicit_treenode_ids, explicit_connector_ids, include_labels,
-                    with_relation_map, with_origin)
+                    with_relation_map)
                 if extra_type != 'json':
                     raise ValueError("Unexpected type")
 
@@ -1588,7 +1588,7 @@ def get_lod_buckets(result_tuple, lod_levels, lod_bucket_size, lod_strategy) -> 
             raise ValueError(f"Unknown LOD strategy: {lod_strategy}")
 
         node_slice_end = min(n_nodes_to_add, node_slice_end + offset)
-        connector_slice_end =  min(n_connectors_to_add, connector_slice_start + offset)
+        connector_slice_end = min(n_connectors_to_add, connector_slice_start + offset)
 
         # Try to reuse unused connector half for nodes and vice versa
         availble_nodes = offset - (node_slice_end - node_slice_start)
@@ -2514,10 +2514,10 @@ def _node_list_tuples_query(params, project_id, node_provider,
             })
             export_skeleton_origin = cursor.fetchall()
         else:
-            export_skeleton_origin = [];
+            export_skeleton_origin = []
 
         if with_relation_map == 'used':
-            export_relation_map = {r:id_to_relation[r] for r in used_relations}
+            export_relation_map = {r: id_to_relation[r] for r in used_relations}
         elif with_relation_map == 'all':
             export_relation_map = id_to_relation
         else:
@@ -2562,7 +2562,7 @@ def compile_node_list_result(project_id, node_providers, params,
             result = node_provider.get_tuples(params, project_id,
                 explicit_treenode_ids, explicit_connector_ids, include_labels,
                 with_relation_map, with_origin)
-            result_tuple, data_type =  result
+            result_tuple, data_type = result
 
             if result_tuple and data_type:
                 break
@@ -2633,10 +2633,10 @@ def render_nodes_xy(node_data, params, width, height, view_min_x=0, view_min_y=0
     hr = radius / 2.0
     node_pen = Pen((255, 0, 255), 1)
     root_pen = Pen('red', 1)
-    #leaf_pen = Pen('red', 1)
+    # leaf_pen = Pen('red', 1)
     node_brush = Brush((255, 0, 255))
     root_brush = Brush('red')
-    #leaf_brush = Brush('red')
+    # leaf_brush = Brush('red')
 
     virtual_nodes = True
 
@@ -2783,13 +2783,13 @@ def most_recent_treenode(request:HttpRequest, project_id=None) -> JsonResponse:
 
     return JsonResponse({
         'id': tn.id,
-        #'skeleton_id': tn.skeleton.id,
+        # 'skeleton_id': tn.skeleton.id,
         'x': int(tn.location_x),
         'y': int(tn.location_y),
         'z': int(tn.location_z),
-        #'most_recent': str(tn.most_recent) + tn.most_recent.strftime('%z'),
-        #'most_recent': tn.most_recent.strftime('%Y-%m-%d %H:%M:%S.%f'),
-        #'type': 'treenode'
+        # 'most_recent': str(tn.most_recent) + tn.most_recent.strftime('%z'),
+        # 'most_recent': tn.most_recent.strftime('%Y-%m-%d %H:%M:%S.%f'),
+        # 'type': 'treenode'
     })
 
 

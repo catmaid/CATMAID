@@ -55,7 +55,7 @@ def get_skeleton_permissions(request:HttpRequest, project_id, skeleton_id) -> Js
         can_edit = False
 
     permissions = {
-      'can_edit': can_edit,
+        'can_edit': can_edit,
     }
 
     return JsonResponse(permissions)
@@ -318,7 +318,7 @@ def _find_labels(project_id, skeleton_id, label_regex, tnid=None,
 
     for nodeID, props in tree.nodes_iter(data=True):
         if only_leaves and nodeID not in leaves:
-            continue;
+            continue
         if 'tags' in props:
             # Found a node with a matching label
             d = distances[nodeID]
@@ -471,11 +471,12 @@ def contributor_statistics_multiple(request:HttpRequest, project_id=None, skelet
     if time_bins:
         n_time_bins += len(time_bins)
 
-
-    # Take into account that multiple people may have reviewed the same nodes
-    # Therefore measure the time for the user that has the most nodes reviewed,
-    # then add the nodes not reviewed by that user but reviewed by the rest
     def process_reviews(rev):
+        """
+        Take into account that multiple people may have reviewed the same nodes
+        Therefore measure the time for the user that has the most nodes reviewed,
+        then add the nodes not reviewed by that user but reviewed by the rest
+        """
         seen:Set = set()
         min_review_bins = set()
         multi_review_bins = 0
@@ -493,8 +494,7 @@ def contributor_statistics_multiple(request:HttpRequest, project_id=None, skelet
 
     rev = None
     last_skeleton_id = None
-    review_contributors:DefaultDict[Any, int] = defaultdict(int)
-                                           # reviewer_id vs count of nodes reviewed
+    review_contributors:DefaultDict[Any, int] = defaultdict(int)  # reviewer_id vs count of nodes reviewed
 
     for row in Review.objects.filter(skeleton_id__in=skeleton_ids).order_by('skeleton').values_list('reviewer', 'treenode', 'review_time', 'skeleton_id').iterator():
         if last_skeleton_id != row[3]:
@@ -918,7 +918,7 @@ def from_origin(request:HttpRequest, project_id=None) -> JsonResponse:
         raise ValueError('Need source_url for origin lookup')
     source_url = normalize_source_url(source_url)
 
-    source_project_id = data.get('source_project_id');
+    source_project_id = data.get('source_project_id')
     if source_project_id is None:
         raise ValueError("Need source_project_id for origin lookup")
 
@@ -1086,9 +1086,9 @@ def check_annotations_on_split(project_id, skeleton_id, over_annotation_set,
     # Check if current set is equal to under or over set
     current_annotation_set = frozenset(a.name for a in annotation_query)
     if not current_annotation_set.difference(over_annotation_set):
-      return True
+        return True
     if not current_annotation_set.difference(under_annotation_set):
-      return True
+        return True
 
     return False
 
@@ -1930,32 +1930,29 @@ def get_connectivity_matrix(project_id, row_skeleton_ids, col_skeleton_ids,
     pre_rel_id = relation_map['presynaptic_to']
 
     if with_locations:
-      extra_select = ', c.id, c.location_x, c.location_y, c.location_z'
-      extra_join = 'JOIN connector c ON c.id = t2.connector_id'
+        extra_select = ', c.id, c.location_x, c.location_y, c.location_z'
+        extra_join = 'JOIN connector c ON c.id = t2.connector_id'
     else:
-      extra_select = ''
-      extra_join = ''
+        extra_select = ''
+        extra_join = ''
 
     # Obtain all synapses made between row skeletons and column skeletons.
     cursor.execute('''
-    SELECT t1.skeleton_id, t2.skeleton_id
-        {extra_select}
-    FROM treenode_connector t1,
-         treenode_connector t2
-        {extra_join}
-    WHERE t1.skeleton_id = ANY(%(row_skeleton_ids)s::integer[])
-      AND t2.skeleton_id = ANY(%(col_skeleton_ids)s::integer[])
-      AND t1.connector_id = t2.connector_id
-      AND t1.relation_id = %(pre_rel_id)s
-      AND t2.relation_id = %(post_rel_id)s
-    '''.format(**{
-      'extra_select': extra_select,
-      'extra_join': extra_join,
-    }), {
-      'row_skeleton_ids': list(row_skeleton_ids),
-      'col_skeleton_ids': list(col_skeleton_ids),
-      'pre_rel_id': pre_rel_id,
-      'post_rel_id': post_rel_id
+        SELECT t1.skeleton_id, t2.skeleton_id
+            {extra_select}
+        FROM treenode_connector t1,
+             treenode_connector t2
+            {extra_join}
+        WHERE t1.skeleton_id = ANY(%(row_skeleton_ids)s::integer[])
+          AND t2.skeleton_id = ANY(%(col_skeleton_ids)s::integer[])
+          AND t1.connector_id = t2.connector_id
+          AND t1.relation_id = %(pre_rel_id)s
+          AND t2.relation_id = %(post_rel_id)s
+    '''.format(extra_select=extra_select, extra_join=extra_join), {
+        'row_skeleton_ids': list(row_skeleton_ids),
+        'col_skeleton_ids': list(col_skeleton_ids),
+        'pre_rel_id': pre_rel_id,
+        'post_rel_id': post_rel_id
     })
 
     # Build a sparse connectivity representation. For all skeletons requested
@@ -1964,33 +1961,33 @@ def get_connectivity_matrix(project_id, row_skeleton_ids, col_skeleton_ids,
     # object with the fields 'count' and 'locations' is returned instead of a
     # single count.
     if with_locations:
-      outgoing:DefaultDict[Any, Dict] = defaultdict(dict)
-      for r in cursor.fetchall():
-          source, target = r[0], r[1]
-          mapping = outgoing[source]
-          connector_id = r[2]
-          info = mapping.get(target)
-          if not info:
-            info = { 'count': 0, 'locations': {} }
-            mapping[target] = info
-          count = info['count']
-          info['count'] = count + 1
+        outgoing:DefaultDict[Any, Dict] = defaultdict(dict)
+        for r in cursor.fetchall():
+            source, target = r[0], r[1]
+            mapping = outgoing[source]
+            connector_id = r[2]
+            info = mapping.get(target)
+            if not info:
+                info = { 'count': 0, 'locations': {} }
+                mapping[target] = info
+            count = info['count']
+            info['count'] = count + 1
 
-          if connector_id not in info['locations']:
-            location = [r[3], r[4], r[5]]
-            info['locations'][connector_id] = {
-              'pos': location,
-              'count': 1
-            }
-          else:
-            info['locations'][connector_id]['count'] += 1
+            if connector_id not in info['locations']:
+                location = [r[3], r[4], r[5]]
+                info['locations'][connector_id] = {
+                    'pos': location,
+                    'count': 1,
+                }
+            else:
+                info['locations'][connector_id]['count'] += 1
     else:
-      outgoing = defaultdict(dict)
-      for r in cursor.fetchall():
-          source, target = r[0], r[1]
-          mapping = outgoing[source]
-          count = mapping.get(target, 0)
-          mapping[target] = count + 1
+        outgoing = defaultdict(dict)
+        for r in cursor.fetchall():
+            source, target = r[0], r[1]
+            mapping = outgoing[source]
+            count = mapping.get(target, 0)
+            mapping[target] = count + 1
 
     return outgoing
 
@@ -2345,6 +2342,7 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
                     annotations=True, metaannotations=False, neuronnames=False)
             to_annotation_info = get_annotation_info(project_id, (to_skid,),
                     annotations=True, metaannotations=False, neuronnames=False)
+
             # Create a new annotation map with the expected structure of
             # 'annotationname' vs. 'annotator id'.
             def merge_into_annotation_map(source, skid, target):
@@ -2587,7 +2585,7 @@ def _update_samplers_in_merge(project_id, user_id, win_skeleton_id, lose_skeleto
         # If the merge point is not part of any domain in this sampler,
         # continue. No update is needed here.
         if len(matching_domains) == 0:
-            continue;
+            continue
 
 
         # We expect a single domain at the moment
@@ -2616,11 +2614,8 @@ def _update_samplers_in_merge(project_id, user_id, win_skeleton_id, lose_skeleto
         start_end_intervals = cursor.fetchall()
 
         is_interval_start_or_end = len(start_end_intervals) > 0
-        #is_in_interval =
-        #is_in_traced_out_part = not is_domain_end
-
-
-
+        # is_in_interval =
+        # is_in_traced_out_part = not is_domain_end
 
         # For each domain in this sampler in which the winning merging treenode
         # is contained, we need to update the
@@ -2651,18 +2646,18 @@ def _update_samplers_in_merge(project_id, user_id, win_skeleton_id, lose_skeleto
                 # nothing has to be done. Regardless of whether it is a leaf or
                 # not.
                 pass
-            #elif is_in_interval:
+            # elif is_in_interval:
             #    new_domain_ends.append(lose_treenode_id)
-
-                #if is_in_traced_out_part:
-                    # A traced out fragment isn't part of the initial interval,
-                    # but has been added while tracing out the interval. To
-                    # maintain this as a part of this domain, we need to add
-                    # regular intervals on this branch (starting from the last
-                    # regular interval node and add the losing treenode as
-                    # domain end.
-                    # TODO
-                    #new_domain_ends.append(lose_treenode_id)
+            #
+            #     if is_in_traced_out_part:
+            #         A traced out fragment isn't part of the initial interval,
+            #         but has been added while tracing out the interval. To
+            #         maintain this as a part of this domain, we need to add
+            #         regular intervals on this branch (starting from the last
+            #         regular interval node and add the losing treenode as
+            #         domain end.
+            #         TODO
+            #         new_domain_ends.append(lose_treenode_id)
             else:
                 # If we merge into the domain, but not into an interval, make
                 # sure the domain isn't extended here by adding a new domain end
@@ -2876,10 +2871,10 @@ def import_skeleton_swc(user, project_id, swc_string, neuron_id=None,
     node_id_map = {n: d['id'] for n, d in import_info['graph'].nodes_iter(data=True)}
 
     return JsonResponse({
-            'neuron_id': import_info['neuron_id'],
-            'skeleton_id': import_info['skeleton_id'],
-            'node_id_map': node_id_map,
-        })
+        'neuron_id': import_info['neuron_id'],
+        'skeleton_id': import_info['skeleton_id'],
+        'node_id_map': node_id_map,
+    })
 
 
 def import_skeleton_eswc(user, project_id, swc_string, neuron_id=None,
@@ -2936,10 +2931,10 @@ def import_skeleton_eswc(user, project_id, swc_string, neuron_id=None,
     node_id_map = {n: d['id'] for n, d in import_info['graph'].nodes_iter(data=True)}
 
     return JsonResponse({
-            'neuron_id': import_info['neuron_id'],
-            'skeleton_id': import_info['skeleton_id'],
-            'node_id_map': node_id_map,
-        })
+        'neuron_id': import_info['neuron_id'],
+        'skeleton_id': import_info['skeleton_id'],
+        'node_id_map': node_id_map,
+    })
 
 
 def _import_skeleton(user, project_id, arborescence, neuron_id=None,
@@ -3141,20 +3136,25 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
             # FIXME: the cast here and below in the SQL (::bigint) shouldn't be
             # needed
             arborescence.node[nbr]['parent_id'] = int(arborescence.node[n]['id'])
-            if not 'radius' in arborescence.node[nbr]:
+            if 'radius' not in arborescence.node[nbr]:
                 arborescence.node[nbr]['radius'] = -1
     arborescence.node[root]['parent_id'] = None
-    if not 'radius' in arborescence.node[root]:
+    if 'radius' not in arborescence.node[root]:
         arborescence.node[root]['radius'] = -1
     new_location = tuple([arborescence.node[root][k] for k in ('x', 'y', 'z')])
 
     if extended_data:
-        treenode_template = '(' + '),('.join('%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s' for n, d in arborescence.nodes_iter(data=True))  + ')'
-        treenode_values = list(chain.from_iterable([d['id'], d['x'], d['y'], d['z'],
+        treenode_template = '(' + '),('.join(
+            '%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s' for _ in arborescence.nodes_iter()
+        ) + ')'
+        treenode_values = list(chain.from_iterable(
+            [
+                d['id'], d['x'], d['y'], d['z'],
                 d['parent_id'], d['radius'], d['user_id'],
                 d['creation_time'], d['editor_id'],
-                d['edition_time'], d['confidence'] ] \
-                for n, d in arborescence.nodes_iter(data=True)))
+                d['edition_time'], d['confidence']
+            ] for n, d in arborescence.nodes_iter(data=True)
+        ))
         # Include skeleton ID for index performance.
         cursor.execute(f"""
             UPDATE treenode SET
@@ -3175,7 +3175,7 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
                 AND treenode.skeleton_id = %s
         """, treenode_values + [new_skeleton.id])
     else:
-        treenode_template = '(' + '),('.join('%s,%s,%s,%s,%s,%s' for n, d in arborescence.nodes_iter(data=True))  + ')'
+        treenode_template = '(' + '),('.join('%s,%s,%s,%s,%s,%s' for _ in arborescence.nodes_iter()) + ')'
         treenode_values = list(chain.from_iterable([d['id'], d['x'], d['y'], d['z'], d['parent_id'], d['radius']] \
                 for n, d in arborescence.nodes_iter(data=True)))
         # Include skeleton ID for index performance.

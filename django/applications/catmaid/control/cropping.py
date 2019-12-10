@@ -650,7 +650,7 @@ def crop(request:HttpRequest, project_id=None) -> JsonResponse:
     # Use first reachable stack mirrors
     stack_mirror_ids = []
     for sid in stack_ids:
-        stack_mirrors = StackMirror.objects.select_related('stack').filter(stack_id=sid);
+        stack_mirrors = StackMirror.objects.select_related('stack').filter(stack_id=sid)
         for sm in stack_mirrors:
             # If mirror is reachable use it right away
             tile_source = get_tile_source(sm.tile_source_type)
@@ -698,7 +698,7 @@ def cleanup(max_age:int=1209600) -> None:
         if (now - file_ctime) > max_age:
             files_to_remove.append(item)
     for item in files_to_remove:
-            os.remove(item)
+        os.remove(item)
 
 @login_required
 def download_crop(request:HttpRequest, file_path=None) -> HttpResponse:
@@ -724,4 +724,3 @@ def download_crop(request:HttpRequest, file_path=None) -> HttpResponse:
     response['Content-Disposition'] = 'attachment; filename="' + file_path + '"'
 
     return response
-

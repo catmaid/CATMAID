@@ -432,10 +432,7 @@ def _volume_collection(project_id, volume_ids, with_meshes=False):
                 )
             )
         GROUP BY v.id
-        """.format(**{
-            'extra_fields': extra_fields,
-            'extra_joins': '\n'.join(extra_joins),
-        }), params)
+    """.format(extra_fields=extra_fields, extra_joins='\n'.join(extra_joins)), params)
 
     return {
         'columns': [r[0] for r in cursor.description],

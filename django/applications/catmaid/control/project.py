@@ -206,10 +206,10 @@ def projects(request:HttpRequest) -> JsonResponse:
 
     if has_tracing_data:
         projects = projects.annotate(
-                no_locations=~Exists(Location.objects.filter(project=OuterRef('pk')))
-            ).filter(
-                no_locations=False
-            )
+            no_locations=~Exists(Location.objects.filter(project=OuterRef('pk')))
+        ).filter(
+            no_locations=False
+        )
 
     if 0 == len(projects):
         return JsonResponse([], safe=False)

@@ -125,7 +125,7 @@ def generate_tag_groups(add_supersets:bool=True, respect_superset_graphs:bool=Fa
             # Add classification graphs introduced by supersets to the expected
             # graphs in this tag set.
             if pid not in tag_supersets[tags] or respect_superset_graphs:
-                    cg_roots.update(croots)
+                cg_roots.update(croots)
         # Check if there are updates needed for some projects
         num_differing = 0
         meta = []

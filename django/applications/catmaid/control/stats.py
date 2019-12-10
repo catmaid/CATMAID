@@ -266,18 +266,19 @@ def stats_summary(request:HttpRequest, project_id=None) -> JsonResponse:
             user=request.user.id,
             creation_time__year=startdate.year,
             creation_time__month=startdate.month,
-            creation_time__day=startdate.day).count(),
+            creation_time__day=startdate.day
+        ).count(),
         'connectors_created': Connector.objects.filter(
             project=project_id,
             user=request.user.id,
             creation_time__year=startdate.year,
             creation_time__month=startdate.month,
             creation_time__day=startdate.day
-            ).count(),
+        ).count(),
     }
     for key, class_name in [
-            ('skeletons_created', 'skeleton')
-            ]:
+        ('skeletons_created', 'skeleton')
+    ]:
         result[key] = ClassInstance.objects.filter(
             project=project_id,
             user=request.user.id,
@@ -1315,7 +1316,7 @@ class ServerStats(APIView):
         """, {
             'db_name': db_name,
         })
-        db_stats = cursor.fetchone();
+        db_stats = cursor.fetchone()
 
         cursor.execute("""
             SELECT sum(heap_blks_read) AS heap_read,
@@ -1339,7 +1340,7 @@ class ServerStats(APIView):
                 extract(epoch from now() - pg_last_xact_replay_timestamp())
             FROM pg_stat_bgwriter
         """)
-        bgwriter_stats = cursor.fetchone();
+        bgwriter_stats = cursor.fetchone()
 
         return {
             'version': db_version,

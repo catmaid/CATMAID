@@ -227,4 +227,3 @@ def lazy_load_trees(skeleton_ids, node_properties):
 
     if tree:
         yield (skid, tree)
-

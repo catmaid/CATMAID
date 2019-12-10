@@ -420,29 +420,29 @@ def get_intersected_grid_cells(p1, p2, cell_width, cell_height, cell_depth,
     current_cell_x, current_cell_y, current_cell_z = p1_cell
 
     if dir_x > 0.0:
-        step_x = 1;
+        step_x = 1
         next_cell_x = start_x + (p1_cell[0] + 1) * cell_width
     else:
-        step_x = -1;
+        step_x = -1
         next_cell_x = start_x + p1_cell[0] * cell_width
 
     if dir_y > 0.0:
-        step_y = 1;
+        step_y = 1
         next_cell_y = start_y + (p1_cell[1] + 1) * cell_height
     else:
-        step_y = -1;
+        step_y = -1
         next_cell_y = start_y + p1_cell[1] * cell_height
 
     if dir_z > 0.0:
-        step_z = 1;
+        step_z = 1
         next_cell_z = start_z + (p1_cell[2] + 1) * cell_depth
     else:
-        step_z = -1;
+        step_z = -1
         next_cell_z = start_z + p1_cell[2] * cell_depth
 
     if dir_x != 0.0:
         inv_dir_x = 1.0 / dir_x
-        t_max_x = (next_cell_x - pos_x)  * inv_dir_x
+        t_max_x = (next_cell_x - pos_x) * inv_dir_x
         t_delta_x = cell_width * step_x * inv_dir_x
     else:
         t_max_x = float('inf')
@@ -450,7 +450,7 @@ def get_intersected_grid_cells(p1, p2, cell_width, cell_height, cell_depth,
 
     if dir_y != 0.0:
         inv_dir_y = 1.0 / dir_y
-        t_max_y = (next_cell_y - pos_y)  * inv_dir_y
+        t_max_y = (next_cell_y - pos_y) * inv_dir_y
         t_delta_y = cell_height * step_y * inv_dir_y
     else:
         t_max_y = float('inf')
@@ -458,7 +458,7 @@ def get_intersected_grid_cells(p1, p2, cell_width, cell_height, cell_depth,
 
     if dir_z != 0.0:
         inv_dir_z = 1.0 / dir_z
-        t_max_z = (next_cell_z - pos_z)  * inv_dir_z
+        t_max_z = (next_cell_z - pos_z) * inv_dir_z
         t_delta_z = cell_depth * step_z * inv_dir_z
     else:
         t_max_z = float('inf')

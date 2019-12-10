@@ -20,7 +20,7 @@ except ImportError:
 
 def neuroml_single_cell(skeleton_id, nodes, pre, post) -> Cell:
     """ Encapsulate a single skeleton into a NeuroML Cell instance.
-        
+
         skeleton_id: the ID of the skeleton to which all nodes belong.
         nodes: a dictionary of node ID vs tuple of node parent ID, location as a tuple of 3 floats, and radius. In nanometers.
         pre: a dictionary of node ID vs list of connector ID
@@ -30,15 +30,14 @@ def neuroml_single_cell(skeleton_id, nodes, pre, post) -> Cell:
     """
 
     # Collect the children of every node
-    successors:DefaultDict[Any, List] = defaultdict(list)
-                                   # parent node ID vs list of children node IDs
+    successors:DefaultDict[Any, List] = defaultdict(list)  # parent node ID vs list of children node IDs
     rootID = None
     for nodeID, props in nodes.items():
         parentID = props[0]
         if not parentID:
             rootID = nodeID
             continue
-        successors[parentID].append(nodeID) 
+        successors[parentID].append(nodeID)
 
     # Cache of Point3DWithDiam
     points:Dict = {}
@@ -57,7 +56,7 @@ def neuroml_single_cell(skeleton_id, nodes, pre, post) -> Cell:
             points[nodeID] = p
         return p
 
-    
+
     # Starting from the root node, iterate towards the end nodes, adding a segment
     # for each parent-child pair.
 
@@ -101,7 +100,7 @@ def neuroml_single_cell(skeleton_id, nodes, pre, post) -> Cell:
 
 def neuroml_network(cells, response):
     """ Write a list of Cell instances.
-        
+
         cells: a list of Cell instances.
         response: somewhere to write to, like an HttpResponse
 

@@ -66,7 +66,7 @@ class TransactionTests(TransactionTestCase, AssertStatusMixin):
         count_logs = lambda: Log.objects.all().count()
         log_count = count_logs()
         response = self.client.post(
-                '/%d/neuron/%s/delete' % (self.test_project_id, neuron_id), {})
+                f'/{int(self.test_project_id)}/neuron/{neuron_id}/delete', {})
         self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
@@ -302,18 +302,21 @@ class ViewPageTests(TestCase, AssertStatusMixin):
         self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [
-            {'can_administer': [],
-             'add_project': [],
-             'can_annotate': [3],
-             'can_annotate_with_token': [],
-             'change_project': [],
-             'can_browse': [3],
-             'can_fork': [],
-             'can_import': [],
-             'can_queue_compute_task': [],
-             'delete_project': [],
-             'view_project': [],
-            }, [u'test1']]
+            {
+                'can_administer': [],
+                'add_project': [],
+                'can_annotate': [3],
+                'can_annotate_with_token': [],
+                'change_project': [],
+                'can_browse': [3],
+                'can_fork': [],
+                'can_import': [],
+                'can_queue_compute_task': [],
+                'delete_project': [],
+                'view_project': [],
+            },
+            [u'test1']
+        ]
         self.assertEqual(expected_result, parsed_response)
 
 
@@ -681,11 +684,11 @@ class PermissionTests(TestCase, AssertStatusMixin):
         ]
 
     def test_user_permissions(self):
-            response = self.client.get("/permissions")
-            self.assertStatus(response)
-            # Expect [{}, []] as result, because the anonymous user is
-            # currently not assigned any permissions
-            self.assertJSONEqual(response.content.decode('utf-8'), [{},[]])
+        response = self.client.get("/permissions")
+        self.assertStatus(response)
+        # Expect [{}, []] as result, because the anonymous user is
+        # currently not assigned any permissions
+        self.assertJSONEqual(response.content.decode('utf-8'), [{},[]])
 
     def test_can_browse_access(self):
         # Give anonymous user browse permissions for the test project

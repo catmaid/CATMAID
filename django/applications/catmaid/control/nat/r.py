@@ -66,7 +66,7 @@ class CleanUpHTTPResponse(HttpResponse):
         self.file_handle = open(file_path, 'rb')
         kwargs['content'] = self.file_handle
         super().__init__(*args, **kwargs)
-        #self['Content-Disposition'] = 'attachment; filename="{}"'.format(file_name)
+        # self['Content-Disposition'] = 'attachment; filename="{}"'.format(file_name)
 
     def close(self) -> None:
         """Make sure all file handles are closed and the input file is removed.
@@ -166,7 +166,7 @@ def export_skeleton_as_nrrd(project_id, skeleton_id, source_ref, target_ref,
         relmr = importr('elmr')
 
         if settings.MAX_PARALLEL_ASYNC_WORKERS > 1:
-            #' # Parallelise NBLASTing across 4 cores using doMC package
+            # Parallelise NBLASTing across 4 cores using doMC package
             rdomc = importr('doMC')
             rdomc.registerDoMC(settings.MAX_PARALLEL_ASYNC_WORKERS)
 
@@ -199,11 +199,11 @@ def export_skeleton_as_nrrd(project_id, skeleton_id, source_ref, target_ref,
             xt = rnattemplatebrains.mirror_brain(xt, target_ref_tb)
 
         xdp = rnat.dotprops(xt, **{
-                'k': tangent_neighbors,
-                'resample': resample_by * nm_to_um,
-                '.progress': 'none',
-                'OmitFailures': omit_failures,
-            })
+            'k': tangent_neighbors,
+            'resample': resample_by * nm_to_um,
+            '.progress': 'none',
+            'OmitFailures': omit_failures,
+        })
 
         xdp.slots['regtemplate'] = rnattemplatebrains.regtemplate(xt)
 
@@ -341,7 +341,7 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
         conn = get_catmaid_connection(user_id) if use_http else None
 
         if settings.MAX_PARALLEL_ASYNC_WORKERS > 1:
-            #' # Parallelise NBLASTing across 4 cores using doMC package
+            # Parallelise NBLASTing across 4 cores using doMC package
             rdomc = importr('doMC')
             rdomc.registerDoMC(settings.MAX_PARALLEL_ASYNC_WORKERS)
 
@@ -620,7 +620,7 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
     Matrix = robjects.r.matrix
 
     if settings.MAX_PARALLEL_ASYNC_WORKERS > 1:
-        #' # Parallelise NBLASTing across 4 cores using doMC package
+        # Parallelise NBLASTing across 4 cores using doMC package
         rdomc = importr('doMC')
         rdomc.registerDoMC(settings.MAX_PARALLEL_ASYNC_WORKERS)
 
@@ -758,7 +758,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
 
         parallel = False
         if settings.MAX_PARALLEL_ASYNC_WORKERS > 1:
-            #' # Parallelise NBLASTing across 4 cores using doMC package
+            # Parallelise NBLASTing across 4 cores using doMC package
             rdomc = importr('doMC')
             rdomc.registerDoMC(settings.MAX_PARALLEL_ASYNC_WORKERS)
             parallel = True
@@ -1241,12 +1241,14 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                     # Get top N forward scores for input query as a row of the
                     # target table format (scores for single query object form a
                     # row).
-                    result_row = pd.DataFrame([
+                    result_row = pd.DataFrame(
+                        [
                             # Forward score:
                             [scores_df.loc[name].score for name in top_n_names_names]
                         ],
                         index=[query_name],
-                        columns=list(top_n_names_names))
+                        columns=list(top_n_names_names),
+                    )
 
                 # Collect top N scores for each query object and store them
                 # in new pandas table that contains the target columns of
@@ -1556,13 +1558,12 @@ def neuronlist_for_skeletons(project_id, skeleton_ids, omit_failures=False,
         ]
         nodes:List = [(k,[]) for k,_,_ in node_cols]
         for rn in raw_nodes:
-                for n, kv in enumerate(node_cols):
-                        val = rn[n]
-                        if val is None:
-                                val = kv[2]
-                        nodes[n][1].append(val)
-        r_nodes = [(kv[0], node_cols[n][1](kv[1]))
-                for n, kv in enumerate(nodes)]
+            for n, kv in enumerate(node_cols):
+                val = rn[n]
+                if val is None:
+                    val = kv[2]
+                nodes[n][1].append(val)
+        r_nodes = [(kv[0], node_cols[n][1](kv[1])) for n, kv in enumerate(nodes)]
 
         # Connectors in Rpy2 format
         connector_cols = [
@@ -1575,18 +1576,19 @@ def neuronlist_for_skeletons(project_id, skeleton_ids, omit_failures=False,
         ]
         connectors:List = [(k,[]) for k,_,_ in connector_cols]
         for rn in raw_connectors:
-                for n, kv in enumerate(connector_cols):
-                        val = rn[n]
-                        if val is None:
-                                val = kv[2]
-                        connectors[n][1].append(val)
-        r_connectors = [(kv[0], connector_cols[n][1](kv[1]))
-                for n, kv in enumerate(connectors)]
+            for n, kv in enumerate(connector_cols):
+                val = rn[n]
+                if val is None:
+                    val = kv[2]
+                connectors[n][1].append(val)
+        r_connectors = [
+            (kv[0], connector_cols[n][1](kv[1])) for n, kv in enumerate(connectors)
+        ]
 
         # Tags in Rpy2 format
         r_tags = {}
         for tag, node_ids in raw_tags.items():
-               r_tags[tag] = rinterface.IntSexpVector(node_ids)
+            r_tags[tag] = rinterface.IntSexpVector(node_ids)
 
         # Construct output similar to rcatmaid's request response parsing function.
         skeleton_data = robjects.ListVector({

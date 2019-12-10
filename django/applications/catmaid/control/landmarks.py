@@ -9,12 +9,11 @@ from django.db import connection
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 
-from catmaid.control.authentication import (requires_user_role, can_edit_or_fail,
-        can_edit_all_or_fail)
-from catmaid.control.common import (get_request_list, get_class_to_id_map,
-        get_relation_to_id_map, get_request_bool, get_request_list)
-from catmaid.models import (Class, ClassInstance, ClassInstanceClassInstance,
-        Relation, Point, PointClassInstance, UserRole)
+from catmaid.control.authentication import requires_user_role, can_edit_or_fail, can_edit_all_or_fail
+from catmaid.control.common import get_request_list, get_class_to_id_map, get_relation_to_id_map, get_request_bool
+from catmaid.models import (
+    Class, ClassInstance, ClassInstanceClassInstance, Relation, Point, PointClassInstance, UserRole,
+)
 from catmaid.serializers import BasicClassInstanceSerializer
 
 from rest_framework.request import Request
@@ -586,7 +585,7 @@ class LandmarkGroupDetail(APIView):
 
         append_members = get_request_bool(request.data, 'append_members', False)
 
-        if not name and members == None:
+        if not name and members is None:
             raise ValueError('Need name or members parameter for update')
 
         landmarkgroup_class = Class.objects.get(project_id=project_id, class_name='landmarkgroup')

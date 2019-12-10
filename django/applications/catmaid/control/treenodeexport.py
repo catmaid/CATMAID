@@ -259,7 +259,7 @@ class ConnectorExporter(TreenodeExporter):
             else:
                 rel_folder = "unknown_" + str(connector_link.relation_id)
             self.relid_to_rel_folder[connector_link.relation_id] = rel_folder
-        relation_folder =  self.relid_to_rel_folder[connector_link.relation_id]
+        relation_folder = self.relid_to_rel_folder[connector_link.relation_id]
 
         # Create path output_path/neuron_id/relation_name/connector_id
         if self.output_path is None:
@@ -344,7 +344,7 @@ class ConnectorExporter(TreenodeExporter):
             # rounded to full integers.
             x = int(connector.location_x + 0.5)
             y = int(connector.location_y + 0.5)
-            z = int(z_min + i * crop_self.stacks[0].resolution.z  + 0.5)
+            z = int(z_min + i * crop_self.stacks[0].resolution.z + 0.5)
             image_name = "%s_%s_%s.tiff" % (x, y, z)
             connector_image_path = os.path.join(connector_path, image_name)
             img.write(connector_image_path)

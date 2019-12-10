@@ -323,7 +323,7 @@ def copy_annotations(source_pid, target_pid, import_treenodes=True,
                 edition_time, editor_id, name, comment, geometry
             FROM catmaid_volume v
             WHERE v.project_id=%(source_pid)s
-            ''', {
-                'target_pid': target_pid,
-                'source_pid': source_pid,
-            })
+        ''', {
+            'target_pid': target_pid,
+            'source_pid': source_pid,
+        })

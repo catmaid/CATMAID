@@ -43,10 +43,10 @@ def search(request:HttpRequest, project_id=None) -> JsonResponse:
     try:
         oid = int(search_string)
         oid_query = ClassInstance.objects.filter(
-                pk=int(oid),
-                project_id=project_id,
-                class_column__class_name__in=('neuron', 'skeleton')
-                ).values('id', 'name', 'class_column__class_name')
+            pk=int(oid),
+            project_id=project_id,
+            class_column__class_name__in=('neuron', 'skeleton')
+        ).values('id', 'name', 'class_column__class_name')
         for row in oid_query:
             if row['id'] not in ids:
                 rows.append({
@@ -161,4 +161,3 @@ def search(request:HttpRequest, project_id=None) -> JsonResponse:
 
 
     return JsonResponse(rows, safe=False)
-

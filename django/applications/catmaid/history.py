@@ -7,7 +7,7 @@ from django.db.transaction import TransactionManagementError
 
 from catmaid import locks
 
-transaction_label_pattern = re.compile('^\w+\.\w+$')
+transaction_label_pattern = re.compile(r'^\w+\.\w+$')
 
 
 def fail_on_wrong_format_label(label) -> None:
@@ -76,6 +76,7 @@ def record_action(user_id, label, project_id=None):
     particular user.
     """
     fail_on_wrong_format_label(label)
+
     def decorator(f):
         @functools.wraps(f)
         def wrapped_f(*args, **kwargs):
@@ -83,6 +84,7 @@ def record_action(user_id, label, project_id=None):
             add_log_entry(user_id, label, project_id)
             return result
         return wrapped_f
+
     return decorator
 
 

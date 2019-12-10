@@ -522,15 +522,15 @@ urlpatterns += [
 
 # Volumes
 urlpatterns += [
-   url(r'^(?P<project_id>\d+)/volumes/$', volume.volume_collection),
-   url(r'^(?P<project_id>\d+)/volumes/add$', record_view("volumes.create")(volume.add_volume)),
-   url(r'^(?P<project_id>\d+)/volumes/import$', record_view("volumes.create")(volume.import_volumes)),
-   url(r'^(?P<project_id>\d+)/volumes/entities/$', volume.get_volume_entities),
-   url(r'^(?P<project_id>\d+)/volumes/skeleton-innervations$', volume.get_skeleton_innervations),
-   url(r'^(?P<project_id>\d+)/volumes/(?P<volume_id>\d+)/$', volume.VolumeDetail.as_view()),
-   url(r'^(?P<project_id>\d+)/volumes/(?P<volume_id>\d+)/intersect$', volume.intersects),
-   url(r'^(?P<project_id>\d+)/volumes/(?P<volume_id>\d+)/export\.(?P<extension>\w+)', volume.export_volume),
-   url(r'^(?P<project_id>\d+)/volumes/(?P<volume_id>\d+)/update-meta-info$', volume.update_meta_information),
+    url(r'^(?P<project_id>\d+)/volumes/$', volume.volume_collection),
+    url(r'^(?P<project_id>\d+)/volumes/add$', record_view("volumes.create")(volume.add_volume)),
+    url(r'^(?P<project_id>\d+)/volumes/import$', record_view("volumes.create")(volume.import_volumes)),
+    url(r'^(?P<project_id>\d+)/volumes/entities/$', volume.get_volume_entities),
+    url(r'^(?P<project_id>\d+)/volumes/skeleton-innervations$', volume.get_skeleton_innervations),
+    url(r'^(?P<project_id>\d+)/volumes/(?P<volume_id>\d+)/$', volume.VolumeDetail.as_view()),
+    url(r'^(?P<project_id>\d+)/volumes/(?P<volume_id>\d+)/intersect$', volume.intersects),
+    url(r'^(?P<project_id>\d+)/volumes/(?P<volume_id>\d+)/export\.(?P<extension>\w+)', volume.export_volume),
+    url(r'^(?P<project_id>\d+)/volumes/(?P<volume_id>\d+)/update-meta-info$', volume.update_meta_information),
 ]
 
 # Analytics

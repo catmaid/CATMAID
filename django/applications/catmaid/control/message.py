@@ -32,8 +32,8 @@ def get_latest_unread_date(request:HttpRequest) -> JsonResponse:
 def list_messages(request:HttpRequest, project_id=None) -> JsonResponse:
     messages = Message.objects.filter(
         user=request.user,
-        read=False)\
-    .order_by('-time')
+        read=False,
+    ).order_by('-time')
 
     def message_to_dict(message):
         return {
@@ -56,16 +56,16 @@ def list_messages(request:HttpRequest, project_id=None) -> JsonResponse:
 
 @login_required
 def read_message(request:HttpRequest, message_id) -> Union[HttpResponseRedirect, JsonResponse]:
-        message = get_object_or_404(Message, pk=message_id, user=request.user)
-        message.read = True
-        message.save()
+    message = get_object_or_404(Message, pk=message_id, user=request.user)
+    message.read = True
+    message.save()
 
-        if message.action:
-            return HttpResponseRedirect(message.action)
-        else:
-            return JsonResponse({
-                'success': True
-            })
+    if message.action:
+        return HttpResponseRedirect(message.action)
+    else:
+        return JsonResponse({
+            'success': True
+        })
 
 def notify_user(user_id, message_id, message_title) -> None:
     """Send a ASGI message to the user, if a channel is available."""

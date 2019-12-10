@@ -5,6 +5,7 @@
 # TrakEM2 helper scripts here: https://github.com/acardona/Fiji-TrakEM2-scripts
 
 # Mark Longair 2010
+# flake8: noqa
 
 import os
 import re

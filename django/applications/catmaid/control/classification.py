@@ -35,10 +35,9 @@ logger = logging.getLogger(__name__)
 # All needed classes by the classification system alongside their
 # descriptions.
 needed_classes = {
-    'classification_root':
-         "The root node class for classification graphs",
-    'classification_project':
-         "A project representation to link to classification graphs"}
+    'classification_root': "The root node class for classification graphs",
+    'classification_project': "A project representation to link to classification graphs"
+}
 
 # All needed relations by the classification system alongside their
 # descriptions.
@@ -184,7 +183,8 @@ def get_classification_links_qs(workspace_pid, project_ids, inverse=False,
     else:
         classification_project_cis_q = ClassInstance.objects.filter(
             project_id__in=project_ids,
-                class_column_id=class_map['classification_project'])
+            class_column_id=class_map['classification_project']
+        )
 
     # Return an empty query set if there aren't classification project
     # instances available.
@@ -233,10 +233,10 @@ def get_child_links(parent_ci) -> List:
     children = [cici for cici in cici_q]
 
     # Collect all child node class instances
-    #children = []
-    #for c in cici_q:
-    #    child = Child(r, row[1], row[3])
-    #    children.append( child )
+    # children = []
+    # for c in cici_q:
+    #     child = Child(r, row[1], row[3])
+    #     children.append( child )
 
     return children
 
@@ -404,7 +404,7 @@ def remove_classification_graph(request:HttpRequest, workspace_pid, project_id=N
         traverse_class_instances(selected_graph.class_instance_b, delete_node)
         num_removed_ci = num_removed_ci + 1
 
-    #get_classification_links_qs
+    # get_classification_links_qs
 
     if num_removed_links == 0:
         msg = 'The requested link couldn\'t get removed.'
@@ -414,7 +414,7 @@ def remove_classification_graph(request:HttpRequest, workspace_pid, project_id=N
         msg = 'The classification graph has been removed, along with its ' + str(num_removed_ci) + ' class instances.'
 
     return JsonResponse({
-      'success': msg
+        'success': msg
     })
 
 def traverse_class_instances(node, func) -> None:
@@ -676,16 +676,14 @@ def list_classification_graph(request:HttpRequest, workspace_pid, project_id=Non
                     relation=relation_map['is_a'], class_a_id=class_id)
                 if len(super_class_links_q) > 0:
                     cname = super_class_links_q[0].class_b.class_name
-                    return "%s: %s" % (cname, class_name)
+                    return f"{cname}: {class_name}"
                 else:
                     return class_name
             else:
                 return class_name
 
         def make_roi_html(roi):
-            img_data = (roi.id, settings.STATIC_URL)
-            return "<img class='roiimage' roi_id='%s' " \
-                    "src='%s/images/camera.png' \>" % img_data
+            return rf"<img class='roiimage' roi_id='{roi.id}' src='{settings.STATIC_URL}/images/camera.png' \>"
 
         def get_rois(ci):
             # Find ROIs for this class instance
@@ -703,8 +701,8 @@ def list_classification_graph(request:HttpRequest, workspace_pid, project_id=Non
             response_on_error = 'Could not select the id of the classification root node.'
 
             # Collect all child node class instances
-            #child = Child( root_id, root_name, "classification_root", 'root')
-            #add_template_fields( [child] )
+            # child = Child( root_id, root_name, "classification_root", 'root')
+            # add_template_fields( [child] )
             response_on_error = 'Could not select child classes.'
             child_types = get_child_classes( workspace_pid, cls_graph, relation_map, cursor )
             child_types_info = describe_child_types( child_types )
@@ -753,7 +751,7 @@ def list_classification_graph(request:HttpRequest, workspace_pid, project_id=Non
             child_links = get_child_links( parent_ci )
 
             response_on_error = 'Could not retrieve child nodes.'
-            #add_template_fields( child_nodes )
+            # add_template_fields( child_nodes )
 
             # Get child types
             child_types = get_child_classes(workspace_pid, parent_ci, relation_map, cursor)
@@ -866,16 +864,16 @@ def classification_instance_operation(request:HttpRequest, workspace_pid=None, p
         node_parent_id = params['parentid']
         # TODO: Test if this parent exists
 
-        #if 0 == params['parentid']:
-        #    # Find root element
-        #    classification_instance_operation.res_on_err = 'Failed to select classification root.'
-        #    node_parent_id = ClassInstance.objects.filter(
-        #            project=workspace_pid,
-        #            class_column=class_map['classification_root'])[0].id
+        # if 0 == params['parentid']:
+        #     # Find root element
+        #     classification_instance_operation.res_on_err = 'Failed to select classification root.'
+        #     node_parent_id = ClassInstance.objects.filter(
+        #          project=workspace_pid,
+        #          class_column=class_map['classification_root'])[0].id
 
-        #Relation.objects.filter(id=params['relationid'])
-        #if params['relationname'] not in relation_map:
-        #    raise CatmaidException('Failed to select relation %s' % params['relationname'])
+        # Relation.objects.filter(id=params['relationid'])
+        # if params['relationname'] not in relation_map:
+        #     raise CatmaidException('Failed to select relation %s' % params['relationname'])
 
         classification_instance_operation.res_on_err = 'Failed to insert CICI-link.'
         cici = ClassInstanceClassInstance()
@@ -1096,7 +1094,7 @@ def get_graph_tag_indices(graph_ids, workspace_pid=-1) -> Tuple[Dict,Dict]:
                 project_id=workspace_pid, relation_name='classified_by')
     # Find all 'classification_project' class instances of all requested
     # projects that link to the matched graphs. They are the
-    #'class_instance_a' instances of these links.
+    # 'class_instance_a' instances of these links.
     cici_q = ClassInstanceClassInstance.objects.filter(
             project_id=workspace_pid, relation__in=classified_by_rel,
             class_instance_b_id__in=graph_ids,
@@ -1105,7 +1103,7 @@ def get_graph_tag_indices(graph_ids, workspace_pid=-1) -> Tuple[Dict,Dict]:
     # Build index from classification project class instance ID to PID
     cp_to_pid = {}
     for cp in classification_project_cis_q:
-            cp_to_pid[cp.id] = cp.project_id
+        cp_to_pid[cp.id] = cp.project_id
 
     # Build project index
     project_ids = set()
@@ -1121,7 +1119,7 @@ def get_graph_tag_indices(graph_ids, workspace_pid=-1) -> Tuple[Dict,Dict]:
     # Build index from classification project class instance ID to PID
     cp_to_pid = {}
     for cp in classification_project_cis_q:
-            cp_to_pid[cp.id] = cp.project_id
+        cp_to_pid[cp.id] = cp.project_id
 
     # Build tag index
     ct = ContentType.objects.get_for_model(Project)
@@ -1475,7 +1473,7 @@ class ClassificationSearchWizard(SessionWizardView):
             # Build form array
             features = []
             for i, f in enumerate(raw_features):
-                name =  "%s: %s" % (f.links[0].class_b.class_name, f.name)
+                name = "%s: %s" % (f.links[0].class_b.class_name, f.name)
                 features.append((i, name))
             # Add form array to form field
             form.fields['features'].choices = features
@@ -1539,7 +1537,7 @@ class ClassificationSearchWizard(SessionWizardView):
                 project_id=self.workspace_pid, relation_name='classified_by')
         # Find all 'classification_project' class instances of all requested
         # projects that link to the matched graphs. They are the
-        #'class_instance_a' instances of these links.
+        # 'class_instance_a' instances of these links.
         mg_index = {}
         for mg in matching_graphs:
             mg_index[mg.id] = mg

@@ -253,15 +253,12 @@ class BrokenSliceAdmin(GuardedModelAdmin):
 
             # Create a result message
             if new_entry_count > 0:
-                msg = 'Added %s additional broken slice entries.' % \
-                        str(new_entry_count)
+                msg = f'Added {new_entry_count} additional broken slice entries.'
                 if num_extra_slices != new_entry_count:
-                    msg += ' %s broken slice entries were already present.' %\
-                        str(num_extra_slices - new_entry_count)
+                    msg += f' {num_extra_slices - new_entry_count} broken slice entries were already present.'
                 messages.add_message(request, messages.INFO, msg)
             elif num_extra_slices > 0 and new_entry_count == 0:
-                msg = 'All %s extra broken slice entries were already ' \
-                    'present.' % str(num_extra_slices)
+                msg = f'All {num_extra_slices} extra broken slice entries were already present.'
                 messages.add_message(request, messages.INFO, msg)
 
 
@@ -508,7 +505,7 @@ def color(self):
                 'inset; border-width:thin; margin-left:1em; width:100px; ' \
                 'height:100%%;">&nbsp;</div>' % up.color.hex_color())
     except Exception as e:
-        return mark_safe('<div>%s</div>' % str(e))
+        return mark_safe(f'<div>{e}</div>')
 
 color.allow_tags = True # type: ignore # https://github.com/python/mypy/issues/2087
 User.color = color

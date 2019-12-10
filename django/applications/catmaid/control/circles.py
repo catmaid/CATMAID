@@ -54,7 +54,7 @@ def _clean_mins(request:HttpRequest, cursor, project_id:Union[int,str]) -> Tuple
 
     relations = _relations(cursor, project_id)
     mins = {}
-    mins[relations['presynaptic_to']]  = min_post # inverted: all postsynaptic to the set
+    mins[relations['presynaptic_to']] = min_post # inverted: all postsynaptic to the set
     mins[relations['postsynaptic_to']] = min_pre # inverted: all presynaptic to the set
     return mins, relations
 
@@ -143,7 +143,7 @@ def find_directed_paths(request:HttpRequest, project_id=None) -> JsonResponse:
         s2 = set()
         for pre_skid, post_skid in next_level(s1, pre, post):
             graph.add_edge(pre_skid, post_skid)
-            if not post_skid in s1:
+            if post_skid not in s1:
                 s2.add(post_skid)
         s1 = s2
         i += 1
@@ -151,7 +151,7 @@ def find_directed_paths(request:HttpRequest, project_id=None) -> JsonResponse:
             t2 = set()
             for post_skid, pre_skid in next_level(t1, post, pre):
                 graph.add_edge(pre_skid, post_skid)
-                if not pre_skid in t1:
+                if pre_skid not in t1:
                     t2.add(pre_skid)
             t1 = t2
 
@@ -236,4 +236,3 @@ def find_directed_path_skeletons(request:HttpRequest, project_id=None) -> JsonRe
         skeleton_ids = skeleton_ids.union(origin_fronts[i].intersection(target_fronts[max_n_hops -i]))
 
     return JsonResponse(tuple(skeleton_ids), safe=False)
-

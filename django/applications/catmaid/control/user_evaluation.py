@@ -378,4 +378,3 @@ def evaluate_user(request:HttpRequest, project_id=None) -> JsonResponse:
 
     return JsonResponse(_evaluate(project_id, user_id, start_date, end_date,
         max_gap, min_nodes), safe=False)
-

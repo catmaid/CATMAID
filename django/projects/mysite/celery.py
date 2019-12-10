@@ -49,12 +49,11 @@ def debug_task(self):
 
 
 @setup_logging.connect
-def config_loggers(*args, **kwags):
+def config_loggers(*args, **kwargs):
     """This will set the logging environment for workers so that we can get
     their log output where we expect it.
     """
     from logging.config import dictConfig
-    from django.conf import settings
     dictConfig(settings.LOGGING)
 
 

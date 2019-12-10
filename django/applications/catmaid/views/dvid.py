@@ -35,7 +35,7 @@ class ServerForm(forms.Form):
         try:
             dvid.get_server_info(url)
         except Exception as e:
-            raise forms.ValidationError("Couldn't connect to %s or read valid DVID info" % url)
+            raise forms.ValidationError(f"Couldn't connect to {url} or read valid DVID info")
 
         return url
 
@@ -168,11 +168,11 @@ class DVIDImportWizard(SessionWizardView):
         if new_project:
             if ortho_stacks:
                 msg = ('Three new DVID based stacks have been created and '
-                      'linked to a projcet named "%s" with orientations XY, '
-                      'XZ and ZY' % title)
+                      f'linked to a project named "{title}" with orientations XY, '
+                      'XZ and ZY')
             else:
                 msg = ('A new DVID based stack was successfully created and '
-                      'linked to a new project named "%s".' % title)
+                      f'linked to a new project named "{title}".')
         else:
             msg = 'A new DVID based stack was successfully created.'
 
@@ -207,4 +207,3 @@ class DVIDImportWizard(SessionWizardView):
         })
 
         return context
-

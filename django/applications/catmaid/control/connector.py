@@ -73,7 +73,7 @@ def graphedge_list(request:HttpRequest, project_id=None) -> JsonResponse:
         # Only look at synapse connectors
         if q.relation.relation_name not in ('presynaptic_to', 'postsynaptic_to'):
             continue
-        if not q.connector_id in edge:
+        if q.connector_id not in edge:
             # has to be a list, not a set, because we need matching treenode id
             edge[ q.connector_id ] = {'pre': [], 'post': [], 'pretreenode': [], 'posttreenode': []}
             connectordata[ q.connector_id ] = {
@@ -304,11 +304,11 @@ def list_connectors(request:HttpRequest, project_id=None) -> JsonResponse:
                 AND tc.relation_id = %(relation_id)s
             ''')
     elif relation_type:
-            constraints.append('''
-                JOIN treenode_connector tc_rel
-                    ON tc_rel.connector_id = c.id
-                    AND tc_rel.relation_id = %(relation_id)s
-            ''')
+        constraints.append('''
+            JOIN treenode_connector tc_rel
+                ON tc_rel.connector_id = c.id
+                AND tc_rel.relation_id = %(relation_id)s
+        ''')
 
     if without_relation_types:
         # Only connectors without the passed in relations. This is done through
@@ -489,12 +489,12 @@ def list_connector_links(request:HttpRequest, project_id=None) -> JsonResponse:
 
     links = []
     for row in cursor.fetchall():
-        l = list(row)
-        l[8] = l[8].isoformat()
-        l[9] = l[9].isoformat()
-        links.append(l)
+        lst = list(row)
+        lst[8] = lst[8].isoformat()
+        lst[9] = lst[9].isoformat()
+        links.append(lst)
 
-    connector_ids = [l[1] for l in links]
+    connector_ids = [link[1] for link in links]
     tags:DefaultDict[Any, List] = defaultdict(list)
     if connector_ids and with_tags:
         c_template = ",".join(("(%s)",) * len(connector_ids))
@@ -610,7 +610,8 @@ def connector_associated_edgetimes(request:HttpRequest, project_id=None) -> Json
 
     def default(obj):
         """Default JSON serializer."""
-        import calendar, datetime
+        import calendar
+        import datetime
 
         if isinstance(obj, datetime.datetime):
             if obj.utcoffset() is not None: # type: ignore
@@ -760,7 +761,7 @@ def _list_completed(project_id, completed_by=None, from_date=None, to_date=None)
         params.append(from_date.isoformat())
         query += " AND tc1.creation_time >= %s"
     if to_date:
-        to_date =  to_date + timedelta(days=1)
+        to_date = to_date + timedelta(days=1)
         params.append(to_date.isoformat())
         query += " AND tc1.creation_time < %s"
 
@@ -934,7 +935,7 @@ def connector_user_info(request:HttpRequest, project_id) -> JsonResponse:
     connector_id = int(request.GET.get('connector_id'))
     relation_id = request.GET.get('relation_id')
     cursor = connection.cursor()
-    if relation_id == None:
+    if relation_id is None:
         relations = get_relation_to_id_map(project_id, LINK_RELATION_NAMES, cursor)
         relation_id = relations[request.GET.get('relation_name')]
     else:
@@ -1095,18 +1096,17 @@ def get_connectors_in_bb_postgis3d(params) -> List:
             %(halfzdiff)s)
         AND tce.project_id = %(project_id)s
         {limit_clause}
-    """.format(**{
-        'distinct': 'DISTINCT' if not with_links else '',
-        'limit_clause': f'LIMIT {limit}' \
-                if limit > 0 else '',
-        'location_select': ', c.location_x, c.location_y, c.location_z' \
-                if with_locations else '',
-        'link_select': ', tc.skeleton_id, tc.confidence, tc.user_id, ' \
-                'tc.treenode_id, tc.creation_time, tc.edition_time, ' \
-                'tc.relation_id' \
-                if with_links else '',
-        'extra_joins': '\n'.join(extra_joins),
-    }), params)
+    """.format(
+        distinct='DISTINCT' if not with_links else '',
+        limit_clause=f'LIMIT {limit}' if limit > 0 else '',
+        location_select=', c.location_x, c.location_y, c.location_z' if with_locations else '',
+        link_select=", " + ", ".join([
+            "tc.skeleton_id", "tc.confidence", "tc.user_id",
+            "tc.treenode_id", "tc.creation_time", "tc.edition_time",
+            "tc.relation_id"
+        ]) if with_links else "",
+        extra_joins='\n'.join(extra_joins),
+    ), params)
 
     return list(cursor.fetchall())
 

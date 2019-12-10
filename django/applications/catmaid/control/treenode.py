@@ -281,7 +281,7 @@ def _create_treenode(project_id, creator, editor, x, y, z, radius, confidence,
         new_radius = int(radius if (radius and not math.isnan(radius)) else 0)
         new_treenode.radius = new_radius
         new_treenode.skeleton_id = skeleton_id
-        new_confidence = int(confidence if not math.isnan(confidence) and (confidence or confidence is 0) else 5)
+        new_confidence = int(confidence if not math.isnan(confidence) and (confidence or confidence == 0) else 5)
         new_treenode.confidence = new_confidence
         if parent_id:
             new_treenode.parent_id = parent_id

@@ -44,7 +44,7 @@ class PruneSkeletonsTest(TestCase):
         # Call pruning for this project
         out = StringIO()
         call_command('catmaid_prune_skeletons', project_id=[p.project.id], stdout=out)
-        self.assertIn('Deleted 4 nodes in project "%s"' % p.project.id, out.getvalue())
+        self.assertIn(f'Deleted 4 nodes in project "{p.project.id}"', out.getvalue())
 
 
 class TestProject():
@@ -64,12 +64,14 @@ class TestProject():
         }
 
     def create_class(self, name):
-        return Class.objects.create(class_name="skeleton", user=self.user,
-                project=self.project, description="")
+        return Class.objects.create(
+            class_name="skeleton", user=self.user, project=self.project, description=""
+        )
 
     def create_neuron(self):
-            return ClassInstance.objects.create(user=self.user, name="A skeleton",
-                project=self.project, class_column=self.class_map["skeleton"])
+        return ClassInstance.objects.create(
+            user=self.user, name="A skeleton", project=self.project, class_column=self.class_map["skeleton"]
+        )
 
     def create_node(self, x, y, z, parent_id, skeleton_id):
         return Treenode.objects.create(location_x=x, location_y=y, location_z=z,

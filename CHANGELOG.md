@@ -41,6 +41,10 @@
   well as if its expected folder layout is present. If expected subfolders are
   missing, they will now be created.
 
+- Python code is now linted by flake8. The config is fairly relaxed
+  (see .travis.flake8), but contributions which do not conform with the selected 
+  rules will fail CI checks.
+
 ### Features and enhancements
 
 Node filters:

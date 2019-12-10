@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 import json
 import logging
-
+from typing import List
 from argparse import FileType
-from django.core.management.base import BaseCommand, CommandError
 from sys import stdin
+
+from django.core.management.base import BaseCommand, CommandError
 
 from catmaid.apps import get_system_user
 from catmaid.models import Project, Stack, User, Group

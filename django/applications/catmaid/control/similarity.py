@@ -94,18 +94,14 @@ def serialize_similarity(similarity, with_scoring=False, with_objects=False) -> 
         'normalized': similarity.normalized,
         'detailed_status': similarity.detailed_status,
         'computation_time': similarity.computation_time,
-        'n_query_objects': len(similarity.query_objects) \
-                if similarity.query_objects else 0,
-        'n_target_objects': len(similarity.target_objects) \
-                if similarity.target_objects else 0,
-        'n_invalid_query_objects': len(similarity.invalid_query_objects) \
-                if similarity.invalid_query_objects else 0,
-        'n_invalid_target_objects': len(similarity.invalid_target_objects) \
-                if similarity.invalid_target_objects else 0,
-        'n_initial_query_objects': len(similarity.initial_query_objects) \
-                if similarity.initial_query_objects else None,
-        'n_initial_target_objects': len(similarity.initial_target_objects) \
-                if similarity.initial_target_objects else None,
+        'n_query_objects': len(similarity.query_objects) if similarity.query_objects else 0,
+        'n_target_objects': len(similarity.target_objects) if similarity.target_objects else 0,
+        'n_invalid_query_objects': len(similarity.invalid_query_objects) if similarity.invalid_query_objects else 0,
+        'n_invalid_target_objects': len(similarity.invalid_target_objects) if similarity.invalid_target_objects else 0,
+        'n_initial_query_objects': len(similarity.initial_query_objects) if similarity.initial_query_objects else None,
+        'n_initial_target_objects': len(
+            similarity.initial_target_objects
+        ) if similarity.initial_target_objects else None,
         'reverse': similarity.reverse,
         'top_n': similarity.top_n,
     }
@@ -351,7 +347,7 @@ class ConfigurationList(APIView):
                     if type(element) != list or len(element) != 2:
                         raise ValueError("Expeceted subset elements to be lists with two elements")
                     if type(element[0]) not in (int, list) or type(element[1]) != int:
-                            raise ValueError("Expected subset selements to consist of ints or lists of ints")
+                        raise ValueError("Expected subset selements to consist of ints or lists of ints")
 
         # Load and store point sets, if there are any.
         if matching_pointset_ids and matching_meta:
@@ -730,7 +726,7 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
         else:
             similarity.status = 'complete'
             similarity.scoring = scoring_info['similarity']
-            similarity.detailed_status =  ("Computed scoring for {} query " +
+            similarity.detailed_status = ("Computed scoring for {} query " +
                     "skeletons vs {} target skeletons.").format(
                             len(similarity.query_objects) if similarity.query_objects is not None else '?',
                             len(similarity.target_objects) if similarity.target_objects is not None else '?')

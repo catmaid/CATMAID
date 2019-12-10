@@ -94,6 +94,7 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
                 if len(params[key]) > 0:
                     annotation_names |= set(params[key].split(','))
         annotation_id_map = get_annotation_to_id_map(project_id, list(annotation_names))
+
         def to_id(inval) -> int: # Python wants the signatures for "conditional program variants" to be the same, incl variable names
             id = annotation_id_map.get(inval)
             if not id:
@@ -182,7 +183,7 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
         # Add sub annotations, if requested
         sa_ids = sub_annotation_ids.get(not_annotation_set)
         if sa_ids and len(sa_ids):
-           current_not_annotation_ids.update(sa_ids)
+            current_not_annotation_ids.update(sa_ids)
         not_annotation_id_sets.append(current_not_annotation_ids)
 
     # Build needed joins for annotated_with search criteria
@@ -327,7 +328,7 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
     for ent in cursor.fetchall():
         # Don't export objects with same ID multiple times
         if ent[0] in seen_ids:
-            continue;
+            continue
 
         class_name = allowed_class_idx[ent[5]]
         entity_info = {
@@ -601,8 +602,8 @@ def query_annotated_classinstances(request:HttpRequest, project_id:Optional[Unio
             range_length, with_annotations, with_timestamps=with_timestamps)
 
     return JsonResponse({
-      'entities': entities,
-      'totalRecords': num_total_records,
+        'entities': entities,
+        'totalRecords': num_total_records,
     })
 
 
@@ -1574,7 +1575,7 @@ def list_annotations_datatable(request:HttpRequest, project_id=None) -> JsonResp
     # due to the JOINS that are made).
     annotation_query = annotation_query.distinct()
 
-    #num_records = annotation_query.count() # len(annotation_query)
+    # num_records = annotation_query.count() # len(annotation_query)
     num_records = len(annotation_query)
 
     response:Dict[str, Any] = {

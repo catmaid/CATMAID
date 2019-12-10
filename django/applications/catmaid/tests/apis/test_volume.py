@@ -25,7 +25,9 @@ class VolumeTests(CatmaidApiTestCase):
 
     def setUp(self):
         super().setUp()
-        self.test_vol_1_box = BoxVolume(self.test_project_id, self.test_user_id, {
+        self.test_vol_1_box = BoxVolume(
+            self.test_project_id, self.test_user_id,
+            {
                 'title': 'Test volume 1',
                 'type': 'box',
                 'comment': 'Comment on test volume 1',
@@ -35,7 +37,8 @@ class VolumeTests(CatmaidApiTestCase):
                 'max_x': 1,
                 'max_y': 1,
                 'max_z': 1
-            })
+            }
+        )
         self.test_vol_1_id = self.test_vol_1_box.save()
 
         cursor = connection.cursor()
@@ -54,10 +57,9 @@ class VolumeTests(CatmaidApiTestCase):
     def test_volume_edit_title_only(self):
         self.fake_authentication()
         # Change title only
-        response = self.client.post('/%d/volumes/%d/' % (self.test_project_id,
-            self.test_vol_1_id), {
-                'title': 'New title'
-            })
+        response = self.client.post(
+            f'/{self.test_project_id}/volumes/{self.test_vol_1_id}/', {'title': 'New title'},
+        )
         self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(parsed_response, {
@@ -87,10 +89,9 @@ class VolumeTests(CatmaidApiTestCase):
     def test_volume_edit_comment_only(self):
         self.fake_authentication()
         # Change comment only
-        response = self.client.post('/%d/volumes/%d/' % (self.test_project_id,
-            self.test_vol_1_id), {
-                'comment': 'New comment'
-            })
+        response = self.client.post(
+            f'/{self.test_project_id}/volumes/{self.test_vol_1_id}/', {'comment': 'New comment'}
+        )
         self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(parsed_response, {
@@ -139,9 +140,9 @@ class VolumeTests(CatmaidApiTestCase):
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(parsed_response['name'], 'cube')
         self.assertEqual(parsed_response['bbox'], {
-                'min': {'x': 0, 'y': 0, 'z': 0},
-                'max': {'x': 1, 'y': 1, 'z': 1}
-            })
+            'min': {'x': 0, 'y': 0, 'z': 0},
+            'max': {'x': 1, 'y': 1, 'z': 1}
+        })
 
     def test_export_stl(self):
         self.fake_authentication()
@@ -170,76 +171,96 @@ class VolumeTests(CatmaidApiTestCase):
         assign_perm('can_import', self.test_user, self.test_project)
 
         # Make sure a basic mesh can be added (a single triangle).
-        response = self.client.post(f'/{self.test_project_id}/volumes/add', {
+        response = self.client.post(
+            f'/{self.test_project_id}/volumes/add',
+            {
                 "type": "trimesh",
                 "title": "Test volume",
                 "mesh": json.dumps([
                     [[0,0,0], [1,0,0], [0,1,0]],
                     [[0,1,2]],
                 ]),
-            })
+            },
+        )
         self.assertStatus(response, code=200)
 
         # No faces
-        response = self.client.post(f'/{self.test_project_id}/volumes/add', {
+        response = self.client.post(
+            f'/{self.test_project_id}/volumes/add',
+            {
                 "type": "trimesh",
                 "title": "Malformed volume",
                 "mesh": [
                     [[[0,0,0], [1,0,0], [0,1,0]]],
                 ],
-            })
+            },
+        )
         self.assertStatus(response, code=400)
-        response = self.client.post(f'/{self.test_project_id}/volumes/add', {
+        response = self.client.post(
+            f'/{self.test_project_id}/volumes/add',
+            {
                 "type": "trimesh",
                 "title": "Malformed volume",
                 "mesh": [
                     [[[0,0,0], [1,0,0], [0,1,0]]],
                     [],
                 ],
-            })
+            },
+        )
         self.assertStatus(response, code=400)
 
         # No points
         self.assertStatus(response, code=400)
-        response = self.client.post(f'/{self.test_project_id}/volumes/add', {
+        response = self.client.post(
+            f'/{self.test_project_id}/volumes/add',
+            {
                 "type": "trimesh",
                 "title": "Test volume",
                 "mesh": json.dumps([
                     [],
                     [[0,1,2]],
                 ]),
-            })
+            },
+        )
         self.assertStatus(response, code=400)
 
         # To few points
-        response = self.client.post(f'/{self.test_project_id}/volumes/add', {
+        response = self.client.post(
+            f'/{self.test_project_id}/volumes/add',
+            {
                 "type": "trimesh",
                 "title": "Test volume",
                 "mesh": json.dumps([
                     [[1,0,0], [0,1,0]],
                     [[0,1,2]],
                 ]),
-            })
+            },
+        )
         self.assertStatus(response, code=400)
 
         # Too many point dimensions
-        response = self.client.post(f'/{self.test_project_id}/volumes/add', {
+        response = self.client.post(
+            f'/{self.test_project_id}/volumes/add',
+            {
                 "type": "trimesh",
                 "title": "Test volume",
                 "mesh": json.dumps([
                     [[0,0,0,0], [1,0,0], [0,1,0]],
                     [[0,1,2]],
                 ]),
-            })
+            },
+        )
         self.assertStatus(response, code=400)
 
         # Too many face dimensions
-        response = self.client.post(f'/{self.test_project_id}/volumes/add', {
+        response = self.client.post(
+            f'/{self.test_project_id}/volumes/add', {
                 "type": "trimesh",
                 "title": "Test volume",
                 "mesh": json.dumps([
                     [[0,0,0], [1,0,0], [0,1,0]],
                     [[0,1,2,0]],
                 ]),
-            })
+            },
+        )
         self.assertStatus(response, code=400)

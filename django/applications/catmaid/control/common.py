@@ -161,7 +161,7 @@ def insert_into_log(project_id:Union[int, str], user_id, op_type:str, location=N
         "reset_reviews"
     ]
 
-    if not op_type in operation_type_array:
+    if op_type not in operation_type_array:
         raise ValueError(f'Operation type {op_type} not valid')
 
     new_log = Log()
@@ -254,7 +254,8 @@ def get_form_and_neurons(request:HttpRequest, project_id:Union[int,str], kwargs)
         project__id=project_id,
         relation__relation_name='expresses_in',
         class_instance_a__class_column__class_name='driver_line',
-        class_instance_b__class_column__class_name='neuron'):
+        class_instance_b__class_column__class_name='neuron',
+    ):
         neuron_id_to_driver_lines[cici.class_instance_b.id].append(cici.class_instance_a)
 
     all_neurons = list(all_neurons)
@@ -289,9 +290,9 @@ def cursor_fetch_dictionary(cursor) -> List[Dict]:
     "Returns all rows from a cursor as a dict"
     desc = cursor.description
     return [
-            dict(zip([col[0] for col in desc], row))
-            for row in cursor.fetchall()
-            ]
+        dict(zip([col[0] for col in desc], row))
+        for row in cursor.fetchall()
+    ]
 
 def get_relation_to_id_map(project_id:Union[int,str], name_constraints=None, cursor=None) -> Dict:
     """

@@ -30,7 +30,7 @@ try:
     from pylab import figure
     from matplotlib.backends.backend_svg import FigureCanvasSVG
 except ImportError:
-    logger.warning("CATMAID was unable to laod the matplotlib module. "
+    logger.warning("CATMAID was unable to load the matplotlib module. "
         "User analytics will not be available")
 
 
@@ -352,7 +352,7 @@ def splitBout(bout,increment) -> List[Bout]:
         currtime = nexttime
     return boutListOut
 
-def generateErrorImage(msg) -> matplotlib.figure.Figure:
+def generateErrorImage(msg) -> "matplotlib.figure.Figure":
     """ Creates an empty image (based on image nr. 1) and adds a message to it.
     """
     fig = plt.figure(1, figsize=(6,6))
@@ -360,7 +360,9 @@ def generateErrorImage(msg) -> matplotlib.figure.Figure:
     fig.suptitle(msg)
     return fig
 
-def generateReport(user_id, project_id, activeTimeThresh, start_date, end_date, all_writes=True) -> matplotlib.figure.Figure:
+def generateReport(
+    user_id, project_id, activeTimeThresh, start_date, end_date, all_writes=True
+) -> "matplotlib.figure.Figure":
     """ nts: node times
         cts: connector times
         rts: review times """
@@ -455,7 +457,7 @@ def generateReport(user_id, project_id, activeTimeThresh, start_date, end_date, 
 
     return fig
 
-def dailyActivePlotFigure(activebouts, ax:matplotlib.axes.Axes, start_date, end_date) -> matplotlib.axes.Axes:
+def dailyActivePlotFigure(activebouts, ax:"matplotlib.axes.Axes", start_date, end_date) -> "matplotlib.axes.Axes":
     """ Draws a plot of all bouts during each day between <start_date> and
     <end_date> to the plot given by <ax>.
     """
@@ -486,7 +488,7 @@ def dailyActivePlotFigure(activebouts, ax:matplotlib.axes.Axes, start_date, end_
 
     return ax
 
-def eventsPerIntervalPerDayPlot(ax, times, start_date, end_date, interval=60) -> matplotlib.axes.Axes:
+def eventsPerIntervalPerDayPlot(ax, times, start_date, end_date, interval=60) -> "matplotlib.axes.Axes":
     if np.mod(24 * 60, interval) > 0:
         raise ValueError('Interval in minutes must divide the day evenly')
 

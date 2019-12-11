@@ -52,9 +52,10 @@ Permissions:
 - If data is imported by a user, e.g. from a remote CATMAID instance, this user
   has all permissions over the imported data. If data was imported or created by
   someone else, the regular rules apply: permissions are granted if the user is
-  creator, superuser or has permission over the data's creator. This is done in
-  order to be able to maintain the original creator and editor data of the
-  imported data, should it be available.
+  creator, superuser or has permission over the data's creator. If user A has
+  permissions over user B's data, user A will also have permission to edit user
+  B's imported skeletons. This is done in order to be able to maintain the
+  original creator and editor data of the imported data, should it be available.
 
 Node filters:
 

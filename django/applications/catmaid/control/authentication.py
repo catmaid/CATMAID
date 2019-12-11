@@ -428,7 +428,7 @@ def can_edit_or_fail(user, ob_id:int, table_name) -> bool:
                 return True
             # If the object was created as part of an import transaction by this
             # user, grant permission too.
-            if user_has_imported(user.id, ob_id, table_name, cursor):
+            if user_domain_has_imported(user.id, ob_id, table_name, cursor):
                 return True
 
         raise PermissionError('User %s with id #%s cannot edit object #%s (from user #%s) from table %s' % (user.username, user.id, ob_id, rows[0][0], table_name))
@@ -475,6 +475,7 @@ def can_edit_all_or_fail(user, ob_ids, table_name) -> bool:
         # If a user imported all all objects, edit permission is granted. To
         # only check the nodes that aren't already allowed from above tests,
         # find unapproved nodes:
+        domain_list = list(domain)
         cursor.execute(f"""
             SELECT array_agg(t.id)
             FROM {table_name} t
@@ -483,10 +484,11 @@ def can_edit_all_or_fail(user, ob_ids, table_name) -> bool:
             WHERE user_id <> ANY(%(user_ids)s::integer[])
         """, {
             'obj_ids': ob_ids,
-            'user_ids': list(domain),
+            'user_ids': domain_list,
         })
         no_permission_ids = cursor.fetchall()[0][0]
-        if no_permission_ids and user_has_imported_all(user.id, no_permission_ids, table_name, cursor):
+        if no_permission_ids and users_have_imported_all(domain_list,
+                no_permission_ids, table_name, cursor):
             return True
 
         raise PermissionError('User %s cannot edit all of the %s unique objects from table %s' % (user.username, len(ob_ids), table_name))
@@ -562,12 +564,76 @@ def user_has_imported(user_id:int, obj_id:int, table_name:str, cursor=None) -> b
         raise
 
 
-def user_has_imported_all(user_id:int, obj_ids:[int], table_name:str, cursor=None) -> bool:
+def user_domain_has_imported(user_id:int, obj_id:int, table_name:str, cursor=None) -> bool:
     """Determine whether the user with ID <user_id> imported the object with ID
     <obj_id> in table <table_name>. This is done by looking at the oldest known
     instance of this object and whether the respective transactin it was created
     in is a skeletons.import annotation. Therefore, this currently has only a
     meaning for objects related to a skeleton import.
+    """
+    if not re.match('^[a-z_]+$', table_name):
+        raise Exception(f'Invalid table name: {table_name}')
+    if not cursor:
+        cursor = connection.cursor()
+
+    try:
+        # retrieve a row when the user_id belongs to a group with name equal to that associated with other_user_id
+        cursor.execute(f"""
+            WITH domain AS (
+                SELECT array_agg(user_id) AS user_ids
+                FROM (
+                    SELECT %(user_id)s AS user_id
+                    UNION ALL
+                    SELECT u2.id AS user_id
+                    FROM auth_user u1,
+                         auth_user u2,
+                         auth_group g,
+                         auth_user_groups ug
+                    WHERE u1.id = %(user_id)s
+                      AND u1.id = ug.user_id
+                      AND ug.group_id = g.id
+                      AND u2.username = g.name
+                ) user_domain
+            )
+            SELECT 1
+            FROM (
+                SELECT txid, edition_time
+                FROM {table_name}__with_history th
+                WHERE th.id = %(obj_id)s
+                ORDER BY edition_time ASC
+                LIMIT 1
+            ) t_origin
+            JOIN LATERAL (
+                SELECT 1
+                FROM catmaid_transaction_info cti, domain
+                WHERE cti.transaction_id = t_origin.txid
+                    -- Transaction ID wraparound match protection. A transaction
+                    -- ID is only unique together with a date.
+                    AND cti.execution_time = t_origin.edition_time
+                    AND label = 'skeletons.import'
+                    AND user_id = ANY(domain.user_ids)
+                LIMIT 1
+            ) t_origin_tx
+                ON TRUE
+        """, {
+            'obj_id': obj_id,
+            'user_id': user_id,
+        })
+        return cursor.rowcount > 0
+    except ProgrammingError as e:
+        # In case of a non existent target table, we assume this table is
+        # unsupported. This import check works currently only for tables with
+        # history tracking.
+        if '__with_history" does not exist' in e.message:
+            return False
+        raise
+
+def users_have_imported_all(user_ids:[int], obj_ids:[int], table_name:str, cursor=None) -> bool:
+    """Determine whether the users with IDs <user_ids> imported the objects with
+    IDs <obj_ids> in table <table_name>. This is done by looking at the oldest
+    known instance of this object and whether the respective transactin it was
+    created in is a skeletons.import annotation. Therefore, this currently has
+    only a meaning for objects related to a skeleton import.
     """
     if not re.match('^[a-z_]+$', table_name):
         raise ValueError(f'Invalid table name: {table_name}')
@@ -598,13 +664,13 @@ def user_has_imported_all(user_id:int, obj_ids:[int], table_name:str, cursor=Non
                     -- ID is only unique together with a date.
                     AND cti.execution_time = t_origin.edition_time
                     AND label = 'skeletons.import'
-                    AND user_id = %(user_id)s
+                    AND user_id = ANY(%(user_ids)s::integer[])
                 LIMIT 1
             ) t_origin_label
                 ON TRUE
         """, {
             'obj_ids': obj_ids,
-            'user_id': user_id,
+            'user_ids': user_ids,
         })
         return cursor.rowcount == len(obj_ids)
     except ProgrammingError as e:
@@ -614,6 +680,10 @@ def user_has_imported_all(user_id:int, obj_ids:[int], table_name:str, cursor=Non
         if '__with_history" does not exist' in e.message:
             return False
         raise
+
+
+def user_has_imported_all(user_id:int, obj_ids:[int], table_name:str, cursor=None) -> bool:
+    return users_have_imported_all([user_id], obj_ids, table_name, cursor)
 
 
 def user_domain(cursor, user_id) -> Set:

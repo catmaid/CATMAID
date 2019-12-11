@@ -13,7 +13,7 @@ from catmaid.control.authentication import (can_edit_all_or_fail,
 from catmaid.control.common import get_relation_to_id_map, get_class_to_id_map
 from catmaid.models import ClassInstance, ClassInstanceClassInstance, Log
 from catmaid.models import Treenode, TreenodeClassInstance, TreenodeConnector
-from catmaid.models import User
+from catmaid.models import User, Group
 from catmaid.state import make_nocheck_state
 
 from .common import CatmaidApiTestCase
@@ -1312,3 +1312,24 @@ class TreenodesApiTests(CatmaidApiTestCase):
         with self.assertRaises(PermissionError, msg="Should not be able to edit other user's skeletons."):
             for tn in original_treenode_ids:
                 can_edit_or_fail(self.test_user, tn, 'treenode')
+
+        # Now test if a third user, who has no permission over the test user has
+        # permission on the imported nodes. The user shouldn't have access. Then
+        # the third user is given permission over the test user. The third user
+        # should now also have permission on the imported data.
+        third_user = User.objects.create(username='Third user')
+        with self.assertRaises(PermissionError, msg="Should not be able to edit other user's skeletons."):
+            can_edit_all_or_fail(third_user, treenode_ids, 'treenode')
+        with self.assertRaises(PermissionError, msg="Should not be able to edit other user's skeletons."):
+            for tn in treenode_ids:
+                can_edit_or_fail(third_user, tn, 'treenode')
+
+        # Assign permissions to third user on import user (test user)
+        test_user_group, created = Group.objects.get_or_create(name=self.test_user.username)
+        test_user_group.user_set.add(third_user)
+
+        # Check if the third user can now edit, both all and individually. These
+        # functions raise an error if they fail.
+        can_edit_all_or_fail(third_user, treenode_ids, 'treenode')
+        for tn in parsed_response:
+            can_edit_or_fail(third_user, tn[0], 'treenode')

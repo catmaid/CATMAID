@@ -82,4 +82,7 @@ it was imported by accident. This happens if the importing users has no
 permission over data of the users who originally created the imported skeleton.
 To avoid this, there is the following extra rule: a user who imported a node or
 skeleton has full permissions over it, just as if it was their own. No
-permissions are granted this way on the imported data of other users.
+permissions are granted this way on the imported data of other users. However,
+if user A has imported data and user B has permission on that user's data (by
+being in user A's user group), user B will also have permissions over the
+imported data.

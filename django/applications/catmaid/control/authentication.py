@@ -452,7 +452,6 @@ def can_edit_all_or_fail(user, ob_ids, table_name) -> bool:
     ob_ids = list(ob_ids)
 
     cursor = connection.cursor()
-    #cursor.execute("SELECT user_id, count(*) FROM %s WHERE id IN (%s) GROUP BY user_id" % (table_name, str_ob_ids))
     cursor.execute(f"""
         SELECT user_id, count(*)
         FROM {table_name} t
@@ -498,7 +497,7 @@ def user_can_edit(cursor, user_id, other_user_id) -> bool:
     this function is equivalent to 'other_user_id in user_domain(cursor, user_id), but consumes less resources."""
     # the group with identical name to the username is implicit, doesn't have to exist. therefore, check this edge case before querying:
     if user_id == other_user_id:
-        return true
+        return True
     # retrieve a row when the user_id belongs to a group with name equal to that associated with other_user_id
     cursor.execute("""
     select 1

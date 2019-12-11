@@ -310,7 +310,7 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
         else:
             filters.append('css.num_imported_nodes > 0')
             filters.append('css.num_imported_nodes = css.num_nodes')
-    elif import_only == None:
+    elif import_only is None:
         pass
     else:
         raise ValueError(f'Unknown import constraint mode: {import_only}')

@@ -5,7 +5,7 @@ from itertools import groupby
 import json
 import re
 from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
-from psycopg2.errors import ProgrammingError
+from psycopg2 import ProgrammingError
 
 from guardian.core import ObjectPermissionChecker
 from guardian.models import UserObjectPermission, GroupObjectPermission

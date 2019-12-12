@@ -379,6 +379,9 @@ Miscellaneous:
 - 3D viewer: the handling of intersecting transparent objects has improved and
   works like expected in most situations.
 
+- Synapse plot: a missing skeleton source interface method was added, making it
+  now possible to also remove skeletons from the widget.
+
 ## Maintenance updates
 
 - CLI Exporter: if users should be exported, also export users of volumes.

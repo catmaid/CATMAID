@@ -315,6 +315,15 @@
         (function() { this.updateGraph(); }).bind(this));
   };
 
+  SynapsePlot.prototype.removeSkeletons = function(skeletonIds) {
+    var models = this.models;
+    this.clear();
+    for (let skeletonId of skeletonIds) {
+      delete models[skeletonId];
+    }
+    this.append(models);
+  };
+
   SynapsePlot.prototype.onchangeSynapseThreshold = function(ev) {
     // Get the number from the event soure, which is a textfield
     var val = Number(ev.target.value);

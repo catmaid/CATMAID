@@ -382,6 +382,9 @@ Miscellaneous:
 - Synapse plot: a missing skeleton source interface method was added, making it
   now possible to also remove skeletons from the widget.
 
+- Synapse plot: skeletons can now be added to the widget again. This was
+  temporarily broken for CATMAID instances using a sub-folder in their URL.
+
 ## Maintenance updates
 
 - CLI Exporter: if users should be exported, also export users of volumes.

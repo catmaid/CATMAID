@@ -646,9 +646,14 @@
           CATMAID.session.deferredPermissionCheckObjects.clear();
           // Request import information for local nodes
           if (!api) {
-            CATMAID.Treenodes.getImportingUser(project.id, node.id, true)
+            let queryNodeId = SkeletonAnnotations.isRealNode(node.id) ?
+                node.id : SkeletonAnnotations.getChildOfVirtualNode(node.id);
+            CATMAID.Treenodes.getImportingUser(project.id, queryNodeId, true)
               .then(result => {
-                if (result.importing_user_id == CATMAID.session.userid) {
+                if (result.importing_user_id == CATMAID.session.userid ||
+                    CATMAID.session.domain.has(result.importing_user_id))  {
+                  // Reference the original node to reflect information on
+                  // virtual nodes properly.
                   CATMAID.session.deferredPermissionCheckObjects.add(node.id);
                 }
               })

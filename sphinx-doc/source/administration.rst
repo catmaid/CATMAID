@@ -3,10 +3,39 @@
 Administering a CATMAID Instance
 ================================
 
-This section presents information on how to update a running CATMAID
-instance and how to backup/restore its database. These administrative
-tasks might be needed from time to time. Newer versions of
-CATMAID (obviously) often include bug fixes and new features.
+This section presents information on how to update a running CATMAID instance
+and how to backup/restore its database. These administrative tasks might be
+needed from time to time. Newer versions of CATMAID (obviously) often include
+bug fixes and new features.
+
+Often times, administrative tasks require CATMAID to be restarted. Generally, it
+is advisable to announce this to active users. The first section has information
+on how to see all active connections if ``uwsgi`` is used as application server.
+
+List active connections
+-----------------------
+
+To get an idea how many active connections there are to a CATMAID back-end and
+``uwsgi`` is used as WSGI server, the tool ``uwsgitop`` can come in handy. It
+has to be installed separately into the ``virtualenv``::
+
+    pip install uwsgitop
+
+Then make sure ``uwsgi`` is configured to export statistics through a socket
+file. This can be done by adding the following two lines to the respective
+``uwsgi.ini`` file for the CATMAID setup::
+
+    stats = <path-to-run-dir>/uwsgi-stats.socket
+    memory-report = true
+
+Note that ``<path-to-run-dir>`` needs to be writable by the user running
+``uwsgi``. Once ``uwsgi`` is restarted and exports the socket file, it can be
+queried using ``uwsgitop`` (make sure to have the ``virtualenv`` active)::
+
+    uwsgitop <path-to-run-dir>/uwsgi-stats.socket
+
+It will list cumulative and current statistics for each worker process, which is
+useful to gauge the impact of a restart.
 
 Updating to a newer version
 ---------------------------

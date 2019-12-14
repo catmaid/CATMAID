@@ -16,6 +16,8 @@
     this.widgetID = this.registerInstance();
     CATMAID.SkeletonSource.call(this, true);
 
+    this.centerMode = 'first-branch';
+
     this.models = {};
     this.lines = {};
   };
@@ -93,18 +95,31 @@
         radius.style.width = "40px";
         controls.appendChild(radius);
 
-        CATMAID.DOM.appendSelect(controls, "center", ' Center: ',
-            ['First branch node',
-             'Root node',
-             'Active node',
-             'Bounding box center',
-             'Average node position',
-             'Highest centrality node',
-             'Highest signal flow centrality']);
+        let centerModes = ['first-branch', 'root', 'active-node', 'bb-center',
+            'average-node-position', 'highest-centrality', 'highest-signal-flow'];
+        CATMAID.DOM.appendElement(controls, {
+          type: 'select',
+          relativeId: "center",
+          label: ' Center: ',
+          entries: centerModes.map(cm => {
+            return {
+              title: MorphologyPlot.CenterModes[cm].name,
+              value: cm,
+            };
+          }),
+          title: "The strategy how to select the center node of a skeleton.",
+          value: this.centerMode,
+          onchange: e => {
+            this.centerMode = e.target.value;
+            let tagField = document.getElementById(`morphology-plot-center-tag-${this.widgetID}`);
+            tagField.disabled = !(this.centerMode.startsWith('tagged') && tagField);
+            this.redraw();
+          },
+        });
 
         var redraw = document.createElement('input');
         redraw.setAttribute("type", "button");
-        redraw.setAttribute("value", "Draw");
+        redraw.setAttribute("value", "Redraw");
         redraw.onclick = this.redraw.bind(this);
         controls.appendChild(redraw);
       },
@@ -269,7 +284,6 @@
 
   MorphologyPlot.prototype.redraw = function() {
     this.mode =  $('#morphology_plot_buttons' + this.widgetID + '_function option:selected').text();
-    this.center_mode = $('#morphology_plot_buttons' + this.widgetID + '_center option:selected').text();
     this.radius_increment = Number($('#morphology_plot_step' + this.widgetID).val());
 
     this._populateLines(Object.keys(this.models));
@@ -301,7 +315,7 @@
         arbor.root = row[0];
       }
     });
-    var center = this._computeCenter(this.center_mode, arbor, positions, line.connectors);
+    var center = this._computeCenter(this.centerMode, arbor, positions, line.connectors);
     if (center.error) {
       CATMAID.warn(center.error + " for " + CATMAID.NeuronNameService.getInstance().getName(skeleton_id));
       center = this._computeCenter(center.alternative_mode, arbor, positions, line.connectors);
@@ -365,91 +379,124 @@
     }
   };
 
-  MorphologyPlot.prototype._computeCenter = function(center_mode, arbor, positions, connectors) {
-    if ('Root node' === center_mode) return positions[arbor.root];
-    if ('Active node' === center_mode) return SkeletonAnnotations.getActiveNodeProjectVector3();
-    if ('First branch node' === center_mode) {
-      var node = arbor.nextBranchNode(arbor.root);
-      return positions[null === node ? arbor.root : node];
+  MorphologyPlot.prototype._computeCenter = function(centerMode, arbor, positions, connectors) {
+    let centerStrategy = MorphologyPlot.CenterModes[centerMode];
+    if (!centerStrategy) {
+      throw new CATMAID.ValueError(`Unknown center mode: ${centerMode}`);
     }
-    if ('Bounding box center' === center_mode) {
-      var b = Object.keys(positions).reduce(function(b, node) {
-        var v = positions[node];
-        b.xMin = Math.min(b.xMin, v.x);
-        b.xMax = Math.max(b.xMax, v.x);
-        b.yMin = Math.min(b.yMin, v.y);
-        b.yMax = Math.max(b.yMax, v.y);
-        b.zMin = Math.min(b.zMin, v.z);
-        b.zMax = Math.max(b.zMax, v.z);
-        return b;
-      }, {xMin: Number.MAX_VALUE,
-          xMax: 0,
-          yMin: Number.MAX_VALUE,
-          yMax: 0,
-          zMin: Number.MAX_VALUE,
-          zMax: 0});
-      return new THREE.Vector3((b.xMax - b.xMin) / 2,
-                               (b.yMax - b.yMin) / 2,
-                               (b.zMax - b.zMin) / 2);
-    }
-    if ('Average node position' === center_mode) {
-      var nodes = Object.keys(positions),
-          len = nodes.length,
-          c = nodes.reduce(function(c, node) {
-            var v = positions[node];
-            c.x += v.x / len;
-            c.y += v.y / len;
-            c.z += v.z / len;
-            return c;
-          }, {x: 0, y: 0, z: 0});
-      return new THREE.Vector3(c.x, c.y, c.z);
-    }
-    if ('Highest centrality node' === center_mode) {
-      var c = arbor.betweennessCentrality(true),
-          sorted = Object.keys(c).sort(function(a, b) {
-            var c1 = c[a],
-                c2 = c[b];
-            return c1 === c2 ? 0 : (c1 > c2 ? 1 : -1);
-          }),
-          highest = sorted[Math.floor(sorted.length / 2)];
-      return positions[highest];
-    }
-    if ('Highest signal flow centrality' === center_mode) {
-      var io = connectors.reduce(function(o, row) {
-        var a = o[row[2]], // row[2] is 0 for pre, 1 for post
-            node = row[0],
-            count = a[node];
-        if (undefined === count) a[node] = 1;
-        else a[node] = count + 1;
-        return o;
-      }, [{}, {}]); // 0 for pre, 1 for post
-      if (0 === Object.keys(io[0]).length || 0 === Object.keys(io[1]).length) {
-        return {error: 'No input or output synapses',
-                alternative_mode: 'First branch node'};
+    return centerStrategy.getCenter(arbor, positions, connectors);
+  };
+
+  MorphologyPlot.CenterModes = {
+    'root': {
+      name: 'Root node',
+      getCenter: (arbor, positions, connectors) => {
+        return positions[arbor.root];
       }
-      var fc = arbor.flowCentrality(io[0], io[1]),
-          sorted = Object.keys(positions).sort(function(a, b) {
-            var c1 = fc[a].sum,
-                c2 = fc[b].sum;
-            return c1 === c2 ? 0 : (c1 > c2 ? 1 : -1);
-          }),
-          highest = sorted[Math.floor(sorted.length / 2)],
-          max = fc[highest].sum,
-          identical = sorted.filter(function(node) {
-            return max === fc[node].sum;
+    },
+    'active-node': {
+      name: 'Active node',
+      getCenter: (arbor, positions, connectors) => {
+        return SkeletonAnnotations.getActiveNodeProjectVector3();
+      }
+    },
+    'first-branch': {
+      name: 'First branch node',
+      getCenter: (arbor, positions, connectors) => {
+        let node = arbor.nextBranchNode(arbor.root);
+        return positions[null === node ? arbor.root : node];
+      }
+    },
+    'bb-center': {
+      name: 'Bounding box center',
+      getCenter: (arbor, positions, connectors) => {
+        let b = Object.keys(positions).reduce(function(b, node) {
+          let v = positions[node];
+          b.xMin = Math.min(b.xMin, v.x);
+          b.xMax = Math.max(b.xMax, v.x);
+          b.yMin = Math.min(b.yMin, v.y);
+          b.yMax = Math.max(b.yMax, v.y);
+          b.zMin = Math.min(b.zMin, v.z);
+          b.zMax = Math.max(b.zMax, v.z);
+          return b;
+        }, {xMin: Number.MAX_VALUE,
+            xMax: 0,
+            yMin: Number.MAX_VALUE,
+            yMax: 0,
+            zMin: Number.MAX_VALUE,
+            zMax: 0});
+        return new THREE.Vector3((b.xMax - b.xMin) / 2,
+                                 (b.yMax - b.yMin) / 2,
+                                 (b.zMax - b.zMin) / 2);
+      }
+    },
+    'average-node-position': {
+      name: 'Average node position',
+      getCenter: (arbor, positions, connectors) => {
+        let nodes = Object.keys(positions),
+            len = nodes.length,
+            c = nodes.reduce(function(c, node) {
+              var v = positions[node];
+              c.x += v.x / len;
+              c.y += v.y / len;
+              c.z += v.z / len;
+              return c;
+            }, {x: 0, y: 0, z: 0});
+        return new THREE.Vector3(c.x, c.y, c.z);
+      }
+    },
+    'highest-centrality': {
+      name: 'Highest centrality node',
+      getCenter: (arbor, positions, connectors) => {
+        let c = arbor.betweennessCentrality(true),
+            sorted = Object.keys(c).sort(function(a, b) {
+              var c1 = c[a],
+                  c2 = c[b];
+              return c1 === c2 ? 0 : (c1 > c2 ? 1 : -1);
+            }),
+            highest = sorted[Math.floor(sorted.length / 2)];
+        return positions[highest];
+      }
+    },
+    'highest-signal-flow': {
+      name: 'Highest signal flow centrality',
+      getCenter: (arbor, positions, connectors) => {
+        var io = connectors.reduce(function(o, row) {
+          var a = o[row[2]], // row[2] is 0 for pre, 1 for post
+              node = row[0],
+              count = a[node];
+          if (undefined === count) a[node] = 1;
+          else a[node] = count + 1;
+          return o;
+        }, [{}, {}]); // 0 for pre, 1 for post
+        if (0 === Object.keys(io[0]).length || 0 === Object.keys(io[1]).length) {
+          return {error: 'No input or output synapses',
+                  alternative_mode: 'First branch node'};
+        }
+        var fc = arbor.flowCentrality(io[0], io[1]),
+            sorted = Object.keys(positions).sort(function(a, b) {
+              var c1 = fc[a].sum,
+                  c2 = fc[b].sum;
+              return c1 === c2 ? 0 : (c1 > c2 ? 1 : -1);
+            }),
+            highest = sorted[Math.floor(sorted.length / 2)],
+            max = fc[highest].sum,
+            identical = sorted.filter(function(node) {
+              return max === fc[node].sum;
+            });
+        if (identical.length > 1) {
+          // Pick the most central
+          var bc = arbor.betweennessCentrality(true);
+          identical.sort(function(a, b) {
+            var c1 = bc[a],
+                c2 = bc[b];
+            // Sort descending
+            return c1 == c2 ? 0 : (c1 < c2 ? 1 : -1);
           });
-      if (identical.length > 1) {
-        // Pick the most central
-        var bc = arbor.betweennessCentrality(true);
-        identical.sort(function(a, b) {
-          var c1 = bc[a],
-              c2 = bc[b];
-          // Sort descending
-          return c1 == c2 ? 0 : (c1 < c2 ? 1 : -1);
-        });
-        highest = identical[0];
+          highest = identical[0];
+        }
+        return positions[highest];
       }
-      return positions[highest];
     }
   };
 

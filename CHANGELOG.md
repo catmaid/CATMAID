@@ -348,6 +348,12 @@ Miscellaneous:
   the default size. Also copied fields don't contain the content of the source
   field anymore.
 
+- Morphology plot: two new center computation modes have been added: Tagged node
+  closest to root, Tagged node most distant from root. Both use the tag input
+  field to the right of the center mode selector. Either pressing enter or
+  Redraw after a tag change will recompute the plot. If no node is found with
+  the respective tag, the root is used and a warning is displayed.
+
 - The speed of bulk operations on skeletons has changed (e.g. splitting, joins,
   reroot).
 

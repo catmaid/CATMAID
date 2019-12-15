@@ -513,32 +513,32 @@
 
           return arborParser;
         })
-        .then(function(arborParser) {
-          let arbor = arborParser.arbor;
-          let positions = arborParser.positions;
+        .then(arborParser => CATMAID.Skeletons.distanceBetweenNodes(
+            arborParser.arbor, arborParser.positions));
+    },
 
-          // Reroot arbor to node A for easy upstream traversal from node B.
-          arbor.reroot(nodeA);
+    distanceBetweenNodesInArbor: function(arbor, positions, nodeA, nodeB) {
+      // Reroot arbor to node A for easy upstream traversal from node B.
+      arbor.reroot(nodeA);
 
-          // Compuet distance from node B to upstream node A.
-          let distance = 0;
-          let childPosition = positions[nodeB];
-          let parent = arbor.edges[nodeB];
-          while (parent) {
-            let parentPosition = positions[parent];
-            distance += childPosition.distanceTo(parentPosition);
+      // Compuet distance from node B to upstream node A.
+      let distance = 0;
+      let childPosition = positions[nodeB];
+      let parent = arbor.edges[nodeB];
+      while (parent) {
+        let parentPosition = positions[parent];
+        distance += childPosition.distanceTo(parentPosition);
 
-            // If the current parent node is found, return with the calculated length.
-            if (parent == nodeA) {
-              return distance;
-            }
+        // If the current parent node is found, return with the calculated length.
+        if (parent == nodeA) {
+          return distance;
+        }
 
-            parent = arbor.edges[parent];
-            childPosition = parentPosition;
-          }
+        parent = arbor.edges[parent];
+        childPosition = parentPosition;
+      }
 
-          return null;
-        });
+      return null;
     },
 
     /**

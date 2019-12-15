@@ -96,7 +96,8 @@
         controls.appendChild(radius);
 
         let centerModes = ['first-branch', 'root', 'active-node', 'bb-center',
-            'average-node-position', 'highest-centrality', 'highest-signal-flow'];
+            'tagged-closest-root', 'tagged-distal-root', 'average-node-position',
+            'highest-centrality', 'highest-signal-flow'];
         CATMAID.DOM.appendElement(controls, {
           type: 'select',
           relativeId: "center",
@@ -113,6 +114,21 @@
             this.centerMode = e.target.value;
             let tagField = document.getElementById(`morphology-plot-center-tag-${this.widgetID}`);
             tagField.disabled = !(this.centerMode.startsWith('tagged') && tagField);
+            this.redraw();
+          },
+        });
+
+        CATMAID.DOM.appendElement(controls, {
+          id: `morphology-plot-center-tag-${this.widgetID}`,
+          type: 'text',
+          label: 'Tag',
+          title: 'The tag used for tag based center computation',
+          value: this.centerTag,
+          disabled: !this.centerMode.startsWith('tagged'),
+          onchange: event => {
+            this.centerTag = event.target.value.trim();
+          },
+          onenter: event => {
             this.redraw();
           },
         });
@@ -260,7 +276,7 @@
     fetchSkeletons(
         skeleton_ids,
         function(skeleton_id) {
-          return `${project.id}/${skeleton_id}/1/0/compact-skeleton`;
+          return `${project.id}/${skeleton_id}/1/1/compact-skeleton`;
         },
         function(skeleton_id) { return {}; }, // post
         (function(skeleton_id, json) {
@@ -268,7 +284,8 @@
                                      connectors: json[1].filter(function(con) {
                                        // Filter out non-synaptic connections
                                        return con[2] === 0 || con[2] === 1;
-                                     })};
+                                     }),
+                                     tags: json[2]};
         }).bind(this),
         (function(skeleton_id) {
           // Failed loading
@@ -315,10 +332,10 @@
         arbor.root = row[0];
       }
     });
-    var center = this._computeCenter(this.centerMode, arbor, positions, line.connectors);
+    var center = this._computeCenter(this.centerMode, arbor, positions, line.connectors, line.tags);
     if (center.error) {
-      CATMAID.warn(center.error + " for " + CATMAID.NeuronNameService.getInstance().getName(skeleton_id));
-      center = this._computeCenter(center.alternative_mode, arbor, positions, line.connectors);
+      CATMAID.warn(`${center.error} for ${CATMAID.NeuronNameService.getInstance().getName(skeleton_id)}`);
+      center = this._computeCenter(center.alternative_mode, arbor, positions, line.connectors, line.tags);
     }
 
     if ('Sholl analysis' === this.mode) {
@@ -379,37 +396,37 @@
     }
   };
 
-  MorphologyPlot.prototype._computeCenter = function(centerMode, arbor, positions, connectors) {
+  MorphologyPlot.prototype._computeCenter = function(centerMode, arbor, positions, connectors, tags) {
     let centerStrategy = MorphologyPlot.CenterModes[centerMode];
     if (!centerStrategy) {
       throw new CATMAID.ValueError(`Unknown center mode: ${centerMode}`);
     }
-    return centerStrategy.getCenter(arbor, positions, connectors);
+    return centerStrategy.getCenter(this, arbor, positions, connectors, tags);
   };
 
   MorphologyPlot.CenterModes = {
     'root': {
       name: 'Root node',
-      getCenter: (arbor, positions, connectors) => {
+      getCenter: (widget, arbor, positions, connectors) => {
         return positions[arbor.root];
       }
     },
     'active-node': {
       name: 'Active node',
-      getCenter: (arbor, positions, connectors) => {
+      getCenter: (widget, arbor, positions, connectors) => {
         return SkeletonAnnotations.getActiveNodeProjectVector3();
       }
     },
     'first-branch': {
       name: 'First branch node',
-      getCenter: (arbor, positions, connectors) => {
+      getCenter: (widget, arbor, positions, connectors) => {
         let node = arbor.nextBranchNode(arbor.root);
         return positions[null === node ? arbor.root : node];
       }
     },
     'bb-center': {
       name: 'Bounding box center',
-      getCenter: (arbor, positions, connectors) => {
+      getCenter: (widget, arbor, positions, connectors) => {
         let b = Object.keys(positions).reduce(function(b, node) {
           let v = positions[node];
           b.xMin = Math.min(b.xMin, v.x);
@@ -432,7 +449,7 @@
     },
     'average-node-position': {
       name: 'Average node position',
-      getCenter: (arbor, positions, connectors) => {
+      getCenter: (widget, arbor, positions, connectors) => {
         let nodes = Object.keys(positions),
             len = nodes.length,
             c = nodes.reduce(function(c, node) {
@@ -447,7 +464,7 @@
     },
     'highest-centrality': {
       name: 'Highest centrality node',
-      getCenter: (arbor, positions, connectors) => {
+      getCenter: (widget, arbor, positions, connectors) => {
         let c = arbor.betweennessCentrality(true),
             sorted = Object.keys(c).sort(function(a, b) {
               var c1 = c[a],
@@ -460,7 +477,7 @@
     },
     'highest-signal-flow': {
       name: 'Highest signal flow centrality',
-      getCenter: (arbor, positions, connectors) => {
+      getCenter: (widget, arbor, positions, connectors) => {
         var io = connectors.reduce(function(o, row) {
           var a = o[row[2]], // row[2] is 0 for pre, 1 for post
               node = row[0],
@@ -471,7 +488,7 @@
         }, [{}, {}]); // 0 for pre, 1 for post
         if (0 === Object.keys(io[0]).length || 0 === Object.keys(io[1]).length) {
           return {error: 'No input or output synapses',
-                  alternative_mode: 'First branch node'};
+                  alternative_mode: 'first-branch'};
         }
         var fc = arbor.flowCentrality(io[0], io[1]),
             sorted = Object.keys(positions).sort(function(a, b) {
@@ -497,12 +514,93 @@
         }
         return positions[highest];
       }
-    }
+    },
+    'tagged-closest-root': {
+      name: 'Tagged node closest to root',
+      getCenter: (widget, arbor, positions, connectors, tags) => {
+        let error;
+        let taggedNodes = tags[widget.centerTag];
+        let result = {};
+        // We need a copy, because the distance computation involves rerooting.
+        // Technically, we don't need this, because we compare against root, but to
+        // avoid potential changes, a copy is safer to operate on and isn't expensive in
+        // this context.
+        let arborCopy = arbor.clone();
+
+        if (taggedNodes && taggedNodes.length > 0) {
+          if (taggedNodes.length === 1) {
+            return positions[taggedNodes[0]];
+          }
+          let centerNodeId, minNode, minDistance = Infinity;
+          for (let treenodeId of taggedNodes) {
+            let distance = CATMAID.Skeletons.distanceBetweenNodesInArbor(arborCopy, positions,
+                arbor.root, treenodeId);
+            if (distance < minDistance) {
+              minDistance = distance;
+              minNode = treenodeId;
+            }
+          }
+          if (minNode) {
+            return positions[minNode];
+          }
+          error = 'Could not find minimum distance node';
+        } else {
+          error = 'No nodes with this tag found. Using root instead.';
+        }
+        return  {
+          error: error,
+          alternative_mode: 'root',
+        };
+      }
+    },
+    'tagged-distal-root': {
+      name: 'Tagged node most distant from root',
+      getCenter: (widget, arbor, positions, connectors, tags) => {
+        let error;
+        let taggedNodes = tags[widget.centerTag];
+        let result = {};
+        // We need a copy, because the distance computation involves rerooting.
+        // Technically, we don't need this, because we compare against root, but to
+        // avoid potential changes, a copy is safer to operate on and isn't expensive in
+        // this context.
+        let arborCopy = arbor.clone();
+
+        if (taggedNodes && taggedNodes.length > 0) {
+          if (taggedNodes.length === 1) {
+            return positions[taggedNodes[0]];
+          }
+          let centerNodeId, maxNode, maxDistance = -Infinity;
+          for (let treenodeId of taggedNodes) {
+            let distance = CATMAID.Skeletons.distanceBetweenNodesInArbor(arborCopy, positions,
+                arbor.root, treenodeId);
+            if (distance > maxDistance) {
+              maxDistance = distance;
+              maxNode = treenodeId;
+            }
+          }
+          if (maxNode) {
+            return positions[maxNode];
+          }
+          error = 'Could not find maximum distance node';
+        } else {
+          error = 'No nodes with this tag found. Using root instead.';
+        }
+        return  {
+          error: error,
+          alternative_mode: 'root',
+        };
+      }
+    },
   };
 
   MorphologyPlot.prototype.draw = function() {
     var containerID = '#morphology_plot_div' + this.widgetID,
         container = $(containerID);
+
+    if (this.centerMode.startsWith('tagged') && (!this.centerTag || this.centerTag.length === 0)) {
+      CATMAID.warn('A tag based center mode is selected, but no tag is provided');
+      return;
+    }
 
     // Clear existing plot if any
     container.empty();

@@ -470,6 +470,8 @@ Miscellaneous:
   It is false by default and can be turned on to show empty projects, including
   the classification dummy project.
 
+- Measurement table: fix CSV export for aggregated multi-fragment results.
+
 ## 2019.06.20
 
 Contributors: Chris Barnes, Albert Cardona, Andrew Champion, Stephan Gerhard, Pat Gunn, William Patton, Tom Kazimiers

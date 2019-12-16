@@ -502,8 +502,13 @@
     });
 
     var header = this.getLabels().map(CATMAID.tools.quote).join(',');
-    var csv = header + '\n' + skeletonRows.map(function(row) {
-      return '"' + $(row[0]).text() + '",' + row.slice(1).join(',');
+    var csv = header + '\n' + skeletonRows.map(row => {
+      // In case fragments of the same skeleton are aggregated, the start node
+      // ID column will contain a list.
+      if (row[2] instanceof Array) {
+        return `"${$(row[0]).text()}",${row[1]},"${row[2].join(',')}",${row.slice(3).join(',')}`;
+      }
+      return `"${$(row[0]).text()}",${row.slice(1).join(',')}`;
     }).join('\n');
     var blob = new Blob([csv], {type: 'text/plain'});
     saveAs(blob, "skeleton_measurements.csv");

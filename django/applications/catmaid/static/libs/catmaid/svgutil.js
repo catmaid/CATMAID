@@ -697,7 +697,8 @@
    *          ...,
    *          ...];
    */
-  SVGUtil.insertMultiLinePlot = function(container, containerID, plot_id, lines, x_label, y_label) {
+  SVGUtil.insertMultiLinePlot = function(container, containerID, plot_id, lines, x_label, y_label,
+      interpolationMode = 'basis') {
 
     // Dimensions and padding
     var margin = {top: 20, right: 20, bottom: 30, left: 40},
@@ -742,7 +743,7 @@
 
     // Create a line function
     var line = d3.svg.line()
-        .interpolate("basis")
+        .interpolate(interpolationMode)
         .x(function(d) { return xR(d.x); })
         .y(function(d) { return yR(d.y); });
 

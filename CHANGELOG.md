@@ -311,6 +311,21 @@ Treenode table:
 
 - Remote skeletons are now supported. They can be mixed with local skeletons.
 
+Morphology plot:
+
+- Two new center computation modes have been added: Tagged node closest to root,
+  Tagged node most distant from root. Both use the tag input field to the right
+  of the center mode selector. Either pressing enter or Redraw after a tag
+  change will recompute the plot. If no node is found with the respective tag,
+  the root is used and a warning is displayed.
+
+- It is now possible to select the interpolation mode of the plot. So far the
+  plotted data was always interpolated with a basis spline. This isn't
+  necessarily what is required for a particular plot, e.g. if the sample values
+  have to be intersected. To allow this, a drop-down menu with the following
+  interpolation options has been added: basis spline, linear, cardinal spline,
+  monotone, step before and step after.
+
 Spaces:
 
 - Users with the new "can_fork" permission have a new user menu entry in the
@@ -347,12 +362,6 @@ Miscellaneous:
 - Neuron search: search fields will now expand if their content is bigger than
   the default size. Also copied fields don't contain the content of the source
   field anymore.
-
-- Morphology plot: two new center computation modes have been added: Tagged node
-  closest to root, Tagged node most distant from root. Both use the tag input
-  field to the right of the center mode selector. Either pressing enter or
-  Redraw after a tag change will recompute the plot. If no node is found with
-  the respective tag, the root is used and a warning is displayed.
 
 - The speed of bulk operations on skeletons has changed (e.g. splitting, joins,
   reroot).

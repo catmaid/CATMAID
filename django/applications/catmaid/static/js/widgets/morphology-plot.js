@@ -17,6 +17,7 @@
     CATMAID.SkeletonSource.call(this, true);
 
     this.centerMode = 'first-branch';
+    this.interpolationMode = 'basis';
 
     this.models = {};
     this.lines = {};
@@ -129,6 +130,24 @@
             this.centerTag = event.target.value.trim();
           },
           onenter: event => {
+            this.redraw();
+          },
+        });
+
+        CATMAID.DOM.appendElement(controls, {
+          type: 'select',
+          relativeId: "interpolation",
+          label: 'Interpolation',
+          entries: MorphologyPlot.InterpolationModes.map(cm => {
+            return {
+              title: cm.name,
+              value: cm.value,
+            };
+          }),
+          title: "The strategy how to interpolate between sample points. Chooise 'linear' for no interpolation.",
+          value: this.interpolationMode,
+          onchange: e => {
+            this.interpolationMode = e.target.value;
             this.redraw();
           },
         });
@@ -593,6 +612,26 @@
     },
   };
 
+  MorphologyPlot.InterpolationModes = [{
+    name: 'Basis spline',
+    value: 'basis',
+  }, {
+    name: 'Linear',
+    value: 'linear',
+  }, {
+    name: 'Cardinal spline',
+    value: 'cardinal',
+  }, {
+    name: 'Monotone',
+    value: 'monotone',
+  }, {
+    name: 'Step before',
+    value: 'step-before',
+  }, {
+    name: 'Step after',
+    value: 'step-after',
+  }];
+
   MorphologyPlot.prototype.draw = function() {
     var containerID = '#morphology_plot_div' + this.widgetID,
         container = $(containerID);
@@ -621,7 +660,9 @@
                   stroke_width: "2"};
     }, this);
 
-    this.svg = CATMAID.svgutil.insertMultiLinePlot(container, containerID, "morphology_plot" + this.widgetID, data, "distance (nm)", "value");
+    this.svg = CATMAID.svgutil.insertMultiLinePlot(container, containerID,
+      `morphology_plot${this.widgetID}`, data, "distance (nm)", "value",
+      this.interpolationMode);
   };
 
   MorphologyPlot.prototype.createCSV = function() {

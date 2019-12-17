@@ -88,6 +88,7 @@ Examples
 
 - `CATMAID-synapsesuggestor <https://github.com/clbarnes/CATMAID-synapsesuggestor>`_
 - `CATMAID-autoproofreader <https://github.com/pattonw/CATMAID-autoproofreader>'_
+- `CircuitMap <https://github.com/BrainCircuitsIO/circuitmap>'_
 
 Community Standards
 -------------------

@@ -27,6 +27,7 @@ import six
 KNOWN_EXTENSIONS = (
     'synapsesuggestor',
     'autoproofreader',
+    'circuitmap',
 )
 
 

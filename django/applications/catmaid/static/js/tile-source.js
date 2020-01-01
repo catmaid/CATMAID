@@ -569,15 +569,16 @@
       this.sliceDims = sliceDims.split('_').map(d => parseInt(d, 10));
       this.reciprocalSliceDims = Array.from(Array(this.sliceDims.length).keys())
           .sort((a, b) => this.sliceDims[a] - this.sliceDims[b]);
-      let n5DirIndex = this.datasetURL.lastIndexOf('.n5');
-      this.rootURL = n5DirIndex === -1 ?
-          (new URL(this.datasetURL)).origin :
-          this.datasetURL.substring(0, n5DirIndex + 3);
-      this.datasetPathFormat = this.datasetURL.substring(this.rootURL.length + 1);
+      // Because we cannot infer the root URL, must find it exhaustively.
+      let n5SearchIndex = this.datasetURL.lastIndexOf('%SCALE_DATASET%');
+      // Initial guess of root:
+      this.rootURL = n5SearchIndex === -1 ?
+          this.datasetURL :
+          this.datasetURL.substring(0, n5SearchIndex);
 
       this.datasetAttributes = [];
       this.promiseReady = N5ImageBlockSource.loadN5()
-          .then(n5wasm => n5wasm.N5HTTPFetch.open(this.rootURL).then(r => this.reader = r))
+          .then(n5wasm => this._findRoot(n5wasm).then(r => this.reader = r))
           .then(() => this.populateDatasetAttributes());
       this.ready = false;
     }
@@ -596,6 +597,24 @@
       }
 
       return this.promiseN5wasm;
+    }
+
+    /** Find the root of this N5 container by recursively walking up the path. */
+    _findRoot(n5wasm) {
+      return n5wasm.N5HTTPFetch.open(this.rootURL)
+        .then(r => {
+          this.datasetPathFormat = this.datasetURL.substring(this.rootURL.length + 1);
+          return r;
+        })
+        .catch(error => {
+          let origin = (new URL(this.rootURL)).origin;
+          let nextDir = this.rootURL.lastIndexOf('/');
+          if (nextDir === -1 || origin == this.rootURL) {
+            throw error;
+          }
+          this.rootURL = this.rootURL.substring(0, nextDir);
+          return this._findRoot(n5wasm);
+        });
     }
 
     getTileURL(project, stack, slicePixelPosition, col, row, zoomLevel) {

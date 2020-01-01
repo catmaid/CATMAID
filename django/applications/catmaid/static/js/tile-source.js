@@ -689,11 +689,9 @@
 
         let before = performance.now();
         return fetch(new Request(url, options))
-          .then((response) => {
-            var contentHeader = response.headers.get('Content-Type');
-            return [contentHeader && contentHeader.startsWith('application/octet-stream'),
-                performance.now() - before];
-          })
+          .then(response =>
+            [response.status === 200, performance.now() - before]
+          )
           .catch(() => [false, Infinity]);
       };
 

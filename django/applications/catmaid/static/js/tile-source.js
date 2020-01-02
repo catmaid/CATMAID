@@ -618,7 +618,7 @@
     }
 
     getTileURL(project, stack, slicePixelPosition, col, row, zoomLevel) {
-      let z = slicePixelPosition[0] / this.blockSize(zoomLevel)[2];
+      let z = Math.floor(slicePixelPosition[0] / this.blockSize(zoomLevel)[2]);
       let sourceCoord = [col, row, z];
       let blockCoord = CATMAID.tools.permute(sourceCoord, this.reciprocalSliceDims);
 

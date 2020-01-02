@@ -1,0 +1,141 @@
+{% extends "catmaid/form_wizard.html" %}
+{% load i18n admin_static %}
+
+{% block extrahead %}
+  {{ block.super }}
+  <script>
+    document.addEventListener('DOMContentLoaded', function(event) {
+      let containerRoot = '{{ container }}';
+      let datasetBase = '{{ dataset }}';
+      let hasScaleLevels = '{{ has_scales }}' === 'True';
+      let attributes = {};
+
+      let promiseN5wasm = (new Function("return import('{% static 'libs/n5-wasm/n5_wasm.js' %}')"))()
+        .then(n5wasm => n5wasm
+          .default("{% static 'libs/n5-wasm/n5_wasm_bg.wasm' %}")
+          .then(() => n5wasm));
+
+      let datasetScalePath = function(zoomLevel) {
+        return datasetBase + (hasScaleLevels ? '/s' + zoomLevel : '');
+      }
+
+      let populateDatasetAttributes = function(reader, zoomLevel = 0) {
+        let datasetPath = datasetScalePath(zoomLevel);
+        return reader
+            .dataset_exists(datasetPath)
+            .catch(() => false)
+            .then(exists => {
+              if (exists) {
+                return Promise.all([
+                    reader.get_dataset_attributes(datasetPath),
+                    reader.list_attributes(datasetPath)
+                  ])
+                  .then(([dataAttrs, allAttrs]) => attributes[zoomLevel] = {
+                    dataAttrs,
+                    allAttrs,
+                  })
+                  .then(() => {
+                    if (hasScaleLevels) {
+                      return populateDatasetAttributes(reader, zoomLevel + 1);
+                    }
+                  });
+              }
+            });
+      }
+
+      let scaleTable = document.querySelector('table#scale-levels');
+
+      let select3D = idName => [0, 1, 2]
+        .map(id => `id_stack-${idName}_${id}`)
+        .map(id => {console.log(id); return document.getElementById(id)});
+      let slicingSelect = select3D('slicing_dims');
+      let dimensionSelect = select3D('dimension');
+      let resolutionSelect = select3D('resolution');
+      let blockSizeSelect = select3D('block_size');
+
+      let updateSlicing = function() {
+        let slicingDims = slicingSelect.map(el => parseInt(el.value, 10));
+        console.log(slicingDims);
+
+        slicingDims.map((slice, idx) =>
+          dimensionSelect[idx].value = attributes[0].dataAttrs.get_dimensions()[slice]);
+        slicingDims.map((slice, idx) =>
+          resolutionSelect[idx].value = attributes[0].allAttrs['resolution'] ?
+            attributes[0].allAttrs['resolution'][slice] : 1.0);
+        slicingDims.map((slice, idx) =>
+          blockSizeSelect[idx].value = attributes[0].dataAttrs.get_block_size()[slice]);
+
+        let downsamplingFactors = Object.keys(attributes).sort().map(scaleLevel => {
+            let factors = attributes[scaleLevel].allAttrs['downsamplingFactors'];
+            if (!!factors) {
+              factors = slicingDims.map(slice => factors[slice]);
+            } else {
+              factors = [2**scaleLevel, 2**scaleLevel, 2**scaleLevel];
+            }
+            return factors;
+          })
+          .map(factors => factors.join(','))
+          .join('|');
+
+        document.getElementById('id_stack-downsample_factors_0_0').checked = false;
+        document.getElementById('id_stack-downsample_factors_0_1').checked = false;
+        document.getElementById('id_stack-downsample_factors_0_2').checked = true;
+        document.getElementById('id_stack-downsample_factors_3').value = downsamplingFactors;
+      };
+
+      promiseN5wasm.then(n5wasm => n5wasm.N5HTTPFetch.open(containerRoot))
+        .then(populateDatasetAttributes)
+        .then(() => {
+          for (let [scaleLevel, attrs] of Object.entries(attributes)) {
+
+            let cells = [
+              scaleLevel,
+              attrs.dataAttrs.get_data_type(),
+              attrs.dataAttrs.get_compression(),
+              attrs.dataAttrs.get_dimensions().join(', '),
+              (attrs.allAttrs['resolution'] || []).join(', '),
+              (attrs.allAttrs['downsamplingFactors'] || []).join(', '),
+              attrs.dataAttrs.get_block_size().join(', '),
+            ];
+
+            let row = cells.reduce((row, cell) => {
+              let td = document.createElement('td');
+              td.textContent = cell;
+              row.appendChild(td);
+              return row;
+            }, document.createElement('tr'));
+
+            scaleTable.tBodies[0].appendChild(row);
+          }
+        })
+        .then(() => {
+          slicingSelect.map(el => el.onchange = updateSlicing);
+          updateSlicing();
+        });
+    });
+  </script>
+{% endblock %}
+
+{% block stepinfo %}
+<p>
+Review the properties of the discovered dataset scales and select the slicing
+dimensions. You will be able to change other properties of the stack after
+creating it.
+
+<table id='scale-levels'>
+  <thead>
+    <tr>
+      <th>Scale Level</th>
+      <th>Data Type</th>
+      <th>Compression</th>
+      <th>Dimension</th>
+      <th>Resolution</th>
+      <th>Downsample Factors</th>
+      <th>Block Size</th>
+    </tr>
+  </thead>
+  <tbody>
+  </tbody>
+</table>
+</p>
+{% endblock %}

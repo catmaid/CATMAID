@@ -11,9 +11,9 @@
       let attributes = {};
 
       let promiseN5wasm = (new Function("return import('{% static 'libs/n5-wasm/n5_wasm.js' %}')"))()
-        .then(n5wasm => n5wasm
-          .default("{% static 'libs/n5-wasm/n5_wasm_bg.wasm' %}")
-          .then(() => n5wasm));
+        .then(n5wasm =>
+          wasm_bindgen("{% static 'libs/n5-wasm/n5_wasm_bg.wasm' %}")
+          .then(() => wasm_bindgen));
 
       let datasetScalePath = function(zoomLevel) {
         return datasetBase + (hasScaleLevels ? '/s' + zoomLevel : '');

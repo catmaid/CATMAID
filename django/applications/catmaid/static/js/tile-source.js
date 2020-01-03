@@ -41,7 +41,7 @@
       '8': CATMAID.DVIDImagetileTileSource,
       '9': CATMAID.FlixServerTileSource,
       '10': CATMAID.H2N5TileSource,
-      '11': CATMAID.N5ImageBlockSource,
+      '11': CATMAID.N5ImageBlockWorkerSource,
       '12': CATMAID.BossTileSource,
     };
 
@@ -591,9 +591,9 @@
         // This is done inside a Function/eval so that Firefox does not fail
         // to parse this whole file because of the dynamic import.
         this.promiseN5wasm = (new Function("return import('../libs/n5-wasm/n5_wasm.js')"))()
-            .then(n5wasm => n5wasm
-                .default(CATMAID.makeStaticURL('libs/n5-wasm/n5_wasm_bg.wasm'))
-                .then(() => n5wasm));
+            .then(n5wasm =>
+                wasm_bindgen(CATMAID.makeStaticURL('libs/n5-wasm/n5_wasm_bg.wasm'))
+                .then(() => wasm_bindgen));
       }
 
       return this.promiseN5wasm;
@@ -723,6 +723,59 @@
           cors:       result[1][0],
           corsTime:   result[1][1]
       })));
+    }
+  };
+
+  /**
+   * Image block source type for N5 datasets. This sub-implementation uses
+   * a pool of web workers for block loading.
+   * See https://github.com/saalfeldlab/n5
+   * See https://github.com/aschampion/n5-wasm
+   *
+   * Source type: 11
+   */
+  CATMAID.N5ImageBlockWorkerSource = class N5ImageBlockWorkerSource extends CATMAID.N5ImageBlockSource {
+    constructor(...args) {
+      super(...args);
+
+      this.promiseReady.then(() => {
+        this.workers = new CATMAID.PromiseWorkerPool(
+          () => { return {
+            worker: new CATMAID.PromiseWorker(
+              new Worker(CATMAID.makeStaticURL('libs/n5-wasm/n5_wasm_worker.js'))
+            ),
+            init: (worker) => worker.postMessage([
+              [wasm_bindgen.__wbindgen_wasm_module],
+              this.rootURL,
+            ]),
+          };}
+        );
+      });
+    }
+
+    readBlock(zoomLevel, ...sourceCoord) {
+      return this.promiseReady.then(() => {
+        let path = this.datasetPath(zoomLevel);
+        let dataAttrs = this.datasetAttributes[zoomLevel];
+
+        let blockCoord = CATMAID.tools.permute(sourceCoord, this.reciprocalSliceDims);
+
+        return this.workers
+            .postMessage([path, dataAttrs.to_json(), blockCoord.map(BigInt)])
+            .then(block => {
+              if (block) {
+                let n = 1;
+                let stride = block.size.map(s => { let rn = n; n *= s; return rn; });
+                return {
+                  etag: block.etag,
+                  block: new nj.NdArray(nj.ndarray(block.data, block.size, stride))
+                      .transpose(...this.sliceDims)
+                };
+              } else {
+                return {block, etag: undefined};
+              }
+            });
+      });
     }
   };
 

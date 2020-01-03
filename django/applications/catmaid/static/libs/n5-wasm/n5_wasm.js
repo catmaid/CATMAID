@@ -1,11 +1,12 @@
+(function() {
+    const __exports = {};
+    let wasm;
 
-let wasm;
+    const heap = new Array(32);
 
-const heap = new Array(32);
+    heap.fill(undefined);
 
-heap.fill(undefined);
-
-heap.push(undefined, null, true, false);
+    heap.push(undefined, null, true, false);
 
 function getObject(idx) { return heap[idx]; }
 
@@ -175,7 +176,7 @@ function debugString(val) {
     // TODO we could test for more things here, like `Set`s and `Map`s.
     return className;
 }
-function __wbg_adapter_22(arg0, arg1, arg2) {
+function __wbg_adapter_24(arg0, arg1, arg2) {
     wasm.wasm_bindgen__convert__closures__invoke1_mut__h8a583b1c3a09752e(arg0, arg1, addHeapObject(arg2));
 }
 
@@ -286,8 +287,16 @@ function getArrayF64FromWasm0(ptr, len) {
 function handleError(e) {
     wasm.__wbindgen_exn_store(addHeapObject(e));
 }
-function __wbg_adapter_115(arg0, arg1, arg2, arg3) {
+function __wbg_adapter_119(arg0, arg1, arg2, arg3) {
     wasm.wasm_bindgen__convert__closures__invoke2_mut__h0903106463517c12(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
+}
+
+let stack_pointer = 32;
+
+function addBorrowedObject(obj) {
+    if (stack_pointer == 1) throw new Error('out of js stack');
+    heap[--stack_pointer] = obj;
+    return stack_pointer;
 }
 
 function _assertClass(instance, klass) {
@@ -309,7 +318,7 @@ function isLikeNone(x) {
 }
 /**
 */
-export class DatasetAttributes {
+class DatasetAttributes {
 
     static __wrap(ptr) {
         const obj = Object.create(DatasetAttributes.prototype);
@@ -395,10 +404,30 @@ export class DatasetAttributes {
         var ret = wasm.datasetattributes_get_block_num_elements(this.ptr);
         return ret >>> 0;
     }
+    /**
+    * @returns {any}
+    */
+    to_json() {
+        var ret = wasm.datasetattributes_to_json(this.ptr);
+        return takeObject(ret);
+    }
+    /**
+    * @param {any} js
+    * @returns {DatasetAttributes}
+    */
+    static from_json(js) {
+        try {
+            var ret = wasm.datasetattributes_from_json(addBorrowedObject(js));
+            return DatasetAttributes.__wrap(ret);
+        } finally {
+            heap[stack_pointer++] = undefined;
+        }
+    }
 }
+__exports.DatasetAttributes = DatasetAttributes;
 /**
 */
-export class N5HTTPFetch {
+class N5HTTPFetch {
 
     static __wrap(ptr) {
         const obj = Object.create(N5HTTPFetch.prototype);
@@ -516,9 +545,10 @@ export class N5HTTPFetch {
         return takeObject(ret);
     }
 }
+__exports.N5HTTPFetch = N5HTTPFetch;
 /**
 */
-export class VecDataBlockFLOAT32 {
+class VecDataBlockFLOAT32 {
 
     static __wrap(ptr) {
         const obj = Object.create(VecDataBlockFLOAT32.prototype);
@@ -601,9 +631,10 @@ export class VecDataBlockFLOAT32 {
         return v0;
     }
 }
+__exports.VecDataBlockFLOAT32 = VecDataBlockFLOAT32;
 /**
 */
-export class VecDataBlockFLOAT64 {
+class VecDataBlockFLOAT64 {
 
     static __wrap(ptr) {
         const obj = Object.create(VecDataBlockFLOAT64.prototype);
@@ -686,9 +717,10 @@ export class VecDataBlockFLOAT64 {
         return v0;
     }
 }
+__exports.VecDataBlockFLOAT64 = VecDataBlockFLOAT64;
 /**
 */
-export class VecDataBlockINT16 {
+class VecDataBlockINT16 {
 
     static __wrap(ptr) {
         const obj = Object.create(VecDataBlockINT16.prototype);
@@ -771,9 +803,10 @@ export class VecDataBlockINT16 {
         return v0;
     }
 }
+__exports.VecDataBlockINT16 = VecDataBlockINT16;
 /**
 */
-export class VecDataBlockINT32 {
+class VecDataBlockINT32 {
 
     static __wrap(ptr) {
         const obj = Object.create(VecDataBlockINT32.prototype);
@@ -814,7 +847,7 @@ export class VecDataBlockINT32 {
     * @returns {Int32Array}
     */
     get_data() {
-        wasm.vecdatablockint32_get_data(8, this.ptr);
+        wasm.vecdatablockfloat32_get_data(8, this.ptr);
         var r0 = getInt32Memory0()[8 / 4 + 0];
         var r1 = getInt32Memory0()[8 / 4 + 1];
         var v0 = getArrayI32FromWasm0(r0, r1).slice();
@@ -827,7 +860,7 @@ export class VecDataBlockINT32 {
     into_data() {
         var ptr = this.ptr;
         this.ptr = 0;
-        wasm.vecdatablockint32_into_data(8, ptr);
+        wasm.vecdatablockfloat32_into_data(8, ptr);
         var r0 = getInt32Memory0()[8 / 4 + 0];
         var r1 = getInt32Memory0()[8 / 4 + 1];
         var v0 = getArrayI32FromWasm0(r0, r1).slice();
@@ -856,9 +889,10 @@ export class VecDataBlockINT32 {
         return v0;
     }
 }
+__exports.VecDataBlockINT32 = VecDataBlockINT32;
 /**
 */
-export class VecDataBlockINT64 {
+class VecDataBlockINT64 {
 
     static __wrap(ptr) {
         const obj = Object.create(VecDataBlockINT64.prototype);
@@ -899,7 +933,7 @@ export class VecDataBlockINT64 {
     * @returns {BigInt64Array}
     */
     get_data() {
-        wasm.vecdatablockfloat64_get_data(8, this.ptr);
+        wasm.vecdatablockint64_get_data(8, this.ptr);
         var r0 = getInt32Memory0()[8 / 4 + 0];
         var r1 = getInt32Memory0()[8 / 4 + 1];
         var v0 = getArrayI64FromWasm0(r0, r1).slice();
@@ -912,7 +946,7 @@ export class VecDataBlockINT64 {
     into_data() {
         var ptr = this.ptr;
         this.ptr = 0;
-        wasm.vecdatablockfloat64_into_data(8, ptr);
+        wasm.vecdatablockint64_into_data(8, ptr);
         var r0 = getInt32Memory0()[8 / 4 + 0];
         var r1 = getInt32Memory0()[8 / 4 + 1];
         var v0 = getArrayI64FromWasm0(r0, r1).slice();
@@ -941,9 +975,10 @@ export class VecDataBlockINT64 {
         return v0;
     }
 }
+__exports.VecDataBlockINT64 = VecDataBlockINT64;
 /**
 */
-export class VecDataBlockINT8 {
+class VecDataBlockINT8 {
 
     static __wrap(ptr) {
         const obj = Object.create(VecDataBlockINT8.prototype);
@@ -1026,9 +1061,10 @@ export class VecDataBlockINT8 {
         return v0;
     }
 }
+__exports.VecDataBlockINT8 = VecDataBlockINT8;
 /**
 */
-export class VecDataBlockUINT16 {
+class VecDataBlockUINT16 {
 
     static __wrap(ptr) {
         const obj = Object.create(VecDataBlockUINT16.prototype);
@@ -1111,9 +1147,10 @@ export class VecDataBlockUINT16 {
         return v0;
     }
 }
+__exports.VecDataBlockUINT16 = VecDataBlockUINT16;
 /**
 */
-export class VecDataBlockUINT32 {
+class VecDataBlockUINT32 {
 
     static __wrap(ptr) {
         const obj = Object.create(VecDataBlockUINT32.prototype);
@@ -1167,7 +1204,7 @@ export class VecDataBlockUINT32 {
     into_data() {
         var ptr = this.ptr;
         this.ptr = 0;
-        wasm.vecdatablockint32_into_data(8, ptr);
+        wasm.vecdatablockfloat32_into_data(8, ptr);
         var r0 = getInt32Memory0()[8 / 4 + 0];
         var r1 = getInt32Memory0()[8 / 4 + 1];
         var v0 = getArrayU32FromWasm0(r0, r1).slice();
@@ -1196,9 +1233,10 @@ export class VecDataBlockUINT32 {
         return v0;
     }
 }
+__exports.VecDataBlockUINT32 = VecDataBlockUINT32;
 /**
 */
-export class VecDataBlockUINT64 {
+class VecDataBlockUINT64 {
 
     static __wrap(ptr) {
         const obj = Object.create(VecDataBlockUINT64.prototype);
@@ -1252,7 +1290,7 @@ export class VecDataBlockUINT64 {
     into_data() {
         var ptr = this.ptr;
         this.ptr = 0;
-        wasm.vecdatablockfloat64_into_data(8, ptr);
+        wasm.vecdatablockint64_into_data(8, ptr);
         var r0 = getInt32Memory0()[8 / 4 + 0];
         var r1 = getInt32Memory0()[8 / 4 + 1];
         var v0 = getArrayU64FromWasm0(r0, r1).slice();
@@ -1281,9 +1319,10 @@ export class VecDataBlockUINT64 {
         return v0;
     }
 }
+__exports.VecDataBlockUINT64 = VecDataBlockUINT64;
 /**
 */
-export class VecDataBlockUINT8 {
+class VecDataBlockUINT8 {
 
     static __wrap(ptr) {
         const obj = Object.create(VecDataBlockUINT8.prototype);
@@ -1366,9 +1405,10 @@ export class VecDataBlockUINT8 {
         return v0;
     }
 }
+__exports.VecDataBlockUINT8 = VecDataBlockUINT8;
 /**
 */
-export class Version {
+class Version {
 
     static __wrap(ptr) {
         const obj = Object.create(Version.prototype);
@@ -1397,11 +1437,10 @@ export class Version {
         }
     }
 }
+__exports.Version = Version;
 
 function init(module) {
-    if (typeof module === 'undefined') {
-        module = import.meta.url.replace(/\.js$/, '_bg.wasm');
-    }
+
     let result;
     const imports = {};
     imports.wbg = {};
@@ -1462,36 +1501,8 @@ function init(module) {
         var ret = getObject(arg0) instanceof ArrayBuffer;
         return ret;
     };
-    imports.wbg.__wbg_vecdatablockfloat32_new = function(arg0) {
-        var ret = VecDataBlockFLOAT32.__wrap(arg0);
-        return addHeapObject(ret);
-    };
-    imports.wbg.__wbg_new_b43fc449db38d3bd = function(arg0, arg1) {
-        var ret = new Error(getStringFromWasm0(arg0, arg1));
-        return addHeapObject(ret);
-    };
-    imports.wbg.__wbg_vecdatablockuint32_new = function(arg0) {
-        var ret = VecDataBlockUINT32.__wrap(arg0);
-        return addHeapObject(ret);
-    };
-    imports.wbg.__wbg_vecdatablockint16_new = function(arg0) {
-        var ret = VecDataBlockINT16.__wrap(arg0);
-        return addHeapObject(ret);
-    };
-    imports.wbg.__wbg_datasetattributes_new = function(arg0) {
-        var ret = DatasetAttributes.__wrap(arg0);
-        return addHeapObject(ret);
-    };
-    imports.wbg.__wbg_vecdatablockint32_new = function(arg0) {
-        var ret = VecDataBlockINT32.__wrap(arg0);
-        return addHeapObject(ret);
-    };
-    imports.wbg.__wbindgen_string_new = function(arg0, arg1) {
-        var ret = getStringFromWasm0(arg0, arg1);
-        return addHeapObject(ret);
-    };
-    imports.wbg.__wbg_vecdatablockuint16_new = function(arg0) {
-        var ret = VecDataBlockUINT16.__wrap(arg0);
+    imports.wbg.__wbindgen_json_parse = function(arg0, arg1) {
+        var ret = JSON.parse(getStringFromWasm0(arg0, arg1));
         return addHeapObject(ret);
     };
     imports.wbg.__wbindgen_json_serialize = function(arg0, arg1) {
@@ -1502,37 +1513,73 @@ function init(module) {
         getInt32Memory0()[arg0 / 4 + 1] = len0;
         getInt32Memory0()[arg0 / 4 + 0] = ptr0;
     };
-    imports.wbg.__wbg_vecdatablockint8_new = function(arg0) {
-        var ret = VecDataBlockINT8.__wrap(arg0);
-        return addHeapObject(ret);
-    };
-    imports.wbg.__wbg_vecdatablockint64_new = function(arg0) {
-        var ret = VecDataBlockINT64.__wrap(arg0);
-        return addHeapObject(ret);
-    };
-    imports.wbg.__wbg_vecdatablockuint64_new = function(arg0) {
-        var ret = VecDataBlockUINT64.__wrap(arg0);
-        return addHeapObject(ret);
-    };
-    imports.wbg.__wbg_n5httpfetch_new = function(arg0) {
-        var ret = N5HTTPFetch.__wrap(arg0);
-        return addHeapObject(ret);
-    };
     imports.wbg.__wbg_vecdatablockuint8_new = function(arg0) {
         var ret = VecDataBlockUINT8.__wrap(arg0);
+        return addHeapObject(ret);
+    };
+    imports.wbg.__wbg_new_b43fc449db38d3bd = function(arg0, arg1) {
+        var ret = new Error(getStringFromWasm0(arg0, arg1));
         return addHeapObject(ret);
     };
     imports.wbg.__wbg_vecdatablockfloat64_new = function(arg0) {
         var ret = VecDataBlockFLOAT64.__wrap(arg0);
         return addHeapObject(ret);
     };
+    imports.wbg.__wbg_datasetattributes_new = function(arg0) {
+        var ret = DatasetAttributes.__wrap(arg0);
+        return addHeapObject(ret);
+    };
+    imports.wbg.__wbg_vecdatablockint8_new = function(arg0) {
+        var ret = VecDataBlockINT8.__wrap(arg0);
+        return addHeapObject(ret);
+    };
+    imports.wbg.__wbg_vecdatablockint32_new = function(arg0) {
+        var ret = VecDataBlockINT32.__wrap(arg0);
+        return addHeapObject(ret);
+    };
+    imports.wbg.__wbg_vecdatablockuint64_new = function(arg0) {
+        var ret = VecDataBlockUINT64.__wrap(arg0);
+        return addHeapObject(ret);
+    };
+    imports.wbg.__wbg_vecdatablockint16_new = function(arg0) {
+        var ret = VecDataBlockINT16.__wrap(arg0);
+        return addHeapObject(ret);
+    };
+    imports.wbg.__wbg_vecdatablockuint32_new = function(arg0) {
+        var ret = VecDataBlockUINT32.__wrap(arg0);
+        return addHeapObject(ret);
+    };
     imports.wbg.__wbg_version_new = function(arg0) {
         var ret = Version.__wrap(arg0);
         return addHeapObject(ret);
     };
-    imports.wbg.__wbindgen_json_parse = function(arg0, arg1) {
-        var ret = JSON.parse(getStringFromWasm0(arg0, arg1));
+    imports.wbg.__wbg_vecdatablockuint16_new = function(arg0) {
+        var ret = VecDataBlockUINT16.__wrap(arg0);
         return addHeapObject(ret);
+    };
+    imports.wbg.__wbindgen_string_new = function(arg0, arg1) {
+        var ret = getStringFromWasm0(arg0, arg1);
+        return addHeapObject(ret);
+    };
+    imports.wbg.__wbg_vecdatablockfloat32_new = function(arg0) {
+        var ret = VecDataBlockFLOAT32.__wrap(arg0);
+        return addHeapObject(ret);
+    };
+    imports.wbg.__wbg_vecdatablockint64_new = function(arg0) {
+        var ret = VecDataBlockINT64.__wrap(arg0);
+        return addHeapObject(ret);
+    };
+    imports.wbg.__wbg_n5httpfetch_new = function(arg0) {
+        var ret = N5HTTPFetch.__wrap(arg0);
+        return addHeapObject(ret);
+    };
+    imports.wbg.__widl_f_json_Response = function(arg0) {
+        try {
+            var ret = getObject(arg0).json();
+            return addHeapObject(ret);
+        } catch (e) {
+            handleError(e)
+        }
     };
     imports.wbg.__wbg_new_8b3eec454ca71e88 = function(arg0, arg1) {
         try {
@@ -1541,7 +1588,7 @@ function init(module) {
                 const a = state0.a;
                 state0.a = 0;
                 try {
-                    return __wbg_adapter_115(a, state0.b, arg0, arg1);
+                    return __wbg_adapter_119(a, state0.b, arg0, arg1);
                 } finally {
                     state0.a = a;
                 }
@@ -1576,51 +1623,8 @@ function init(module) {
         var ret = getObject(arg0).fetch(getObject(arg1));
         return addHeapObject(ret);
     };
-    imports.wbg.__widl_f_json_Response = function(arg0) {
-        try {
-            var ret = getObject(arg0).json();
-            return addHeapObject(ret);
-        } catch (e) {
-            handleError(e)
-        }
-    };
-    imports.wbg.__wbindgen_debug_string = function(arg0, arg1) {
-        var ret = debugString(getObject(arg1));
-        var ptr0 = passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        var len0 = WASM_VECTOR_LEN;
-        getInt32Memory0()[arg0 / 4 + 1] = len0;
-        getInt32Memory0()[arg0 / 4 + 0] = ptr0;
-    };
-    imports.wbg.__wbindgen_throw = function(arg0, arg1) {
-        throw new Error(getStringFromWasm0(arg0, arg1));
-    };
-    imports.wbg.__wbg_call_6c4ea719458624eb = function(arg0, arg1, arg2) {
-        try {
-            var ret = getObject(arg0).call(getObject(arg1), getObject(arg2));
-            return addHeapObject(ret);
-        } catch (e) {
-            handleError(e)
-        }
-    };
-    imports.wbg.__wbindgen_cb_drop = function(arg0) {
-        const obj = takeObject(arg0).original;
-        if (obj.cnt-- == 1) {
-            obj.a = 0;
-            return true;
-        }
-        var ret = false;
-        return ret;
-    };
-    imports.wbg.__wbg_then_5a9068d7b674caf9 = function(arg0, arg1, arg2) {
-        var ret = getObject(arg0).then(getObject(arg1), getObject(arg2));
-        return addHeapObject(ret);
-    };
-    imports.wbg.__wbg_resolve_4e9c46f7e8321315 = function(arg0) {
-        var ret = Promise.resolve(getObject(arg0));
-        return addHeapObject(ret);
-    };
-    imports.wbg.__wbg_then_79de0b6809569306 = function(arg0, arg1) {
-        var ret = getObject(arg0).then(getObject(arg1));
+    imports.wbg.__widl_f_fetch_with_request_WorkerGlobalScope = function(arg0, arg1) {
+        var ret = getObject(arg0).fetch(getObject(arg1));
         return addHeapObject(ret);
     };
     imports.wbg.__wbg_globalThis_1c2aa6db3ecb073e = function() {
@@ -1675,11 +1679,67 @@ function init(module) {
         var ret = getObject(arg0);
         return addHeapObject(ret);
     };
+    imports.wbg.__wbg_eval_0a96c592f6a975ed = function(arg0, arg1) {
+        try {
+            var ret = eval(getStringFromWasm0(arg0, arg1));
+            return addHeapObject(ret);
+        } catch (e) {
+            handleError(e)
+        }
+    };
+    imports.wbg.__wbindgen_boolean_get = function(arg0) {
+        const v = getObject(arg0);
+        var ret = typeof(v) === 'boolean' ? (v ? 1 : 0) : 2;
+        return ret;
+    };
+    imports.wbg.__widl_instanceof_WorkerGlobalScope = function(arg0) {
+        var ret = getObject(arg0) instanceof WorkerGlobalScope;
+        return ret;
+    };
     imports.wbg.__widl_instanceof_Window = function(arg0) {
         var ret = getObject(arg0) instanceof Window;
         return ret;
     };
-    imports.wbg.__wbindgen_closure_wrapper624 = function(arg0, arg1, arg2) {
+    imports.wbg.__wbindgen_debug_string = function(arg0, arg1) {
+        var ret = debugString(getObject(arg1));
+        var ptr0 = passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        var len0 = WASM_VECTOR_LEN;
+        getInt32Memory0()[arg0 / 4 + 1] = len0;
+        getInt32Memory0()[arg0 / 4 + 0] = ptr0;
+    };
+    imports.wbg.__wbindgen_throw = function(arg0, arg1) {
+        throw new Error(getStringFromWasm0(arg0, arg1));
+    };
+    imports.wbg.__wbg_call_6c4ea719458624eb = function(arg0, arg1, arg2) {
+        try {
+            var ret = getObject(arg0).call(getObject(arg1), getObject(arg2));
+            return addHeapObject(ret);
+        } catch (e) {
+            handleError(e)
+        }
+    };
+    imports.wbg.__wbindgen_cb_drop = function(arg0) {
+        const obj = takeObject(arg0).original;
+        if (obj.cnt-- == 1) {
+            obj.a = 0;
+            return true;
+        }
+        var ret = false;
+        return ret;
+    };
+    imports.wbg.__wbg_then_5a9068d7b674caf9 = function(arg0, arg1, arg2) {
+        var ret = getObject(arg0).then(getObject(arg1), getObject(arg2));
+        return addHeapObject(ret);
+    };
+    imports.wbg.__wbg_resolve_4e9c46f7e8321315 = function(arg0) {
+        var ret = Promise.resolve(getObject(arg0));
+        return addHeapObject(ret);
+    };
+    imports.wbg.__wbg_then_79de0b6809569306 = function(arg0, arg1) {
+        var ret = getObject(arg0).then(getObject(arg1));
+        return addHeapObject(ret);
+    };
+    imports.wbg.__wbindgen_closure_wrapper631 = function(arg0, arg1, arg2) {
 
         const state = { a: arg0, b: arg1, cnt: 1 };
         const real = (arg0) => {
@@ -1687,7 +1747,7 @@ function init(module) {
             const a = state.a;
             state.a = 0;
             try {
-                return __wbg_adapter_22(a, state.b, arg0);
+                return __wbg_adapter_24(a, state.b, arg0);
             } finally {
                 if (--state.cnt === 0) wasm.__wbindgen_export_2.get(48)(a, state.b);
                 else state.a = a;
@@ -1740,5 +1800,6 @@ function init(module) {
     });
 }
 
-export default init;
+self.wasm_bindgen = Object.assign(init, __exports);
 
+})();

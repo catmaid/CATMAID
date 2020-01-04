@@ -68,6 +68,18 @@
     } else throw new RangeError('Tile source type ' + tileSourceType + ' is unknown.');
   };
 
+  let _sourceCache = new Map();
+
+  CATMAID.TileSources.getCached = function (id, ...args) {
+    let source = _sourceCache.get(id);
+    if (typeof source === 'undefined') {
+      source = CATMAID.TileSources.get(id, ...args);
+      _sourceCache.set(id, source);
+    }
+
+    return source;
+  };
+
 
   CATMAID.AbstractTileSource = function (id, baseURL, fileExtension, tileWidth, tileHeight) {
     this.id = id;

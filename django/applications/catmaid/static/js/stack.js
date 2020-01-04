@@ -564,7 +564,7 @@
       }
       var selectedMirror = mirror;
 
-      return CATMAID.TileSources.get(
+      return CATMAID.TileSources.getCached(
           selectedMirror.id,
           selectedMirror.tile_source_type,
           selectedMirror.image_base,

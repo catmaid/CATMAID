@@ -48,7 +48,6 @@
      * @type {Number}
      */
     this._tileFirstC = 0;
-    this._tilesBuffer = [];
     this._buffering = false;
     this._swapBuffersTimeout = null;
 
@@ -113,7 +112,6 @@
     };
 
     this._tiles = [];
-
     this._tilesBuffer = [];
 
     this._tileOrigR = 0;

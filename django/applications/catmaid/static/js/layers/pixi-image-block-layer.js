@@ -26,7 +26,6 @@
 
       this.blockSizeZ = 1;
 
-      // TODO need to set tile width based on block size, but that's async
       this.tileSource.promiseReady.then(() => {
         let blockSize = this.tileSource.blockSize(0);
         blockSize = CATMAID.tools.permute(blockSize, this.dimPerm);

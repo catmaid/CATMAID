@@ -36,6 +36,13 @@
           // If tiles have been initialized, reinitialize.
           this.resize(this.stackViewer.viewWidth, this.stackViewer.viewHeight);
         }
+        let numStackLevels = this.stack.downsample_factors.length;
+        let numSourceLevels = this.tileSource.numScaleLevels();
+        if (numStackLevels > numSourceLevels) {
+          // If the source has more levels than the stack, it's not worth
+          // warning the user since it won't break any interactions.
+          CATMAID.info(`Stack mirror has ${numSourceLevels} scale levels but stack specifies ${numStackLevels}`);
+        }
       });
     }
 

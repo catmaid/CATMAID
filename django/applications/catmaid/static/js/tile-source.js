@@ -543,6 +543,10 @@
       throw new CATMAID.NotImplementedError();
     }
 
+    numScaleLevels() {
+      throw new CATMAID.NotImplementedError();
+    }
+
     readBlock(zoomLevel, xi, yi, zi) {
       throw new CATMAID.NotImplementedError();
     }
@@ -708,6 +712,10 @@
 
     scaleLevelPath(zoomLevel) {
       return 's' + zoomLevel;
+    }
+
+    numScaleLevels() {
+      return this.datasetAttributes.length;
     }
 
     checkCanary(project, stack, noCache) {

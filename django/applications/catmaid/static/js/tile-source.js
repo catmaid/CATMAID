@@ -778,6 +778,8 @@
         let path = this.datasetPath(zoomLevel);
         let dataAttrs = this.datasetAttributes[zoomLevel];
 
+        if (!dataAttrs) return {block: null, etag: undefined};
+
         let blockCoord = CATMAID.tools.permute(sourceCoord, this.reciprocalSliceDims);
 
         return this.workers

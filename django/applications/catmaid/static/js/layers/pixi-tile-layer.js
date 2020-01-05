@@ -29,6 +29,7 @@
     this.stackViewer.getLayersView().removeChild(this.tilesContainer);
     this.tilesContainer = this.renderer.view;
     this.tilesContainer.className = 'sliceTiles';
+    this.tileConstructor = PIXI.Sprite;
     this.stackViewer.getLayersView().appendChild(this.tilesContainer);
 
     this._oldZoom = 0;
@@ -111,7 +112,7 @@
       this._tiles[i] = [];
       this._tilesBuffer[i] = [];
       for (var j = 0; j < cols; ++j) {
-        this._tiles[i][j] = new PIXI.Sprite(emptyTex);
+        this._tiles[i][j] = new this.tileConstructor(emptyTex);
         this.batchContainer.addChild(this._tiles[i][j]);
         this._tiles[i][j].position.x = j * this.tileWidth * this._anisotropy.x;
         this._tiles[i][j].position.y = i * this.tileHeight * this._anisotropy.y;

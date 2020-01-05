@@ -36,6 +36,11 @@
           // If tiles have been initialized, reinitialize.
           this.resize(this.stackViewer.viewWidth, this.stackViewer.viewHeight);
         }
+
+        if (this.tileSource.dataType().endsWith('64')) {
+          CATMAID.warn('64 bit data is not yet directly renderable, rendering as 16-bpc RGBA');
+        }
+
         let numStackLevels = this.stack.downsample_factors.length;
         let numSourceLevels = this.tileSource.numScaleLevels();
         if (numStackLevels > numSourceLevels) {
@@ -47,6 +52,9 @@
     }
 
     _initTiles(rows, cols) {
+      let dataType = this.tileSource.dataType();
+      this._setPermissibleInterpolationMode(dataType);
+      this.tileConstructor = this._dtypeTileConstructor(dataType);
       super._initTiles(rows, cols);
 
       for (var i = 0; i < rows; ++i) {
@@ -264,27 +272,116 @@
       return empty;
     }
 
+    _dtypeTileConstructor(dtype) {
+      switch (dtype) {
+        case undefined:
+        // These types use WebGL1-style implicit conversion:
+        case 'uint8':
+        // TODO: For now render uint32 via implicit conversion to RGBA 8-bit.
+        // This should be changed once there are configurable rendering modes
+        // per-datatype, so that an uint32 could either be an `gl.RGBA`,
+        // `gl.R32UI`, `gl.RG16UI`, etc.
+        case 'uint32':
+        // Floats are fine with the default Pixi shaders:
+        case 'float32':
+        case 'float64':
+          return PIXI.Sprite;
+        default:
+          return CATMAID.Pixi.TypedSprite.bind({}, dtype);
+      }
+    }
+
+    _setPermissibleInterpolationMode(dtype) {
+      if (typeof dtype === 'undefined') return;
+
+      // Integer texture formats are not interpolatable.
+      let current = this.getEffectiveInterpolationMode();
+      if (current === CATMAID.StackLayer.INTERPOLATION_MODES.LINEAR &&
+          (dtype.startsWith('uint') || dtype.startsWith('int')) &&
+          dtype !== 'int8') {
+        this.setInterpolationMode(CATMAID.StackLayer.INTERPOLATION_MODES.NEAREST);
+      }
+    }
+
     _dtypeWebGLParams(dtype) {
+      // See table 2: https://www.khronos.org/registry/OpenGL-Refpages/es3.0/html/glTexImage2D.xhtml
+      // WebGL2 documentation is often misleading because it only lists the
+      // subset of this table that is supported for conversion from JS canvases,
+      // etc., but WebGL2 itself supports all OpenGL ES 3.0 combinations.
+
       const gl = this._context.renderer.gl;
       var format, type, internalFormat, jsArrayType;
 
+      // TODO: float64 is not supported. This may be the one current datatype
+      // that should be cast (to float32) before uploading.
+
       switch (dtype) {
+        case 'int8':
+          format = gl.RED_INTEGER;
+          type = gl.BYTE;
+          internalFormat = gl.R8I;
+          jsArrayType = Int8Array;
+          break;
+        case 'int16':
+          format = gl.RED_INTEGER;
+          type = gl.SHORT;
+          internalFormat = gl.R16I;
+          jsArrayType = Int16Array;
+          break;
+        case 'int32':
+          format = gl.RED_INTEGER;
+          type = gl.INT;
+          internalFormat = gl.R32I;
+          jsArrayType = Int32Array;
+          break;
+        case 'int64':
+          // TODO: Once render modes per-datatype are available, this could also
+          // be a `RG32I`.
+          format = gl.RGBA_INTEGER;
+          type = gl.SHORT;
+          internalFormat = gl.RGBA16I;
+          jsArrayType = Int16Array;
+          break;
         case 'uint8':
           format = gl.LUMINANCE;
           type = gl.UNSIGNED_BYTE;
           internalFormat = gl.LUMINANCE;
           jsArrayType = Uint8Array;
           break;
+        case 'uint16':
+          format = gl.RED_INTEGER;
+          type = gl.UNSIGNED_SHORT;
+          internalFormat = gl.R16UI;
+          jsArrayType = Uint16Array;
+          break;
+        case 'uint64':
+          // TODO: Once render modes per-datatype are available, this could also
+          // be a `RG32UI`.
+          format = gl.RGBA_INTEGER;
+          type = gl.UNSIGNED_SHORT;
+          internalFormat = gl.RGBA16UI;
+          jsArrayType = Uint16Array;
+          break;
         // The default case can be hit when the layer is drawn before the
         // image block source has fully loaded.
         default:
-          CATMAID.warn(`Unknown data type for stack layer: ${dtype}, using uint32`);
+          // This default should only catch float64 at time of writing, but
+          // is a default since sources may generalize beyond N5 to backends
+          // with other data types.
+          CATMAID.warn(`Unsupported data type for stack layer: ${dtype}, using uint32`);
           /* falls through */
+        // TODO: See note about 32-bit types in `_dtypeTileConstructor`.
         case 'uint32':
           format = gl.RGBA;
           type = gl.UNSIGNED_BYTE;
           internalFormat = gl.RGBA;
           jsArrayType = Uint8Array;
+          break;
+        case 'float32':
+          format = gl.RED;
+          type = gl.FLOAT;
+          internalFormat = gl.R32F;
+          jsArrayType = Float32Array;
           break;
       }
 
@@ -295,7 +392,8 @@
       let renderer = this._context.renderer;
       let gl = renderer.gl;
 
-      let {format, type, internalFormat, jsArrayType} = this._dtypeWebGLParams(slice.dtype);
+      let dtype = sliceDtypeToBlockDtype(slice.dtype);
+      let {format, type, internalFormat, jsArrayType} = this._dtypeWebGLParams(dtype);
       const glScaleMode = this._pixiInterpolationMode === PIXI.SCALE_MODES.LINEAR ?
         gl.LINEAR : gl.NEAREST;
 
@@ -313,11 +411,11 @@
       let height = slice.shape[0];
 
       if (!texture || texture.width !== width || texture.height !== height ||
-          texture.format !== format || texture.type !== type) {
+          texture.format !== internalFormat || texture.type !== type) {
         // Make sure Pixi does not have the old texture bound.
         renderer.unbindTexture(baseTex);
         if (texture) gl.deleteTexture(texture.texture);
-        texture = new PIXI.glCore.GLTexture(gl, width, height, format, type);
+        texture = new PIXI.glCore.GLTexture(gl, width, height, internalFormat, type);
         baseTex._glTextures[renderer.CONTEXT_UID] = texture;
         pixiTex._frame.width = baseTex.width = baseTex.realWidth = width;
         pixiTex._frame.height = baseTex.height = baseTex.realHeight = height;
@@ -335,7 +433,7 @@
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
       let typedArr = _flattenNdarraySliceToView(slice);
-      let arrayBuff = new jsArrayType(typedArr,
+      let arrayBuff = new jsArrayType(typedArr.buffer,
         typedArr.byteOffset, typedArr.byteLength/jsArrayType.BYTES_PER_ELEMENT);
       pixiTex._transpose = transpose;
 
@@ -347,9 +445,10 @@
           texture.width,
           texture.height,
           0, // Border
-          texture.format,
+          format,
           texture.type,
-          arrayBuff);
+          arrayBuff,
+          0);
       } else {
         gl.texSubImage2D(
           gl.TEXTURE_2D,
@@ -357,9 +456,10 @@
           0, 0,
           texture.width,
           texture.height,
-          texture.format,
+          format,
           texture.type,
-          arrayBuff);
+          arrayBuff,
+          0);
       }
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, glScaleMode);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, glScaleMode);
@@ -426,6 +526,14 @@
   }
 
   CATMAID.PixiImageBlockLayer = PixiImageBlockLayer;
+
+  function sliceDtypeToBlockDtype(sliceDtype) {
+    if (sliceDtype.startsWith('big')) {
+      return sliceDtype.slice(3);
+    } else {
+      return sliceDtype;
+    }
+  }
 
   /** Convert a 2-d c-order ndarray into a flattened TypedArray. */
   function _flattenNdarraySliceToView(slice) {

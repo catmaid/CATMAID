@@ -238,7 +238,6 @@
         if (slice.shape[0] < this.tileWidth ||
             slice.shape[1] < this.tileHeight) {
           let empty = this._makeEmptySlice();
-          var sub = empty.hi(slice.shape[0], slice.shape[1]);
 
           for(let i=0; i<slice.shape[0]; ++i) {
             for(let j=0; j<slice.shape[1]; ++j) {
@@ -363,7 +362,7 @@
           if (buff.coord) {
             var tile = this._tiles[i][j];
 
-            if (/*force ||*/ buff.loaded) {
+            if (buff.loaded) {
               let swap = tile.texture;
               tile.texture = buff.texture;
               tile.coord = buff.coord;

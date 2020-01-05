@@ -305,6 +305,8 @@
 
       if (!texture || texture.width !== width || texture.height !== height ||
           texture.format !== format || texture.type !== type) {
+        // Make sure Pixi does not have the old texture bound.
+        renderer.unbindTexture(baseTex);
         if (texture) gl.deleteTexture(texture.texture);
         texture = new PIXI.glCore.GLTexture(gl, width, height, format, type);
         baseTex._glTextures[renderer.CONTEXT_UID] = texture;
@@ -314,7 +316,11 @@
         pixiTex._updateUvs();
       }
 
-      texture.bind();
+      // Pixi assumes it knows which textures are bound to which units as an
+      // optimization. To not corrupt these assumptions, bind through Pixi
+      // and use its unit rather than directly with the texture.
+      let texUnit = renderer.bindTexture(baseTex);
+      gl.activeTexture(gl.TEXTURE0 + texUnit);
       gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);

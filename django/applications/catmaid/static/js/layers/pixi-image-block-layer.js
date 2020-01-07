@@ -26,7 +26,6 @@
 
       this.blockSizeZ = 1;
 
-      // TODO need to set tile width based on block size, but that's async
       this.tileSource.promiseReady.then(() => {
         let blockSize = this.tileSource.blockSize(0);
         blockSize = CATMAID.tools.permute(blockSize, this.dimPerm);
@@ -36,6 +35,13 @@
         if (this._tiles.length) {
           // If tiles have been initialized, reinitialize.
           this.resize(this.stackViewer.viewWidth, this.stackViewer.viewHeight);
+        }
+        let numStackLevels = this.stack.downsample_factors.length;
+        let numSourceLevels = this.tileSource.numScaleLevels();
+        if (numStackLevels > numSourceLevels) {
+          // If the source has more levels than the stack, it's not worth
+          // warning the user since it won't break any interactions.
+          CATMAID.info(`Stack mirror has ${numSourceLevels} scale levels but stack specifies ${numStackLevels}`);
         }
       });
     }
@@ -189,13 +195,10 @@
         Promise.all(toLoad.map(([[i, j], coord]) => this
             ._readBlock(...coord.slice(0, 4))
             .then(block => {
-              if (!this._tilesBuffer[i][j] ||
+              if (!this._tilesBuffer || !this._tilesBuffer[i] || !this._tilesBuffer[i][j] ||
                   !CATMAID.tools.arraysEqual(this._tilesBuffer[i][j].coord, coord)) return;
 
               let slice = this._sliceBlock(block, blockZ);
-
-              // The array is still column major, so transpose to row-major for tex.
-              slice = slice.transpose(1, 0);
 
               this._sliceToTexture(slice, this._tilesBuffer[i][j].texture);
               this._tilesBuffer[i][j].coord = coord;
@@ -238,7 +241,6 @@
         if (slice.shape[0] < this.tileWidth ||
             slice.shape[1] < this.tileHeight) {
           let empty = this._makeEmptySlice();
-          var sub = empty.hi(slice.shape[0], slice.shape[1]);
 
           for(let i=0; i<slice.shape[0]; ++i) {
             for(let j=0; j<slice.shape[1]; ++j) {
@@ -300,11 +302,20 @@
       let baseTex = pixiTex.baseTexture;
       let texture = baseTex._glTextures[renderer.CONTEXT_UID];
       let newTex = false;
+
+      // Since we assume array coordinates are [x][y], we want f-order since
+      // OpenGL wants x most rapidly changing.
+      let transpose = slice.selection.stride[0] > slice.selection.stride[1];
+      if (!transpose) {
+        slice = slice.transpose(1, 0);
+      }
       let width = slice.shape[1];
       let height = slice.shape[0];
 
       if (!texture || texture.width !== width || texture.height !== height ||
           texture.format !== format || texture.type !== type) {
+        // Make sure Pixi does not have the old texture bound.
+        renderer.unbindTexture(baseTex);
         if (texture) gl.deleteTexture(texture.texture);
         texture = new PIXI.glCore.GLTexture(gl, width, height, format, type);
         baseTex._glTextures[renderer.CONTEXT_UID] = texture;
@@ -314,10 +325,20 @@
         pixiTex._updateUvs();
       }
 
-      texture.bind();
+      // Pixi assumes it knows which textures are bound to which units as an
+      // optimization. To not corrupt these assumptions, bind through Pixi
+      // and use its unit rather than directly with the texture.
+      let texUnit = renderer.bindTexture(baseTex);
+      gl.activeTexture(gl.TEXTURE0 + texUnit);
       gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+      let typedArr = _flattenNdarraySliceToView(slice);
+      let arrayBuff = new jsArrayType(typedArr,
+        typedArr.byteOffset, typedArr.byteLength/jsArrayType.BYTES_PER_ELEMENT);
+      pixiTex._transpose = transpose;
+
       if (newTex) {
         gl.texImage2D(
           gl.TEXTURE_2D,
@@ -328,7 +349,7 @@
           0, // Border
           texture.format,
           texture.type,
-          new jsArrayType(slice.flatten().selection.data.buffer));
+          arrayBuff);
       } else {
         gl.texSubImage2D(
           gl.TEXTURE_2D,
@@ -338,7 +359,7 @@
           texture.height,
           texture.format,
           texture.type,
-          new jsArrayType(slice.flatten().selection.data.buffer));
+          arrayBuff);
       }
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, glScaleMode);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, glScaleMode);
@@ -357,7 +378,7 @@
           if (buff.coord) {
             var tile = this._tiles[i][j];
 
-            if (/*force ||*/ buff.loaded) {
+            if (buff.loaded) {
               let swap = tile.texture;
               tile.texture = buff.texture;
               tile.coord = buff.coord;
@@ -366,6 +387,15 @@
               buff.coord = null;
               if (tile.texture.baseTexture.scaleMode !== this._pixiInterpolationMode) {
                 this._setTextureInterpolationMode(tile.texture, this._pixiInterpolationMode);
+              }
+              if (tile.texture._transpose && !tile._transpose) {
+                tile.scale.x = -1.0;
+                tile.rotation = -Math.PI / 2.0;
+                tile._transpose = true;
+              } else if (!tile.texture._transpose && tile._transpose) {
+                tile.scale.x = 1.0;
+                tile.rotation = 0.0;
+                tile._transpose = false;
               }
               tile.visible = true;
             } else if (force) {
@@ -396,5 +426,49 @@
   }
 
   CATMAID.PixiImageBlockLayer = PixiImageBlockLayer;
+
+  /** Convert a 2-d c-order ndarray into a flattened TypedArray. */
+  function _flattenNdarraySliceToView(slice) {
+    let sourceArray = slice.selection.data;
+    if (slice.selection.stride[1] === 1) {
+      if (slice.selection.stride[0] === slice.shape[1]) {
+        // In this case the data is already contiguous in memory in the correct order.
+        let sourceOffset = slice.selection.offset;
+        return sourceArray.subarray(sourceOffset, sourceOffset + slice.shape[0] * slice.shape[1]);
+      }
+
+      // In this case the rows are contiguous in memory, but the colums are
+      // strided non-contiguously.
+      let typedArr = new sourceArray.constructor(slice.shape[0] * slice.shape[1]);
+      let targetOffset = 0;
+      let sourceOffset = slice.selection.offset;
+      for (let i = 0; i < slice.shape[0]; ++i) {
+        typedArr.set(sourceArray.subarray(sourceOffset, sourceOffset + slice.shape[1]), targetOffset);
+        targetOffset += slice.shape[1];
+        sourceOffset += slice.selection.stride[0];
+      }
+
+      return typedArr;
+    } else {
+
+      // In this case no elements are contiguous so much be copied individually.
+      return slice.flatten().selection.data;
+      // Manual implementation that is somehow slower than ndarray's nested
+      // Array push and joining:
+      // let typedArr = new sourceArray.constructor(slice.shape[0] * slice.shape[1]);
+      // let targetOffset = 0;
+      // let sourceIOffset = slice.selection.offset;
+      // for (let i = 0; i < slice.shape[0]; ++i) {
+      //   let sourceJOffset = sourceIOffset;
+      //   for (let j = 0; j < slice.shape[1]; ++j) {
+      //     typedArr[targetOffset++] = sourceArray[sourceJOffset];
+      //     sourceJOffset += slice.selection.stride[1];
+      //   }
+      //   sourceIOffset += slice.selection.stride[0];
+      // }
+
+      // return typedArr;
+    }
+  }
 
 })(CATMAID);

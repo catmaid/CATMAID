@@ -382,8 +382,8 @@ class DownsampleFactorsFormField(forms.MultiValueField):
                 delimiter='|',
                 max_length=kwargs['max_length']),
         )
-        del kwargs['max_length']
-        del kwargs['base_field']
+        kwargs.pop('max_length', None)
+        kwargs.pop('base_field', None)
         super().__init__(fields, *args, **kwargs)
         # Because SimpleArrayField does not strictly adhere to Django conventions,
         # our widget must have access to its field so that `prepare_value` can

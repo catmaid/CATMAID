@@ -103,6 +103,7 @@
     var emptyTex = graphic.generateCanvasTexture();
 
     this._tiles = [];
+    this._tilesBuffer = [];
     this._tileFirstR = 0;
     this._tileFirstC = 0;
 

@@ -41,7 +41,7 @@
       '8': CATMAID.DVIDImagetileTileSource,
       '9': CATMAID.FlixServerTileSource,
       '10': CATMAID.H2N5TileSource,
-      '11': CATMAID.N5ImageBlockSource,
+      '11': CATMAID.N5ImageBlockWorkerSource,
       '12': CATMAID.BossTileSource,
     };
 
@@ -66,6 +66,18 @@
       source.tileHeight = tileHeight;
       return source;
     } else throw new RangeError('Tile source type ' + tileSourceType + ' is unknown.');
+  };
+
+  let _sourceCache = new Map();
+
+  CATMAID.TileSources.getCached = function (id, ...args) {
+    let source = _sourceCache.get(id);
+    if (typeof source === 'undefined') {
+      source = CATMAID.TileSources.get(id, ...args);
+      _sourceCache.set(id, source);
+    }
+
+    return source;
   };
 
 
@@ -531,6 +543,10 @@
       throw new CATMAID.NotImplementedError();
     }
 
+    numScaleLevels() {
+      throw new CATMAID.NotImplementedError();
+    }
+
     readBlock(zoomLevel, xi, yi, zi) {
       throw new CATMAID.NotImplementedError();
     }
@@ -569,15 +585,16 @@
       this.sliceDims = sliceDims.split('_').map(d => parseInt(d, 10));
       this.reciprocalSliceDims = Array.from(Array(this.sliceDims.length).keys())
           .sort((a, b) => this.sliceDims[a] - this.sliceDims[b]);
-      let n5DirIndex = this.datasetURL.lastIndexOf('.n5');
-      this.rootURL = n5DirIndex === -1 ?
-          (new URL(this.datasetURL)).origin :
-          this.datasetURL.substring(0, n5DirIndex + 3);
-      this.datasetPathFormat = this.datasetURL.substring(this.rootURL.length + 1);
+      // Because we cannot infer the root URL, must find it exhaustively.
+      let n5SearchIndex = this.datasetURL.lastIndexOf('%SCALE_DATASET%');
+      // Initial guess of root:
+      this.rootURL = n5SearchIndex === -1 ?
+          this.datasetURL :
+          this.datasetURL.substring(0, n5SearchIndex);
 
       this.datasetAttributes = [];
       this.promiseReady = N5ImageBlockSource.loadN5()
-          .then(n5wasm => n5wasm.N5HTTPFetch.open(this.rootURL).then(r => this.reader = r))
+          .then(n5wasm => this._findRoot(n5wasm).then(r => this.reader = r))
           .then(() => this.populateDatasetAttributes());
       this.ready = false;
     }
@@ -590,16 +607,34 @@
         // This is done inside a Function/eval so that Firefox does not fail
         // to parse this whole file because of the dynamic import.
         this.promiseN5wasm = (new Function("return import('../libs/n5-wasm/n5_wasm.js')"))()
-            .then(n5wasm => n5wasm
-                .default(CATMAID.makeStaticURL('libs/n5-wasm/n5_wasm_bg.wasm'))
-                .then(() => n5wasm));
+            .then(n5wasm =>
+                wasm_bindgen(CATMAID.makeStaticURL('libs/n5-wasm/n5_wasm_bg.wasm'))
+                .then(() => wasm_bindgen));
       }
 
       return this.promiseN5wasm;
     }
 
+    /** Find the root of this N5 container by recursively walking up the path. */
+    _findRoot(n5wasm) {
+      return n5wasm.N5HTTPFetch.open(this.rootURL)
+        .then(r => {
+          this.datasetPathFormat = this.datasetURL.substring(this.rootURL.length + 1);
+          return r;
+        })
+        .catch(error => {
+          let origin = (new URL(this.rootURL)).origin;
+          let nextDir = this.rootURL.lastIndexOf('/');
+          if (nextDir === -1 || origin == this.rootURL) {
+            throw error;
+          }
+          this.rootURL = this.rootURL.substring(0, nextDir);
+          return this._findRoot(n5wasm);
+        });
+    }
+
     getTileURL(project, stack, slicePixelPosition, col, row, zoomLevel) {
-      let z = slicePixelPosition[0] / this.blockSize(zoomLevel)[2];
+      let z = Math.floor(slicePixelPosition[0] / this.blockSize(zoomLevel)[2]);
       let sourceCoord = [col, row, z];
       let blockCoord = CATMAID.tools.permute(sourceCoord, this.reciprocalSliceDims);
 
@@ -679,6 +714,10 @@
       return 's' + zoomLevel;
     }
 
+    numScaleLevels() {
+      return this.datasetAttributes.length;
+    }
+
     checkCanary(project, stack, noCache) {
       let request = (options) => {
         let url = this.getCanaryUrl(project, stack);
@@ -689,11 +728,9 @@
 
         let before = performance.now();
         return fetch(new Request(url, options))
-          .then((response) => {
-            var contentHeader = response.headers.get('Content-Type');
-            return [contentHeader && contentHeader.startsWith('application/octet-stream'),
-                performance.now() - before];
-          })
+          .then(response =>
+            [response.status === 200, performance.now() - before]
+          )
           .catch(() => [false, Infinity]);
       };
 
@@ -706,6 +743,61 @@
           cors:       result[1][0],
           corsTime:   result[1][1]
       })));
+    }
+  };
+
+  /**
+   * Image block source type for N5 datasets. This sub-implementation uses
+   * a pool of web workers for block loading.
+   * See https://github.com/saalfeldlab/n5
+   * See https://github.com/aschampion/n5-wasm
+   *
+   * Source type: 11
+   */
+  CATMAID.N5ImageBlockWorkerSource = class N5ImageBlockWorkerSource extends CATMAID.N5ImageBlockSource {
+    constructor(...args) {
+      super(...args);
+
+      this.promiseReady.then(() => {
+        this.workers = new CATMAID.PromiseWorkerPool(
+          () => { return {
+            worker: new CATMAID.PromiseWorker(
+              new Worker(CATMAID.makeStaticURL('libs/n5-wasm/n5_wasm_worker.js'))
+            ),
+            init: (worker) => worker.postMessage([
+              [wasm_bindgen.__wbindgen_wasm_module],
+              this.rootURL,
+            ]),
+          };}
+        );
+      });
+    }
+
+    readBlock(zoomLevel, ...sourceCoord) {
+      return this.promiseReady.then(() => {
+        let path = this.datasetPath(zoomLevel);
+        let dataAttrs = this.datasetAttributes[zoomLevel];
+
+        if (!dataAttrs) return {block: null, etag: undefined};
+
+        let blockCoord = CATMAID.tools.permute(sourceCoord, this.reciprocalSliceDims);
+
+        return this.workers
+            .postMessage([path, dataAttrs.to_json(), blockCoord.map(BigInt)])
+            .then(block => {
+              if (block) {
+                let n = 1;
+                let stride = block.size.map(s => { let rn = n; n *= s; return rn; });
+                return {
+                  etag: block.etag,
+                  block: new nj.NdArray(nj.ndarray(block.data, block.size, stride))
+                      .transpose(...this.sliceDims)
+                };
+              } else {
+                return {block, etag: undefined};
+              }
+            });
+      });
     }
   };
 

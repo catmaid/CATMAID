@@ -7,7 +7,7 @@ Cython==0.29.14
 Django==2.2.9
 django-adminplus==0.5
 django-formtools==2.2
-django-guardian==2.0.0
+django-guardian==2.1.0
 django-pipeline==1.6.14
 django-rest-swagger==2.2.0
 django-taggit==1.1.0

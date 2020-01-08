@@ -9,7 +9,6 @@ from django.test import TestCase, TransactionTestCase
 from django.test.client import Client
 from guardian.shortcuts import assign_perm
 from guardian.utils import get_anonymous_user
-from guardian.management import create_anonymous_user
 
 from catmaid.control.project import validate_project_setup
 from catmaid.control.annotation import _annotate_entities
@@ -18,7 +17,7 @@ from catmaid.models import Project, Stack, ProjectStack, StackMirror
 from catmaid.models import ClassInstance, Log
 from catmaid.models import Treenode, Connector, User
 from catmaid.models import TreenodeClassInstance, ClassInstanceClassInstance
-from catmaid.tests.common import init_consistent_data, AssertStatusMixin
+from catmaid.tests.common import create_anonymous_user, init_consistent_data, AssertStatusMixin
 
 
 class TransactionTests(TransactionTestCase, AssertStatusMixin):
@@ -198,7 +197,7 @@ class ViewPageTests(TestCase, AssertStatusMixin):
 
         p = Project.objects.get(pk=self.test_project_id)
 
-        create_anonymous_user(object())
+        create_anonymous_user()
 
         user = User.objects.get(pk=3)
         # Assign the new user permissions to browse and annotate projects
@@ -637,7 +636,7 @@ class PermissionTests(TestCase, AssertStatusMixin):
         self.test_project_id = 3
         self.client = Client()
 
-        create_anonymous_user(object())
+        create_anonymous_user()
 
         # Set up test API. Because we want to test only general access to the
         # methods, it doesn't matter if we use fake parameters.

@@ -5,10 +5,9 @@ from django.shortcuts import get_object_or_404
 from django.test import TestCase
 from django.test.client import Client
 from guardian.shortcuts import assign_perm
-from guardian.management import create_anonymous_user
 
 from catmaid.models import Project, Treenode, User
-from catmaid.tests.common import init_consistent_data, AssertStatusMixin
+from catmaid.tests.common import create_anonymous_user, init_consistent_data, AssertStatusMixin
 
 
 class CatmaidApiTestCase(TestCase, AssertStatusMixin):
@@ -34,7 +33,7 @@ class CatmaidApiTestCase(TestCase, AssertStatusMixin):
             SELECT setval('location_id_seq', coalesce(max("id"), 1), max("id") IS NOT null) FROM location;
         """)
 
-        create_anonymous_user(object())
+        create_anonymous_user()
 
         # Assign the new user permissions to browse and annotate projects
         assign_perm('can_browse', cls.test_user, cls.test_project)

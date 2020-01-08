@@ -8,6 +8,14 @@ from django.test.client import Client
 from catmaid.apps import get_system_user
 from catmaid.models import Project, User
 from catmaid.control.project import validate_project_setup
+import guardian.management
+
+
+def create_anonymous_user():
+    """Create a new anonymous user, if not yet available.
+    """
+    # Create anonnymous user with default database configuration.
+    return guardian.management.create_anonymous_user(object(), using='default')
 
 
 def init_consistent_data():

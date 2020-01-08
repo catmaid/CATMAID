@@ -3,7 +3,7 @@ asgi_ipc==1.4.2
 celery==4.3.0
 channels==1.1.8
 cssmin==0.2.0
-Cython==0.29.13
+Cython==0.29.14
 Django==2.2.8
 django-adminplus==0.5
 django-formtools==2.1

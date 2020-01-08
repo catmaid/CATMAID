@@ -21,7 +21,7 @@ msgpack_python==0.5.6
 networkx==1.11
 numpy==1.17.4
 pillow==7.0.0
-progressbar2==3.46.0
+progressbar2==3.47.0
 psycopg2-binary==2.8.3; platform_python_implementation != 'PyPy'
 psycopg2cffi==2.8.1;  platform_python_implementation == 'PyPy'
 python-dateutil==2.8.0

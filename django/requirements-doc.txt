@@ -1,4 +1,5 @@
 coreapi==2.3.3
+coreapi-cli==1.0.9
 docutils==0.13.1
 Markdown==2.6.9
 Pygments==2.2.0

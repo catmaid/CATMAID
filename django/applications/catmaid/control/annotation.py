@@ -1392,7 +1392,7 @@ def list_annotations(request:HttpRequest, project_id=None) -> JsonResponse:
         # In case a simple representation should be returned, return a simple
         # list of name - ID mappings.
         if simple:
-            # If there is no newer annotation data since the passed-in date, retunr
+            # If there is no newer annotation data since the passed-in date, return
             # a 304 response.
             if if_modified_since:
                 if_modified_since = dateutil.parser.parse(if_modified_since)

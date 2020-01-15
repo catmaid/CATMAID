@@ -626,7 +626,9 @@
           let origin = (new URL(this.rootURL)).origin;
           let nextDir = this.rootURL.lastIndexOf('/');
           if (nextDir === -1 || origin == this.rootURL) {
-            throw error;
+            CATMAID.msg('Mirror Inaccessible', `Could not locate N5 root for mirror ${this.id}`, {style: 'error'});
+            // Don't cause error popups, but do not resolve promise.
+            return new Promise(() => {});
           }
           this.rootURL = this.rootURL.substring(0, nextDir);
           return this._findRoot(n5wasm);

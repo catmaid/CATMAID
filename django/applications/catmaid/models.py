@@ -1514,7 +1514,8 @@ class UserProfile(models.Model):
     show_ontology_tool = models.BooleanField(default=False)
     show_roi_tool = models.BooleanField(default=False)
     color = RGBAField(default=distinct_user_color)
-    primary_group = models.ForeignKey(Group, default=None, null=True, on_delete=models.DO_NOTHING)
+    primary_group = models.ForeignKey(Group, default=None, null=True, blank=True,
+            on_delete=models.DO_NOTHING)
 
     def __str__(self) -> str:
         return self.user.username

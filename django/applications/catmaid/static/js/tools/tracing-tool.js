@@ -358,6 +358,15 @@
     this.register = function( parentStackViewer ) {
       setupSubTools();
 
+      if (parentStackViewer) {
+        // Get or create the tracing layer for this stack viewer
+        var layer = prepareStackViewer(parentStackViewer);
+
+        // Set this layer as mouse catcher in Navigator
+        var view = layer.tracingOverlay.view;
+        self.prototype.setMouseCatcher(view);
+      }
+
       // Register stack viewer with prototype, after the mouse catcher has been set.
       // This attaches pointer handlers to the view.
       self.prototype.register(parentStackViewer, "edit_button_trace");
@@ -374,13 +383,6 @@
       }
 
       if (parentStackViewer) {
-        // Get or create the tracing layer for this stack viewer
-        var layer = prepareStackViewer(parentStackViewer);
-
-        // Set this layer as mouse catcher in Navigator
-        var view = layer.tracingOverlay.view;
-        self.prototype.setMouseCatcher(view);
-
         // Try to get existing pointer bindings for this layer
         if (!bindings.has(parentStackViewer)) createPointerBindings(parentStackViewer, layer, view);
 

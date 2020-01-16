@@ -418,11 +418,9 @@ var project;
 
     // Create the toolboxes
     $('#toolbox_project').replaceWith(CATMAID.createButtonsFromActions(
-      CATMAID.toolActions, 'toolbox_project', ''));
+      CATMAID.toolActions, 'toolbox_project', '', 'toolbar_item'));
     $('#toolbox_edit').replaceWith(CATMAID.createButtonsFromActions(
-      CATMAID.EditTool.actions, 'toolbox_edit', ''));
-    $('#toolbox_data').replaceWith(CATMAID.createButtonsFromActions(
-      CATMAID.TracingTool.actions, 'toolbox_data', ''));
+      CATMAID.EditTool.actions, 'toolbox_edit', '', 'toolbar_item'));
 
     // Add the toolbar buttons:
     document.getElementById( "toolbar_nav" ).style.display = "none";
@@ -432,8 +430,9 @@ var project;
     document.getElementById( "toolbox_project" ).style.display = "none";
     document.getElementById( "toolbox_edit" ).style.display = "none";
     document.getElementById( "toolbox_ontology" ).style.display = "none";
-    document.getElementById( "toolbox_data" ).style.display = "none";
     document.getElementById( "toolbox_show" ).style.display = "none";
+
+    CATMAID.DOM.removeAllChildren(document.getElementById("toolbox_data"));
 
     document.getElementById( "account" ).onkeydown = login_oninputreturn;
     document.getElementById( "password" ).onkeydown = login_oninputreturn;
@@ -781,7 +780,7 @@ var project;
 
     // update the edit tool actions and its div container
     var new_edit_actions = CATMAID.createButtonsFromActions(CATMAID.EditTool.actions,
-      'toolbox_edit', '');
+      'toolbox_edit', '', 'toolbar_item');
     $('#toolbox_edit').replaceWith(new_edit_actions);
     if (project) {
       $('#toolbox_edit').show();

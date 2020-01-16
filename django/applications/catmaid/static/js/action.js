@@ -146,9 +146,12 @@
       Also bind the onClick action for the link that contains
       those icons to the corresponding function */
 
-  function createButtonsFromActions(actions, boxID, iconPrefix) {
+  function createButtonsFromActions(actions, boxID, iconPrefix, extraClasses) {
     var box, action, a, img, buttonID, title, shortcuts;
     box = $( '<div class="box" id="'+boxID+'"></div>' );
+    if (extraClasses) {
+      box.addClass(extraClasses);
+    }
     for (var i = 0; i < actions.length; ++i) {
       action = actions[i];
       if (action.hasButton()) {

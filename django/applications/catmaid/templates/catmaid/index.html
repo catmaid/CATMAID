@@ -69,7 +69,7 @@
       *******************************************************************
       -->
       <div id="toolbar_login" class="toolbar">
-        <div class="menu">
+        <div class="menu toolbar_item">
           <div id="home_box" class="box">
             <div class="menu_item" style="float:left" onpointerover="this.lastChild.style.display = 'block';" onpointerout="this.lastChild.style.display = 'none';">
               <p><a onclick="if (project) { project.destroy(); } return false;">Home</a></p>
@@ -94,19 +94,19 @@
           </div>
         </div>
 
-        <div class="box" id="toolbox_project" style="display:none"></div>
-        <div class="box" id="toolbox_edit" style="display:none"></div>
-        <div class="box" id="toolbox_ontology" style="display:none"></div>
-        <div class="box" id="toolbox_data" style="display:none"></div>
+        <div class="box toolbar_item" id="toolbox_project" style="display:none"></div>
+        <div class="box toolbar_item" id="toolbox_edit" style="display:none"></div>
+        <div class="box toolbar_item" id="toolbox_ontology" style="display:none"></div>
+        <div class="box toolbar_item" id="toolbox_data"></div>
 
-        <div id="spinner_box" class="box_right">
-            <i id="context-help-button" class="fa fa-question-circle-o" alt="Show context help information"></i>
-            <div id="spinner"><img src="{{ STATIC_URL }}images/wait_bgtransgrey.gif" alt="spinner" /></div>
+        <div class="menu toolbar_item">
+        <div id="session_box" class="box"> <div class="menu_item" onpointerover="this.lastChild.style.display = 'block';" onpointerout="this.lastChild.style.display = 'none';">
+            <p><a>You are <span id="session_longname">&nbsp;</span>.</a></p>
+            <div class="pulldown" id="user_menu"></div></div>
         </div>
-        <div class="menu">
-        <div id="logout_box" class="box_right"><p><a
+        <div id="logout_box" class="box"><p><a
             id="logout" name="logout" title="Logout" onclick="CATMAID.client.logout();" href="#">Logout</a></p></div>
-        <div id="login_box" class="box_right">
+        <div id="login_box" class="box">
           <form>
             <p>account&nbsp;</p>
             <p><input type="text" id="account" name="account" size="8" /></p>
@@ -115,13 +115,13 @@
             <p>&nbsp;&nbsp;<a id="login" name="login" title="Login" href="#" onclick="CATMAID.client.login( document.getElementById( 'account' ).value, document.getElementById( 'password' ).value );">Login</a></p>
           </form>
         </div>
-        <div id="session_box" class="box_right"> <div class="menu_item" onpointerover="this.lastChild.style.display = 'block';" onpointerout="this.lastChild.style.display = 'none';">
-            <p><a>You are <span id="session_longname">&nbsp;</span>.</a></p>
-            <div class="pulldown" id="user_menu"></div></div>
         </div>
-        </div>
-        <div class="box_right" id="toolbox_show" style="display:none">
+        <div class="box toolbar_item" id="toolbox_show" style="display:none">
           <a href="#" class="button_active" id="show_button_text" onclick="project.toggleShow( 'text' );"><img src="{{ STATIC_URL }}images/show_text.gif" alt="show textlabels" title="show textlabels" /></a>
+        </div>
+        <div id="spinner_box" class="box toolbar_item">
+            <i id="context-help-button" class="fa fa-question-circle-o" alt="Show context help information"></i>
+            <div id="spinner"><img src="{{ STATIC_URL }}images/wait_bgtransgrey.gif" alt="spinner" /></div>
         </div>
         <div class="toolbar_fill"></div>
       </div>
@@ -133,20 +133,21 @@
       *******************************************************************
       -->
       <div id="toolbar_nav" class="toolbar" style="display:none">
-        <div class="box"><p>x&nbsp;</p><p><input type="search" id="x" name="x" size="5" /><img src="{{ STATIC_URL }}images/input_topdown.svg" onerror="this.onerror = null; this.src = '{{ STATIC_URL }}images/input_topdown.gif'" alt="" usemap="#xmap" /></p></div>
-        <div class="box"><p>y&nbsp;</p><p><input type="search" id="y" name="y" size="5" /><img src="{{ STATIC_URL }}images/input_topdown.svg" onerror="this.onerror = null; this.src = '{{ STATIC_URL }}images/input_topdown.gif'" alt="" usemap="#ymap" /></p></div>
-        <div id="sliders_box"></div>
-        <div class="box" id="zoom_level_box"><p>zoom-level</p><div id="slider_s"></div><p>&nbsp;&nbsp;</p></div>
-        <div class="box_right"><p>
-          <a href="#" data-role="url-to-clipboard"><i class="fa fa-copy" title="Copy to clipboard"></i></a>
-          <a id="a_url" name="a_url" title="This is the URL to this view. You can bookmark it or send it to the people." href="" target="_blank">URL to this view</a>
-        </p></div>
-        <div class="box_right" data-role="toolbar-box"><p>
+        <div class="box toolbar_item"><p>x&nbsp;</p><p><input type="search" id="x" name="x" size="5" /><img src="{{ STATIC_URL }}images/input_topdown.svg" onerror="this.onerror = null; this.src = '{{ STATIC_URL }}images/input_topdown.gif'" alt="" usemap="#xmap" /></p></div>
+        <div class="box toolbar_item"><p>y&nbsp;</p><p><input type="search" id="y" name="y" size="5" /><img src="{{ STATIC_URL }}images/input_topdown.svg" onerror="this.onerror = null; this.src = '{{ STATIC_URL }}images/input_topdown.gif'" alt="" usemap="#ymap" /></p></div>
+        <div class="toolbar_slider_item" id="sliders_box"></div>
+        <div class="box toolbar_slider_item" id="zoom_level_box"><p>zoom-level</p><div id="slider_s"></div><p>&nbsp;&nbsp;</p></div>
+        <div class="toolbar_fill_item"></div>
+        <div class="box toolbar_item" data-role="toolbar-box"><p>
           <a href="#" data-role="pos-to-clipboard"><i class="fa fa-map-marker" title="Copy coordinates of the center of the field of view of the active stack viewer in project coordinates to the clipboard. Use Alt + Click to copy stack coorinates of the active stack."></i></a>
           <input type="text" id="goto-user-input" name="position" size="7"
           placeholder="Pos., ID, URL, …" title="Will try to parse in the following order: project coordinate tuple, stack coordinate tuple ('px' suffix), bookmarks, location IDs (treenodes, connectors), neuron IDs, skeleton IDs. If muliple IDs are provided, a selection table is opened."/>
           <a href="#" data-role="go-to"><i class="fa fa-angle-double-right"
               title="Parse text in input as location or ID and go to and select, respectively. Locations will also be stored as bookmark. If a location has the suffix 'px', it is treated as stack space coordinate of the primary stack."></i></a>
+        </p></div>
+        <div class="box toolbar_item"><p>
+          <a href="#" data-role="url-to-clipboard"><i class="fa fa-copy" title="Copy to clipboard"></i></a>
+          <a id="a_url" name="a_url" title="This is the URL to this view. You can bookmark it or send it to the people." href="" target="_blank">URL to this view</a>
         </p></div>
         <div class="toolbar_fill"></div>
       </div>

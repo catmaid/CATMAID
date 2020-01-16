@@ -18,6 +18,43 @@ div.toolbar {
   background-image: url(../images/bar32_bg.svg), none;
 }
 
+div.toolbar .toolbar_item {
+  flex: 0 0 auto;
+}
+
+div.toolbar .toolbar_fill_item {
+  flex-grow: 100;
+  flex-shrink: 1;
+  flex-basis: 0;
+}
+
+div.toolbar .toolbar_slider_item {
+  flex: 1 1 auto;
+  display: flex;
+  min-width: 0;
+}
+
+div.toolbar .toolbar_slider_item p {
+  flex-shrink: 0;
+}
+
+div.toolbar .toolbar_slider_item .hSliderView {
+  flex: 0 1 auto;
+  min-width: 3em;
+}
+
+div.toolbar .toolbar_slider_item .hSliderView .hSliderBarBottom {
+  min-width: 0;
+}
+
+div.toolbar #sliders_box {
+  min-width: 15em;
+}
+
+div.toolbar #zoom_level_box {
+  min-width: 14em;
+}
+
 div.toolbar div.toolbar_fill {
   margin: 0;
   padding: 0;
@@ -260,4 +297,17 @@ div#message_box {
 
 .catmaid.authenticated div#message_box {
   display: block;
+}
+
+#toolbar_nav {
+  display: flex;
+}
+
+#toolbar_login {
+  display: flex;
+}
+
+#toolbox_data {
+  overflow: hidden;
+  flex-grow: 1;
 }

@@ -60,7 +60,7 @@
         0.05 );
 
     var slider_z_box = document.createElement( "div" );
-    slider_z_box.className = "box";
+    slider_z_box.className = "box toolbar_slider_item";
     slider_z_box.id = "slider_z_box";
     var slider_z_box_label = document.createElement( "p" );
     slider_z_box_label.appendChild( document.createTextNode( "z-index" ) );
@@ -656,7 +656,7 @@
       if (button) button.className = "button_active";
 
       var toolbar = document.getElementById( "toolbar_nav" );
-      if (toolbar) toolbar.style.display = "block";
+      if (toolbar) toolbar.style.display = "";
 
       self.stackViewer = parentStackViewer;
 
@@ -684,7 +684,7 @@
       }
       else
       {
-        self.slider_z.getView().parentNode.style.display = "block";
+        self.slider_z.getView().parentNode.style.display = "";
       }
       var validSections = self.stackViewer.getValidSections();
       self.slider_z.update(

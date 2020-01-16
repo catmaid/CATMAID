@@ -200,10 +200,6 @@
       document.getElementById( "toolbar_trace" ).style.display = "none";
     };
 
-    this.hideToolboxes = function() {
-      document.getElementById( "toolbox_data" ).style.display = "none";
-    };
-
     this.setTool = function( newTool ) {
       // Destroy the old project only, if it isn't the very same project that gets
       // set again.
@@ -211,10 +207,15 @@
         tool.destroy();
       tool = newTool;
 
-      self.hideToolboxes();
+      CATMAID.DOM.removeAllChildren(document.getElementById("toolbox_data"));
 
       var prepare, initError = false;
       if (newTool && CATMAID.tools.isFn(newTool.init)) {
+        // Add tool actios, if there are any available.
+        if (newTool.constructor.actions) {
+          $('#toolbox_data').replaceWith(CATMAID.createButtonsFromActions(
+              newTool.constructor.actions, 'toolbox_data', ''));
+        }
         prepare = newTool.init()
           .catch(function(error) {
             initError = true;
@@ -310,9 +311,10 @@
       document.getElementById( "stack_menu" ).style.display = "none";
       // TODO: bars should be unset by tool on unregister
       document.getElementById("toolbox_edit").style.display = "none";
-      document.getElementById("toolbox_data").style.display = "none";
       document.getElementById( "toolbox_project" ).style.display = "none";
       document.getElementById( "toolbar_nav" ).style.display = "none";
+
+      CATMAID.DOM.removeAllChildren(document.getElementById("toolbox_data"));
 
       CATMAID.statusBar.replaceLast('');
       CATMAID.statusBar.printCoords('');

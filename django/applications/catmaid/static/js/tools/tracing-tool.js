@@ -132,7 +132,7 @@
         box = CATMAID.createButtonsFromActions(
           actions,
           "tracingbuttons",
-          "trace_");
+          "trace_", 'toolbar_item');
         $( "#toolbar_nav" ).prepend( box );
 
       }
@@ -356,8 +356,6 @@
      * register all GUI control elements and event handlers
      */
     this.register = function( parentStackViewer ) {
-      document.getElementById( "toolbox_data" ).style.display = "block";
-
       setupSubTools();
 
       // Get or create the tracing layer for this stack viewer

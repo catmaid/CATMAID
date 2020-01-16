@@ -370,6 +370,13 @@ Miscellaneous:
   settings through the "Clear settings" button. It will ask for confirmation and
   whether both front-end and back-end settings should be cleared.
 
+- The top toolbar of the web UI won't add line breaks anymore if only little
+  horizontal space is available. The part of the toolbar that contains the
+  widget buttons for the selected tool will shrink instead. Only elements that
+  fit the available width are displayed there now. Invisible items are not a
+  problem, because all widgets can be reached through the "Open Widget" dialog
+  or Ctrl + Space.
+
 ### Bug fixes
 
 - Connector list: dates are now display correctly.

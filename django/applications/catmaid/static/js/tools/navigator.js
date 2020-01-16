@@ -666,44 +666,46 @@
       self.mouseCatcher.addEventListener('pointermove', this._mousePosStatusUpdate);
       self.mouseCatcher.addEventListener('pointerup', this._mousePosStatusUpdate);
 
-      self.stackViewer.getView().appendChild( self.mouseCatcher );
+      if (self.stackViewer) {
+        self.stackViewer.getView().appendChild( self.mouseCatcher );
 
-      var sExtents = self.stackViewer.getZoomExtents();
-      self.slider_s.update(
-        sExtents.max,
-        sExtents.min,
-        { major: sExtents.max - sExtents.min + 1,
-          minor: (sExtents.max - sExtents.min)*10 + 1 },
-        self.stackViewer.s,
-        self.changeScaleDelayed,
-        -0.01);
+        var sExtents = self.stackViewer.getZoomExtents();
+        self.slider_s.update(
+          sExtents.max,
+          sExtents.min,
+          { major: sExtents.max - sExtents.min + 1,
+            minor: (sExtents.max - sExtents.min)*10 + 1 },
+          self.stackViewer.s,
+          self.changeScaleDelayed,
+          -0.01);
 
-      if ( self.stackViewer.primaryStack.slices.length < 2 )  //!< hide the self.slider_z if there is only one slice
-      {
-        self.slider_z.getView().parentNode.style.display = "none";
+        if ( self.stackViewer.primaryStack.slices.length < 2 )  //!< hide the self.slider_z if there is only one slice
+        {
+          self.slider_z.getView().parentNode.style.display = "none";
+        }
+        else
+        {
+          self.slider_z.getView().parentNode.style.display = "";
+        }
+        var validSections = self.stackViewer.getValidSections();
+        self.slider_z.update(
+          undefined,
+          undefined,
+          { major: validSections.filter(function(e, i) { return i % 10 === 0; }),
+            minor: validSections },
+          self.stackViewer.z,
+          self.changeSliceDelayed );
+
+        self.input_x.onchange = changeXByInput;
+        self.input_x.addEventListener( "wheel", YXMouseWheel, false );
+
+        self.input_y.onchange = changeYByInput;
+        self.input_y.addEventListener( "wheel", YXMouseWheel, false );
+
+        self.input_goto_request.addEventListener('keypress', handleGoToInputKeyDown);
+        self.button_goto_request.addEventListener('click', handleGoToRequest);
+        self.button_copy_pos.addEventListener('click', handleCopyPosRequest);
       }
-      else
-      {
-        self.slider_z.getView().parentNode.style.display = "";
-      }
-      var validSections = self.stackViewer.getValidSections();
-      self.slider_z.update(
-        undefined,
-        undefined,
-        { major: validSections.filter(function(e, i) { return i % 10 === 0; }),
-          minor: validSections },
-        self.stackViewer.z,
-        self.changeSliceDelayed );
-
-      self.input_x.onchange = changeXByInput;
-      self.input_x.addEventListener( "wheel", YXMouseWheel, false );
-
-      self.input_y.onchange = changeYByInput;
-      self.input_y.addEventListener( "wheel", YXMouseWheel, false );
-
-      self.input_goto_request.addEventListener('keypress', handleGoToInputKeyDown);
-      self.button_goto_request.addEventListener('click', handleGoToRequest);
-      self.button_copy_pos.addEventListener('click', handleCopyPosRequest);
 
       self.updateControls();
     };

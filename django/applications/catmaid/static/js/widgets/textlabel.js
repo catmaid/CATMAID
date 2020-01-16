@@ -21,6 +21,7 @@ function TextlabelTool()
     document.getElementById( typeof buttonName == "undefined" ? "edit_button_text" : buttonName ).className = "button_active";
     document.getElementById( "toolbar_text" ).style.display = "block";
     $('#textlabeleditable').change(function(e) {
+      if (!textlabelLayer) return;
       if ($(this).prop("checked")) {
         textlabelLayer.setEditableTextlabels();
       } else {
@@ -30,8 +31,9 @@ function TextlabelTool()
   };
 
   self.updateTextlabels = function () {
-      textlabelLayer.update(0, 0, stackViewer.primaryStack.dimension.x * stackViewer.primaryStack.resolution.x,
-          stackViewer.primaryStack.dimension.y * stackViewer.primaryStack.resolution.y );
+    if (!textlabelLayer) return;
+    textlabelLayer.update(0, 0, stackViewer.primaryStack.dimension.x * stackViewer.primaryStack.resolution.x,
+        stackViewer.primaryStack.dimension.y * stackViewer.primaryStack.resolution.y );
   };
 
   this.getMouseHelp = function( e ) {
@@ -70,6 +72,8 @@ function TextlabelTool()
 
   var createTextlabelLayer = function( parentStackViewer )
   {
+    if (!parentStackViewer) return;
+
     stackViewer = parentStackViewer;
 
     textlabelLayer = new TextlabelLayer( parentStackViewer, self );
@@ -173,10 +177,14 @@ function TextlabelTool()
   {
     document.getElementById( typeof buttonName == "undefined" ? "edit_button_text" : buttonName ).className = "button";
     self.unregister();
-    textlabelLayer.removeTextlabels();
+    if (textlabelLayer) {
+      textlabelLayer.removeTextlabels();
+    }
     // the prototype destroy calls the prototype's unregister, not self.unregister
     // do it before calling the prototype destroy that sets stack viewer to null
-    self.prototype.stackViewer.removeLayer( "TextlabelLayer" );
+    if (self.prototype.stackViewer) {
+      self.prototype.stackViewer.removeLayer( "TextlabelLayer" );
+    }
     self.prototype.destroy( "edit_button_move" );
     for (var b in bindings) {
       if (bindings.hasOwnProperty(b)) {

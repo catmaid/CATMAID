@@ -358,13 +358,6 @@
     this.register = function( parentStackViewer ) {
       setupSubTools();
 
-      // Get or create the tracing layer for this stack viewer
-      var layer = prepareStackViewer(parentStackViewer);
-
-      // Set this layer as mouse catcher in Navigator
-      var view = layer.tracingOverlay.view;
-      self.prototype.setMouseCatcher(view);
-
       // Register stack viewer with prototype, after the mouse catcher has been set.
       // This attaches pointer handlers to the view.
       self.prototype.register(parentStackViewer, "edit_button_trace");
@@ -380,19 +373,28 @@
         lengthColorButton.className = CATMAID.TracingOverlay.Settings.session.color_by_length ? "button_active" : "button";
       }
 
-      // Try to get existing pointer bindings for this layer
-      if (!bindings.has(parentStackViewer)) createPointerBindings(parentStackViewer, layer, view);
+      if (parentStackViewer) {
+        // Get or create the tracing layer for this stack viewer
+        var layer = prepareStackViewer(parentStackViewer);
 
-      // Force an update and skeleton tracing mode if stack viewer or layer changed
-      if (activeTracingLayer !== layer || activeStackViewer !== parentStackViewer) {
-        SkeletonAnnotations.setTracingMode(SkeletonAnnotations.currentmode);
-        this.handleChangedInteractionMode(SkeletonAnnotations.currentmode);
+        // Set this layer as mouse catcher in Navigator
+        var view = layer.tracingOverlay.view;
+        self.prototype.setMouseCatcher(view);
+
+        // Try to get existing pointer bindings for this layer
+        if (!bindings.has(parentStackViewer)) createPointerBindings(parentStackViewer, layer, view);
+
+        // Force an update and skeleton tracing mode if stack viewer or layer changed
+        if (activeTracingLayer !== layer || activeStackViewer !== parentStackViewer) {
+          SkeletonAnnotations.setTracingMode(SkeletonAnnotations.currentmode);
+          this.handleChangedInteractionMode(SkeletonAnnotations.currentmode);
+        }
+
+        activeStackViewer = parentStackViewer;
+        // The active tracing layer however is whichever contains the active node
+        // and its API.
+        let activeLayer = setActiveTracingLayer(true);
       }
-
-      activeStackViewer = parentStackViewer;
-      // The active tracing layer however is whichever contains the active node
-      // and its API.
-      let activeLayer = setActiveTracingLayer(true);
     };
 
     /**

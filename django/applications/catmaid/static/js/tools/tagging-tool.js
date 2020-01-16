@@ -44,6 +44,7 @@ function TaggingTool()
      */
     this.retrieve_stack_tags = function()
     {
+        if (!self.stackViewer) return;
         var projectId = self.stackViewer.getProject().id;
         var sid = self.stackViewer.primaryStack.id;
         CATMAID.fetch(projectId + '/stack/' + sid + '/tags/list')

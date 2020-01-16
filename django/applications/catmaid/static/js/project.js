@@ -231,11 +231,13 @@
             self.setFocusedStackViewer( stackViewers[ 0 ] );
           }
 
-          self.focusedStackViewer.setTool( tool );
-
           if ( self.focusedStackViewer ) {
+            self.focusedStackViewer.setTool( tool );
             if (!self.focusedStackViewer.getWindow().hasFocus())
               self.focusedStackViewer.getWindow().focus();
+          } else {
+            // Attempt to load the tool without any registered stack-viewer.
+            tool.register();
           }
           window.onresize();
           WindowMaker.setKeyShortcuts();

@@ -229,3 +229,35 @@ div.menu_item a[data-state]::before {
   position: absolute;
   left: 0.5em;
 }
+
+div#login_box {
+  display: block;
+}
+
+div#logout_box {
+  display: none;
+}
+
+div#session_box {
+  display: none;
+}
+
+div#message_box {
+  display: none;
+}
+
+.catmaid.authenticated div#login_box {
+  display: none;
+}
+
+.catmaid.authenticated div#logout_box {
+  display: block;
+}
+
+.catmaid.authenticated div#session_box {
+  display: block;
+}
+
+.catmaid.authenticated div#message_box {
+  display: block;
+}

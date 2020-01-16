@@ -88,7 +88,7 @@
             <div class="menu_item" style="float:left" onpointerover="this.lastChild.style.display = 'block';" onpointerout="this.lastChild.style.display = 'none';"><p><a>Stacks</a></p>
               <div class="pulldown" id="stack_menu"></div></div>
           </div>
-          <div id="message_box" class="box" style="display:none">
+          <div id="message_box" class="box">
             <div class="menu_item" onclick="CATMAID.client.showMessages();" onpointerover="this.lastChild.style.display = 'block';" onpointerout="this.lastChild.style.display = 'none';"><p id="message_menu_text"><a>Messages</a>&nbsp;&nbsp;</p>
               <div class="pulldown" id="message_menu"></div></div>
           </div>
@@ -104,9 +104,9 @@
             <div id="spinner"><img src="{{ STATIC_URL }}images/wait_bgtransgrey.gif" alt="spinner" /></div>
         </div>
         <div class="menu">
-        <div id="logout_box" class="box_right" style="display:none"><p><a
+        <div id="logout_box" class="box_right"><p><a
             id="logout" name="logout" title="Logout" onclick="CATMAID.client.logout();" href="#">Logout</a></p></div>
-        <div id="login_box" class="box_right" style="display:none">
+        <div id="login_box" class="box_right">
           <form>
             <p>account&nbsp;</p>
             <p><input type="text" id="account" name="account" size="8" /></p>
@@ -115,7 +115,7 @@
             <p>&nbsp;&nbsp;<a id="login" name="login" title="Login" href="#" onclick="CATMAID.client.login( document.getElementById( 'account' ).value, document.getElementById( 'password' ).value );">Login</a></p>
           </form>
         </div>
-        <div id="session_box" class="box_right" style="display:none"> <div class="menu_item" onpointerover="this.lastChild.style.display = 'block';" onpointerout="this.lastChild.style.display = 'none';">
+        <div id="session_box" class="box_right"> <div class="menu_item" onpointerover="this.lastChild.style.display = 'block';" onpointerout="this.lastChild.style.display = 'none';">
             <p><a>You are <span id="session_longname">&nbsp;</span>.</a></p>
             <div class="pulldown" id="user_menu"></div></div>
         </div>

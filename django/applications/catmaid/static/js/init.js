@@ -147,6 +147,12 @@ var project;
     // The number of attempts of re-opening a closed socket
     this._updateSocketRetries = 0;
 
+    // A reference to the container, this CATMAID client is initialized in.
+    this._container = undefined;
+
+    // Whether or not this client is authenticated with a back-end.
+    this._is_authenticated = false;
+
     // Do periodic update checks
     window.setTimeout(CATMAID.Init.checkVersion, CATMAID.Init.CHECK_VERSION_TIMEOUT_INTERVAL);
 
@@ -307,6 +313,10 @@ var project;
         this.contextHelpVisibilityEnforced = true;
       }
 
+      if (options.hasOwnProperty("container")) {
+        this._container = options["container"];
+      }
+
       if ( !(
           typeof z == "undefined" ||
           typeof y == "undefined" ||
@@ -376,6 +386,18 @@ var project;
       }
     }
 
+    if (!this._container) {
+      this._container = document.querySelector('.catmaid');
+    }
+
+    if (!this._container) {
+      throw new CATMAID.ValueError(`No valid CATMAID container found: ${this._container}`);
+    }
+
+    if (!this._container.ownerDocument) {
+      throw new CATMAID.ValueError(`The CATMAID container doesn't seem to be part of a DOM: ${this._container}`);
+    }
+
     CATMAID.statusBar = new CATMAID.Console();
     document.body.appendChild( CATMAID.statusBar.getView() );
 
@@ -391,9 +413,8 @@ var project;
       CATMAID.tools.copyToClipBoard(l.origin + l.pathname + project.createURL());
     });
 
-    document.getElementById( "login_box" ).style.display = "block";
-    document.getElementById( "logout_box" ).style.display = "none";
-    document.getElementById( "session_box" ).style.display = "none";
+    // Assume an unauthenticated session by default
+    this.setAuthenticated(false);
 
     // Create the toolboxes
     $('#toolbox_project').replaceWith(CATMAID.createButtonsFromActions(
@@ -872,6 +893,33 @@ var project;
         });
   };
 
+  /**
+   * Update the internal state and UI elements for an authenticated context.
+   * This doesn't check the validity of the updated state and mainly
+   * encapsulates DOM and CSS updates.
+   */
+  Client.prototype.setAuthenticated = function(isAuthenticated) {
+    // Only non-anonymous users can be authenticated.
+    if (isAuthenticated) {
+      if (this._container) {
+        // This determines the visibility of login/logout/session controls.
+        this._container.classList.add('authenticated');
+      }
+      document.getElementById("account").value = "";
+      document.getElementById("password").value = "";
+      document.getElementById("session_longname").replaceChild(
+      document.createTextNode(CATMAID.session.longname),
+          document.getElementById("session_longname").firstChild);
+
+      // Update user menu
+      CATMAID._updateUserMenu();
+    } else {
+      if (this._container) {
+        this._container.classList.remove('authenticated');
+      }
+    }
+  };
+
   // Publicly accessible session
   CATMAID.session = null;
 
@@ -926,28 +974,11 @@ var project;
       window.clearTimeout(edit_domain_timeout);
     }
 
-    if (e.is_authenticated) { // Logged in as a non-anonymous user.
-      document.getElementById("account").value = "";
-      document.getElementById("password").value = "";
-      document.getElementById("session_longname").replaceChild(
-      document.createTextNode(e.longname), document.getElementById("session_longname").firstChild);
-      document.getElementById("login_box").style.display = "none";
-      document.getElementById("logout_box").style.display = "block";
-      document.getElementById("session_box").style.display = "block";
+    CATMAID.client.setAuthenticated(e.is_authenticated);
 
-      document.getElementById("message_box").style.display = "block";
-
-      // Update user menu
-      CATMAID._updateUserMenu();
-
+    if (e.is_authenticated) {
       edit_domain_timeout = window.setTimeout(CATMAID.client.refreshEditDomain,
                                               EDIT_DOMAIN_TIMEOUT_INTERVAL);
-    } else {
-      document.getElementById( "login_box" ).style.display = "block";
-      document.getElementById( "logout_box" ).style.display = "none";
-      document.getElementById( "session_box" ).style.display = "none";
-
-      document.getElementById( "message_box" ).style.display = "none";
     }
 
     // Continuation for user list retrieval

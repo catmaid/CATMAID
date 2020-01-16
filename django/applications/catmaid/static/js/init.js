@@ -676,7 +676,7 @@ var project;
               'title': s.title,
               'comment': s.comment,
               'note': '',
-              'action': CATMAID.openProjectStack.bind(window, p.id, s.id, false, undefined, false, true)
+              'action': () => CATMAID.openProjectStack(p.id, s.id, false, undefined, false, true).catch(CATMAID.handleError)
             };
             return o;
           }, {});

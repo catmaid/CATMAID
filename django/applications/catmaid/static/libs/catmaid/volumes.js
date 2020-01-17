@@ -365,8 +365,8 @@
         return filter.execute(mapResultNode)
           .then(function(filteredNodes) {
             var points = filter.getNodeLocations(filteredNodes.nodes, respectRadius, filteredNodes.nNodes);
-            if (0 === points.length) {
-              console.log("Found zero points for compartment " + name);
+            if (points.length < 3) {
+              console.log(`Found only ${points.length}  points for compartment ${name}. Need at least 3.`);
               return;
             }
 

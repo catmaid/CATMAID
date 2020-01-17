@@ -529,7 +529,7 @@
 
       // Merge all skeleton collections
       Object.keys(skeletonNodeCollection).forEach(n => {
-        nodeCollection[n] = true;
+        nodeCollection[n] = skeletonNodeCollection[n];
       });
       if (!CATMAID.tools.isEmpty(skeletonNodeCollection)) {
         skeletonCollection.add(Number(skid));

@@ -88,6 +88,14 @@
     }
 
     redraw (completionCallback, blocking) {
+      if (this._tiles[0] === 'undefined') {
+        // Redraw requested before initialization, likely due to deep link layout.
+        if (typeof completionCallback !== 'undefined') {
+          completionCallback();
+        }
+        return;
+      }
+
       var scaledStackPosition = this.stackViewer.scaledPositionInStack(this.stack);
       var tileInfo = this.tilesForLocation(
           scaledStackPosition.xc,

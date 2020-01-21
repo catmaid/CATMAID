@@ -88,7 +88,7 @@
     }
 
     redraw (completionCallback, blocking) {
-      if (this._tiles[0] === 'undefined') {
+      if (typeof this._tiles[0] === 'undefined') {
         // Redraw requested before initialization, likely due to deep link layout.
         if (typeof completionCallback !== 'undefined') {
           completionCallback();

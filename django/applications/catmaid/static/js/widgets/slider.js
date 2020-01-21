@@ -214,8 +214,16 @@
       }
       break;
     case Slider.HORIZONTAL:
+      // Because of bugs with percentage-pixel rounding when the background
+      // image is larger than the scaled target, manually calculate an integer
+      // pixel width to avoid jitter. Convert back to percentage width for
+      // smooth resizing (there may still be subpixel jitter on the resized size
+      // until the slider moves).
+      let totalWidth = getComputedStyle(this._view).getPropertyValue('width');
+      totalWidth = parseInt(totalWidth.substring(0, totalWidth.length - 2), 10);
+      let targetWidth = Math.round(this._handlePos * totalWidth / 100);
       this._handle.style.left = this._handlePos + "%";
-      this._barTop.style.width = this._handlePos + "%";
+      this._barTop.style.width =  (100 * targetWidth / totalWidth) + "%";
       this._barBottom.style.width = ( 100 - this._handlePos ) + "%";
       // select CSS class
       if (index < this._splitIndex) {

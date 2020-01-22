@@ -222,9 +222,14 @@
       let totalWidth = getComputedStyle(this._view).getPropertyValue('width');
       totalWidth = parseInt(totalWidth.substring(0, totalWidth.length - 2), 10);
       let targetWidth = Math.round(this._handlePos * totalWidth / 100);
-      this._handle.style.left = this._handlePos + "%";
-      this._barTop.style.width =  (100 * targetWidth / totalWidth) + "%";
-      this._barBottom.style.width = ( 100 - this._handlePos ) + "%";
+      let targetWidthPct = 100 * targetWidth / totalWidth;
+      if (Number.isNaN(totalWidth)) {
+        // Fallback to jitter percentage if width was not available.
+        targetWidthPct = this._handlePos;
+      }
+      this._handle.style.left = targetWidthPct + "%";
+      this._barTop.style.width =  targetWidthPct + "%";
+      this._barBottom.style.width = ( 100 - targetWidthPct ) + "%";
       // select CSS class
       if (index < this._splitIndex) {
         this._barTop.className = "hSliderBarTop";

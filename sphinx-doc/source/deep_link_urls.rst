@@ -61,6 +61,16 @@ Optional Query Parameters
 ``current_dataview`` (integer)
     ID of a data view to switch to.
 
+``layout`` (string)
+    An optional layout specification in the format of layouts described in the
+    Settings Widget. E.g. ``layou=h(XY, { type: "neuron-search", id:
+    "neuron-search-1"}, 0.6)`` to show a Neuron Search widget in a 1/3 wide
+    column on the right. Depending on the widget referenced, additional options
+    are available. For instance, the Neuron Search can be instructed to search
+    for a particular annotation right away: ``layou=h(XY, { type: "neuron-search", id:
+    "neuron-search-1", options: {"annotation-name": "papers"}}, 0.6)``.
+    Available options are collected below.
+
 Legacy Query Parameters
 -----------------------
 
@@ -87,3 +97,10 @@ not be properly processed.
 
 ``password`` (string)
     Password with which to login to CATMAID.
+
+URL widget options
+------------------
+
+``Neuron Search``
+    Supports ``annotation-name`` to search for a particular annotation and
+    ``with-subannotations`` to include sub-annotations for this search.

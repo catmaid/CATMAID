@@ -275,7 +275,7 @@ var WindowMaker = new function()
    * Create a general widget window for a widget instance that provides a widget
    * configuration.
    */
-  var createWidget = function(instance) {
+  var createWidget = function(instance, options) {
     try {
       CATMAID.throwOnInsufficientWebGlContexts(instance.MIN_WEBGL_CONTEXTS || 0);
     } catch (e) {
@@ -355,7 +355,7 @@ var WindowMaker = new function()
     addLogic(win);
 
     if (CATMAID.tools.isFn(config.init)) {
-      config.init.call(instance, win);
+      config.init.call(instance, win, options);
     }
 
     return {window: win, widget: instance};
@@ -2440,7 +2440,7 @@ var WindowMaker = new function()
     creators[key] = {
       init: function(options, isInstance) {
         instance = isInstance ? options : new creator(options);
-        return createWidget(instance);
+        return createWidget(instance, isInstance ? undefined : options);
       },
       name: options.name || key,
       description: options.description || ''

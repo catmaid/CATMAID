@@ -288,6 +288,7 @@ var project;
     var singleStackViewer = false;
     var initialDataviewId = null;
     var help;
+    let initialLayout;
 
     var account;
     var password;
@@ -383,6 +384,10 @@ var project;
       // Check if only one stack viewer should be used for all stacks
       if ( options[ "composite" ] ) {
         singleStackViewer = ("1" === options["composite"]);
+      }
+
+      if (options["layout"]) {
+        initialLayout = decodeURIComponent(options["layout"]);
       }
     }
 
@@ -508,7 +513,7 @@ var project;
         }
 
         // After stacks or stack groups have been loaded, init selected tool.
-        load.then(function() {
+        return load.then(function() {
           var tool = tools[inittool];
           if (tool) {
             project.setTool(new tool());
@@ -593,6 +598,12 @@ var project;
       .then(function() {
         if (help !== undefined) {
           self.setContextHelpVisibility(help);
+        }
+        if (initialLayout) {
+          let layout = new CATMAID.Layout(initialLayout);
+          if (!CATMAID.switchToLayout(layout, true)) {
+            CATMAID.warn(`Layout ${initialLayout} could not be loaded`);
+          }
         }
       });
 

@@ -363,6 +363,10 @@ Miscellaneous:
   the default size. Also copied fields don't contain the content of the source
   field anymore.
 
+- A CATMAID deep-link URL can now include the layout that should be displayed
+  using the `layout` parameter. It takes a layout specification as it is used in
+  the Settings Widget and the Layout menu.
+
 - The speed of bulk operations on skeletons has changed (e.g. splitting, joins,
   reroot).
 

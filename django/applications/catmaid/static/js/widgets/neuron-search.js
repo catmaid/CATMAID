@@ -237,26 +237,30 @@
         content.appendChild(no_results);
         no_results.style.display = 'none';
       },
-      init: function() {
+      init: function(win, options) {
         var self = this;
 
         // Update annotation cache in parallel and add autocompletion to
         // annotation input field.
-        CATMAID.annotations.update(true)
-          .then(() => this.handleAnnotationUpdate());
+        let prepare = [
+            CATMAID.annotations.update(true)
+              .then(() => this.handleAnnotationUpdate())
+        ];
+
+        let submit = function(event) {
+          // Submit form in iframe to make browser save search terms for
+          // autocompletion.
+          var form = document.getElementById('neuron_query_by_annotations' + self.widgetID);
+          CATMAID.DOM.submitFormInIFrame(form);
+          // Do actual query
+          self.query(true);
+          if (event) event.preventDefault();
+          return false;
+        };
 
         $('#neuron_annotations_add_annotation' + this.widgetID)[0].onclick =
             this.add_query_field.bind(this);
-        $('#neuron_query_by_annotations' + this.widgetID).submit(function(event) {
-              // Submit form in iframe to make browser save search terms for
-              // autocompletion.
-              var form = document.getElementById('neuron_query_by_annotations' + self.widgetID);
-              CATMAID.DOM.submitFormInIFrame(form);
-              // Do actual query
-              self.query(true);
-              event.preventDefault();
-              return false;
-            });
+        $('#neuron_query_by_annotations' + this.widgetID).submit(submit);
         $('#neuron_annotations_annotate' + this.widgetID)[0].onclick = (function() {
             // Get IDs of selected entities
             var selected_entity_ids = this.get_selected_neurons().map( function(e) {
@@ -337,6 +341,21 @@
         setTimeout(function() {
           $('input#neuron_query_by_name' + self.widgetID).focus();
         }, 10);
+
+        if (options) {
+          if (options["with-subannotations"]) {
+            $('input[name=neuron_query_by_annotation]').prop('checked', true);
+          }
+          if (options["annotation-name"]) {
+            $('input[name=neuron_query_by_annotation]').val(options["annotation-name"]);
+          }
+          Promise.all(prepare)
+            .then(() => {
+              if (options["annotation-name"]) {
+                submit();
+              }
+            });
+        }
       },
       filter: {
         rules: this.filterRules,

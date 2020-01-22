@@ -42,11 +42,11 @@
     }).window;
   };
 
-  const createWindow = function(name) {
+  const createWindow = function(name, options) {
     var creator = WindowBuilder[name];
     if (!creator) {
       creator = function() {
-        return WindowMaker.create(name).window;
+        return WindowMaker.create(name, options).window;
       };
     }
     if (!creator) {
@@ -313,7 +313,7 @@
     if (isFn(this.a.makeRegularWindows)) {
       n = this.a.makeRegularWindows(n, target);
     } else if (!validOrientations.has(this.a)) {
-      var win = createWindow(this.a);
+      var win = createWindow(this.a, this.metaA.options);
       var typedWindows = target.get(this.a);
       if (!typedWindows) {
         typedWindows = [];
@@ -325,7 +325,7 @@
     if (isFn(this.b.makeRegularWindows)) {
       n = this.b.makeRegularWindows(n, target);
     } else if (!validOrientations.has(this.b)) {
-      var win = createWindow(this.b);
+      var win = createWindow(this.b, this.metaB.options);
       var typedWindows = target.get(this.b);
       if (!typedWindows) {
         typedWindows = [];
@@ -578,8 +578,8 @@
   /**
    * Switch to a new layout.
    */
-  CATMAID.switchToLayout = function(newLayout) {
-    if (!confirm("Are you sure you want close all existing widgets?")) {
+  CATMAID.switchToLayout = function(newLayout, silent = false) {
+    if (!silent && !confirm("Are you sure you want close all existing widgets?")) {
       return;
     }
 

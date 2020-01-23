@@ -25,6 +25,7 @@ before_install:
   - travis_retry sudo apt-get update -y -qq
   - bash scripts/travis/install_postgres.sh
   - bash scripts/travis/install_python.sh
+  - bash scripts/travis/install_gdal.sh
   - nvm install 11
 install:
   # Install requirements for running CATMAID and its unit tests

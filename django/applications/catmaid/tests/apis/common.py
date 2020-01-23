@@ -2,7 +2,7 @@
 
 from django.db import connection
 from django.shortcuts import get_object_or_404
-from django.test import TestCase
+from django.test import TestCase, TransactionTestCase
 from django.test.client import Client
 from guardian.shortcuts import assign_perm
 
@@ -10,7 +10,7 @@ from catmaid.models import Project, Treenode, User
 from catmaid.tests.common import create_anonymous_user, init_consistent_data, AssertStatusMixin
 
 
-class CatmaidApiTestCase(TestCase, AssertStatusMixin):
+class CatmaidApiTestMixin(AssertStatusMixin):
     fixtures = ['catmaid_testdata']
 
     maxDiff = None
@@ -62,3 +62,16 @@ class CatmaidApiTestCase(TestCase, AssertStatusMixin):
         treenode = get_object_or_404(Treenode, id=treenode_id)
         self.assertEqual(parent_id, treenode.parent_id)
         self.assertEqual(skeleton_id, treenode.skeleton_id)
+
+
+class CatmaidApiTestCase(CatmaidApiTestMixin, TestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+
+
+class CatmaidApiTransactionTestCase(CatmaidApiTestMixin, TransactionTestCase):
+
+    def setUp(cls):
+        super().setUpTestData()

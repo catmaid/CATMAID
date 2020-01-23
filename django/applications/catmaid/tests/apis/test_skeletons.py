@@ -7,6 +7,7 @@ import re
 from typing import Any, Dict
 from unittest import skipIf
 
+from django.db import transaction
 from django.shortcuts import get_object_or_404
 from guardian.shortcuts import assign_perm
 
@@ -14,7 +15,7 @@ from catmaid.models import (
     ClassInstance, ClassInstanceClassInstance, Log, Review, TreenodeConnector, ReviewerWhitelist, Treenode, User
 )
 
-from .common import CatmaidApiTestCase
+from .common import CatmaidApiTestCase, CatmaidApiTransactionTestCase
 
 # Some skeleton back-end functionality is not available if PyPy is used. This
 # variable is used to skip the respective tests (which otherwise would fail).
@@ -75,412 +76,6 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         self.assertAlmostEqual(parsed_response['x'], 1065)
         self.assertAlmostEqual(parsed_response['y'], 3035)
         self.assertAlmostEqual(parsed_response['z'], 0)
-
-
-    def test_import_skeleton(self):
-        self.fake_authentication()
-
-        orig_skeleton_id = 235
-        response = self.client.get('/%d/skeleton/%d/swc' % (self.test_project_id, orig_skeleton_id))
-        self.assertStatus(response)
-        orig_swc_string = response.content.decode('utf-8')
-
-        n_orig_skeleton_nodes = Treenode.objects.filter(skeleton_id=orig_skeleton_id).count()
-
-        # Try inserting without permission and expect fail
-        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
-                                    {'file.swc': ''})
-        self.assertTrue("PermissionError" in response.content.decode('utf-8'))
-
-        # Add permission and expect success
-        swc_file = StringIO(orig_swc_string)
-        assign_perm('can_import', self.test_user, self.test_project)
-        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
-                {'file.swc': swc_file, 'name': 'test'})
-
-        self.assertStatus(response)
-        parsed_response = json.loads(response.content.decode('utf-8'))
-        new_skeleton_id = parsed_response['skeleton_id']
-        id_map = parsed_response['node_id_map']
-
-        skeleton = ClassInstance.objects.get(id=new_skeleton_id)
-        model_rel = ClassInstanceClassInstance.objects.get(class_instance_a=skeleton,
-                relation__relation_name='model_of')
-        neuron = model_rel.class_instance_b
-        self.assertEqual(neuron.id, parsed_response['neuron_id'])
-        self.assertEqual('test', neuron.name)
-
-        for tn in Treenode.objects.filter(skeleton_id=orig_skeleton_id):
-            new_tn = Treenode.objects.get(id=id_map[str(tn.id)])
-            self.assertEqual(new_skeleton_id, new_tn.skeleton_id)
-            if tn.parent_id:
-                self.assertEqual(id_map[str(tn.parent_id)], new_tn.parent_id)
-            self.assertEqual(tn.location_x, new_tn.location_x)
-            self.assertEqual(tn.location_y, new_tn.location_y)
-            self.assertEqual(tn.location_z, new_tn.location_z)
-            self.assertEqual(max(tn.radius, 0), max(new_tn.radius, 0))
-
-
-        # Remember current edit time for later
-        last_neuron_id = neuron.id
-        last_skeleton_id = skeleton.id
-        last_neuron_edit_time = neuron.edition_time
-        last_skeleton_edit_time = skeleton.edition_time
-
-
-        # Test replacing the imported neuron without forcing an update and
-        # auto_id disabled.
-        swc_file2 = StringIO(orig_swc_string)
-        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
-                {'file.swc': swc_file2, 'name': 'test2', 'neuron_id':
-                    neuron.id, 'auto_id': False})
-
-        self.assertEqual(response.status_code, 400)
-        parsed_response = json.loads(response.content.decode('utf-8'))
-        expected_result = {
-                "error": "The passed in neuron ID is already in use and neither of the parameters force or auto_id are set to true."}
-        for k,v in expected_result.items():
-            self.assertTrue(k in parsed_response)
-            self.assertEqual(parsed_response[k], v)
-
-
-        # Test replacing the imported neuron without forcing an update and
-        # auto_id enabled (default).
-        swc_file2 = StringIO(orig_swc_string)
-        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
-                {'file.swc': swc_file2, 'name': 'test2', 'neuron_id':
-                    neuron.id})
-
-        self.assertStatus(response)
-        parsed_response = json.loads(response.content.decode('utf-8'))
-
-        # Make sure there is still only one skeleton
-        neuron.refresh_from_db()
-        linked_skeletons = ClassInstanceClassInstance.objects.filter(
-                class_instance_b_id=neuron.id,
-                relation__relation_name='model_of',
-                class_instance_a__class_column__class_name='skeleton')
-        self.assertEqual(len(linked_skeletons), 1)
-        self.assertEqual(neuron.name, 'test')
-        self.assertEqual(neuron.id, last_neuron_id)
-        self.assertEqual(neuron.edition_time, last_neuron_edit_time)
-        self.assertNotEqual(neuron.id, parsed_response['neuron_id'])
-
-        # Make sure there are as many nodes as expected for the imported
-        # skeleton.
-        n_skeleton_nodes = Treenode.objects.filter(skeleton_id=parsed_response['skeleton_id']).count()
-        self.assertEqual(n_skeleton_nodes, n_orig_skeleton_nodes)
-
-
-        # Test replacing the imported neuron with forcing an update
-        swc_file2 = StringIO(orig_swc_string)
-        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
-                {'file.swc': swc_file2, 'name': 'test2', 'neuron_id': neuron.id,
-                    'force': True})
-
-        self.assertStatus(response)
-        parsed_response = json.loads(response.content.decode('utf-8'))
-
-        # Make sure there is still only one skeleton
-        neuron.refresh_from_db()
-        replaced_skeletons = ClassInstanceClassInstance.objects.filter(
-                class_instance_b_id=neuron.id,
-                relation__relation_name='model_of',
-                class_instance_a__class_column__class_name='skeleton')
-        self.assertEqual(len(replaced_skeletons), 1)
-        self.assertEqual(neuron.id, parsed_response['neuron_id'])
-        self.assertEqual(neuron.name, 'test2')
-        self.assertEqual(neuron.id, last_neuron_id)
-        self.assertNotEqual(neuron.edition_time, last_neuron_edit_time)
-
-        # Make sure there are as many nodes as expected for the imported
-        # skeleton.
-        n_skeleton_nodes = Treenode.objects.filter(skeleton_id=parsed_response['skeleton_id']).count()
-        self.assertEqual(n_skeleton_nodes, n_orig_skeleton_nodes)
-
-
-        # Make sure we work with most recent skeleton data
-        skeleton = ClassInstance.objects.get(pk=parsed_response['skeleton_id'])
-
-        # Test replacing the imported skeleton without forcing an update and
-        # auto_id disabled.
-        swc_file2 = StringIO(orig_swc_string)
-        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
-                {'file.swc': swc_file2, 'name': 'test2', 'skeleton_id':
-                    skeleton.id, 'auto_id': False})
-
-        self.assertEqual(response.status_code, 400)
-        parsed_response = json.loads(response.content.decode('utf-8'))
-        expected_result = {
-                "error": "The passed in skeleton ID is already in use and neither of the parameters force or auto_id are set to true."}
-        for k,v in expected_result.items():
-            self.assertTrue(k in parsed_response)
-            self.assertEqual(parsed_response[k], v)
-
-
-        # Test replacing the imported skeleton without forcing an update and
-        # auto_id enabled (default).
-        swc_file2 = StringIO(orig_swc_string)
-        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
-                {'file.swc': swc_file2, 'name': 'test3', 'skeleton_id':
-                    skeleton.id})
-
-        self.assertStatus(response)
-        parsed_response = json.loads(response.content.decode('utf-8'))
-        last_skeleton_id = skeleton.id
-        neuron = ClassInstance.objects.get(pk=parsed_response['neuron_id'])
-        skeleton = ClassInstance.objects.get(pk=parsed_response['skeleton_id'])
-
-
-        # Make sure there is still only one skeleton
-        linked_neurons = ClassInstanceClassInstance.objects.filter(
-                class_instance_a_id=skeleton.id,
-                relation__relation_name='model_of',
-                class_instance_b__class_column__class_name='neuron')
-        self.assertEqual(len(linked_neurons), 1)
-        self.assertEqual(neuron.name, 'test3')
-        self.assertEqual(skeleton.name, 'test3')
-        self.assertNotEqual(neuron.id, last_neuron_id)
-        self.assertNotEqual(last_skeleton_id, skeleton.id)
-
-        # Make sure there are as many nodes as expected for the imported
-        # skeleton.
-        n_skeleton_nodes = Treenode.objects.filter(skeleton_id=parsed_response['skeleton_id']).count()
-        self.assertEqual(n_skeleton_nodes, n_orig_skeleton_nodes)
-
-        # Test replacing the imported neuron with forcing an update
-        swc_file2 = StringIO(orig_swc_string)
-        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
-                {'file.swc': swc_file2, 'name': 'test2', 'skeleton_id': skeleton.id,
-                    'force': True})
-
-        self.assertStatus(response)
-        parsed_response = json.loads(response.content.decode('utf-8'))
-
-        last_skeleton_edit_time = skeleton.edition_time
-
-        # Make sure there is still only one skeleton
-        skeleton.refresh_from_db()
-
-        replaced_neurons = ClassInstanceClassInstance.objects.filter(
-                class_instance_a_id=skeleton.id,
-                relation__relation_name='model_of',
-                class_instance_b__class_column__class_name='neuron')
-        self.assertEqual(len(replaced_neurons), 1)
-        self.assertEqual(skeleton.id, parsed_response['skeleton_id'])
-        self.assertEqual(skeleton.name, 'test2')
-        self.assertNotEqual(skeleton.edition_time, last_skeleton_edit_time)
-
-        # Make sure there are as many nodes as expected for the imported
-        # skeleton.
-        n_skeleton_nodes = Treenode.objects.filter(skeleton_id=parsed_response['skeleton_id']).count()
-        self.assertEqual(n_skeleton_nodes, n_orig_skeleton_nodes)
-
-
-    def test_import_skeleton_eswc(self):
-        self.fake_authentication()
-
-        orig_skeleton_id = 235
-        response = self.client.get('/%d/skeleton/%d/eswc' % (self.test_project_id, orig_skeleton_id))
-        self.assertStatus(response)
-        orig_swc_string = response.content.decode('utf-8')
-
-        n_orig_skeleton_nodes = Treenode.objects.filter(skeleton_id=orig_skeleton_id).count()
-
-        # Try inserting without permission and expect fail
-        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
-                                    {'file.eswc': ''})
-        self.assertTrue("PermissionError" in response.content.decode('utf-8'))
-
-        # Add permission and expect success
-        swc_file = StringIO(orig_swc_string)
-        assign_perm('can_import', self.test_user, self.test_project)
-        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
-                {'file.eswc': swc_file, 'name': 'test'})
-
-        self.assertStatus(response)
-        parsed_response = json.loads(response.content.decode('utf-8'))
-        new_skeleton_id = parsed_response['skeleton_id']
-        id_map = parsed_response['node_id_map']
-
-        skeleton = ClassInstance.objects.get(id=new_skeleton_id)
-        model_rel = ClassInstanceClassInstance.objects.get(class_instance_a=skeleton,
-                relation__relation_name='model_of')
-        neuron = model_rel.class_instance_b
-        self.assertEqual(neuron.id, parsed_response['neuron_id'])
-        self.assertEqual('test', neuron.name)
-
-        user_name_map = dict(User.objects.all().values_list('id', 'username'))
-
-        for tn in Treenode.objects.filter(skeleton_id=orig_skeleton_id):
-            new_tn = Treenode.objects.get(id=id_map[str(tn.id)])
-            self.assertEqual(new_skeleton_id, new_tn.skeleton_id)
-            if tn.parent_id:
-                self.assertEqual(id_map[str(tn.parent_id)], new_tn.parent_id)
-            self.assertEqual(tn.location_x, new_tn.location_x)
-            self.assertEqual(tn.location_y, new_tn.location_y)
-            self.assertEqual(tn.location_z, new_tn.location_z)
-            self.assertEqual(user_name_map[tn.user_id], user_name_map[new_tn.user_id])
-            self.assertEqual(user_name_map[tn.editor_id], user_name_map[new_tn.editor_id])
-            self.assertEqual(tn.creation_time, new_tn.creation_time)
-            self.assertEqual(tn.confidence, new_tn.confidence)
-            self.assertEqual(max(tn.radius, 0), max(new_tn.radius, 0))
-
-
-        # Remember current edit time for later
-        last_neuron_id = neuron.id
-        last_skeleton_id = skeleton.id
-        last_neuron_edit_time = neuron.edition_time
-        last_skeleton_edit_time = skeleton.edition_time
-
-
-        # Test replacing the imported neuron without forcing an update and
-        # auto_id disabled.
-        swc_file2 = StringIO(orig_swc_string)
-        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
-                {'file.eswc': swc_file2, 'name': 'test2', 'neuron_id':
-                    neuron.id, 'auto_id': False})
-
-        self.assertEqual(response.status_code, 400)
-        parsed_response = json.loads(response.content.decode('utf-8'))
-        expected_result = {
-                "error": "The passed in neuron ID is already in use and neither of the parameters force or auto_id are set to true."}
-        for k,v in expected_result.items():
-            self.assertTrue(k in parsed_response)
-            self.assertEqual(parsed_response[k], v)
-
-
-        # Test replacing the imported neuron without forcing an update and
-        # auto_id enabled (default).
-        swc_file2 = StringIO(orig_swc_string)
-        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
-                {'file.eswc': swc_file2, 'name': 'test2', 'neuron_id':
-                    neuron.id})
-
-        self.assertStatus(response)
-        parsed_response = json.loads(response.content.decode('utf-8'))
-
-        # Make sure there is still only one skeleton
-        neuron.refresh_from_db()
-        linked_skeletons = ClassInstanceClassInstance.objects.filter(
-                class_instance_b_id=neuron.id,
-                relation__relation_name='model_of',
-                class_instance_a__class_column__class_name='skeleton')
-        self.assertEqual(len(linked_skeletons), 1)
-        self.assertEqual(neuron.name, 'test')
-        self.assertEqual(neuron.id, last_neuron_id)
-        self.assertEqual(neuron.edition_time, last_neuron_edit_time)
-        self.assertNotEqual(neuron.id, parsed_response['neuron_id'])
-
-        # Make sure there are as many nodes as expected for the imported
-        # skeleton.
-        n_skeleton_nodes = Treenode.objects.filter(skeleton_id=parsed_response['skeleton_id']).count()
-        self.assertEqual(n_skeleton_nodes, n_orig_skeleton_nodes)
-
-
-        # Test replacing the imported neuron with forcing an update
-        swc_file2 = StringIO(orig_swc_string)
-        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
-                {'file.eswc': swc_file2, 'name': 'test2', 'neuron_id': neuron.id,
-                    'force': True})
-
-        self.assertStatus(response)
-        parsed_response = json.loads(response.content.decode('utf-8'))
-
-        # Make sure there is still only one skeleton
-        neuron.refresh_from_db()
-        replaced_skeletons = ClassInstanceClassInstance.objects.filter(
-                class_instance_b_id=neuron.id,
-                relation__relation_name='model_of',
-                class_instance_a__class_column__class_name='skeleton')
-        self.assertEqual(len(replaced_skeletons), 1)
-        self.assertEqual(neuron.id, parsed_response['neuron_id'])
-        self.assertEqual(neuron.name, 'test2')
-        self.assertEqual(neuron.id, last_neuron_id)
-        self.assertNotEqual(neuron.edition_time, last_neuron_edit_time)
-
-        # Make sure there are as many nodes as expected for the imported
-        # skeleton.
-        n_skeleton_nodes = Treenode.objects.filter(skeleton_id=parsed_response['skeleton_id']).count()
-        self.assertEqual(n_skeleton_nodes, n_orig_skeleton_nodes)
-
-
-        # Make sure we work with most recent skeleton data
-        skeleton = ClassInstance.objects.get(pk=parsed_response['skeleton_id'])
-
-        # Test replacing the imported skeleton without forcing an update and
-        # auto_id disabled.
-        swc_file2 = StringIO(orig_swc_string)
-        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
-                {'file.eswc': swc_file2, 'name': 'test2', 'skeleton_id':
-                    skeleton.id, 'auto_id': False})
-
-        self.assertEqual(response.status_code, 400)
-        parsed_response = json.loads(response.content.decode('utf-8'))
-        expected_result = {
-                "error": "The passed in skeleton ID is already in use and neither of the parameters force or auto_id are set to true."}
-        for k,v in expected_result.items():
-            self.assertTrue(k in parsed_response)
-            self.assertEqual(parsed_response[k], v)
-
-
-        # Test replacing the imported skeleton without forcing an update and
-        # auto_id enabled (default).
-        swc_file2 = StringIO(orig_swc_string)
-        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
-                {'file.eswc': swc_file2, 'name': 'test3', 'skeleton_id':
-                    skeleton.id})
-
-        self.assertStatus(response)
-        parsed_response = json.loads(response.content.decode('utf-8'))
-        last_skeleton_id = skeleton.id
-        neuron = ClassInstance.objects.get(pk=parsed_response['neuron_id'])
-        skeleton = ClassInstance.objects.get(pk=parsed_response['skeleton_id'])
-
-
-        # Make sure there is still only one skeleton
-        linked_neurons = ClassInstanceClassInstance.objects.filter(
-                class_instance_a_id=skeleton.id,
-                relation__relation_name='model_of',
-                class_instance_b__class_column__class_name='neuron')
-        self.assertEqual(len(linked_neurons), 1)
-        self.assertEqual(neuron.name, 'test3')
-        self.assertEqual(skeleton.name, 'test3')
-        self.assertNotEqual(neuron.id, last_neuron_id)
-        self.assertNotEqual(last_skeleton_id, skeleton.id)
-
-        # Make sure there are as many nodes as expected for the imported
-        # skeleton.
-        n_skeleton_nodes = Treenode.objects.filter(skeleton_id=parsed_response['skeleton_id']).count()
-        self.assertEqual(n_skeleton_nodes, n_orig_skeleton_nodes)
-
-        # Test replacing the imported neuron with forcing an update
-        swc_file2 = StringIO(orig_swc_string)
-        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
-                {'file.eswc': swc_file2, 'name': 'test2', 'skeleton_id': skeleton.id,
-                    'force': True})
-
-        self.assertStatus(response)
-        parsed_response = json.loads(response.content.decode('utf-8'))
-
-        last_skeleton_edit_time = skeleton.edition_time
-
-        # Make sure there is still only one skeleton
-        skeleton.refresh_from_db()
-
-        replaced_neurons = ClassInstanceClassInstance.objects.filter(
-                class_instance_a_id=skeleton.id,
-                relation__relation_name='model_of',
-                class_instance_b__class_column__class_name='neuron')
-        self.assertEqual(len(replaced_neurons), 1)
-        self.assertEqual(skeleton.id, parsed_response['skeleton_id'])
-        self.assertEqual(skeleton.name, 'test2')
-        self.assertNotEqual(skeleton.edition_time, last_skeleton_edit_time)
-
-        # Make sure there are as many nodes as expected for the imported
-        # skeleton.
-        n_skeleton_nodes = Treenode.objects.filter(skeleton_id=parsed_response['skeleton_id']).count()
-        self.assertEqual(n_skeleton_nodes, n_orig_skeleton_nodes)
 
 
     def test_import_skeleton_with_64_bit_ids(self):
@@ -1595,3 +1190,442 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         self.assertEqual(expected_result, frozenset(parsed_response))
         # Also check response length to be sure there were no duplicates.
         self.assertEqual(len(expected_result), len(parsed_response))
+
+
+class SkeletonsApiTransactionTests(CatmaidApiTransactionTestCase):
+
+    def test_import_skeleton(self):
+        self.fake_authentication()
+
+        orig_skeleton_id = 235
+        response = self.client.get('/%d/skeleton/%d/swc' % (self.test_project_id, orig_skeleton_id))
+        self.assertStatus(response)
+        orig_swc_string = response.content.decode('utf-8')
+
+        n_orig_skeleton_nodes = Treenode.objects.filter(skeleton_id=orig_skeleton_id).count()
+
+        # Try inserting without permission and expect fail
+        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
+                                    {'file.swc': ''})
+        self.assertTrue("PermissionError" in response.content.decode('utf-8'))
+
+        # Add permission and expect success
+        swc_file = StringIO(orig_swc_string)
+        assign_perm('can_import', self.test_user, self.test_project)
+        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
+                {'file.swc': swc_file, 'name': 'test'})
+
+        transaction.commit()
+
+        self.assertStatus(response)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        new_skeleton_id = parsed_response['skeleton_id']
+        id_map = parsed_response['node_id_map']
+
+        skeleton = ClassInstance.objects.get(id=new_skeleton_id)
+        model_rel = ClassInstanceClassInstance.objects.get(class_instance_a=skeleton,
+                relation__relation_name='model_of')
+        neuron = model_rel.class_instance_b
+        self.assertEqual(neuron.id, parsed_response['neuron_id'])
+        self.assertEqual('test', neuron.name)
+
+        for tn in Treenode.objects.filter(skeleton_id=orig_skeleton_id):
+            new_tn = Treenode.objects.get(id=id_map[str(tn.id)])
+            self.assertEqual(new_skeleton_id, new_tn.skeleton_id)
+            if tn.parent_id:
+                self.assertEqual(id_map[str(tn.parent_id)], new_tn.parent_id)
+            self.assertEqual(tn.location_x, new_tn.location_x)
+            self.assertEqual(tn.location_y, new_tn.location_y)
+            self.assertEqual(tn.location_z, new_tn.location_z)
+            self.assertEqual(max(tn.radius, 0), max(new_tn.radius, 0))
+
+
+        # Remember current edit time for later
+        last_neuron_id = neuron.id
+        last_skeleton_id = skeleton.id
+        last_neuron_edit_time = neuron.edition_time
+        last_skeleton_edit_time = skeleton.edition_time
+
+
+        # Test replacing the imported neuron without forcing an update and
+        # auto_id disabled.
+        swc_file2 = StringIO(orig_swc_string)
+        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
+                {'file.swc': swc_file2, 'name': 'test2', 'neuron_id':
+                    neuron.id, 'auto_id': False})
+
+        transaction.commit()
+
+        self.assertEqual(response.status_code, 400)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        expected_result = {
+                "error": "The passed in neuron ID is already in use and neither of the parameters force or auto_id are set to true."}
+        for k,v in expected_result.items():
+            self.assertTrue(k in parsed_response)
+            self.assertEqual(parsed_response[k], v)
+
+
+        # Test replacing the imported neuron without forcing an update and
+        # auto_id enabled (default).
+        swc_file2 = StringIO(orig_swc_string)
+        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
+                {'file.swc': swc_file2, 'name': 'test2', 'neuron_id':
+                    neuron.id})
+
+        transaction.commit()
+
+        self.assertStatus(response)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+
+        # Make sure there is still only one skeleton
+        neuron.refresh_from_db()
+        linked_skeletons = ClassInstanceClassInstance.objects.filter(
+                class_instance_b_id=neuron.id,
+                relation__relation_name='model_of',
+                class_instance_a__class_column__class_name='skeleton')
+        self.assertEqual(len(linked_skeletons), 1)
+        self.assertEqual(neuron.name, 'test')
+        self.assertEqual(neuron.id, last_neuron_id)
+        self.assertEqual(neuron.edition_time, last_neuron_edit_time)
+        self.assertNotEqual(neuron.id, parsed_response['neuron_id'])
+
+        # Make sure there are as many nodes as expected for the imported
+        # skeleton.
+        n_skeleton_nodes = Treenode.objects.filter(skeleton_id=parsed_response['skeleton_id']).count()
+        self.assertEqual(n_skeleton_nodes, n_orig_skeleton_nodes)
+
+
+        # Test replacing the imported neuron with forcing an update
+        swc_file2 = StringIO(orig_swc_string)
+        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
+                {'file.swc': swc_file2, 'name': 'test2', 'neuron_id': neuron.id,
+                    'force': True})
+
+        transaction.commit()
+
+        self.assertStatus(response)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+
+        # Make sure there is still only one skeleton
+        neuron.refresh_from_db()
+        replaced_skeletons = ClassInstanceClassInstance.objects.filter(
+                class_instance_b_id=neuron.id,
+                relation__relation_name='model_of',
+                class_instance_a__class_column__class_name='skeleton')
+        self.assertEqual(len(replaced_skeletons), 1)
+        self.assertEqual(neuron.id, parsed_response['neuron_id'])
+        self.assertEqual(neuron.name, 'test2')
+        self.assertEqual(neuron.id, last_neuron_id)
+        self.assertNotEqual(neuron.edition_time, last_neuron_edit_time)
+
+        # Make sure there are as many nodes as expected for the imported
+        # skeleton.
+        n_skeleton_nodes = Treenode.objects.filter(skeleton_id=parsed_response['skeleton_id']).count()
+        self.assertEqual(n_skeleton_nodes, n_orig_skeleton_nodes)
+
+
+        # Make sure we work with most recent skeleton data
+        skeleton = ClassInstance.objects.get(pk=parsed_response['skeleton_id'])
+
+        # Test replacing the imported skeleton without forcing an update and
+        # auto_id disabled.
+        swc_file2 = StringIO(orig_swc_string)
+        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
+                {'file.swc': swc_file2, 'name': 'test2', 'skeleton_id':
+                    skeleton.id, 'auto_id': False})
+
+        transaction.commit()
+
+        self.assertEqual(response.status_code, 400)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        expected_result = {
+                "error": "The passed in skeleton ID is already in use and neither of the parameters force or auto_id are set to true."}
+        for k,v in expected_result.items():
+            self.assertTrue(k in parsed_response)
+            self.assertEqual(parsed_response[k], v)
+
+
+        # Test replacing the imported skeleton without forcing an update and
+        # auto_id enabled (default).
+        swc_file2 = StringIO(orig_swc_string)
+        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
+                {'file.swc': swc_file2, 'name': 'test3', 'skeleton_id':
+                    skeleton.id})
+
+        transaction.commit()
+
+        self.assertStatus(response)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        last_skeleton_id = skeleton.id
+        neuron = ClassInstance.objects.get(pk=parsed_response['neuron_id'])
+        skeleton = ClassInstance.objects.get(pk=parsed_response['skeleton_id'])
+
+
+        # Make sure there is still only one skeleton
+        linked_neurons = ClassInstanceClassInstance.objects.filter(
+                class_instance_a_id=skeleton.id,
+                relation__relation_name='model_of',
+                class_instance_b__class_column__class_name='neuron')
+        self.assertEqual(len(linked_neurons), 1)
+        self.assertEqual(neuron.name, 'test3')
+        self.assertEqual(skeleton.name, 'test3')
+        self.assertNotEqual(neuron.id, last_neuron_id)
+        self.assertNotEqual(last_skeleton_id, skeleton.id)
+
+        # Make sure there are as many nodes as expected for the imported
+        # skeleton.
+        n_skeleton_nodes = Treenode.objects.filter(skeleton_id=parsed_response['skeleton_id']).count()
+        self.assertEqual(n_skeleton_nodes, n_orig_skeleton_nodes)
+
+        transaction.commit()
+
+        # Test replacing the imported neuron with forcing an update
+        swc_file2 = StringIO(orig_swc_string)
+        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
+                {'file.swc': swc_file2, 'name': 'test2', 'skeleton_id': skeleton.id,
+                    'force': True})
+
+        self.assertStatus(response)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+
+        last_skeleton_edit_time = skeleton.edition_time
+
+        # Make sure there is still only one skeleton
+        skeleton.refresh_from_db()
+
+        replaced_neurons = ClassInstanceClassInstance.objects.filter(
+                class_instance_a_id=skeleton.id,
+                relation__relation_name='model_of',
+                class_instance_b__class_column__class_name='neuron')
+        self.assertEqual(len(replaced_neurons), 1)
+        self.assertEqual(skeleton.id, parsed_response['skeleton_id'])
+        self.assertEqual(skeleton.name, 'test2')
+        self.assertNotEqual(skeleton.edition_time, last_skeleton_edit_time)
+
+        # Make sure there are as many nodes as expected for the imported
+        # skeleton.
+        n_skeleton_nodes = Treenode.objects.filter(skeleton_id=parsed_response['skeleton_id']).count()
+        self.assertEqual(n_skeleton_nodes, n_orig_skeleton_nodes)
+
+        transaction.commit()
+
+
+    def test_import_skeleton_eswc(self):
+        self.fake_authentication()
+
+        orig_skeleton_id = 235
+        response = self.client.get('/%d/skeleton/%d/eswc' % (self.test_project_id, orig_skeleton_id))
+        self.assertStatus(response)
+        orig_swc_string = response.content.decode('utf-8')
+
+        n_orig_skeleton_nodes = Treenode.objects.filter(skeleton_id=orig_skeleton_id).count()
+
+        # Try inserting without permission and expect fail
+        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
+                                    {'file.eswc': ''})
+        self.assertTrue("PermissionError" in response.content.decode('utf-8'))
+
+        # Add permission and expect success
+        swc_file = StringIO(orig_swc_string)
+        assign_perm('can_import', self.test_user, self.test_project)
+        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
+                {'file.eswc': swc_file, 'name': 'test'})
+
+        transaction.commit()
+
+        self.assertStatus(response)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        new_skeleton_id = parsed_response['skeleton_id']
+        id_map = parsed_response['node_id_map']
+
+        skeleton = ClassInstance.objects.get(id=new_skeleton_id)
+        model_rel = ClassInstanceClassInstance.objects.get(class_instance_a=skeleton,
+                relation__relation_name='model_of')
+        neuron = model_rel.class_instance_b
+        self.assertEqual(neuron.id, parsed_response['neuron_id'])
+        self.assertEqual('test', neuron.name)
+
+        user_name_map = dict(User.objects.all().values_list('id', 'username'))
+
+        for tn in Treenode.objects.filter(skeleton_id=orig_skeleton_id):
+            new_tn = Treenode.objects.get(id=id_map[str(tn.id)])
+            self.assertEqual(new_skeleton_id, new_tn.skeleton_id)
+            if tn.parent_id:
+                self.assertEqual(id_map[str(tn.parent_id)], new_tn.parent_id)
+            self.assertEqual(tn.location_x, new_tn.location_x)
+            self.assertEqual(tn.location_y, new_tn.location_y)
+            self.assertEqual(tn.location_z, new_tn.location_z)
+            self.assertEqual(user_name_map[tn.user_id], user_name_map[new_tn.user_id])
+            self.assertEqual(user_name_map[tn.editor_id], user_name_map[new_tn.editor_id])
+            self.assertEqual(tn.creation_time, new_tn.creation_time)
+            self.assertEqual(tn.confidence, new_tn.confidence)
+            self.assertEqual(max(tn.radius, 0), max(new_tn.radius, 0))
+
+
+        # Remember current edit time for later
+        last_neuron_id = neuron.id
+        last_skeleton_id = skeleton.id
+        last_neuron_edit_time = neuron.edition_time
+        last_skeleton_edit_time = skeleton.edition_time
+
+
+        # Test replacing the imported neuron without forcing an update and
+        # auto_id disabled.
+        swc_file2 = StringIO(orig_swc_string)
+        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
+                {'file.eswc': swc_file2, 'name': 'test2', 'neuron_id':
+                    neuron.id, 'auto_id': False})
+
+        transaction.commit()
+
+        self.assertEqual(response.status_code, 400)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        expected_result = {
+                "error": "The passed in neuron ID is already in use and neither of the parameters force or auto_id are set to true."}
+        for k,v in expected_result.items():
+            self.assertTrue(k in parsed_response)
+            self.assertEqual(parsed_response[k], v)
+
+
+        # Test replacing the imported neuron without forcing an update and
+        # auto_id enabled (default).
+        swc_file2 = StringIO(orig_swc_string)
+        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
+                {'file.eswc': swc_file2, 'name': 'test2', 'neuron_id':
+                    neuron.id})
+
+        transaction.commit()
+
+        self.assertStatus(response)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+
+        # Make sure there is still only one skeleton
+        neuron.refresh_from_db()
+        linked_skeletons = ClassInstanceClassInstance.objects.filter(
+                class_instance_b_id=neuron.id,
+                relation__relation_name='model_of',
+                class_instance_a__class_column__class_name='skeleton')
+        self.assertEqual(len(linked_skeletons), 1)
+        self.assertEqual(neuron.name, 'test')
+        self.assertEqual(neuron.id, last_neuron_id)
+        self.assertEqual(neuron.edition_time, last_neuron_edit_time)
+        self.assertNotEqual(neuron.id, parsed_response['neuron_id'])
+
+        # Make sure there are as many nodes as expected for the imported
+        # skeleton.
+        n_skeleton_nodes = Treenode.objects.filter(skeleton_id=parsed_response['skeleton_id']).count()
+        self.assertEqual(n_skeleton_nodes, n_orig_skeleton_nodes)
+
+        transaction.commit()
+
+        # Test replacing the imported neuron with forcing an update
+        swc_file2 = StringIO(orig_swc_string)
+        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
+                {'file.eswc': swc_file2, 'name': 'test2', 'neuron_id': neuron.id,
+                    'force': True})
+
+        transaction.commit()
+
+        self.assertStatus(response)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+
+        # Make sure there is still only one skeleton
+        neuron.refresh_from_db()
+        replaced_skeletons = ClassInstanceClassInstance.objects.filter(
+                class_instance_b_id=neuron.id,
+                relation__relation_name='model_of',
+                class_instance_a__class_column__class_name='skeleton')
+        self.assertEqual(len(replaced_skeletons), 1)
+        self.assertEqual(neuron.id, parsed_response['neuron_id'])
+        self.assertEqual(neuron.name, 'test2')
+        self.assertEqual(neuron.id, last_neuron_id)
+        self.assertNotEqual(neuron.edition_time, last_neuron_edit_time)
+
+        # Make sure there are as many nodes as expected for the imported
+        # skeleton.
+        n_skeleton_nodes = Treenode.objects.filter(skeleton_id=parsed_response['skeleton_id']).count()
+        self.assertEqual(n_skeleton_nodes, n_orig_skeleton_nodes)
+
+
+        # Make sure we work with most recent skeleton data
+        skeleton = ClassInstance.objects.get(pk=parsed_response['skeleton_id'])
+
+        # Test replacing the imported skeleton without forcing an update and
+        # auto_id disabled.
+        swc_file2 = StringIO(orig_swc_string)
+        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
+                {'file.eswc': swc_file2, 'name': 'test2', 'skeleton_id':
+                    skeleton.id, 'auto_id': False})
+
+        transaction.commit()
+
+        self.assertEqual(response.status_code, 400)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        expected_result = {
+                "error": "The passed in skeleton ID is already in use and neither of the parameters force or auto_id are set to true."}
+        for k,v in expected_result.items():
+            self.assertTrue(k in parsed_response)
+            self.assertEqual(parsed_response[k], v)
+
+
+        # Test replacing the imported skeleton without forcing an update and
+        # auto_id enabled (default).
+        swc_file2 = StringIO(orig_swc_string)
+        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
+                {'file.eswc': swc_file2, 'name': 'test3', 'skeleton_id':
+                    skeleton.id})
+
+        transaction.commit()
+
+        self.assertStatus(response)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        last_skeleton_id = skeleton.id
+        neuron = ClassInstance.objects.get(pk=parsed_response['neuron_id'])
+        skeleton = ClassInstance.objects.get(pk=parsed_response['skeleton_id'])
+
+
+        # Make sure there is still only one skeleton
+        linked_neurons = ClassInstanceClassInstance.objects.filter(
+                class_instance_a_id=skeleton.id,
+                relation__relation_name='model_of',
+                class_instance_b__class_column__class_name='neuron')
+        self.assertEqual(len(linked_neurons), 1)
+        self.assertEqual(neuron.name, 'test3')
+        self.assertEqual(skeleton.name, 'test3')
+        self.assertNotEqual(neuron.id, last_neuron_id)
+        self.assertNotEqual(last_skeleton_id, skeleton.id)
+
+        # Make sure there are as many nodes as expected for the imported
+        # skeleton.
+        n_skeleton_nodes = Treenode.objects.filter(skeleton_id=parsed_response['skeleton_id']).count()
+        self.assertEqual(n_skeleton_nodes, n_orig_skeleton_nodes)
+
+        # Test replacing the imported neuron with forcing an update
+        swc_file2 = StringIO(orig_swc_string)
+        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
+                {'file.eswc': swc_file2, 'name': 'test2', 'skeleton_id': skeleton.id,
+                    'force': True})
+
+        transaction.commit()
+
+        self.assertStatus(response)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+
+        last_skeleton_edit_time = skeleton.edition_time
+
+        # Make sure there is still only one skeleton
+        skeleton.refresh_from_db()
+
+        replaced_neurons = ClassInstanceClassInstance.objects.filter(
+                class_instance_a_id=skeleton.id,
+                relation__relation_name='model_of',
+                class_instance_b__class_column__class_name='neuron')
+        self.assertEqual(len(replaced_neurons), 1)
+        self.assertEqual(skeleton.id, parsed_response['skeleton_id'])
+        self.assertEqual(skeleton.name, 'test2')
+        self.assertNotEqual(skeleton.edition_time, last_skeleton_edit_time)
+
+        # Make sure there are as many nodes as expected for the imported
+        # skeleton.
+        n_skeleton_nodes = Treenode.objects.filter(skeleton_id=parsed_response['skeleton_id']).count()
+        self.assertEqual(n_skeleton_nodes, n_orig_skeleton_nodes)

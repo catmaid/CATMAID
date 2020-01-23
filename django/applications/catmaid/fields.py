@@ -13,6 +13,7 @@ from django.core.exceptions import ValidationError
 from django.dispatch import receiver, Signal
 from django.db import models
 from django.db.backends import signals as db_signals
+from django.contrib.postgres.functions import TransactionNow
 
 
 from catmaid.widgets import Double3DWidget, Integer3DWidget, RGBAWidget, DownsampleFactorsWidget
@@ -424,3 +425,11 @@ class SerializableGeometryField(models.Field):
         exported volumes human readable.
         """
         return 'ST_AsText(%s)' % sql, params
+
+
+class DbDefaultDateTimeField(models.DateTimeField):
+    db_returning = True
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault('default', TransactionNow)
+        super().__init__(*args, **kwargs)

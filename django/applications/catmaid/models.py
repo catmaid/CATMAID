@@ -30,7 +30,8 @@ from taggit.managers import TaggableManager
 from rest_framework.authtoken.models import Token
 
 from .fields import (Double3DField, Integer3DField, RGBAField,
-        DownsampleFactorsField, SerializableGeometryField)
+        DownsampleFactorsField, SerializableGeometryField,
+        DbDefaultDateTimeField)
 
 
 CELL_BODY_CHOICES = (
@@ -184,8 +185,8 @@ class ProjectStack(models.Model):
 class Concept(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    creation_time = models.DateTimeField(default=timezone.now)
-    edition_time = models.DateTimeField(default=timezone.now)
+    creation_time = DbDefaultDateTimeField()
+    edition_time = DbDefaultDateTimeField()
 
     class Meta:
         db_table = "concept"
@@ -212,8 +213,8 @@ class Class(models.Model):
     # Repeat the columns inherited from 'concept'
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    creation_time = models.DateTimeField(default=timezone.now)
-    edition_time = models.DateTimeField(default=timezone.now)
+    creation_time = DbDefaultDateTimeField()
+    edition_time = DbDefaultDateTimeField()
     # Now new columns:
     class_name = models.CharField(max_length=255)
     description = models.TextField()
@@ -234,8 +235,8 @@ class ClassInstance(models.Model):
     # Repeat the columns inherited from 'concept'
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    creation_time = models.DateTimeField(default=timezone.now)
-    edition_time = models.DateTimeField(default=timezone.now)
+    creation_time = DbDefaultDateTimeField()
+    edition_time = DbDefaultDateTimeField()
     # Now new columns:
     class_column = models.ForeignKey(Class, on_delete=models.CASCADE,
                                      db_column="class_id") # underscore since class is a keyword
@@ -327,8 +328,8 @@ class Relation(models.Model):
     # Repeat the columns inherited from 'concept'
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    creation_time = models.DateTimeField(default=timezone.now)
-    edition_time = models.DateTimeField(default=timezone.now)
+    creation_time = DbDefaultDateTimeField()
+    edition_time = DbDefaultDateTimeField()
     # Now new columns:
     relation_name = models.CharField(max_length=255)
     uri = models.TextField()
@@ -343,8 +344,8 @@ class RelationInstance(models.Model):
     # Repeat the columns inherited from 'concept'
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    creation_time = models.DateTimeField(default=timezone.now)
-    edition_time = models.DateTimeField(default=timezone.now)
+    creation_time = DbDefaultDateTimeField()
+    edition_time = DbDefaultDateTimeField()
     # Now new columns:
     relation = models.ForeignKey(Relation, on_delete=models.CASCADE)
 
@@ -356,8 +357,8 @@ class ClassInstanceClassInstance(models.Model):
     # Repeat the columns inherited from 'relation_instance'
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    creation_time = models.DateTimeField(default=timezone.now)
-    edition_time = models.DateTimeField(default=timezone.now)
+    creation_time = DbDefaultDateTimeField()
+    edition_time = DbDefaultDateTimeField()
     relation = models.ForeignKey(Relation, on_delete=models.CASCADE)
     # Now new columns:
     class_instance_a = models.ForeignKey(ClassInstance,
@@ -408,8 +409,8 @@ class ClassClass(models.Model):
     # Repeat the columns inherited from 'relation_instance'
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    creation_time = models.DateTimeField(default=timezone.now)
-    edition_time = models.DateTimeField(default=timezone.now)
+    creation_time = DbDefaultDateTimeField()
+    edition_time = DbDefaultDateTimeField()
     relation = models.ForeignKey(Relation, on_delete=models.CASCADE)
     # Now new columns:
     class_a = models.ForeignKey(Class, related_name='classes_a',
@@ -475,71 +476,23 @@ class UserFocusedManager(models.Manager):
             return full_set.filter(Q(project__in=admin_projects) | (Q(project__in=other_projects) & Q(user=user)))
 
 
-class TimeFocusedModel(models.Model):
-    # Defaults for creation_time and edition_time are managed by the database
-    # (they are the transaction start time, `now()`). The None value is checked
-    # on inserts and if present, the database will be responsible for the
-    # default value. See _do_insert() below. This is done so that the default
-    # values match the catmaid_transaction_info table entries.
-    creation_time = models.DateTimeField(default=None)
-    edition_time = models.DateTimeField(default=None)
-
-    def _do_insert(self, manager, using, fields, update_pk, raw):
-        """Modify the database INSERT so that the database default values for
-        creation_time and edition_time can be used. This is helpful to match
-        catmaid_transaction_info entries both on a transaction ID and the
-        creation time (to be save from transaction wraparound duplicates).
-
-        Without this, we would use the datetime.now() time, which is Django's
-        view and is different from the database transaction start time.
-        """
-        filtering = True
-        db_time_default_fiels = []
-        while filtering:
-            rescan = False
-            for i, f in enumerate(fields):
-                if f.attname == 'creation_time' and self.creation_time is None:
-                    fields.pop(i)
-                    rescan = True
-                    db_time_default_fiels.append('creation_time')
-                    break
-                elif f.attname == 'edition_time' and self.edition_time is None:
-                    fields.pop(i)
-                    rescan = True
-                    db_time_default_fiels.append('edition_time')
-                    break
-            filtering = rescan
-
-        insert_result =  super()._do_insert(manager, using, fields, update_pk, raw)
-
-        # If DB defaults were used for this model, update the local
-        # representation of these fields.
-        if db_time_default_fiels:
-            cursor = connection.cursor()
-            cursor.execute("SELECT now()")
-            tx_time = cursor.fetchone()[0]
-            for f in db_time_default_fiels:
-                setattr(self, f, tx_time)
-
-        return insert_result
-
-    class Meta:
-        abstract = True
-
-
-class UserFocusedModel(TimeFocusedModel):
+class UserFocusedModel(models.Model):
     objects = UserFocusedManager()
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    creation_time = DbDefaultDateTimeField()
+    edition_time = DbDefaultDateTimeField()
 
     class Meta:
         abstract = True
 
 
-class NonCascadingUserFocusedModel(TimeFocusedModel):
+class NonCascadingUserFocusedModel(models.Model):
     objects = UserFocusedManager()
     user = models.ForeignKey(User, on_delete=models.DO_NOTHING)
     project = models.ForeignKey(Project, on_delete=models.DO_NOTHING)
+    creation_time = DbDefaultDateTimeField()
+    edition_time = DbDefaultDateTimeField()
 
     class Meta:
         abstract = True
@@ -701,7 +654,7 @@ class Review(models.Model):
     """
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     reviewer = models.ForeignKey(User, on_delete=models.CASCADE)
-    review_time = models.DateTimeField(default=timezone.now)
+    review_time = DbDefaultDateTimeField()
     skeleton = models.ForeignKey(ClassInstance, on_delete=models.CASCADE)
     treenode = models.ForeignKey(Treenode, on_delete=models.CASCADE)
 
@@ -784,8 +737,8 @@ class Restriction(models.Model):
     # Repeat the columns inherited from 'concept'
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    creation_time = models.DateTimeField(default=timezone.now)
-    edition_time = models.DateTimeField(default=timezone.now)
+    creation_time = DbDefaultDateTimeField()
+    edition_time = DbDefaultDateTimeField()
     # Now new columns:
     enabled = models.BooleanField(default=True)
     restricted_link = models.ForeignKey(ClassClass, on_delete=models.CASCADE)
@@ -809,8 +762,8 @@ class CardinalityRestriction(models.Model):
     # Repeat the columns inherited from 'restriction'
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    creation_time = models.DateTimeField(default=timezone.now)
-    edition_time = models.DateTimeField(default=timezone.now)
+    creation_time = DbDefaultDateTimeField()
+    edition_time = DbDefaultDateTimeField()
     enabled = models.BooleanField(default=True)
     restricted_link = models.ForeignKey(ClassClass, on_delete=models.CASCADE)
     # Now new columns:
@@ -925,8 +878,8 @@ class StackClassInstance(models.Model):
     # Repeat the columns inherited from 'relation_instance'
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    creation_time = models.DateTimeField(default=timezone.now)
-    edition_time = models.DateTimeField(default=timezone.now)
+    creation_time = DbDefaultDateTimeField()
+    edition_time = DbDefaultDateTimeField()
     relation = models.ForeignKey(Relation, on_delete=models.CASCADE)
     # Now new columns:
     stack = models.ForeignKey(Stack, on_delete=models.CASCADE)
@@ -973,8 +926,8 @@ class StackGroupClassInstance(models.Model):
     # Repeat the columns inherited from 'relation_instance'
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    creation_time = models.DateTimeField(default=timezone.now)
-    edition_time = models.DateTimeField(default=timezone.now)
+    creation_time = DbDefaultDateTimeField()
+    edition_time = DbDefaultDateTimeField()
     relation = models.ForeignKey(Relation, on_delete=models.CASCADE)
     # Now new columns:
     stack_group = models.ForeignKey(StackGroup, on_delete=models.CASCADE)
@@ -1494,7 +1447,7 @@ class NodeGridCacheCell(models.Model):
     x_index = models.IntegerField(null=False)
     y_index = models.IntegerField(null=False)
     z_index = models.IntegerField(null=False)
-    update_time = models.DateTimeField(default=timezone.now, null=False)
+    update_time = DbDefaultDateTimeField(null=False)
     json_data = JSONField(blank=True, null=True)
     json_text_data = models.TextField(blank=True, null=True)
     msgpack_data = models.BinaryField(null=True)
@@ -1513,7 +1466,7 @@ class DirtyNodeGridCacheCell(models.Model):
     x_index = models.IntegerField(null=False)
     y_index = models.IntegerField(null=False)
     z_index = models.IntegerField(null=False)
-    invalidation_time = models.DateTimeField(default=timezone.now, null=False)
+    invalidation_time = DbDefaultDateTimeField(null=False)
 
     class Meta:
         db_table = "dirty_node_grid_cache_cell"

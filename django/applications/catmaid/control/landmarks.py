@@ -886,7 +886,7 @@ def get_landmark_group_locations(project_id, landmarkgroup_ids, with_names:bool=
             FROM (
                 SELECT pci.point_id, pci.class_instance_id, array_agg(l.name) as names
                 FROM point_class_instance pci
-                JOIN UNNEST(%(landmarkgroup_ids)s::integer[]) landmarkgroup(id)
+                JOIN UNNEST(%(landmarkgroup_ids)s::bigint[]) landmarkgroup(id)
                     ON pci.class_instance_id = landmarkgroup.id
                 LEFT JOIN point_class_instance pci_l
                     ON pci_l.point_id = pci.point_id
@@ -936,7 +936,7 @@ def get_landmark_group_locations(project_id, landmarkgroup_ids, with_names:bool=
             SELECT pci.point_id, pci.class_instance_id, p.location_x,
                 p.location_y, p.location_z
             FROM point_class_instance pci
-            JOIN UNNEST(%(landmarkgroup_ids)s::integer[]) landmarkgroup(id)
+            JOIN UNNEST(%(landmarkgroup_ids)s::bigint[]) landmarkgroup(id)
                 ON pci.class_instance_id = landmarkgroup.id
             JOIN point p
                 ON p.id = pci.point_id
@@ -965,7 +965,7 @@ def make_landmark_relation_index(project_id, landmarkgroup_ids) -> Tuple[Default
         SELECT cici.id, lg.id, cici.relation_id, r.relation_name,
             cici.class_instance_a, cici.class_instance_b
         FROM class_instance_class_instance cici
-        JOIN UNNEST(%(landmarkgroup_ids)s::integer[]) lg(id)
+        JOIN UNNEST(%(landmarkgroup_ids)s::bigint[]) lg(id)
             ON lg.id = cici.class_instance_a
             OR lg.id = cici.class_instance_b
         JOIN relation r

@@ -495,7 +495,7 @@ class ConfigurationList(APIView):
                 cursor.execute("""
                     SELECT css.skeleton_id
                     FROM catmaid_skeleton_summary css
-                    JOIN UNNEST(%(skeleton_ids)s::int[]) skeleton(id)
+                    JOIN UNNEST(%(skeleton_ids)s::bigint[]) skeleton(id)
                         ON css.skeleton_id = skeleton.id
                     WHERE project_id = %(project_id)s
                         AND cable_length >= %(min_cable)s

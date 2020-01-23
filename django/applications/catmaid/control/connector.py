@@ -160,13 +160,13 @@ def _many_to_many_synapses(skids1, skids2, relation_name, project_id) -> Tuple:
          treenode t1,
          treenode t2,
          connector c
-    WHERE tc1.skeleton_id = ANY(%(skeleton_ids_1)s::int[])
+    WHERE tc1.skeleton_id = ANY(%(skeleton_ids_1)s::bigint[])
       AND tc1.connector_id = c.id
-      AND tc2.skeleton_id = ANY(%(skeleton_ids_2)s::int[])
+      AND tc2.skeleton_id = ANY(%(skeleton_ids_2)s::bigint[])
       AND tc1.connector_id = tc2.connector_id
       AND tc1.relation_id = %(relation_id)s
       AND (tc1.relation_id != tc2.relation_id
-        OR tc1.relation_id = ANY(%(undir_rel_ids)s::int[]))
+        OR tc1.relation_id = ANY(%(undir_rel_ids)s::bigint[]))
       AND tc1.id != tc2.id
       AND tc1.treenode_id = t1.id
       AND tc2.treenode_id = t2.id
@@ -1067,7 +1067,7 @@ def get_connectors_in_bb_postgis3d(params) -> List:
             JOIN (
                 SELECT DISTiNCT tc2.connector_id
                 FROM treenode_connector tc2
-                JOIN UNNEST(%(skeleton_ids)s::int[]) skeleton(id)
+                JOIN UNNEST(%(skeleton_ids)s::bigint[]) skeleton(id)
                     ON tc2.skeleton_id = skeleton.id
             ) allowed_connector(id)
                 ON allowed_connector.id = c.id

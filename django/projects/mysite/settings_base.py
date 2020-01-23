@@ -87,7 +87,7 @@ INSTALLED_APPS = (
     'rest_framework',
     'rest_framework.authtoken',
     'rest_framework_swagger',
-    'channels'
+    'channels',
 )
 
 LOGGING = {
@@ -166,6 +166,8 @@ AUTHENTICATION_BACKENDS = (
 # for admin accounts.
 REQUIRE_EXTRA_TOKEN_PERMISSIONS = True
 
+# Main ASGI router for CATMAID
+ASGI_APPLICATION = "mysite.routing.application"
 
 # Project ID of a dummy project that will keep all ontologies and
 # classifications that are shared between multiple projects (and are
@@ -412,14 +414,6 @@ REST_FRAMEWORK = {
 SWAGGER_SETTINGS = {
     'DOC_EXPANSION': 'list',
     'APIS_SORTER': 'alpha'
-}
-
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "asgi_ipc.IPCChannelLayer",
-        "ROUTING": "mysite.routing.channel_routing",
-        "CONFIG": {}
-    },
 }
 
 # Needed for NRRD export

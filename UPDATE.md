@@ -5,6 +5,15 @@ and other administration related changes are listed in order.
 
 - Python 3.5 is not supported anymore. Use Python 3.6 or 3.7.
 
+- A virtualenv update is required. Before you start it, please remove some
+  packages that are not needed anymore first:
+
+  pip uninstall asgi_ipc
+
+- If ASGI was set up before, make sure to install channels_rabbitmq or
+  channels_redis (depending on what yous use). The older asgi_rabbitmq and
+  asgi_redis packages aren't supported anymore.
+
 - Postgres 11 and PostGIS 2.5 is required. If both needs to be updated, update
   PostGIS first and run `ALTER EXTENSION postgis UPDATE;` in every database. For
   docker-compose setups this database update is performed automatically.

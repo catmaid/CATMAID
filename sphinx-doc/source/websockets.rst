@@ -86,26 +86,33 @@ Use RabbitMQ as back-end
 ------------------------
 
 The WebSockets layer needs a back-end to share data between different processes.
-By default, the shared memory back-end
-`ASGI-IPC <https://channels.readthedocs.io/en/stable/backends.html#ipc>`_ is
-used. Alternatively,
-`RabbitMQ <https://channels.readthedocs.io/en/stable/backends.html#rabbitmq>`_
-can be used, which might already be in use for the :ref:`Celery <celery>`
-setup. To do this, install the ``asgi_rabbitmq`` layer package into the
+This happens though a separate database, typically Redis or RabbitMQ. While
+``channels_redis`` is available and well supported, we so far only used
+``channels_rabbitmq``, because `RabbitMQ
+<https://channels.readthedocs.io/en/stable/backends.html#rabbitmq>`_ is also
+used in other parts of our infrastructure (e.g. :ref:`Celery <celery>`). To have
+a similar setup, install the ``channels_rabbitmq`` layer package into the
 virtualenv::
 
-    pip install -U asgi_rabbitmq
+    pip install -U channels_rabbitmq
 
 Additionally, the folllowing has to be added to ``settings.py``:
 
 .. code-block:: python
 
-    CHANNEL_LAYERS["default"]["BACKEND"] = "asgi_rabbitmq.RabbitmqChannelLayer"
-    CHANNEL_LAYERS["default"]["CONFIG"]["url"] = "amqp://guest:guest@localhost:5672/%2F"
+    CHANNEL_LAYERS = {
+       "default": {
+           "BACKEND": "channels_rabbitmq.core.RabbitmqChannelLayer",
+           "CONFIG": {
+               "host": "amqp://<user>:<pass>@localhost:5672/asgi"
+           },
+       },
+    }
 
-Of course, if you changed RabbitMQ's default credentials or its port, the above
-line has to be adjusted accordingly. You can find more information on this layer
-`here <http://asgi-rabbitmq.readthedocs.io/en/latest/>`_.
+Adjust the RabbitMQ line above according to your RabbitMQ setup. Details on how
+to configue a user, password and vhost (asgi) can be found in the CATMAID
+documentation about :ref:`Celery <celery>`.  You can find more information on
+this channel layer `here <https://github.com/CJWorkbench/channels_rabbitmq//>`_.
 
 Process management with Supervisord
 -----------------------------------

@@ -1,9 +1,13 @@
-# -*- coding: utf-8 -*-
-from channels.routing import include
-from catmaid.routing import channel_routing as catmaid_routes
+from channels.auth import AuthMiddlewareStack
+from channels.routing import ProtocolTypeRouter, URLRouter
 
+import catmaid.routing
 
-# Link connsumer functions to websockets.
-channel_routing = [
-    include(catmaid_routes, path='^/channels')
-]
+application = ProtocolTypeRouter({
+    # (http->django views is added by default)
+    'websocket': AuthMiddlewareStack(
+        URLRouter(
+            catmaid.routing.websocket_urlpatterns
+        )
+    ),
+})

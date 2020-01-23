@@ -1,7 +1,6 @@
 aggdraw==1.3.11
-asgi_ipc==1.4.2
 celery==4.3.0
-channels==1.1.8
+channels==2.4.0
 cssmin==0.2.0
 Cython==0.29.14
 Django==2.2.9

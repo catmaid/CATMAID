@@ -1,33 +1,49 @@
 import json
 import logging
 
-from channels import Group
-from channels.sessions import channel_session
-from channels.auth import channel_session_user, channel_session_user_from_http
-from channels.security.websockets import allowed_hosts_only
+from asgiref.sync import async_to_sync
 
+from channels.generic.websocket import WebsocketConsumer
+from channels.layers import get_channel_layer
 
 logger = logging.getLogger(__name__)
 
-@allowed_hosts_only
-@channel_session_user_from_http
-def ws_update_connect(message) -> None:
-    """Add connecting users to user group so they can receive messages from the
-    server."""
-    # Accept connection
-    message.reply_channel.send({"accept": True})
-    # Add user to the matching user group
-    Group(f"updates-{message.user.id}").add(message.reply_channel)
 
-@channel_session_user
-def ws_update_disconnect(message) -> None:
-    """Remove channel from group when user disconnects."""
-    Group(f"updates-{message.user.id}").discard(message.reply_channel)
+def get_user_group_name(user_id):
+    return f"updates-{user_id}"
 
-@channel_session_user
-def ws_update_message(message) -> None:
-    """Handle client messages."""
-    logger.info(f"WebSockets message received: {message}")
+class UpdateConsumer(WebsocketConsumer):
+
+    def connect(self):
+        """Add connecting users to user group so they can receive messages from the
+        server."""
+        # Add user to the matching user group
+        user = self.scope["user"]
+        async_to_sync(self.channel_layer.group_add)(get_user_group_name(user.id), self.channel_name)
+        self.accept()
+
+    def disconnect(self, message):
+        """Remove channel from group when user disconnects."""
+        user = self.scope["user"]
+        async_to_sync(self.channel_layer.group_discard)(get_user_group_name(user.id), self.channel_name)
+
+    def receive(self, *, text_data):
+        """Handle client messages."""
+        user = self.scope["user"]
+        text_data_json = json.loads(text_data)
+        message = text_data_json['message']
+        logger.info("WebSockets message received: {}".format(message))
+        async_to_sync(self.channel_layer.group_send)(
+            get_user_group_name(user.id),
+            {
+                "type": "user.message",
+                "data": text_data,
+            },
+        )
+
+    def user_message(self, event):
+        self.send(text_data=event["data"])
+
 
 def msg_user(user_id, event_name, data:str="", data_type:str="text", is_raw_data:bool=False,
         ignore_missing:bool=True) -> None:
@@ -44,8 +60,10 @@ def msg_user(user_id, event_name, data:str="", data_type:str="text", is_raw_data
         })
     # Broadcast to listening sockets
     try:
-        Group(f"updates-{user_id}").send({
-            data_type: payload
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(get_user_group_name(user_id), {
+            'type': 'user.message',
+            'data': payload,
         })
     except KeyError as e:
         if ignore_missing:

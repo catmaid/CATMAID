@@ -21,7 +21,6 @@ dictonary at the end of this file.
 from collections import OrderedDict
 from importlib import import_module
 
-import six
 
 # python module names of CATMAID extensions which could potentially be installed
 KNOWN_EXTENSIONS = (
@@ -42,7 +41,7 @@ class PipelineSpecUpdater(object):
         """Include items from other_dict in the input dict, ensuring that no data will be overwritten and the result
         will not cause multiple libraries to create static files of the same name. key_prefix will be prepended to
         the keys in other_dict when they are inserted into the input dict (default 'catmaid-ext-')."""
-        for key, value in six.iteritems(other_dict):
+        for key, value in other_dict.items():
             new_key = key_prefix + str(key)
             assert new_key not in self.result, 'Extension static file IDs must not overwrite existing static file IDs'
             assert value['output_filename'] not in self.existing_output_files, \
@@ -127,7 +126,7 @@ libraries_js = OrderedDict([
 
 JAVASCRIPT = OrderedDict()
 
-for k, v in six.iteritems(libraries_js):
+for k, v in libraries_js.items():
     JAVASCRIPT[k + '-lib'] = {
         'source_filenames': ['libs/%s/%s' % (k, f) for f in v],
         'output_filename': 'js/libs/%s-lib.js' % k,
@@ -141,7 +140,7 @@ non_pipeline_js = {}
 
 # Even non-pipeline files have to be made known to pipeline, because it takes
 # care of collecting them into the STATIC_ROOT directory.
-for k, v in six.iteritems(non_pipeline_js):
+for k, v in non_pipeline_js.items():
     JAVASCRIPT[k] = {
         'source_filenames': [v],
         'output_filename': v
@@ -164,7 +163,7 @@ copy_only_files = {
 }
 
 # Let pipeline know about copy-only files.
-for k, v in six.iteritems(copy_only_files):
+for k, v in copy_only_files.items():
     JAVASCRIPT[k] = {
         'source_filenames': [v],
         'output_filename': v

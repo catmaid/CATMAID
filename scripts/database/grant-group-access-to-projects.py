@@ -22,8 +22,6 @@ import os
 import yaml
 import re
 
-from six.moves import input
-
 
 try:
 	conf = yaml.load(open(os.path.join(os.environ['HOME'], '.catmaid-db')))

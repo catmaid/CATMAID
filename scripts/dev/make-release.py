@@ -26,7 +26,6 @@ import sys
 import traceback
 
 from datetime import date
-from six.moves import input
 
 
 def confirm(question, default="yes"):

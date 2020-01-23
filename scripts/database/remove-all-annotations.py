@@ -11,7 +11,6 @@ import sys
 import psycopg2
 import os
 from common import db_connection, conf
-from six.moves import input
 
 if len(sys.argv) != 1:
     print("Usage:", sys.argv[0], file=sys.stderr)

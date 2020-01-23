@@ -7,7 +7,6 @@ import django.conf.global_settings as DEFAULT_SETTINGS
 import logging
 import mysite.pipelinefiles as pipelinefiles
 import mysite.utils as utils
-import six
 
 from celery.schedules import crontab
 

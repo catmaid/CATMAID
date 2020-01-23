@@ -20,7 +20,7 @@ from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.http import HttpRequest, HttpResponse
-from django.shortcuts import render_to_response
+from django.shortcuts import render
 
 from formtools.wizard.views import SessionWizardView
 
@@ -705,7 +705,7 @@ class ImportingWizard(SessionWizardView):
             permissions, default_tile_width, default_tile_height,
             default_tile_source_type, cls_graph_ids, remove_unref_stack_data)
         # Show final page
-        return render_to_response('catmaid/import/done.html', {
+        return render(self.request, 'catmaid/import/done.html', {
             'projects': selected_projects,
             'imported_projects': imported_projects,
             'not_imported_projects': not_imported_projects,
@@ -734,7 +734,7 @@ def show_classification_suggestions(wizard):
     return cleaned_data['link_classifications']
 
 def importer_finish(request:HttpRequest) -> HttpResponse:
-    return render_to_response('catmaid/import/done.html', {})
+    return render(request, 'catmaid/import/done.html', {})
 
 def get_element_permission_tuples(element, cls) -> List[Tuple[str,str]]:
     """Get all available users mapped to all available project permissions.

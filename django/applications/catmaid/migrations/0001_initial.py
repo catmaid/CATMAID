@@ -5,7 +5,7 @@ from datetime import datetime
 import django.core.validators
 import catmaid.fields
 import django.contrib.gis.db.models.fields
-import jsonfield.fields
+import django.contrib.postgres.fields.jsonb
 import catmaid.control.user
 from django.conf import settings
 from django.utils import timezone
@@ -3444,7 +3444,7 @@ initial_state_operations = [
         fields=[
             ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
             ('key', models.CharField(max_length=255)),
-            ('value', jsonfield.fields.JSONField(default={})),
+            ('value', django.contrib.postgres.fields.jsonb.JSONField(default={})),
         ],
         options={
             'db_table': 'client_data',

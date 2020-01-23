@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
+import django.contrib.postgres.fields.jsonb
 from django.db import models, migrations
 from django.utils import timezone
-import jsonfield.fields
 
 
 class Migration(migrations.Migration):
@@ -42,7 +42,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('method', models.CharField(max_length=50)),
                 ('url', models.TextField()),
-                ('data', jsonfield.fields.JSONField(default={}, blank=True)),
+                ('data', django.contrib.postgres.fields.jsonb.JSONField(blank=True, default={})),
                 ('creation_time', models.DateTimeField(default=timezone.now)),
             ],
             options={

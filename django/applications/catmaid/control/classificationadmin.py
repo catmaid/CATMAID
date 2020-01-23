@@ -7,7 +7,7 @@ from django import forms
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.http import HttpRequest, HttpResponse, JsonResponse
-from django.shortcuts import render_to_response
+from django.shortcuts import render
 
 from formtools.wizard.views import SessionWizardView
 
@@ -237,7 +237,7 @@ class ClassificationAdminWizard(SessionWizardView):
                         failed_links[ml] = e
 
         # Show final page
-        return render_to_response('catmaid/classification/admin_done.html', {
+        return render(self.request, 'catmaid/classification/admin_done.html', {
             'tag_groups': unified_tag_groups,
             'num_added_links': num_added_links,
             'failed_links': failed_links,

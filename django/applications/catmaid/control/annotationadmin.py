@@ -6,7 +6,7 @@ from django import forms
 from django.conf import settings
 from django.db import connection
 from django.http import HttpRequest, HttpResponse, JsonResponse
-from django.shortcuts import render_to_response
+from django.shortcuts import render
 
 from formtools.wizard.views import SessionWizardView
 
@@ -156,7 +156,7 @@ class ImportingWizard(SessionWizardView):
                         scd['import_treenodes'], scd['import_connectors'],
                         scd['import_annotations'], scd['import_tags'])
 
-        return render_to_response(IMPORT_TEMPLATES['done'])
+        return render(self.request, IMPORT_TEMPLATES['done'])
 
 
 class ExportingWizard(SessionWizardView):

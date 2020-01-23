@@ -5,7 +5,6 @@ from datetime import datetime
 import django.core.validators
 import catmaid.fields
 import django.contrib.gis.db.models.fields
-import jsonfield.fields
 import catmaid.control.user
 from django.conf import settings
 from django.utils import timezone

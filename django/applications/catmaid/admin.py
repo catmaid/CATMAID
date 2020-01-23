@@ -14,7 +14,7 @@ from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.admin import UserAdmin, GroupAdmin
 from django.contrib.auth.models import User, Group
 from django.utils.safestring import mark_safe
-from django.utils.translation import ugettext_lazy
+from django.utils.translation import gettext_lazy
 from django.urls import reverse
 from guardian.admin import GuardedModelAdmin
 from catmaid.models import (Project, DataView, Stack, InterpolatableSection,
@@ -200,7 +200,7 @@ class GroupAdminForm(forms.ModelForm):
         queryset=User.objects.all(),
         required=False,
         widget=FilteredSelectMultiple(
-            verbose_name=ugettext_lazy('Users'),
+            verbose_name=gettext_lazy('Users'),
             is_stacked=False
         )
     )

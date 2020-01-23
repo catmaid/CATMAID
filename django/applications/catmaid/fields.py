@@ -183,7 +183,7 @@ class Double3DField(models.Field):
     def db_type(self, connection):
         return 'double3d'
 
-    def from_db_value(self, value, expression, connection, context):
+    def from_db_value(self, value, expression, connection):
         if value is None:
             return value
 
@@ -243,7 +243,7 @@ class RGBAField(models.Field):
     def db_type(self, connection):
         return 'rgba'
 
-    def from_db_value(self, value, expression, connection, context):
+    def from_db_value(self, value, expression, connection):
         if value is None:
             return value
 

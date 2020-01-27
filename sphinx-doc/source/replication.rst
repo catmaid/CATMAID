@@ -159,16 +159,31 @@ primary and print progress information. This will take a while, depending on
 your database size, because all the data from the primary server is copied over.
 
 Of course the replica shouldn't write on its own to the database, instead it
-should follow the primary. This is done by creating a file named
-``recovery.conf`` in the Postgres data directory
-(``/var/lib/postgresql/11/main/`` in this example)  with the following content::
+should follow the primary. In order to do that, make the following settings
+available in ``postgresql.conf``::
 
-  standby_mode          = 'on'
   primary_conninfo      = 'host=my.primary.db.xyz port=7432 user=replication_user password=<password>'
-  trigger_file = '/tmp/MasterNow'
+  promote_trigger_file = '/tmp/MasterNow'
   #restore_command = 'cp /opt/postgresql_wal/%f "%p"
 
-This file needs to be owned by the ``postgres`` user and the ``postgres`` group.
+To let the cluster know that it runs in standby mode, create the file
+``standby.signal`` in the Postgres data directory
+(``/var/lib/postgresql/11/main/`` in this example). This file needs to be owned
+by the ``postgres`` user and the ``postgres`` group.
+
+.. note::
+
+  In Postgres 11, the setup was done by creating a file named ``recovery.conf``
+  in the Postgres data directory with the following content, instead of the
+  ``postgresql.conf`` changes above):
+
+  primary_conninfo      = 'host=my.primary.db.xyz port=7432 user=replication_user password=<password>'
+  promote_trigger_file = '/tmp/MasterNow'
+  #restore_command = 'cp /opt/postgresql_wal/%f "%p"
+  standby_mode          = 'on'
+
+  This file needs to be owned by the ``postgres`` user and the ``postgres`` group.
+
 This configuration makes Postgres start as a standby (read-only) server. It will
 automatically contact the primary server to stay up-to-date. If the file
 ``/tmp/MasterNow`` exists, Postgres will stop replication and become a primary.

@@ -43,9 +43,16 @@ install it on Ubuntu 16.04 and earlier, the following needs to be done::
     sudo add-apt-repository ppa:deadsnakes/ppa
     sudo apt-get update
 
+The Django version we use also requires a GDAL version of at least 2.0. The
+installed version can be checked using ``gdalinfo --version``. Should version 2
+or newer not  be available on your system, use the following PPA::
+
+    sudo add-apt-repository ppa:ubuntugis/ppa
+    sudo apt-get update
+
 And then you can install these dependencies with::
 
-    sudo apt-get install python3.6 postgresql-11 imagemagick
+    sudo apt-get install python3.6 postgresql-11 imagemagick gdal-bin
 
 CATMAID is based on the `Django web framework
 <https://www.djangoproject.com/>`_.  If you just wish to work on

@@ -8,11 +8,31 @@
 - A virtualenv update is required. Before you start it, please remove some
   packages that are not needed anymore first:
 
-  pip uninstall asgi_ipc
+  pip uninstall asgi-ipc asgi-rabbitmq
 
 - If ASGI was set up before, make sure to install channels_rabbitmq or
   channels_redis (depending on what yous use). The older asgi_rabbitmq and
-  asgi_redis packages aren't supported anymore.
+  asgi_redis packages aren't supported anymore. This also requires an update of
+  the CHANNELS_LAYERS in settings.py. The channels_rabbitmq documentation for an
+  example: https://github.com/CJWorkbench/channels_rabbitmq/. This variable
+  isn't defined by default anymore. Therefore you likely have to replace any
+  `CHANNELS_LAYERS[…] = …` with something like `CHANNELS_LAYERS = { … }`. The
+  new format is (use custom credentials on any production system!):
+
+  CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_rabbitmq.core.RabbitmqChannelLayer",
+        "CONFIG": {
+            "host": "amqp://guest:guest@127.0.0.1/asgi",
+        },
+    },
+  }
+
+- GDAL v2 or newer is now needed. If your Ubuntu version doesn't support this
+  yet, there is an official PPA:
+
+  sudo add-apt-repository ppa:ubuntugis/ppa
+  sudo apt-get update
 
 - Postgres 11 and PostGIS 2.5 is required. If both needs to be updated, update
   PostGIS first and run `ALTER EXTENSION postgis UPDATE;` in every database. For

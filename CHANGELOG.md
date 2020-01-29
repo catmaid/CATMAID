@@ -447,6 +447,10 @@ Miscellaneous:
 - Synapse plot: skeletons can now be added to the widget again. This was
   temporarily broken for CATMAID instances using a sub-folder in their URL.
 
+- Management command "catmaid_find_node_provider_config" to generate
+  NODE_PROVIDERS configurations for the `settings.py` file:The default value for
+  the "--orientation" parameter is now "xy". It was accidentally "xz" before.
+
 ## Maintenance updates
 
 - CLI Exporter: if users should be exported, also export users of volumes.

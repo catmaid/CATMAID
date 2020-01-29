@@ -26,7 +26,7 @@ class Command(BaseCommand):
             default=False, help='Sample node providers for these projects only (otherwise all)')
         parser.add_argument('--orientation', dest='orientations', nargs='+',
             default='xy', help='Sample only in the provided orientations (otherwise all available')
-        parser.add_argument('--step', dest='steps', nargs='+', required=True,
+        parser.add_argument('--step', dest='steps', nargs='+', required=True, default=10,
             help='Map section thickness (depth resultion) for each orientation (in nm)')
         parser.add_argument('--sample-interval', dest='sample_intervals', nargs='+', required=True,
             help='Map sample interval to each orientation (in multiples of <step>)')

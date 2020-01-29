@@ -26,15 +26,13 @@ Setting up an ASGI server
 Daphne is already installed as part of CATMAID's dependencies. To run it use the
 following command::
 
-    daphne -b 127.0.0.1 -p 8001 mysite.asgi:channel_layer
+    daphne -b 127.0.0.1 -p 8001 mysite.asgi:application
 
 This will start a new Daphne server, listening on port ``8001`` on the localhost
-network interface. Additionally, workers are required to process requests. This
-can be done with::
-
-    manage.py runworker
-
-A rule of thumb is to have as many workers as there are processors available.
+network interface. Additionally, worker instance can be started for support with
+a higher websocket connection volume or low latency async tasks. See the example
+of the Supervisor/Nginx/Daphne setup in the ``Channels`` documentation
+`here <https://channels.readthedocs.io/en/latest/deploying.html#example-setups>`_.
 
 Route ASGI requests to ASGI server
 ----------------------------------
@@ -132,21 +130,11 @@ section and the ``[group:catmaid]`` section:
 
     [program:catmaid-daphe]
     directory = /opt/catmaid/django/projects/
-    command = /opt/catmaid/django/env/bin/daphne -b 127.0.0.1 -p 8001 mysite.asgi:channel_layer
+    command = /opt/catmaid/django/env/bin/daphne -b 127.0.0.1 -p 8001 mysite.asgi:application
     user = www-data
     stdout_logfile = /opt/catmaid/django/projects/mysite/daphne.log
     redirect_stderr = true
 
-    [program:catmaid-daphe-worker]
-    directory = /opt/catmaid/django/projects/
-    command = /opt/catmaid/django/env/bin/python manage.py runworker
-    user = www-data
-    stdout_logfile = /opt/catmaid/django/projects/mysite/daphne-worker.log
-    redirect_stderr = true
-    autorestart = true
-    process_name = %(program_name)s_%(process_num)02d
-    numprocs = <NUM-CPUS>
-
-Replace ``<NUM-CPUS>`` in the last line with the number of CPUs on your system.
-It should however be fine to use a lower number in most cases and probably even
-1 will most of the time not cause problems.
+It is also possible to have additional workers help with the work, should there
+be many ASGI requests. The details for ``Supervisord``  and ``Nginx`` can be
+found in the example setup in the ``Channels`` documentation `here <https://channels.readthedocs.io/en/latest/deploying.html#example-setups>`_.

@@ -19,6 +19,7 @@
   `CHANNELS_LAYERS[…] = …` with something like `CHANNELS_LAYERS = { … }`. The
   new format is (use custom credentials on any production system!):
 
+  ```
   CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_rabbitmq.core.RabbitmqChannelLayer",
@@ -27,6 +28,25 @@
         },
     },
   }
+  ```
+
+  Also, if supervisord is in use to manage CATMAID process groups, the main
+  Daphne process needs an adjustment: instead of calling `daphne` with the
+  `mysite.asgi:channel_layer` parameter, use `mysite.asgi:application`. A
+  complete supervisord entry would then look something like this:
+
+  ```
+  [program:catmaid-daphne]
+  directory = /home/catmaid/catmaid/django/projects/
+  command = /home/catmaid/catmaid/django/env/bin/daphne --unix-socket=/var/run/daphne/catmaid.sock mysite.asgi:application
+  user = www-data
+  stdout_logfile = /var/log/daphne/catmaid-server.log
+  redirect_stderr = true
+  ```
+
+  As last step, the supervisor entry for the `daphne worker` process has to be
+  removed. New types of workers can be added, but are not needed in most cases.
+  The channels documentation has more information on this.
 
 - GDAL v2 or newer is now needed. If your Ubuntu version doesn't support this
   yet, there is an official PPA:

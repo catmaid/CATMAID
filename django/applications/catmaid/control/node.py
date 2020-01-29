@@ -1543,7 +1543,7 @@ def get_tracing_bounding_box(project_id, cursor=None, bb_limits=None):
         }), params)
     else:
         cursor.execute("""
-            SELECT ARRAY[ST_XMin(bb.box), ST_YMin(bb.boxST_ZMin(bb.box)],
+            SELECT ARRAY[ST_XMin(bb.box), ST_YMin(bb.box), ST_ZMin(bb.box)],
                    ARRAY[ST_XMax(bb.box), ST_YMax(bb.box), ST_ZMax(bb.box)]
             FROM (
                 SELECT ST_3DExtent(edge) box FROM treenode_edge

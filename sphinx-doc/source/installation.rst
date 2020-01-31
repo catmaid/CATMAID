@@ -21,7 +21,7 @@ Introduction
 The most fundamental dependencies of CATMAID are:
 
 1. PostgreSQL 12 and PostGIS 2.5
-2. Python 3.5, 3.7 or PyPy3.6
+2. Python 3.6, 3.7 or PyPy3.6
 
 To get the required PostgreSQL version for Debian-based systems, such as
 Ubuntu, you have to add the officical Postgres repository as an
@@ -36,7 +36,8 @@ done so already)::
     wget --quiet -O - ${PG_KEY_URL} | sudo apt-key add -
     sudo apt-get update
 
-While Python 3.5 is supported, we recommend the use of Python 3.6. To be able to
+While newer Python versions are supported, we recommend the use of Python 3.6,
+because that's what we have most experience with at the moment. To be able to
 install it on Ubuntu 16.04 and earlier, the following needs to be done::
 
     sudo add-apt-repository ppa:deadsnakes/ppa

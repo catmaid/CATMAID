@@ -87,6 +87,24 @@ Update Python packages::
 
    pip install -r requirements.txt
 
+Should a database upgrade be required (e.g. Postgres 11 to 12 or PostGIS 2.5 to
+3), make sure to upgrade PostGIS first, by installing the new version for the
+current database and connect to every (!) database in the cluster and update the
+``postgis`` extension like this. This can be skipped if no database upgrade is
+required::
+
+  $ sudo -u postgres psql
+  > \c catmaid
+  > ALTER EXTENSION postgis UPDATE;
+  > \c <next-database>
+  > ALTER EXT…
+  > …
+
+Once, done perform, install the new database version and  upgrade the database
+cluster using ``pg_upgrade``. Using the ``--link`` option can safe time on large
+databases and has been robust in our experience. This step can also be skipped,
+if no database upgrade is needed.
+
 Synchronize the Django environment with the database::
 
    ./projects/manage.py migrate

@@ -20,7 +20,7 @@ Introduction
 
 The most fundamental dependencies of CATMAID are:
 
-1. PostgreSQL >= 11 and PostGIS >= 2.5 (recommended: PostgreSQL 12 + PostGIS 3)
+1. PostgreSQL 12 and PostGIS 2.5
 2. Python 3.5, 3.7 or PyPy3.6
 
 To get the required PostgreSQL version for Debian-based systems, such as
@@ -51,7 +51,7 @@ or newer not  be available on your system, use the following PPA::
 
 And then you can install these dependencies with::
 
-    sudo apt-get install python3.6 postgresql-11 gdal-bin
+    sudo apt-get install python3.6 postgresql-12 postgresql-12-postgis-2.5 gdal-bin
 
 CATMAID is based on the `Django web framework
 <https://www.djangoproject.com/>`_.  If you just wish to work on

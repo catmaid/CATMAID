@@ -4,7 +4,7 @@
 ### Notes
 
 - The version requires PostgreSQL 12. If you also want to upgrade PostGIS,
-  update PostGIS firstand run ``ALTER EXTENSION postgis UPDATE;`` in every
+  update PostGIS first and run ``ALTER EXTENSION postgis UPDATE;`` in every
   existing database in the cluster that should be upgraded. For docker-compose
   setups this database update is performed automatically if `DB_UPDATE=true` is
   set for the `db` container (watch the Docker output). CATMAID's documentation
@@ -33,7 +33,7 @@
 Docker:
 
 - Asynchronous tasks can now also be run inside the Docker container. Celery and
-  RabbitMQ are run by default, but can also be run in separte containers (see
+  RabbitMQ are run by default, but can also be run in separate containers (see
   CM_CELERY_BROKER_URL, CM_CELERY_WORKER_CONCURRENCY and CM_RUN_CELERY
   Docker environment variables).
 
@@ -49,6 +49,8 @@ Docker:
   added, updated or removed.
 - CSVs imported into the skeleton selection widget may contain nonexistent
   skeleton IDs, as intended.
+- Skeleton bulk updates like splits or joins should now be faster on setups with
+  spatial change events disabled (default).
 
 
 ## Maintenance updates

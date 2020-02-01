@@ -253,7 +253,7 @@
   let databaseStats = {
     'version': {
       name: 'PostgreSQL Version',
-      comment: 'CATMAID requires at least version 10 of Postgres.',
+      comment: 'CATMAID requires at least version 12 of Postgres.',
     },
     'c_ratio': {
       name: 'Committed transactions ',

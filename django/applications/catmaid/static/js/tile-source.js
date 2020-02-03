@@ -590,7 +590,7 @@
       // Initial guess of root:
       this.rootURL = n5SearchIndex === -1 ?
           this.datasetURL :
-          this.datasetURL.substring(0, n5SearchIndex);
+          this.datasetURL.substring(0, n5SearchIndex - 1);
 
       this.datasetAttributes = [];
       this.promiseReady = N5ImageBlockSource.loadN5()

@@ -47,7 +47,7 @@
 
       let select3D = idName => [0, 1, 2]
         .map(id => `id_stack-${idName}_${id}`)
-        .map(id => {console.log(id); return document.getElementById(id)});
+        .map(id => document.getElementById(id));
       let slicingSelect = select3D('slicing_dims');
       let dimensionSelect = select3D('dimension');
       let resolutionSelect = select3D('resolution');

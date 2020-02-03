@@ -33,6 +33,14 @@ class ContainerForm(forms.Form):
                               help_text='Path to the stack dataset, not incuding scale level')
     has_scales = forms.BooleanField(required=False, label='Dataset has scale levels')
 
+    def clean_container(self):
+        container = self.cleaned_data['container']
+        return container.strip('/')
+
+    def clean_dataset(self):
+        dataset = self.cleaned_data['dataset']
+        return dataset.strip('/')
+
 
 class StackForm(forms.Form):
     title = forms.CharField(help_text='Title of the new stack')
@@ -100,6 +108,7 @@ class ImageBlockSourceImportWizard(SessionWizardView):
         return redirect(f'catmaid/stack/{stack.id}/change/')
 
 def n5_source_url(container, dataset, has_scales, slicing_dims) -> str:
-    scales = '/%SCALE_DATASET%' if has_scales else ''
+    scales = '%SCALE_DATASET%' if has_scales else ''
+    dataset_with_scales = '/'.join([dataset, scales]).strip('/')
     slice_str = '_'.join(str(i) for i in [slicing_dims.x, slicing_dims.y, slicing_dims.z])
-    return f"{container}/{dataset}{scales}/{slice_str}"
+    return f"{container}/{dataset_with_scales}/{slice_str}"

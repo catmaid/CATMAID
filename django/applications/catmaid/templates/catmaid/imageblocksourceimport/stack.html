@@ -8,7 +8,7 @@
       let containerRoot = '{{ container }}';
       let datasetBase = '{{ dataset }}';
       let hasScaleLevels = '{{ has_scales }}' === 'True';
-      let attributes = {};
+      let attributes = [];
 
       let promiseN5wasm = (new Function("return import('{% static 'libs/n5-wasm/n5_wasm.js' %}')"))()
         .then(n5wasm =>
@@ -65,8 +65,8 @@
         slicingDims.map((slice, idx) =>
           blockSizeSelect[idx].value = attributes[0].dataAttrs.get_block_size()[slice]);
 
-        let downsamplingFactors = Object.keys(attributes).sort().map(scaleLevel => {
-            let factors = attributes[scaleLevel].allAttrs['downsamplingFactors'];
+        let downsamplingFactors = attributes.map((attrs, scaleLevel) => {
+            let factors = attrs.allAttrs['downsamplingFactors'];
             if (!!factors) {
               factors = slicingDims.map(slice => factors[slice]);
             } else {

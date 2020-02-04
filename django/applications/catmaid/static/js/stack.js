@@ -68,18 +68,17 @@
 
     //! estimate the zoom levels
     if (!Array.isArray(downsample_factors)) {
-      downsample_factors = [{x: 1, y: 1, z: 1}];
-      self.MAX_S = 0;
       var max_dim = Math.max( MAX_X, MAX_Y );
       var min_size = 1024;
-      while ( max_dim / Math.pow( 2, self.MAX_S ) > min_size ) {
+      self.MAX_S = Math.ceil(Math.log2(max_dim / min_size));
+      downsample_factors = Array.from(Array(self.MAX_S + 1), (_, s) => {
         // By default, assume factor 2 downsampling in x, y, and no downsampling in z.
-        ++self.MAX_S;
-        downsample_factors.push({
-          x: Math.pow(2, self.MAX_S),
-          y: Math.pow(2, self.MAX_S),
-          z: 1});
-      }
+        return {
+          x: Math.pow(2, s),
+          y: Math.pow(2, s),
+          z: 1,
+        };
+      });
     } else {
       self.MAX_S = downsample_factors.length - 1;
     }

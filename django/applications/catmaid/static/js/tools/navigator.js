@@ -491,12 +491,13 @@
       }),
 
       new CATMAID.Action({
-        helpText: "Move up 1 slice in z (or 10 with <kbd>Shift</kbd> held; hold with <kbd>Ctrl</kbd> to animate)",
+        helpText: "Move back 1 slice in z (10x with <kbd>Shift</kbd> held; proportionate to zoom level with <kbd>Alt</kbd> held; hold with <kbd>Ctrl</kbd> to animate)",
         keyShortcuts: {
-          ',': [ ',', 'Ctrl + ,', 'Ctrl + Shift + ,', 'Shift + ,' ]
+          ',': CATMAID.modifierKeyCombinationStrings(['Shift', 'Ctrl', 'Alt'], ',')
         },
         run: function (e) {
-          var step = e.shiftKey ? (-1 * Navigator.Settings.session.major_section_step) : -1;
+          let step = e.altKey ? -Math.exp(2, self.stackViewer.s) : -1;
+          if (e.shiftKey) step *= Navigator.Settings.session.major_section_step;
           if (Navigator.Settings.session.animate_section_change ? !e.ctrlKey : e.ctrlKey) {
             smoothChangeSlice(e, Navigator.Settings.session.max_fps, step);
           } else {
@@ -507,12 +508,13 @@
       }),
 
       new CATMAID.Action({
-        helpText: "Move down 1 slice in z (or 10 with <kbd>Shift</kbd> held; hold with <kbd>Ctrl</kbd> to animate)",
+        helpText: "Move forward 1 slice in z (10x with <kbd>Shift</kbd> held; proportionate to zoom level with <kbd>Alt</kbd> held; hold with <kbd>Ctrl</kbd> to animate)",
         keyShortcuts: {
-          '.': [ '.', 'Ctrl + .', 'Ctrl + Shift + .', 'Shift + .' ]
+          '.': CATMAID.modifierKeyCombinationStrings(['Shift', 'Ctrl', 'Alt'], '.')
         },
         run: function (e) {
-          var step = e.shiftKey ? Navigator.Settings.session.major_section_step : 1;
+          let step = e.altKey ? Math.exp(2, self.stackViewer.s) : 1;
+          if (e.shiftKey) step *= Navigator.Settings.session.major_section_step;
           if (Navigator.Settings.session.animate_section_change ? !e.ctrlKey : e.ctrlKey) {
             smoothChangeSlice(e, Navigator.Settings.session.max_fps, step);
           } else {

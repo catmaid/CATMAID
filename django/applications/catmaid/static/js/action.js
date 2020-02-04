@@ -247,4 +247,12 @@
   CATMAID.getKeyToActionMap = getKeyToActionMap;
   CATMAID.createButtonsFromActions = createButtonsFromActions;
 
+  CATMAID.modifierKeyCombinationStrings = function(modifiers, key) {
+    return modifiers.reduce((without, m) => {
+      let withMod = [];
+      without.map(combo => withMod.push([m, combo].join(' + ')));
+      return without.concat(withMod);
+    }, [key]);
+  };
+
 })(CATMAID);

@@ -496,7 +496,7 @@
           ',': CATMAID.modifierKeyCombinationStrings(['Shift', 'Ctrl', 'Alt'], ',')
         },
         run: function (e) {
-          let step = e.altKey ? -Math.exp(2, self.stackViewer.s) : -1;
+          let step = e.altKey ? -Math.round(Math.pow(2, self.stackViewer.s)) : -1;
           if (e.shiftKey) step *= Navigator.Settings.session.major_section_step;
           if (Navigator.Settings.session.animate_section_change ? !e.ctrlKey : e.ctrlKey) {
             smoothChangeSlice(e, Navigator.Settings.session.max_fps, step);
@@ -513,7 +513,7 @@
           '.': CATMAID.modifierKeyCombinationStrings(['Shift', 'Ctrl', 'Alt'], '.')
         },
         run: function (e) {
-          let step = e.altKey ? Math.exp(2, self.stackViewer.s) : 1;
+          let step = e.altKey ? Math.round(Math.pow(2, self.stackViewer.s)) : 1;
           if (e.shiftKey) step *= Navigator.Settings.session.major_section_step;
           if (Navigator.Settings.session.animate_section_change ? !e.ctrlKey : e.ctrlKey) {
             smoothChangeSlice(e, Navigator.Settings.session.max_fps, step);

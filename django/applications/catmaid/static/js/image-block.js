@@ -24,7 +24,7 @@
   ImageBlock.GlobalCacheManager = new ImageBlock.CacheManager();
 
   ImageBlock.Cache = class Cache {
-    constructor(source, capacity = 256) {
+    constructor(source, capacity = ImageBlock.Cache.DEFAULT_CAPACITY) {
       this.source = source;
       this._cache = new CATMAID.LRUCache(capacity);
       this._deduper = new CATMAID.CoalescingPromiseDeduplicator();
@@ -82,6 +82,8 @@
       }
     }
   };
+
+  ImageBlock.Cache.DEFAULT_CAPACITY = 256;
 
   ImageBlock.Cache.EVENT_BLOCK_CHANGED = 'imageblock_cache_event_block_changed';
   ImageBlock.Cache.EVENT_DIRTY_BLOCK_EVICTED = 'imageblock_cache_event_dirty_block_evicted';

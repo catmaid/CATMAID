@@ -43,7 +43,7 @@
     this.x = Math.floor( primaryStack.MAX_X / 2 );
     let maxDim = Math.max(primaryStack.MAX_X, primaryStack.MAX_Y);
     let minSize = 1024;
-    this.s = Math.min(primaryStack.MAX_S, Math.ceil(Math.log2(maxDim / minSize)));
+    this.s = Math.max(Math.min(primaryStack.MAX_S, Math.ceil(Math.log2(maxDim / minSize))), 0);
     this.plane = new THREE.Plane(this.normal(), 0);
     this._updatePlane();
 

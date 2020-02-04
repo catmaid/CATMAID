@@ -25,6 +25,7 @@
       }
 
       this.blockSizeZ = 1;
+      this._emptySlice = null;
 
       this.tileSource.promiseReady.then(() => {
         let blockSize = this.tileSource.blockSize(0);
@@ -256,13 +257,11 @@
 
         if (slice.shape[0] < this.tileWidth ||
             slice.shape[1] < this.tileHeight) {
-          let empty = this._makeEmptySlice();
+          let empty = this._makeEmptySlice(slice.selection.stride);
 
-          for(let i=0; i<slice.shape[0]; ++i) {
-            for(let j=0; j<slice.shape[1]; ++j) {
-              empty.set(i,j, slice.get(i, j));
-            }
-          }
+          empty.slice([slice.shape[0]], [slice.shape[1]]).assign(slice, false);
+
+          slice = empty;
         }
       } else {
         slice = this._makeEmptySlice();
@@ -271,13 +270,29 @@
       return slice;
     }
 
-    _makeEmptySlice() {
-      let empty = nj.zeros(
-          [this.tileWidth, this.tileHeight],
-          this.tileSource.dataType());
-      empty.selection.data.fill(this.fillValue);
+    _makeEmptySlice(stride) {
+      if (!(this._emptySlice
+        && this._emptySlice.shape[0] === this.tileWidth
+        && this._emptySlice.shape[1] === this.tileHeight)) {
+        let empty = nj.zeros(
+            [this.tileWidth, this.tileHeight],
+            this.tileSource.dataType());
+        empty.selection.data.fill(this.fillValue);
+        this._emptySlice = empty;
+      }
 
-      return empty;
+      if (stride) {
+        let empty = this._emptySlice.clone();
+        if (stride[1] > stride[0]) {
+          let swap = empty.selection.stride[0];
+          empty.selection.stride[0] = empty.selection.stride[1];
+          empty.selection.stride[1] = swap;
+        }
+
+        return empty;
+      }
+
+      return this._emptySlice;
     }
 
     _dtypeTileConstructor(dtype) {

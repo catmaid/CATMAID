@@ -41,7 +41,9 @@
     this.z = this.toValidZ(0, 1);
     this.y = Math.floor( primaryStack.MAX_Y / 2 );
     this.x = Math.floor( primaryStack.MAX_X / 2 );
-    this.s = primaryStack.MAX_S;
+    let maxDim = Math.max(primaryStack.MAX_X, primaryStack.MAX_Y);
+    let minSize = 1024;
+    this.s = Math.min(primaryStack.MAX_S, Math.ceil(Math.log2(maxDim / minSize)));
     this.plane = new THREE.Plane(this.normal(), 0);
     this._updatePlane();
 

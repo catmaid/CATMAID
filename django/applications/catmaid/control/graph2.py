@@ -452,7 +452,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
             query_params = list(skeleton_ids) + [preId, postId, preId, postId]
 
             skeleton_id_template = ','.join('(%s)' for _ in skeleton_ids)
-            cursor.execute('''
+            cursor.execute(f'''
             SELECT tc1.skeleton_id, tc2.skeleton_id,
                 tc1.relation_id, tc2.relation_id,
                 LEAST(tc1.confidence, tc2.confidence)

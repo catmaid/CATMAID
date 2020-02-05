@@ -482,6 +482,10 @@ Miscellaneous:
 - Graph widget: showing fractions of inbound/outbound fractions of connections
   as edge labels works again.
 
+- Graph widget: refreshing a graph with undirected edges (e.g. sub-graphs like
+  axon/dendrite split, desmosomes, etc.) doesn't lead to suddenly appearing
+  arrow heads.
+
 ## Maintenance updates
 
 - CLI Exporter: if users should be exported, also export users of volumes.

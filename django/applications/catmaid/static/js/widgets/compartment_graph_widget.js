@@ -49,6 +49,22 @@
         'opacity': 1.0
       }]
     ]);
+    this.linkTypeArrows = new Map([
+      ['synaptic-connector', {
+        'arrow': 'triangle',
+      }],
+      ['default', {
+        'arrow': 'none',
+      }],
+    ]);
+    this.linkTypeDirected = new Map([
+      ['synaptic-connector', {
+        'directed': true,
+      }],
+      ['default', {
+        'directed': false,
+      }],
+    ]);
 
     this.setState('color_mode', 'source');
 
@@ -1504,6 +1520,8 @@
     var edgeLabelStrategy = edgeLabelStrategies[this.edge_label_strategy];
     var edgeLabelOptions = this.makeEdgeLabelOptions(json);
     var edge_confidence_threshold = this.edge_confidence_threshold;
+    let getEdgeArrow =  this.getLinkTypeArrow.bind(this);
+    let isEdgeDirected = this.getLinkTypeDirected.bind(this);
 
     var asEdge = function(edge, linkTypeId) {
         var count = _filterSynapses(edge[2], edge_confidence_threshold);
@@ -1513,8 +1531,9 @@
         edgeLabelOptions.synapses = edge[2];
         var value = edgeLabelStrategy.run(edgeLabelOptions);
         var edge_color = getEdgeColor(linkTypeId);
-        return {data: {directed: true,
-                       arrow: 'triangle',
+        var arrow = getEdgeArrow(linkTypeId);
+        return {data: {directed: isEdgeDirected(linkTypeId),
+                       arrow: arrow,
                        id: edge[0] + '_' + edge[1],
                        label: value,
                        link_type: linkTypeId,
@@ -1570,7 +1589,7 @@
       if (node.hidden()) hidden[id] = true;
       if (node.locked()) locked[id] = true;
       var s = node.data('arrowshape');
-      arrow_shapes[id] = s ? s : 'triangle';
+      if (s) arrow_shapes[id] = s;
     });
 
     // Store visibility and selection state of edges as well
@@ -1578,6 +1597,8 @@
       var id = edge.id();
       if (edge.selected()) selected[id] = true;
       if (edge.hidden()) hidden[id] = true;
+      var s = edge.data('arrow');
+      if (s) arrow_shapes[id] = s;
     });
 
     // Recreate subgraphs
@@ -1674,11 +1695,15 @@
       // Hide edge if under threshold
       if (edge.data('weight') < edge_threshold) edge.addClass('hidden');
       // Restore arrow shape
-      var s = arrow_shapes[edge.source().id()];
+      let s = arrow_shapes[edge.id()];
       if (s) {
         edge.data('arrow', s);
         edge.style({'target-arrow-shape': s,
                     'target-arrow-color': edge.style('background-color')});
+      }
+      let sn = arrow_shapes[edge.source().id()];
+      if (sn) {
+        edge.source().data('arrowshape', sn);
       }
     });
 
@@ -4273,6 +4298,16 @@
   GroupGraph.prototype.getLinkTypeOpacity = function(linkTypeId) {
     let linkType = this.linkTypeColors.get(linkTypeId);
     return linkType ? linkType.opacity : this.linkTypeColors.get('default').opacity;
+  };
+
+  GroupGraph.prototype.getLinkTypeArrow = function(linkTypeId) {
+    let linkType = this.linkTypeArrows.get(linkTypeId);
+    return linkType ? linkType.arrow : this.linkTypeArrows.get('default').arrow;
+  };
+
+  GroupGraph.prototype.getLinkTypeDirected = function(linkTypeId) {
+    let linkType = this.linkTypeDirected.get(linkTypeId);
+    return linkType ? linkType.directed : this.linkTypeDirected.get('default').directed;
   };
 
   /**

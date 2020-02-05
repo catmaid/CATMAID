@@ -552,6 +552,10 @@ Miscellaneous:
 
 - Measurement table: fix CSV export for aggregated multi-fragment results.
 
+- Graph widget: pressing the Delete key with a node selected in an active Graph
+  Widget will now ask for the removal of the node from the graph, not anymore
+  whether the active node should be deleted completely.
+
 ## 2019.06.20
 
 Contributors: Chris Barnes, Albert Cardona, Andrew Champion, Stephan Gerhard, Pat Gunn, William Patton, Tom Kazimiers

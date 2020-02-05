@@ -144,18 +144,18 @@
 
         // Try to handle key in this order: active widget, tool, project
         var activeWidget = CATMAID.front();
-        if (activeWidget && handledBy(activeWidget, fakeEvent, released)) {
+        if (propagate && activeWidget && handledBy(activeWidget, fakeEvent, released)) {
           propagate = false;
         }
-        if (project) {
+        if (propagate && project) {
           var tool = project.getTool();
           if (tool && handledBy(tool, fakeEvent, released)) {
             propagate = false;
           }
-          if (handledBy(project, fakeEvent, released)) {
+          if (propagate && handledBy(project, fakeEvent, released)) {
             propagate = false;
           }
-        } else if (handledBy(CATMAID.client, fakeEvent, released)) {
+        } else if (propagate && handledBy(CATMAID.client, fakeEvent, released)) {
           propagate = false;
         }
       }

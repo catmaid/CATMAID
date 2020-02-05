@@ -695,6 +695,9 @@
     // that zooming happens in smaller steps.
     if (event.key === 'Shift' && this.cy) {
       this.cy._private.renderer.wheelSensitivity = 0.5;
+    } else if (event.key === 'Delete') {
+      this.removeSelected();
+      return true;
     }
   };
 
@@ -706,8 +709,6 @@
     } else if (event.key === 'j') {
       // Letter 'J' (would prefer shift+G)
       this.group();
-    } else if (event.key === 'Delete') {
-      this.removeSelected();
     }
   };
 

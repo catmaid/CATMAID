@@ -844,7 +844,7 @@
       style: cytoscape.stylesheet()
         .selector("node")
             .css({
-              "content": "data(label)",
+              "label": "data(label)",
               "shape": "data(shape)",
               "border-width": 1,
               "background-color": "data(color)",
@@ -856,7 +856,7 @@
             })
           .selector("edge")
             .css({
-              "content": "data(weight)",
+              "label": "data(label)",
               "width": "data(width)", //mapData(weight, 0, 100, 10, 50)",
               "target-arrow-shape": "data(arrow)",
               "target-arrow-color": "data(color)",

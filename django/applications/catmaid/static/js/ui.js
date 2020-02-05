@@ -685,6 +685,7 @@
     map.set('Alt + ≤', ',');
     map.set('Alt + ≥', '.');
     map.set('Alt + ÷', '/');
+    map.set('Alt +  ', ' '); // This is U+A0 (no break space) instead of U+20
 
     map.set('Alt + Shift + ⁄', '1');
     map.set('Alt + Shift + €', '2');
@@ -733,6 +734,7 @@
     map.set('Alt + Shift + ¯', ',');
     map.set('Alt + Shift + ˘', '.');
     map.set('Alt + Shift + ¿', '/');
+    map.set('Alt + Shift +  ', ' '); // This is U+A0 (no break space) instead of U+20
 
     return map;
   };

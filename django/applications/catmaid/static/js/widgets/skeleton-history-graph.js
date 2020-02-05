@@ -112,7 +112,7 @@
               selector: 'edge',
               selectable: false,
               style: {
-                "content": "data(weight)",
+                "label": "data(weight)",
                 'curve-style': 'bezier',
                 "width": "data(mappedWeight)", //mapData(weight, 0, 100, 10, 50)",
                 //'width': "mapData(weight, 0, 100, 1, 20)",

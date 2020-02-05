@@ -272,13 +272,17 @@ Neuron Search:
 
 Graph widget:
 
-- Node filters are now supported. Like in many widgets, they  available through
+- Node filters are now supported. Like in many widgets, they available through
   the funnel icon in the title bar. Only nodes that are allowed by the selected
   filters, can contribute connections and the graph. At the moment, this comes
   with a few caveats: if filters are in use, no subgraphs (e.g. axon/dendrite,
   synapse clusters) can be used. Grouping isn't available either and in
   addition, skeletons are removed from the widget if they don't comply with the
   filters. All this is likely going to chagne in future versions.
+
+- The "Nodes" tab has now three new buttons to hide, show and remove unconnected
+  nodes. Show will nodes visible that have been hidden before. Removing nodes
+  will remove the skeletons/nodes completely from the widget.
 
 Review widget:
 

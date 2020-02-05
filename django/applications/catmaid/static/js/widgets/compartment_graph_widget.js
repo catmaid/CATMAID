@@ -378,6 +378,24 @@
                 {title: 'circles of hell (downstream)', value: 'circles_of_hell_downstream'}],
                'source',
                 GG._colorize.bind(GG))],
+              {
+                type: 'button',
+                label: 'Hide unconnected',
+                title: 'Hide all nodes that have either no connected edges or only edges to themselves',
+                onclick: e => GG.hideUnconnectedNodes(),
+              },
+              {
+                type: 'button',
+                label: 'Show unconnected',
+                title: 'Show all nodes that have either no connected edges or only edges to themselves',
+                onclick: e => GG.showUnconnectedNodes(),
+              },
+              {
+                type: 'button',
+                label: 'Remove unconnected',
+                title: 'Remove all nodes that have either no connected edges or only edges to themselves',
+                onclick: e => GG.removeUnconnectedNodes(),
+              },
             ]);
 
         CATMAID.DOM.appendToTab(tabs['Edges'],
@@ -4709,6 +4727,46 @@
     if (this.hasSkeleton(deletedSkeletonId)) {
       this.removeSkeletons([deletedSkeletonId]);
     }
+  };
+
+  /**
+   * Find all unconnected nodes and all nodes that only have links to
+   * themselves.
+   */
+  GroupGraph.prototype.findUnconnectedNodes = function() {
+    let connectedNodes = new Set(this.cy.edges().connectedNodes().map(n => n.id()));
+    return this.cy.nodes().filter((i, node) => {
+      return !connectedNodes.has(node.id());
+    });
+  };
+
+  /**
+   * Hide all unconnected nodes and all nodes that only have edges to
+   * themselves.
+   */
+  GroupGraph.prototype.hideUnconnectedNodes = function() {
+    this.findUnconnectedNodes().forEach(node => {
+      node.hide();
+    });
+  };
+
+  /**
+   * Show all hidden, unconnected nodes and all nodes that only have edges to
+   * themselves.
+   */
+  GroupGraph.prototype.showUnconnectedNodes = function() {
+    this.findUnconnectedNodes().forEach(node => {
+      node.show();
+    });
+  };
+
+  /**
+   * Remove all unconnected nodes and all nodes that only have edges to
+   * themselves.
+   */
+  GroupGraph.prototype.removeUnconnectedNodes = function() {
+    let skeletonIds = this.findUnconnectedNodes().map(node => node.id());
+    this.removeSkeletons(skeletonIds);
   };
 
   // Register widget

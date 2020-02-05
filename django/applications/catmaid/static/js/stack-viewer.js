@@ -114,18 +114,17 @@
     this._scaleBar.setVisibility(this.showScaleBar);
     this._view.appendChild(this._scaleBar.getView());
 
-    var controlToggle = document.createElement( "div" );
-    controlToggle.className = "stackControlToggle_hidden";
-    controlToggle.title = "show/hide layer controls";
-    controlToggle.onpointerdown = function(e) {
+    this.controlToggle = document.createElement( "div" );
+    this.controlToggle.className = "stackControlToggle_hidden";
+    this.controlToggle.title = "show/hide layer controls";
+    this.controlToggle.onpointerdown = e => {
       if ( typeof event != "undefined" && event )
         event.cancelBubble = true;
       if ( e && e.stopPropagation )
         e.stopPropagation();
-      var state = $(this).siblings('.LayerControl').toggle().is(':visible');
-      $(this).attr('class', state ? 'stackControlToggle' : 'stackControlToggle_hidden');
+      this.toggleControls();
     };
-    this._view.appendChild( controlToggle );
+    this._view.appendChild( this.controlToggle );
 
     var indicatorbar = document.createElement( "div" );
     indicatorbar.className = "indicatorbar";
@@ -335,6 +334,11 @@
       this.layercontrol.refresh();
     }
     this._scaleBar.update(this.pxPerNm(), this.viewWidth / 5);
+  };
+
+  StackViewer.prototype.toggleControls = function () {
+    let state = $(this.layercontrol.getView()).toggle().is(':visible');
+    $(this.controlToggle).attr('class', state ? 'stackControlToggle' : 'stackControlToggle_hidden');
   };
 
   /**
@@ -825,6 +829,7 @@
     this._layers.clear();
     this._layerOrder.length = 0;
     this._project.removeStackViewer(this.getId());
+    this.controlToggle.onpointerdown = null;
   };
 
   /**

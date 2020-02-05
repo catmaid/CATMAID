@@ -621,6 +621,19 @@
       }),
 
       new CATMAID.Action({
+        helpText: "Toggle layer controls for the focused stack viewer",
+        keyShortcuts: {
+          'SPACE': [ 'Alt +  ' ]
+        },
+        run: function (e) {
+          if (!e.altKey) return false;
+
+          project.focusedStackViewer.toggleControls();
+          return true;
+        }
+      }),
+
+      new CATMAID.Action({
         helpText: "Change major section step size",
         keyShortcuts: {
           '#': [ 'Shift + #' ]

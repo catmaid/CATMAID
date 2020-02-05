@@ -471,6 +471,13 @@ Miscellaneous:
   NODE_PROVIDERS configurations for the `settings.py` file:The default value for
   the "--orientation" parameter is now "xy". It was accidentally "xz" before.
 
+- Graph widget: pressing the Delete key with a node selected in an active Graph
+  Widget will now ask for the removal of the node from the graph, not anymore
+  whether the active node should be deleted completely.
+
+- Graph widget: showing fractions of inbound/outbound fractions of connections
+  as edge labels works again.
+
 ## Maintenance updates
 
 - CLI Exporter: if users should be exported, also export users of volumes.
@@ -551,10 +558,6 @@ Miscellaneous:
   the classification dummy project.
 
 - Measurement table: fix CSV export for aggregated multi-fragment results.
-
-- Graph widget: pressing the Delete key with a node selected in an active Graph
-  Widget will now ask for the removal of the node from the graph, not anymore
-  whether the active node should be deleted completely.
 
 ## 2019.06.20
 

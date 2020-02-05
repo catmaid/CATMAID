@@ -70,7 +70,7 @@
     if (!Array.isArray(downsample_factors)) {
       var max_dim = Math.max( MAX_X, MAX_Y );
       var min_size = 1024;
-      self.MAX_S = Math.ceil(Math.log2(max_dim / min_size));
+      self.MAX_S = Math.max(0, Math.ceil(Math.log2(max_dim / min_size)));
       downsample_factors = Array.from(Array(self.MAX_S + 1), (_, s) => {
         // By default, assume factor 2 downsampling in x, y, and no downsampling in z.
         return {

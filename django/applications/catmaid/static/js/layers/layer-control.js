@@ -13,7 +13,7 @@
     this.stackViewer = stackViewer;
     this.view = document.createElement( "div" );
     this.view.className = "LayerControl";
-    this.view.id = "LayerControl" + stackViewer.id;
+    this.view.id = "LayerControl" + stackViewer.getId();
     this.view.style.zIndex = 6;
 
     stackViewer.getView().appendChild( this.view );

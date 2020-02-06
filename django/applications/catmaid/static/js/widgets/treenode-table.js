@@ -118,6 +118,7 @@
                 <th>reviewer
                   <input type="text" id="${self.idPrefix}search-reviewer" value="Search" class="search_init"/>
                 </th> 
+                <th title="Imported">i</th>
               </tr> 
             </thead> 
             <tfoot> 
@@ -134,6 +135,7 @@
                 <th>user</th> 
                 <th>last modified</th> 
                 <th>reviewer</th> 
+                <th title="Imported">i</th>
               </tr> 
             </tfoot> 
             <tbody> 
@@ -360,6 +362,10 @@
             // Append reviewers' names
             var reviewers = reviews[row[0]];
             row.push(reviewers ? reviewers.join(', ') : 'None');
+            // Append import information
+            row.push('…');
+            // Make skeleton ID available in row
+            row.push(skid);
           }
 
           this.ranges[skid] = {start: n_rows,
@@ -386,6 +392,37 @@
           } else {
             this.oTable.columns(0).search('').draw();
           }
+
+          // Get information on imported nodes in parallel
+          let skeletonIds = Object.keys(this.models);
+          CATMAID.Skeletons.importInfo(project.id, skeletonIds, true)
+            .then(result => {
+              for (let skeletonId of skeletonIds) {
+                let details = result[skeletonId];
+                if (details && details.n_imported_treenodes > 0) {
+                  let skeletonIndex = new Set(details.imported_treenodes);
+                  // Update rows for this skeleton
+                  this.oTable.rows((i, data, node) => data[13] == skeletonId)
+                    .every(i => {
+                      var row = this.oTable.row(i);
+                      let treenodeId = Number(row.data()[0]);
+                      row.data()[12] = skeletonIndex.has(treenodeId) ? 'Y' : '';
+                      row.invalidate();
+                    });
+                } else {
+                  // == used on purpose here, data contains strings
+                  this.oTable.rows((i, data, node) => data[13] == skeletonId)
+                    .every(i => {
+                      var row = this.oTable.row(i);
+                      row.data()[12] = '';
+                      row.invalidate();
+                    });
+                }
+                this.oTable.draw();
+              }
+            })
+            .catch(CATMAID.handleError);
+
         }).bind(this),
         'GET',
         false,
@@ -457,7 +494,17 @@
       {
           "searchable": true,
           "orderable": true
-      } // reviewer
+      }, // reviewer
+      {
+          "searchable": true,
+          "orderable": true,
+          "clasName:": "center imported",
+      }, // imported
+      {
+          "searchable": true,
+          "orderable": true,
+          "visible": false,
+      }, // skeleton ID
       ]
     });
 

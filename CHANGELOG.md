@@ -377,6 +377,11 @@ Treenode table:
 
 - Remote skeletons are now supported. They can be mixed with local skeletons.
 
+- A new column "i" represents whether or not a particular treenode was imported.
+  This information is loaded separately, parallel to the regular information.
+  Which, is why initially "…" is shown. If a node wasn't imported, the field is
+  empty. If it was imported, "Y" is shown.
+
 Morphology plot:
 
 - Two new center computation modes have been added: Tagged node closest to root,

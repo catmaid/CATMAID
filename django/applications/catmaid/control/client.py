@@ -340,7 +340,7 @@ def set_instance_settings(settings, force=False):
     to_save = []
     for key, value in settings.items():
         if key in client_data_map:
-            client_data = client_data_map.get(key)
+            client_data = client_data_map[key]
             settings_context = client_data.value
             to_save.append(client_data)
         else:

@@ -217,7 +217,7 @@ class CachedMsgpackNodeProvder(CachedNodeProvider):
             if explicit_treenode_ids or explicit_connector_ids:
                 extra_tuples, extra_type = get_extra_nodes(params, project_id,
                     explicit_treenode_ids, explicit_connector_ids, include_labels,
-                    with_relation_map)
+                    with_relation_map, with_origin)
                 if extra_type != 'json':
                     raise ValueError("Unexpected type")
 

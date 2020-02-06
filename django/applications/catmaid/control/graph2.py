@@ -43,15 +43,18 @@ def basic_graph(project_id, skeleton_ids, relations=None,
     SELECT t1.skeleton_id, t2.skeleton_id, LEAST(t1.confidence, t2.confidence)
     FROM treenode_connector t1,
          treenode_connector t2
-    WHERE t1.skeleton_id IN (%(skids)s)
+    WHERE t1.skeleton_id = ANY(%(skeleton_ids)s::bigint[])
       AND t1.relation_id = %(source_rel)s
       AND t1.connector_id = t2.connector_id
-      AND t2.skeleton_id IN (%(skids)s)
+      AND t2.skeleton_id = ANY(%(skeleton_ids)s::bigint[])
       AND t2.relation_id = %(target_rel)s
       AND t1.id <> t2.id
-    ''' % {'skids': ','.join(map(str, skeleton_ids)),
-           'source_rel': source_rel_id,
-           'target_rel': target_rel_id})
+      AND t1.skeleton_id < t2.skeleton_id
+    ''', {
+        'skeleton_ids': list(skeleton_ids),
+        'source_rel': source_rel_id,
+        'target_rel': target_rel_id
+    })
 
     edges:DefaultDict = defaultdict(partial(defaultdict, make_new_synapse_count_array))
     for row in cursor.fetchall():

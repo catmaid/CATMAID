@@ -24,6 +24,7 @@
     this.trim_node_labels = false;
     this.node_width = 30; // pixels
     this.node_height = 30; // pixels
+    this.node_border_width = 1.0; // pixels
 
     this.color_circles_of_hell_upstream = this.colorCirclesOfHell.bind(this, true);
     this.color_circles_of_hell_downstream = this.colorCirclesOfHell.bind(this, false);
@@ -759,6 +760,7 @@
     trim_labels.onclick = this.toggleTrimmedNodeLabels.bind(this);
     var node_width = dialog.appendField("Node width:", "node_width", this.node_width);
     var node_height = dialog.appendField("Node height:", "node_height", this.node_height);
+    var node_border_width = dialog.appendField("Node border width:", "node_border_width", this.node_border_width);
     var grid_snap = dialog.appendCheckbox("Snap node position to grid", "snap", this.grid_snap);
     var grid_side = dialog.appendField("Grid cell side (px):", "side", this.grid_side);
     dialog.appendMessage("Edge properties:");
@@ -835,12 +837,19 @@
 
       let newNodewidth = validate('node_width', node_width, node_width.value);
       let newNodeHeight = validate('node_height', node_height, node_height.value);
+      let newNodeBorderWidth = validate('node_border_width', node_border_width,
+            node_border_width.value);
 
       if (newNodewidth != this.node_width) {
         style["width"] = this.node_width + "px";
       }
       if (newNodeHeight != this.node_height) {
         style["height"] = this.node_height + "px";
+      }
+
+      if (newNodeBorderWidth != this.node_border_width) {
+        this.node_border_width = newNodeBorderWidth;
+        style['border-width'] = newNodeBorderWidth;
       }
 
       // Update general style, for new nodes

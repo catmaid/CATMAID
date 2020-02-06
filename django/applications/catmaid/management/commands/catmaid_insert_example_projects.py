@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+from typing import Dict
+
 from django.core.management.base import BaseCommand, CommandError
 from django.core.management import call_command
 
@@ -20,9 +22,11 @@ class Command(BaseCommand):
 
         user = User.objects.get(pk=options['user_id'])
 
-        projects = {'Default Project': {'stacks': []},
-                    'Evaluation data set': {'stacks': []},
-                    'Focussed Ion Beam (FIB)': {'stacks': []}}
+        projects: Dict[str, Dict] = {
+            'Default Project': {'stacks': []},
+            'Evaluation data set': {'stacks': []},
+            'Focussed Ion Beam (FIB)': {'stacks': []},
+        }
 
         # Define the details of a stack for two of these projects:
 

@@ -39,6 +39,7 @@
       logo.onerror = function() {
         this.src = CATMAID.makeStaticURL('/images/catmaidlogo.png');
       };
+      logo.title = 'Skelly, the CATMAID mascot';
       header.appendChild(logo);
       var clear = document.createElement('div');
       clear.classList.add('clear');

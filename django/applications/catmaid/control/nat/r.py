@@ -1231,8 +1231,8 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                         # negative forward and backward values become positive
                         # in the multiplication.
                         score = [math.sqrt(
-                                math.max(0, scores_df.loc[reverse_scores.rownames[i]].score) * \
-                                math.max(0, reverse_scores[i])) \
+                                max(0, scores_df.loc[reverse_scores.rownames[i]].score) * \
+                                max(0, reverse_scores[i])) \
                                 for i in range(len(reverse_scores))]
 
                     result_row = pd.DataFrame([scores], index=[query_name],

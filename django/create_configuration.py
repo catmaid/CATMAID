@@ -85,8 +85,8 @@ data = re.sub('CATMAID_SUBDIR', catmaid_subdirectory, data)
 # of a recognized protocol specification:
 known_protocols = ["http", "https", "ftp", "ssh", "nfs", "smb", "django"]
 known_protocols = ["(?<!%s:)" % p for p in known_protocols]
-known_protocols = ''.join(known_protocols)
-data = re.sub('%s//' % known_protocols, '/', data)
+known_protocols_re = ''.join(known_protocols)
+data = re.sub('%s//' % known_protocols_re, '/', data)
 # If CATMAID doesn't live in a sub-directory, the FORCE_SCRIPT_NAME setting
 # has to be commented out. Otherwise, it would add an extra slash in
 # redirects.

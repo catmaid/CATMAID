@@ -1431,8 +1431,8 @@
                        post: {}};
           subedges[connectorID] = connector;
         }
+        connector.pre = node_id;
         if (presynaptic) {
-          connector.pre = node_id;
           if (undefined === this.subgraphs[targetSkid]) {
             var count = connector.post[targetSkid] || [0, 0, 0, 0, 0];
             count[confidence - 1] += 1;

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import json
-from typing import Dict, List
+from typing import Dict, List, Sequence, Tuple
 import yaml
 
 from django import forms
@@ -434,7 +434,7 @@ class ProfileInline(admin.StackedInline):
         request object.
         """
         if request.user.is_superuser:
-            self.exclude = ()
+            self.exclude: Sequence[str] = ()
         else:
             self.exclude = ('color',)
         return super().get_formset(request, obj, **kwargs)
@@ -454,7 +454,7 @@ class GroupInactivityPeriodContactGroupInline(admin.StackedInline):
 
 class CustomUserAdmin(UserAdmin):
     inlines = [ProfileInline, GroupInactivityPeriodContactUserInline]
-    list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff',
+    list_display: Tuple = ('username', 'email', 'first_name', 'last_name', 'is_staff',
             'profile_primary_group')
     filter_horizontal = ('groups', 'user_permissions')
 

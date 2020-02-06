@@ -104,11 +104,12 @@ if 'catmaid_default_enabled_tools' in locals():
         'roi': 'PROFILE_SHOW_ROI_TOOL',
     }
     known_tools = set(known_tool_map.keys())
-    unknown_tools = set(catmaid_default_enabled_tools) - known_tools
+    default_tools = set(locals()['catmaid_default_enabled_tools'])
+    unknown_tools = default_tools - known_tools
     if unknown_tools:
         print('The following options for "catmaid_default_enabled_tools" are unknown: {}'.format(
             ', '.join(unknown_tools)))
-    enabled_tools = known_tools.intersection(set(catmaid_default_enabled_tools))
+    enabled_tools = known_tools.intersection(default_tools)
     data += '\n# Default tools that are enabled for new users\n'
     for tool in known_tools:
         data += f'{known_tool_map[tool]} = {"True" if tool in enabled_tools else "False"}\n'

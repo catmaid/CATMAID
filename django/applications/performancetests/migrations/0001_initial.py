@@ -7,9 +7,6 @@ from django.utils import timezone
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-    ]
-
     operations = [
         migrations.CreateModel(
             name='Event',

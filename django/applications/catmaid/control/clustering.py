@@ -2,7 +2,7 @@
 
 import logging
 import numpy as np
-from typing import List
+from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
 
@@ -118,7 +118,7 @@ class ClusteringWizard(SessionWizardView):
 
     def get_context_data(self, form, **kwargs):
         context = super().get_context_data(form=form, **kwargs)
-        extra_context = {'workspace_pid': self.workspace_pid}
+        extra_context: Dict[str, Any] = {'workspace_pid': self.workspace_pid}
 
         if self.steps.current == 'ontologies':
             extra_context['description'] = \

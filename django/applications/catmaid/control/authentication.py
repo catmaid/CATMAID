@@ -65,7 +65,7 @@ def access_check(user) -> bool:
 
 
 def login_user(request:HttpRequest) -> JsonResponse:
-    profile_context = {}
+    profile_context: Dict[str, str] = {}
     if request.method == 'POST':
         # Check if the user is authenticated already (e.g. due to an API token)
         # and return the user context if this is the case.
@@ -628,7 +628,7 @@ def user_domain_has_imported(user_id:int, obj_id:int, table_name:str, cursor=Non
             return False
         raise
 
-def users_have_imported_all(user_ids:[int], obj_ids:[int], table_name:str, cursor=None) -> bool:
+def users_have_imported_all(user_ids:List[int], obj_ids:List[int], table_name:str, cursor=None) -> bool:
     """Determine whether the users with IDs <user_ids> imported the objects with
     IDs <obj_ids> in table <table_name>. This is done by looking at the oldest
     known instance of this object and whether the respective transactin it was
@@ -682,7 +682,7 @@ def users_have_imported_all(user_ids:[int], obj_ids:[int], table_name:str, curso
         raise
 
 
-def user_has_imported_all(user_id:int, obj_ids:[int], table_name:str, cursor=None) -> bool:
+def user_has_imported_all(user_id:int, obj_ids:List[int], table_name:str, cursor=None) -> bool:
     return users_have_imported_all([user_id], obj_ids, table_name, cursor)
 
 

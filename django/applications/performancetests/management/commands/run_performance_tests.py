@@ -66,8 +66,8 @@ class Command(BaseCommand):
                 std_dev.append(std)
                 std_err.append(sem)
         else:
-            std_dev = ("-",) * len(results)
-            std_err = ("-",) * len(results)
+            std_dev = ["-",] * len(results)
+            std_err = ["-",] * len(results)
 
         # Print and optionally save all results
         for i,r in enumerate(results):

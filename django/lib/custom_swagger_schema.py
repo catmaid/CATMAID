@@ -4,7 +4,7 @@
 # https://github.com/m-haziq/django-rest-swagger-docs#integrating-django-rest-swagger
 
 from rest_framework.schemas.coreapi import AutoSchema
-from requests.compat import urljoin
+from urllib.parse import urljoin
 import yaml
 import coreapi
 

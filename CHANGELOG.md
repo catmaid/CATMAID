@@ -284,6 +284,10 @@ Graph widget:
   nodes. Show will nodes visible that have been hidden before. Removing nodes
   will remove the skeletons/nodes completely from the widget.
 
+- The node size specified in an imported .graphml file is now respected. This is
+  useful if graph fine tuning (layout and node size) is done in other tools,
+  like Gephi.
+
 Review widget:
 
 - The new tab "Synapse completeness" can list synaptic connector nodes don't

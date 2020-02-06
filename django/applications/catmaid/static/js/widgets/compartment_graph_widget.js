@@ -827,13 +827,21 @@
 
       this.label_halign = label_hpos.value;
       this.label_valign = label_vpos.value;
-      this.node_width = validate('node_width', node_width, node_width.value);
-      this.node_height = validate('node_height', node_height, node_height.value);
 
-      var style = {"text-halign": this.label_halign,
-                   "text-valign": this.label_valign,
-                   "width": this.node_width + "px",
-                   "height": this.node_height + "px"};
+      var style = {
+        "text-halign": this.label_halign,
+        "text-valign": this.label_valign,
+      };
+
+      let newNodewidth = validate('node_width', node_width, node_width.value);
+      let newNodeHeight = validate('node_height', node_height, node_height.value);
+
+      if (newNodewidth != this.node_width) {
+        style["width"] = this.node_width + "px";
+      }
+      if (newNodeHeight != this.node_height) {
+        style["height"] = this.node_height + "px";
+      }
 
       // Update general style, for new nodes
       this.cy.style().selector("node").css(style);
@@ -885,8 +893,8 @@
               "border-color": "#555",
               "text-valign": this.label_valign,
               "text-halign": this.label_halign,
-              "width": this.node_width,
-              "height": this.node_height
+              "width": "data(node_width)",
+              "height": "data(node_height)"
             })
           .selector("edge")
             .css({
@@ -1492,7 +1500,8 @@
 
   /** There is a model for every skeleton ID included in json.
    *  But there could be models for which there isn't a skeleton_id in json: these are disconnected nodes. */
-  GroupGraph.prototype.updateGraph = function(json, models, morphology, pos = null) {
+  GroupGraph.prototype.updateGraph = function(json, models, morphology, pos = null, sizes = null) {
+    sizes = sizes || {};
 
     var subgraph_skids = Object.keys(this.subgraphs);
     if (subgraph_skids.length > 0 && !morphology) {
@@ -1508,7 +1517,7 @@
           function(skid) { return {}; },
           function(skid, json) { morphologies[skid] = json; },
           (function(skid) { delete this.subgraphs[skid]; }).bind(this), // failed loading
-          (function() { this.updateGraph(json, models, morphologies, positions); }).bind(this));
+          (function() { this.updateGraph(json, models, morphologies, pos, sizes); }).bind(this));
       return;
     }
 
@@ -1549,14 +1558,21 @@
       return asEdge(edge, 'synaptic-connector');
     };
 
+    let globalNodeWidth = this.node_width;
+    let globalNodeHeight = this.node_height;
+
     var asNode = function(nodeID) {
         nodeID = nodeID + '';
         var i_ = nodeID.indexOf('_'),
             skeleton_id = -1 === i_ ? nodeID : nodeID.substring(0, i_),
-            model = models[skeleton_id];
+            model = models[skeleton_id],
+            node_width = CATMAID.tools.getDefined(sizes[nodeID], globalNodeWidth),
+            node_height = CATMAID.tools.getDefined(sizes[nodeID], globalNodeHeight);
         return {data: {id: nodeID, // MUST be a string, or fails
                         skeletons: [model.clone()],
                         label: CATMAID.NeuronNameService.getInstance().getName(model.id),
+                        node_width: node_width,
+                        node_height: node_height,
                         node_count: 0,
                         shape: "ellipse",
                         color: '#' + model.color.getHexString()}};
@@ -1585,6 +1601,9 @@
     this.cy.nodes().each(function(i, node) {
       var id = node.id();
       positions[id] = node.position();
+      if (!(id in sizes)) {
+        sizes[id] = node.size();
+      }
       if (node.selected()) selected[id] = true;
       if (node.hidden()) hidden[id] = true;
       if (node.locked()) locked[id] = true;
@@ -1663,6 +1682,9 @@
     this.cy.nodes().each(function(i, node) {
       // Lock old nodes into place and restore their position
       var id = node.id();
+      if (id in sizes) {
+        node.size(sizes[id]);
+      }
       if (id in positions) {
         node.position(positions[id]);
         node.lock();
@@ -2038,20 +2060,20 @@
     this.load(models);
   };
 
-  GroupGraph.prototype.load = function(models, positions = null) {
+  GroupGraph.prototype.load = function(models, positions = null, sizes = null) {
     // Register with name service before we attempt to load the graph
     CATMAID.NeuronNameService.getInstance().registerAll(this, models, () => {
-      this._load(models, positions);
+      this._load(models, positions, undefined, sizes);
     });
   };
 
   /** Fetch data from the database and remake the graph. */
-  GroupGraph.prototype._load = function(models, positions = null, skipNodeFilter = false) {
+  GroupGraph.prototype._load = function(models, positions = null, skipNodeFilter = false, sizes = null) {
     let activeNodeFilters = !skipNodeFilter && this.applyFilterRules && this.filterRules.length > 0;
     if (activeNodeFilters) {
       this.updateFilter(models, true)
         .catch(CATMAID.handleError)
-        .finally(() => this._load(models, positions, true));
+        .finally(() => this._load(models, positions, true, sizes));
       return;
     }
 
@@ -2073,7 +2095,7 @@
         replace: true,
         id: 'graph_widget_request',
       })
-      .then(json => this.updateGraph(json, models, undefined, positions))
+      .then(json => this.updateGraph(json, models, undefined, positions, sizes))
       .catch(error => {
         if (error instanceof CATMAID.ReplacedRequestError) return;
         CATMAID.handleError(error);
@@ -4001,7 +4023,7 @@
   };
 
   GroupGraph.prototype.loadFromGraphML = function(xmlData) {
-    let preferUnitId = true, preferName = true, invertY = true;
+    let preferUnitId = true, preferName = true, invertY = true, setSize = true;
 
     let dialog = new CATMAID.OptionsDialog('Import GraphML');
     dialog.appendMessage('Please check the import options.');
@@ -4012,12 +4034,18 @@
         'prefer-name', preferName,
         'If imported nodes have a "name" field, prefer it over the regular "label" field.');
     var invertYControl = dialog.appendCheckbox('Invert Y coorindates',
-        'invert-y', preferName,
+        'invert-y', invertY,
         'Mirror all Y coordinates to switch between left-handed and right-handed coordinates.');
+    let setSizeIfAvailable = dialog.appendCheckbox('Set node size if available',
+        'set-node-size', setSize,
+        'If a node size is defined in the imported data, assign it to the Graph Widget nodes.');
+    let scaleImportedNodes = dialog.appendNumericField('Scale imported nodes',
+        'scale-nodes', 1.0, 0, undefined, 1);
 
     dialog.onOK = () => {
       this.loadFromGraphMLData(xmlData, preferUnitIdControl.checked,
-        preferNameControl.checked, invertYControl.checked);
+        preferNameControl.checked, invertYControl.checked, setSizeIfAvailable.checked,
+        Number(scaleImportedNodes.value));
     };
 
     dialog.show(500, 'auto', true);
@@ -4059,7 +4087,7 @@
    * </graphml>
    */
   GroupGraph.prototype.loadFromGraphMLData = function(xmlData, preferUnitId = true,
-      preferName = true, invertY = true) {
+      preferName = true, invertY = true, setSize = true, nodeScale = 1.0) {
     let xml = $.parseXML(xmlData);
     let nodeData = Array.from(xml.querySelectorAll('node'));
     let edgeData = Array.from(xml.querySelectorAll('edge'));
@@ -4076,6 +4104,7 @@
       let name = n.querySelector('data[key=name]').childNodes[0].data;
       let label = n.querySelector('data[key=label]').childNodes[0].data;
       let importName = (name && preferName) ? name : label;
+      let sizeField = n.querySelector('data[key=size]');
       return {
         'id': importId,
         'label': importName,
@@ -4084,6 +4113,9 @@
         'r': Number(n.querySelector('data[key=r]').childNodes[0].data),
         'g': Number(n.querySelector('data[key=g]').childNodes[0].data),
         'b': Number(n.querySelector('data[key=b]').childNodes[0].data),
+        'size': setSize && sizeField ?
+            Number(nodeScale) * Number(sizeField.childNodes[0].data) :
+            undefined,
       };
     });
 
@@ -4102,8 +4134,16 @@
       return o;
     }, {});
 
+    let sizes = null;
+    if (setSize) {
+      sizes = nodes.reduce((o, n) => {
+        o[n.id] = n.size;
+        return o;
+      }, {});
+    }
+
     this.clear();
-    this.load(models, positions);
+    this.load(models, positions, sizes);
   };
 
   GroupGraph.prototype.filterEdges = function(countThreshold, confidenceThreshold) {

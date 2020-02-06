@@ -63,29 +63,6 @@ def basic_graph(project_id, skeleton_ids, relations=None,
                 for t, count in edge.items())
     }
 
-    '''
-    return {'edges': [{'source': pre,
-                       'target': post,
-                       'weight': count} for pre, edge in edges.items() for post, count in edge.items()]}
-    '''
-
-    """ Can't get the variable to be set with all the skeleton IDs
-    cursor.execute('''
-    WITH skeletons as (VALUES (%s) UNION ALL)
-    SELECT tc1.skeleton_id, tc2.skeleton_id, count(*)
-    FROM treenode_connector tc1,
-         treenode_connector tc2
-    WHERE tc1.project_id = %s
-      AND tc1.project_id = tc2.project_id
-      AND tc1.connector_id = tc2.connector_id
-      AND tc1.relation_id = %s
-      AND tc2.relation_id = %s
-      AND tc1.skeleton_id IN skeletons
-      AND tc2.skeleton_id IN skeletons
-      AND tc1.id <> tc2.id
-    ''' % (",".join(str(int(skid)) for skid in skeleton_ids), int(project_id), preID, postID))
-    """
-
 
 def confidence_split_graph(project_id, skeleton_ids, confidence_threshold,
         relations=None, source_rel:str="presynaptic_to", target_rel:str="postsynaptic_to") -> Dict[str, Any]:

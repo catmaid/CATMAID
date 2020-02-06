@@ -1,3 +1,4 @@
+.mypy_cache
 django/hdf5/*/
 django/hdf5/*.hdf
 django/projects/mysite/.coverage

@@ -62,6 +62,8 @@
   database configuration changes for Postgres 12. CATMAID's replication
   documentation explains what needs to be done.
 
+- The next version of CATMAID will require Postgres 12 and PostGIS 3.
+
 - The management command catmaid_populate_summary_tables is now known as
   catmaid_refresh_node_statistics.
 

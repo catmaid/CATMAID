@@ -5,6 +5,7 @@ import progressbar
 import psycopg2
 import time
 from timeit import default_timer as timer
+from typing import Dict, List
 import ujson
 
 
@@ -144,7 +145,7 @@ class Command(BaseCommand):
             data_types = ['json']
             types = ', '.join(data_types)
 
-            results = []
+            results: List[Dict] = []
             project_results[p.id] = results
 
             # Step through boundinx box in each orientation using both the
@@ -214,7 +215,7 @@ class Command(BaseCommand):
             self.stdout.write(f'Top 2 queries with nodes per zoom and extent in project {pid}')
             nonzero_data = list(filter(lambda x: x['n_nodes'] > 0, data))
             sorted_data = sorted(nonzero_data, key=lambda x: (-x['width'], -x['height'], -x['n_nodes'], x['time']))
-            depth_count = defaultdict(float)
+            depth_count: Dict[Dict, float] = defaultdict(float)
             for d in sorted_data:
                 count = depth_count[d['width']]
                 if count > 1:

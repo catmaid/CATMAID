@@ -1885,7 +1885,7 @@ def connectivity_matrix_csv(request:HttpRequest, project_id) -> StreamingHttpRes
     project_id = int(project_id)
     rows = tuple(get_request_list(request.POST, 'rows', [], map_fn=int))
     cols = tuple(get_request_list(request.POST, 'columns', [], map_fn=int))
-    names:Dict = dict(map(lambda x: [int(x[0]), x[1]], get_request_list(request.POST, 'names', [])))
+    names:Dict = dict(map(lambda x: (int(x[0]), x[1]), get_request_list(request.POST, 'names', [])))
 
     matrix = get_connectivity_matrix(project_id, rows, cols)
 

@@ -458,10 +458,10 @@ class GridCachedMsgpackNodeProvider(GridCachedNodeProvider):
 class PostgisNodeProvider(BasicNodeProvider, metaclass=ABCMeta):
 
     CONNECTOR_STATEMENT_NAME = 'get_connectors_postgis'
-    connector_query:Optional[str] = None
+    connector_query: str
 
     TREENODE_STATEMENT_NAME = 'get_treenodes_postgis'
-    treenode_query:Optional[str] = None
+    treenode_query: str
 
     # Allows implementation to handle limit settings on its own
     managed_limit = True

@@ -486,6 +486,10 @@ Miscellaneous:
   axon/dendrite split, desmosomes, etc.) doesn't lead to suddenly appearing
   arrow heads.
 
+- Graph widget: undirected links like desmosomes will now only appear once
+  between two nodes. They would be shown twice before, once for each of the
+  partners being the "source" or "target".
+
 ## Maintenance updates
 
 - CLI Exporter: if users should be exported, also export users of volumes.

@@ -19,7 +19,7 @@ from catmaid.models import UserRole
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.common import (get_relation_to_id_map, get_request_bool,
         get_request_list)
-from catmaid.control.link import KNOWN_LINK_PAIRS
+from catmaid.control.link import KNOWN_LINK_PAIRS, UNDIRECTED_LINK_TYPES
 from catmaid.control.tree_util import simplify
 from catmaid.control.synapseclustering import tree_max_density
 
@@ -39,7 +39,14 @@ def basic_graph(project_id, skeleton_ids, relations=None,
         relations = get_relation_to_id_map(project_id, (source_link, target_link), cursor)
     source_rel_id, target_rel_id = relations[source_link], relations[target_link]
 
-    cursor.execute('''
+    undirected_links = source_link in UNDIRECTED_LINK_TYPES and \
+            target_link in UNDIRECTED_LINK_TYPES
+
+    # Find all links in the passed in set of skeletons. If a relation is
+    # reciprocal, we need to avoid getting two result rows back for each
+    # treenode-connector-treenode connection. To keep things simple, we will add
+    # a "skeleton ID 1" < "skeleton ID 2" test for reciprocal links.
+    cursor.execute(f'''
     SELECT t1.skeleton_id, t2.skeleton_id, LEAST(t1.confidence, t2.confidence)
     FROM treenode_connector t1,
          treenode_connector t2
@@ -49,7 +56,7 @@ def basic_graph(project_id, skeleton_ids, relations=None,
       AND t2.skeleton_id = ANY(%(skeleton_ids)s::bigint[])
       AND t2.relation_id = %(target_rel)s
       AND t1.id <> t2.id
-      AND t1.skeleton_id < t2.skeleton_id
+      {'AND t1.skeleton_id < t2.skeleton_id' if undirected_links else ''}
     ''', {
         'skeleton_ids': list(skeleton_ids),
         'source_rel': source_rel_id,

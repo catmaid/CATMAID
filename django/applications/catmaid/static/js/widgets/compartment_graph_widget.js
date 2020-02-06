@@ -1397,7 +1397,7 @@
       m[1].forEach(function(row) {
         // Accumulate connection into the subnode for later use in e.g. grow command
         var treenodeID = row[0],
-            confidence = Math.min(row[1], row[2]),
+            confidence = Math.min(row[1], row[3]),
             other_skid = row[5],
             node_id = findPartID(treenodeID),
             presynaptic = 0 === row[6],

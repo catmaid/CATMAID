@@ -1208,7 +1208,7 @@ def add_all_intervals(request:HttpRequest, project_id, domain_id) -> JsonRespons
         if added_end_node_data:
             end_node = new_nodes[end_node].id
 
-        i = SamplerInterval.objects.create(
+        si = SamplerInterval.objects.create(
             domain=domain,
             interval_state=state,
             start_node_id=start_node,
@@ -1217,12 +1217,12 @@ def add_all_intervals(request:HttpRequest, project_id, domain_id) -> JsonRespons
             project_id=project_id)
 
         result_intervals.append({
-            "id": i.id,
-            "interval_state_id": i.interval_state_id,
-            "start_node_id": i.start_node_id,
-            "end_node_id": i.end_node_id,
-            "user_id": i.user_id,
-            "project_id": i.project_id
+            "id": si.id,
+            "interval_state_id": si.interval_state_id,
+            "start_node_id": si.start_node_id,
+            "end_node_id": si.end_node_id,
+            "user_id": si.user_id,
+            "project_id": si.project_id
         })
 
     return JsonResponse({

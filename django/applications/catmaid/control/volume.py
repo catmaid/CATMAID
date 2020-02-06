@@ -6,7 +6,7 @@ import json
 import os
 import re
 import trimesh
-from typing import Any, Callable, Dict, List, Tuple, Union
+from typing import Any, Callable, Dict, List, Sequence, Tuple, Union
 from xml.etree import ElementTree as ET
 
 from django.conf import settings
@@ -1250,7 +1250,7 @@ def get_volume_data(project_id, volume_ids):
         # Now reverse engineer the mesh
         if mesh_type == 'IndexedTriangleSet':
             t = re.search("index='(.*?)'", mesh_str).group(1).split(' ')
-            faces = [(int(t[i]), int(t[i + 1]), int(t[i + 2]))
+            faces: List[Sequence[int]] = [(int(t[i]), int(t[i + 1]), int(t[i + 2]))
                      for i in range(0, len(t) - 2, 3)]
 
             v = re.search("point='(.*?)'", mesh_str).group(1).split(' ')
@@ -1284,7 +1284,7 @@ def get_volume_data(project_id, volume_ids):
         # For some reason, in this format vertices occur multiple times - we
         # have to collapse that to get a clean mesh
         final_faces = []
-        final_vertices = []
+        final_vertices: List[Sequence[int]] = []
 
         for t in faces:
             this_faces = []

@@ -257,7 +257,7 @@ class Exporter():
                     allowed_annotations = set(allowed_annotation_dict.keys()).union(
                             set(chain.from_iterable(allowed_annotation_dict.values())))
                 else:
-                    allowed_annotations = dict()
+                    allowed_annotations = set()
 
                 while working_set:
                     annotation_links = ClassInstanceClassInstance.objects.filter(

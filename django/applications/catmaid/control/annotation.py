@@ -243,11 +243,11 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
                 GROUP BY 1
             ) ann_link ON ci.id = ann_link.id
         """)
-        for n, annotation_id_set in enumerate(not_annotation_sets):
+        for n, anno_id_set in enumerate(not_annotation_sets):
             filters.append(f"""
                 NOT (ann_link.annotations && %(cici_ex{n}_ann)s)
             """)
-            params[f'cici_ex{n}_ann'] = list(annotation_id_set)
+            params[f'cici_ex{n}_ann'] = list(anno_id_set)
 
     # The bassic query
     query = """

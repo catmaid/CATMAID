@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 
+from abc import ABC, abstractmethod
 import argparse
 from collections import defaultdict
 import inspect
 import logging
 import progressbar
-from typing import Any, DefaultDict, Dict, List, Set
+from typing import Any, DefaultDict, Dict, List, Set, Type
 
 from catmaid.apps import get_system_user
 from catmaid.control.annotationadmin import copy_annotations
@@ -72,12 +73,21 @@ def ask_for_user(title):
         if u:
             return u
 
-class FileImporter:
+class AbstractImporter(ABC):
     def __init__(self, source, target, user, options):
         self.source = source
         self.target = target
         self.options = options
         self.user = user
+        super().__init__()
+
+    @abstractmethod
+    def import_data(self):
+        pass
+
+class FileImporter(AbstractImporter):
+    def __init__(self, source, target, user, options):
+        super().__init__(source, target, user, options)
         self.create_unknown_users = options['create_unknown_users']
         self.auto_name_unknown_users = options['auto_name_unknown_users']
         self.next_auto_name_id = 1
@@ -670,12 +680,7 @@ class FileImporter:
                 logger.info('No skeleton summary table updated needed')
 
 
-class InternalImporter:
-    def __init__(self, source, target, user, options):
-        self.source = source
-        self.target = target
-        self.options = options
-
+class InternalImporter(AbstractImporter):
     def import_data(self):
         # Process with import
         o = self.options
@@ -790,7 +795,7 @@ class Command(BaseCommand):
             try:
                 source = Project.objects.get(pk=int(options['source']))
                 logger.info("Using internal importer")
-                Importer = InternalImporter
+                Importer: Type[AbstractImporter] = InternalImporter
             except ValueError:
                 source = options['source']
                 logger.info("Using file importer")

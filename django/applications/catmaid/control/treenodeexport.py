@@ -118,6 +118,8 @@ class TreenodeExporter:
                     relation_id=self.relation_map['model_of'],
                     project_id=self.job.project_id,
                     class_instance_a=treenode.skeleton.id)
+            if self.output_path is None:
+                raise ImproperlyConfigured('Output path is not configured')
             treenode_path = os.path.join(self.output_path,
                     str(neuron_cici.class_instance_b_id))
             self.skid_to_neuron_folder[treenode.skeleton.id] = treenode_path
@@ -216,7 +218,7 @@ class TreenodeExporter:
 
         # Save metdata for each skeleton to files
         for skid, metadata in skid_to_metadata.items():
-            path = self.skid_to_neuron_folder.get(skid)
+            path = self.skid_to_neuron_folder[skid]
             with open(os.path.join(path, 'metadata.csv'), 'w') as f:
                 f.write("This CSV file contains meta data for CATMAID skeleton " \
                         "%s. The columns represent the following data:\n" % skid)

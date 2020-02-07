@@ -249,7 +249,7 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
             """)
             params[f'cici_ex{n}_ann'] = list(anno_id_set)
 
-    # The bassic query
+    # The basic query
     query = """
         SELECT {fields}
         FROM class_instance ci

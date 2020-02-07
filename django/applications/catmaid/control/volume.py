@@ -1245,22 +1245,34 @@ def get_volume_data(project_id, volume_ids):
         mesh_name = r[name_idx]
         mesh_id = r[id_idx]
 
-        mesh_type = re.search('<(.*?) ', mesh_str).group(1)
+        mesh_match = re.search('<(.*?) ', mesh_str)
+        if mesh_match is None:
+            raise Exception('Malformed input: mesh type not found')
+        mesh_type = mesh_match.group(1)
 
         # Now reverse engineer the mesh
         if mesh_type == 'IndexedTriangleSet':
-            t = re.search("index='(.*?)'", mesh_str).group(1).split(' ')
+            index_match = re.search("index='(.*?)'", mesh_str)
+            if index_match is None:
+                raise Exception('Malformed input: indices not found')
+            t = index_match.group(1).split(' ')
             faces: List[Sequence[int]] = [(int(t[i]), int(t[i + 1]), int(t[i + 2]))
                      for i in range(0, len(t) - 2, 3)]
 
-            v = re.search("point='(.*?)'", mesh_str).group(1).split(' ')
+            point_match = re.search("point='(.*?)'", mesh_str)
+            if point_match is None:
+                raise Exception('Malformed input: points not found')
+            v = point_match.group(1).split(' ')
             vertices = [(float(v[i]), float(v[i + 1]), float(v[i + 2]))
                         for i in range(0, len(v) - 2, 3)]
 
         elif mesh_type == 'IndexedFaceSet':
             # For this type, each face is indexed and an index of -1 indicates
             # the end of this face set
-            t = re.search("coordIndex='(.*?)'", mesh_str).group(1).split(' ')
+            index_match = re.search("coordIndex='(.*?)'", mesh_str)
+            if index_match is None:
+                raise Exception('Malformed input: coordinate indices not found')
+            t = index_match.group(1).split(' ')
             faces = []
             this_face = []
             for f in t:
@@ -1273,7 +1285,10 @@ def get_volume_data(project_id, volume_ids):
             # Make sure the last face is also appended
             faces.append(this_face)
 
-            v = re.search("point='(.*?)'", mesh_str).group(1).split(' ')
+            point_match = re.search("point='(.*?)'", mesh_str)
+            if point_match is None:
+                raise Exception('Malformed input: points not found')
+            v = point_match.group(1).split(' ')
             vertices = [(float(v[i]), float(v[i + 1]), float(v[i + 2]))
                         for i in range(0, len(v) - 2, 3)]
 

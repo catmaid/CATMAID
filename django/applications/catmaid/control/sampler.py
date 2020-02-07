@@ -1,7 +1,7 @@
 from collections import defaultdict
 from itertools import chain
 import json
-from typing import Any, DefaultDict, Dict, List
+from typing import Any, DefaultDict, Dict, List, Optional, Tuple
 
 from django.db import connection
 from django.http import HttpRequest, JsonResponse
@@ -1179,7 +1179,7 @@ def add_all_intervals(request:HttpRequest, project_id, domain_id) -> JsonRespons
     # node is found.
     new_nodes:Dict = dict()
     for root_interval in existing_parent_intervals:
-        current_interval = root_interval
+        current_interval: Optional[Tuple[int, int]] = root_interval
         while current_interval:
             child_id = current_interval[1]
             new_child_data = added_node_index.get(child_id)

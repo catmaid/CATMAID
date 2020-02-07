@@ -139,8 +139,9 @@ class Exporter():
             # annotation or one of its sub-annotations.
             if exclude_skeleton_id_constraints:
                 if self.exclusion_is_final:
-                    skeleton_id_constraints = [skid for skid in skeleton_id_constraints
-                                            if skid not in exclude_skeleton_id_constraints]
+                    skeleton_id_constraints = [
+                        skid for skid in skeleton_id_constraints # type: ignore
+                        if skid not in exclude_skeleton_id_constraints]
                     neuron_ids = [nid for nid in neuron_ids
                                 if nid not in exclude_neuron_id_constraint]
                 else:

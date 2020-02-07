@@ -427,7 +427,7 @@ class FileImporter(AbstractImporter):
         # Find classes for neurons and skeletons in import data
         if Class in import_data:
             allowed_duplicate_classes = tuple(c.object.id
-                    for c in import_data.get(Class)
+                    for c in import_data[Class]
                     if c.object.class_name in ('neuron', 'skeleton'))
         else:
             allowed_duplicate_classes = tuple()

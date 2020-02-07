@@ -17,6 +17,9 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy
 from django.urls import reverse
 from guardian.admin import GuardedModelAdmin
+
+from django_typing import admin_property_decorator
+
 from catmaid.models import (Project, DataView, Stack, InterpolatableSection,
         ProjectStack, UserProfile, BrokenSlice, StackClassInstance, Relation,
         ClassInstance, Class, StackGroup, StackStackGroup, StackMirror,
@@ -467,6 +470,7 @@ class CustomUserAdmin(UserAdmin):
             self.list_display = self.list_display + ('color',)
         return super().changelist_view(request, extra_context=extra_context)
 
+    @admin_property_decorator
     def profile_primary_group(self, u):
         return u.userprofile.primary_group
     profile_primary_group.short_description = "Primary group"
@@ -486,6 +490,7 @@ class CustomGroupAdmin(GroupAdmin):
         qs = qs.annotate(member_count=Count('user'))
         return qs
 
+    @admin_property_decorator
     def member_count(self, group_instance):
         return group_instance.member_count
     member_count.short_description = 'Member count'

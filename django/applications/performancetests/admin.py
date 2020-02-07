@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 
 from django.contrib import admin
+from django_typing import admin_property_decorator
 from .models import TestView, TestResult, Event
 from .views import TestResultDisplay
 
 
+@admin_property_decorator
 def duplicate_action(modeladmin, request, queryset):
     """
     An action that can be added to individual model admin forms to duplicate

@@ -1933,43 +1933,55 @@ def treenode_overview(request:HttpRequest, project_id=None, skeleton_id=None) ->
 
     cursor = connection.cursor()
     cursor.execute('''
-SELECT id, parent_id, confidence,
-       location_x, location_y, location_z,
-       radius, user_id, floor(EXTRACT(epoch FROM edition_time))
-FROM treenode
-WHERE project_id = %s
-  AND skeleton_id = %s
-    ''' % (project_id, skeleton_id))
+        SELECT id, parent_id, confidence,
+               location_x, location_y, location_z,
+               radius, user_id, floor(EXTRACT(epoch FROM edition_time))
+        FROM treenode
+        WHERE project_id = %(project_id)s
+          AND skeleton_id = %(skeleton_id)s
+    ''', {
+        'project_id': project_id,
+        'skeleton_id': skeleton_id,
+    })
 
     treenodes = tuple(cursor.fetchall())
 
     cursor.execute('''
-SELECT treenode_id, reviewer_id
-FROM review
-WHERE project_id = %s
-  AND skeleton_id = %s
-    ''' % (project_id, skeleton_id))
+        SELECT treenode_id, reviewer_id
+        FROM review
+        WHERE project_id = %(project_id)s
+          AND skeleton_id = %(skeleton_id)s
+    ''', {
+        'project_id': project_id,
+        'skeleton_id': skeleton_id,
+    })
 
     reviews = tuple(cursor.fetchall())
 
     cursor.execute('''
-SELECT id
-FROM relation
-WHERE project_id = %s
-  AND relation_name = 'labeled_as'
-    ''' % (project_id))
+        SELECT id
+        FROM relation
+        WHERE project_id = %(project_id)s
+          AND relation_name = 'labeled_as'
+    ''', {
+        'project_id': project_id,
+    })
 
     labeled_as = cursor.fetchone()[0]
 
     cursor.execute('''
-SELECT t.id, ci.name
-FROM treenode t, treenode_class_instance tci, class_instance ci
-WHERE t.project_id = %s
-  AND t.skeleton_id = %s
-  AND tci.treenode_id = t.id
-  AND tci.relation_id = %s
-  AND tci.class_instance_id = ci.id
-    ''' % (project_id, skeleton_id, labeled_as))
+        SELECT t.id, ci.name
+        FROM treenode t, treenode_class_instance tci, class_instance ci
+        WHERE t.project_id = %(project_id)s
+          AND t.skeleton_id = %(skeleton_id)s
+          AND tci.treenode_id = t.id
+          AND tci.relation_id = %(labeled_as)s
+          AND tci.class_instance_id = ci.id
+    ''', {
+        'project_id': project_id,
+        'skeleton_id': skeleton_id,
+        'labeled_as': labeled_as,
+    })
 
     tags = tuple(cursor.fetchall())
 

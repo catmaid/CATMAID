@@ -193,19 +193,21 @@ def find_directed_path_skeletons(request:HttpRequest, project_id=None) -> JsonRe
         SELECT tc2.skeleton_id
         FROM treenode_connector tc1,
              treenode_connector tc2
-        WHERE tc1.project_id = %s
-          AND tc1.skeleton_id in (%s)
+        WHERE tc1.project_id = %(project_id)s
+          AND tc1.skeleton_id = ANY (%(skeleton_ids)s::bigint[])
           AND tc1.connector_id = tc2.connector_id
           AND tc1.skeleton_id != tc2.skeleton_id
-          AND tc1.relation_id = %s
-          AND tc2.relation_id = %s
+          AND tc1.relation_id = %(relation_1)s
+          AND tc2.relation_id = %(relation)2)s
         GROUP BY tc1.skeleton_id, tc2.skeleton_id
-        HAVING count(*) >= %s
-        """ % (int(project_id),
-              ','.join(str(int(skid)) for skid in skids),
-              int(relation1),
-              int(relation2),
-              float(min_synapses)))
+        HAVING count(*) >= %(min_synapses)s
+        """, {
+            'project_id': int(project_id),
+            'skeleton_ids': [int(skid) for skid in skids],
+            'relation_1': int(relation1),
+            'relation_2': int(relation2),
+            'min_synapses': float(min_synapses),
+        })
         return chain.from_iterable(cursor.fetchall())
 
     pre = relations['presynaptic_to']

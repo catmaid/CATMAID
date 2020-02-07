@@ -11,7 +11,7 @@ import os
 import re
 
 from ini.trakem2 import Project
-from ini.trakem2.display import Tree, Treeline, AreaTree, Connector
+from ini.trakem2.display import Ball, Tree, Treeline, AreaTree, Connector
 from ini.trakem2.parallel import Process, TaskFactory
 from java.lang import StringBuilder
 from java.io import File

@@ -395,8 +395,8 @@ class FileImporter(AbstractImporter):
             raise CommandError("Nothing to import, no importable data found")
 
         created_users:Dict = dict()
-        if import_data.get(User):
-            import_users = dict((u.object.id, u) for u in import_data.get(User))
+        if User in import_data:
+            import_users = dict((u.object.id, u) for u in import_data[User])
             logger.info(f"Found {len(import_users)} referenceable users in import data")
         else:
             import_users = dict()

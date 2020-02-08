@@ -42,8 +42,8 @@ script:
   - npm run lint:js
   - npm run jsdoc
   - cd $TRAVIS_BUILD_DIR
-  # Static type checking for Python, for now only as warning and when mypy is
-  # available (which it isn't in PyPy).
+  # Static type checking for Python when mypy is available (which it isn't in
+  # PyPy).
   - if [ -x "$(command -v mypy)" ]; then mypy django/ ; fi
   - cd django/projects
   - python manage.py migrate --noinput

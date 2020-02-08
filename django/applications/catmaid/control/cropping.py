@@ -148,8 +148,8 @@ class ImagePart:
         # Estimates the size in Bytes of this image part by scaling the number
         # of Bytes read with the ratio between the needed part of the image and
         # its actual size.
-        self.estimated_size = bytes_read * abs(float(self.width * self.height) /
-                                               float(src_width * src_height))
+        self.estimated_size = bytes_read * round(abs(float(self.width * self.height) /
+                                                     float(src_width * src_height)))
         return image
 
 def to_x_index(x, stack, zoom_level, enforce_bounds=True) -> int:

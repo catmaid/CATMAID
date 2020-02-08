@@ -10,7 +10,7 @@ import os
 import progressbar
 import re
 import subprocess
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 from django.db import connection
 from django.conf import settings
@@ -444,14 +444,14 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
         match_subset = robjects.NULL
         if matching_sample.subset:
             # Find all possible pairs in each subset
-            pairs = []
+            pairs: List[Tuple[Tuple[int, str], Tuple[int, str]]] = []
             for subset in matching_sample.subset:
                 # Build all possible pairs in this set
                 indices = list(range(len(subset)))
                 while len(indices) > 0:
-                    elem_a = indices.pop(0)
-                    for elem_b in indices:
-                        pairs.append([subset[elem_a], subset[elem_b]])
+                    elem_a_i = indices.pop(0)
+                    for elem_b_i in indices:
+                        pairs.append((subset[elem_a_i], subset[elem_b_i]))
                         # TODO: Reverse needed?
 
             # create query and target names
@@ -459,8 +459,8 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
             target_names = []
             for pair in pairs:
                 elem_a, elem_b = pair
-                elem_a_type, elem_a_key = elem_a # type: ignore
-                elem_b_type, elem_b_key = elem_b # type: ignore
+                elem_a_type, elem_a_key = elem_a
+                elem_b_type, elem_b_key = elem_b
 
                 if elem_a_type == 1:
                     query_name = f'pointset-{elem_a_key}'
@@ -1231,8 +1231,8 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                         # negative forward and backward values become positive
                         # in the multiplication.
                         score = [math.sqrt(
-                                math.max(0, scores_df.loc[reverse_scores.rownames[i]].score) * \
-                                math.max(0, reverse_scores[i])) \
+                                max(0, scores_df.loc[reverse_scores.rownames[i]].score) * \
+                                max(0, reverse_scores[i])) \
                                 for i in range(len(reverse_scores))]
 
                     result_row = pd.DataFrame([scores], index=[query_name],

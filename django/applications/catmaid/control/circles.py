@@ -6,7 +6,6 @@ from itertools import combinations, chain
 import json
 import math
 import networkx as nx
-from numbers import Number
 
 from typing import Any, DefaultDict, Dict, Iterator, List, Optional, Set, Tuple, Union
 
@@ -42,8 +41,8 @@ def _relations(cursor, project_id:Union[int,str]) -> Dict:
     return dict(cursor.fetchall())
 
 def _clean_mins(request:HttpRequest, cursor, project_id:Union[int,str]) -> Tuple[Dict, Any]:
-    min_pre:Number = int(request.POST.get('min_pre',  -1))
-    min_post:Number = int(request.POST.get('min_post', -1))
+    min_pre: float = int(request.POST.get('min_pre',  -1))
+    min_post: float = int(request.POST.get('min_post', -1))
 
     if -1 == min_pre and -1 == min_post:
         raise Exception("Can't grow: not retrieving any pre or post.")

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import json
-from typing import Any, Dict
+from typing import Any, Dict, Iterable
 
 from guardian.utils import get_anonymous_user
 
@@ -106,7 +106,8 @@ def user_list_datatable(request:HttpRequest) -> JsonResponse:
 
     if should_sort:
         column_count = int(request.POST.get('iSortingCols', 0))
-        sorting_directions = [request.POST.get('sSortDir_%d' % d, 'DESC')
+        sorting_directions: Iterable[str] = [
+                request.POST.get('sSortDir_%d' % d, 'DESC')
                 for d in range(column_count)]
         sorting_directions = map(lambda d: '-' if d.upper() == 'DESC' else '',
                 sorting_directions)

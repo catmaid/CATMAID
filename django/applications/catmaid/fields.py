@@ -4,7 +4,7 @@ import psycopg2
 from psycopg2.extensions import register_adapter, adapt, AsIs
 from psycopg2.extras import CompositeCaster, register_composite
 import re
-from typing import Any, Dict
+from typing import Any, ClassVar, Dict
 
 from django import forms
 from django.contrib.postgres.fields import ArrayField
@@ -30,6 +30,8 @@ class CompositeFactory(CompositeCaster):
 _missing_types = {}
 
 class CompositeMeta(type):
+    composite_python_class: ClassVar
+
     def __init__(cls, name, bases, clsdict):
         from django.db import connection
         super().__init__(name, bases, clsdict)

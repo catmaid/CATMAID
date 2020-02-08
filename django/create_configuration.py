@@ -85,8 +85,8 @@ data = re.sub('CATMAID_SUBDIR', catmaid_subdirectory, data)
 # of a recognized protocol specification:
 known_protocols = ["http", "https", "ftp", "ssh", "nfs", "smb", "django"]
 known_protocols = ["(?<!%s:)" % p for p in known_protocols]
-known_protocols = ''.join(known_protocols)
-data = re.sub('%s//' % known_protocols, '/', data)
+known_protocols_re = ''.join(known_protocols)
+data = re.sub('%s//' % known_protocols_re, '/', data)
 # If CATMAID doesn't live in a sub-directory, the FORCE_SCRIPT_NAME setting
 # has to be commented out. Otherwise, it would add an extra slash in
 # redirects.
@@ -104,11 +104,12 @@ if 'catmaid_default_enabled_tools' in locals():
         'roi': 'PROFILE_SHOW_ROI_TOOL',
     }
     known_tools = set(known_tool_map.keys())
-    unknown_tools = set(catmaid_default_enabled_tools) - known_tools
+    default_tools = set(locals()['catmaid_default_enabled_tools'])
+    unknown_tools = default_tools - known_tools
     if unknown_tools:
         print('The following options for "catmaid_default_enabled_tools" are unknown: {}'.format(
             ', '.join(unknown_tools)))
-    enabled_tools = known_tools.intersection(set(catmaid_default_enabled_tools))
+    enabled_tools = known_tools.intersection(default_tools)
     data += '\n# Default tools that are enabled for new users\n'
     for tool in known_tools:
         data += f'{known_tool_map[tool]} = {"True" if tool in enabled_tools else "False"}\n'

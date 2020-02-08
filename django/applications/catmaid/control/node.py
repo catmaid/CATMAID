@@ -217,7 +217,7 @@ class CachedMsgpackNodeProvder(CachedNodeProvider):
             if explicit_treenode_ids or explicit_connector_ids:
                 extra_tuples, extra_type = get_extra_nodes(params, project_id,
                     explicit_treenode_ids, explicit_connector_ids, include_labels,
-                    with_relation_map)
+                    with_relation_map, with_origin)
                 if extra_type != 'json':
                     raise ValueError("Unexpected type")
 
@@ -458,10 +458,10 @@ class GridCachedMsgpackNodeProvider(GridCachedNodeProvider):
 class PostgisNodeProvider(BasicNodeProvider, metaclass=ABCMeta):
 
     CONNECTOR_STATEMENT_NAME = 'get_connectors_postgis'
-    connector_query:Optional[str] = None
+    connector_query: str
 
     TREENODE_STATEMENT_NAME = 'get_treenodes_postgis'
-    treenode_query:Optional[str] = None
+    treenode_query: str
 
     # Allows implementation to handle limit settings on its own
     managed_limit = True

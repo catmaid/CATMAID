@@ -165,7 +165,7 @@ class ClassificationAdminWizard(SessionWizardView):
         context['catmaid_url'] = settings.CATMAID_URL
 
         # The project links selection needs some extra context
-        extra_context = {}
+        extra_context: Dict = {}
         if self.steps.current == "taggroups":
             tag_groups = generate_tag_groups(True, False)
             extra_context['num_tag_groups'] = len(self.get_tag_group_list(tag_groups))

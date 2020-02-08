@@ -247,7 +247,7 @@ def copy_annotations(source_pid, target_pid, import_treenodes=True,
             SELECT
             FROM connector_treenode ct
             WHERE ct.project_id=%s
-            ''' % (target_pid, source_pid)) # FIXME "Not all arguments converted during string formatting"
+            ''' % (source_pid)) # FIXME this statement is not functional
 
     if import_annotations:
         try:

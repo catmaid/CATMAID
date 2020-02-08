@@ -243,13 +243,13 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
                 GROUP BY 1
             ) ann_link ON ci.id = ann_link.id
         """)
-        for n, annotation_id_set in enumerate(not_annotation_sets):
+        for n, anno_id_set in enumerate(not_annotation_sets):
             filters.append(f"""
                 NOT (ann_link.annotations && %(cici_ex{n}_ann)s)
             """)
-            params[f'cici_ex{n}_ann'] = list(annotation_id_set)
+            params[f'cici_ex{n}_ann'] = list(anno_id_set)
 
-    # The bassic query
+    # The basic query
     query = """
         SELECT {fields}
         FROM class_instance ci
@@ -749,7 +749,7 @@ def delete_annotation_if_unused(project, annotation, relation) -> Tuple[bool, in
         return True, 0
 
 def _annotate_entities(project_id:Union[int,str], entity_ids, annotation_map:Dict[str,Any],
-        update_existing=False) -> Tuple[Dict,Set]:
+        update_existing=False) -> Tuple[Dict,Set,Set]:
     """ Annotate the entities with the given <entity_ids> with the given
     annotations. These annotations are expected to come as dictionary of
     annotation name versus an object with at least the field 'user_id'

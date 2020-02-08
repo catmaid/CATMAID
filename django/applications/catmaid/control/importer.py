@@ -356,7 +356,7 @@ def get_projects_from_url(url, filter_term, headers=None, auth=None,
                 index.append((key, short_name))
     else:
         raise ValueError("Unrecognized content type in response of remote " + \
-                f"'{url}\': {content_type}, Content: {r.content}")
+                f"'{url}\': {content_type}, Content: {r.content.decode()}")
 
     return (index, projects, not_readable)
 

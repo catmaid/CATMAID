@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import json
-from typing import Dict, List
+from typing import Dict, List, Sequence, Tuple
 import yaml
 
 from django import forms
@@ -17,6 +17,9 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy
 from django.urls import reverse
 from guardian.admin import GuardedModelAdmin
+
+from django_typing import admin_property_decorator
+
 from catmaid.models import (Project, DataView, Stack, InterpolatableSection,
         ProjectStack, UserProfile, BrokenSlice, StackClassInstance, Relation,
         ClassInstance, Class, StackGroup, StackStackGroup, StackMirror,
@@ -434,7 +437,7 @@ class ProfileInline(admin.StackedInline):
         request object.
         """
         if request.user.is_superuser:
-            self.exclude = ()
+            self.exclude: Sequence[str] = ()
         else:
             self.exclude = ('color',)
         return super().get_formset(request, obj, **kwargs)
@@ -454,7 +457,7 @@ class GroupInactivityPeriodContactGroupInline(admin.StackedInline):
 
 class CustomUserAdmin(UserAdmin):
     inlines = [ProfileInline, GroupInactivityPeriodContactUserInline]
-    list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff',
+    list_display: Tuple = ('username', 'email', 'first_name', 'last_name', 'is_staff',
             'profile_primary_group')
     filter_horizontal = ('groups', 'user_permissions')
 
@@ -467,6 +470,7 @@ class CustomUserAdmin(UserAdmin):
             self.list_display = self.list_display + ('color',)
         return super().changelist_view(request, extra_context=extra_context)
 
+    @admin_property_decorator
     def profile_primary_group(self, u):
         return u.userprofile.primary_group
     profile_primary_group.short_description = "Primary group"
@@ -486,6 +490,7 @@ class CustomGroupAdmin(GroupAdmin):
         qs = qs.annotate(member_count=Count('user'))
         return qs
 
+    @admin_property_decorator
     def member_count(self, group_instance):
         return group_instance.member_count
     member_count.short_description = 'Member count'

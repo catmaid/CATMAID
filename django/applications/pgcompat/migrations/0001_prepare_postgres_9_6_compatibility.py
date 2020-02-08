@@ -45,9 +45,6 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
-
     operations = [
         migrations.RunSQL(forward, migrations.RunSQL.noop)
     ]

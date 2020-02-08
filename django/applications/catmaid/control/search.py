@@ -78,16 +78,16 @@ def search(request:HttpRequest, project_id=None) -> JsonResponse:
     # 3. Query labels in treenodes. First get a list of matching labels,
     # and then find a list of treenodes for each label.
     relation_map = get_relation_to_id_map(project_id)
-    matching_labels = set()
+    matching_labels_set = set()
     label_rows = {}
     for row in rows:
         # Prepare for retrieving nodes holding text labels
         if row['class_name'] == 'label':
-            matching_labels.add(row['name'])
+            matching_labels_set.add(row['name'])
             label_rows[row['id']] = row
 
-    # We need a set to pass it to psycopg2.
-    matching_labels = list(matching_labels)
+    # We need a list to pass it to psycopg2.
+    matching_labels = list(matching_labels_set)
 
     # Find treenodes with label. Use the UPPER() function to be able to use the
     # respective expression index, cutting down query times by a lot.

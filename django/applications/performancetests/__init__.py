@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import sys
-import gc
-import timeit
-import subprocess
 import compileall
+import gc
+import subprocess
+import sys
+from typing import List
+import timeit
 
 from django.conf import settings
 
@@ -157,7 +158,7 @@ class PerformanceTest(object):
         # Test all views
         self.log("Testing all %s views" % len(views))
         results = []
-        repeat_results = [[] for i in range(repeats)]
+        repeat_results: List[List] = [[] for i in range(repeats)]
         for v in views:
             # Ideally the DB cluster would be stopped here, OS caches would be
             # dropped (http://linux-mm.org/Drop_Caches) and then the DB cluster

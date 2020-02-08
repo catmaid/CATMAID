@@ -146,7 +146,6 @@ class DVIDImportWizard(SessionWizardView):
             project.save()
             # Create three links, each with a different orientation, if an
             # ortho project should be created. Link only one XY view otherwise.
-            views = (0, 1, 2) if ortho_stacks else (0,)
             for view, stack in new_stacks:
                 ps = ProjectStack(project=project,
                                   stack=stack,
@@ -154,7 +153,7 @@ class DVIDImportWizard(SessionWizardView):
                 ps.save()
 
             # Create a stack group if there are more than one views
-            if len(views) > 1:
+            if ortho_stacks:
                 view_relation = StackGroupRelation.objects.get(name='view')
                 sg = StackGroup.objects.create(title=project.title)
 

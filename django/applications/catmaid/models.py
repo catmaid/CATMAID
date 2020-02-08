@@ -1616,7 +1616,7 @@ class ReducedInfoUser(models.Model):
 
         # Override meta class model information for export. This is needed to
         # write out the correct model information (auth.user) for this class.
-        self._meta = UserOptionProxy(self._meta)
+        self._meta: Any = UserOptionProxy(self._meta)
 
     class Meta:
         managed = False
@@ -1645,7 +1645,7 @@ class ExportUser(models.Model):
 
         # Override meta class model information for export. This is needed to
         # write out the correct model information (auth.user) for this class.
-        self._meta = UserOptionProxy(self._meta)
+        self._meta: Any = UserOptionProxy(self._meta)
 
     class Meta:
         managed = False

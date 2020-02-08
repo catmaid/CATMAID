@@ -34,7 +34,7 @@ def make_version_link(version):
     matches = version_to_commit_regex.match(version)
     if matches:
         # Use only commit, e.g. 2015.5.27-513-gd0038be -> d0038be
-        v = matches.groups(1)[0]
+        v = matches.groups(1)[0]  # type: ignore
         return settings.PERFORMANCETEST_SCM_URL.format(version=v)
     else:
         return '#'

@@ -1431,7 +1431,7 @@ class ClassificationSearchWizard(SessionWizardView):
     def get_context_data(self, form, **kwargs):
         context = super().get_context_data(
                 form=form, **kwargs)
-        extra_context = {'workspace_pid': self.workspace_pid}
+        extra_context: Dict = {'workspace_pid': self.workspace_pid}
 
         if self.steps.current == 'features':
             extra_context['description'] = \

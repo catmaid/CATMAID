@@ -1,7 +1,7 @@
 from collections import defaultdict
 from itertools import chain
 import json
-from typing import Any, DefaultDict, Dict, List
+from typing import Any, DefaultDict, Dict, List, Optional, Tuple
 
 from django.db import connection
 from django.http import HttpRequest, JsonResponse
@@ -1179,7 +1179,7 @@ def add_all_intervals(request:HttpRequest, project_id, domain_id) -> JsonRespons
     # node is found.
     new_nodes:Dict = dict()
     for root_interval in existing_parent_intervals:
-        current_interval = root_interval
+        current_interval: Optional[Tuple[int, int]] = root_interval
         while current_interval:
             child_id = current_interval[1]
             new_child_data = added_node_index.get(child_id)
@@ -1208,7 +1208,7 @@ def add_all_intervals(request:HttpRequest, project_id, domain_id) -> JsonRespons
         if added_end_node_data:
             end_node = new_nodes[end_node].id
 
-        i = SamplerInterval.objects.create(
+        si = SamplerInterval.objects.create(
             domain=domain,
             interval_state=state,
             start_node_id=start_node,
@@ -1217,12 +1217,12 @@ def add_all_intervals(request:HttpRequest, project_id, domain_id) -> JsonRespons
             project_id=project_id)
 
         result_intervals.append({
-            "id": i.id,
-            "interval_state_id": i.interval_state_id,
-            "start_node_id": i.start_node_id,
-            "end_node_id": i.end_node_id,
-            "user_id": i.user_id,
-            "project_id": i.project_id
+            "id": si.id,
+            "interval_state_id": si.interval_state_id,
+            "start_node_id": si.start_node_id,
+            "end_node_id": si.end_node_id,
+            "user_id": si.user_id,
+            "project_id": si.project_id
         })
 
     return JsonResponse({

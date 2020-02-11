@@ -16,6 +16,7 @@ from catmaid.models import (Class, ClassInstance, Relation, SamplerDomainType,
 # descriptions.
 needed_classes = {
     'group': "A group",
+    'annotation': "A generic semantic annotation",
     'label': "A label",
     'neuron': "A neuron representation",
     'root': "The root node for the tracing system",
@@ -37,6 +38,7 @@ needed_relations = {
     'attached_to': "Something is considered attached/linked to something else",
     'adjacent_to': { 'description': "Next to each other", 'isreciprocal': True },
     'mirror_of': { 'description': "A mirror configuration to each other", 'isreciprocal': True },
+    'annotated_with': "Something is annotated with sth. else.",
 }
 
 # Expected sampler states, sampler interval sates and sampler domain types

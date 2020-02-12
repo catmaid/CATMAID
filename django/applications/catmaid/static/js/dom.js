@@ -1578,6 +1578,8 @@
    * @return {Element[]}         An array of the constructed elements.
    */
   DOM.appendToTab = function(tab, elements) {
+    if (!elements) return;
+
     return elements.map(function(e) {
       if (Array.isArray(e)) {
         switch (e.length) {
@@ -1592,6 +1594,84 @@
         return CATMAID.DOM.appendElement(tab, e);
       }
     });
+  };
+
+  DOM.asTabbedWidget = function(widget, availableModes, modes,
+      defaultMode, updateFn) {
+    widget._modes = modes;
+    widget._mode = defaultMode;
+    widget._availableModes = availableModes;
+
+    widget.setMode = function(mode) {
+      let index = this._modes.indexOf(mode);
+      if (index === -1) {
+        throw new CATMAID.ValueError('Unknown widget mode: ' + mode);
+      }
+      this._mode = mode;
+      CATMAID.tools.callIfFn(updateFn);
+      return true;
+    };
+
+    widget.createTabControls = function(controls, tabSuffix) {
+      let tabNames = this._modes.map(m => widget._availableModes[m].title);
+      let tabs = CATMAID.DOM.addTabGroup(controls, tabSuffix, tabNames);
+      this._modes.forEach((modeId, i) => {
+        let mode = this._availableModes[modeId];
+        let tab = tabs[mode.title];
+        CATMAID.DOM.appendToTab(tab, mode.createControls(this));
+        tab.dataset.index = i;
+      }, this);
+      widget._tabControls = $(controls).tabs({
+        active: this._modes.indexOf(this._mode),
+        activate: function(event, ui) {
+          let oldStepIndex = parseInt(ui.oldPanel.attr('data-index'), 10);
+          let newStepIndex = parseInt(ui.newPanel.attr('data-index'), 10);
+
+          let tabs = $(widget._tabControls);
+          let activeIndex = tabs.tabs('option', 'active');
+          if (activeIndex !== widget._modes.indexOf(widget._mode)) {
+            if (!widget.setMode(widget._modes[activeIndex])) {
+              // Return to old tab if selection was unsuccessful
+              if (oldStepIndex !== newStepIndex) {
+                $(event.target).tabs('option', 'active', oldStepIndex);
+              }
+            }
+            CATMAID.tools.callIfFn(updateFn);
+          }
+        }
+      });
+    };
+
+    widget.updateTabContent = function(content) {
+      if (!widget._tabControls) {
+        return;
+      }
+      // Clear content
+      while (content.lastChild) {
+        content.removeChild(content.lastChild);
+      }
+      let tabs = $(widget._tabControls);
+      let activeIndex = tabs.tabs('option', 'active');
+      let widgetIndex = widget._modes.indexOf(widget._mode);
+      if (activeIndex !== widgetIndex) {
+        tabs.tabs('option', 'active', widgetIndex);
+      }
+
+      let mode = widget._availableModes[widget._mode];
+
+      // Update actual content and remove any message
+      delete content.dataset.msg;
+      mode.createContent(content, widget);
+    };
+
+    widget.refreshTabContent = function() {
+      let mode = this._availableModes[this._mode];
+      if (CATMAID.tools.isFn(mode.refresh)) {
+        mode.refresh(this);
+      }
+    };
+
+    return widget;
   };
 
   /**

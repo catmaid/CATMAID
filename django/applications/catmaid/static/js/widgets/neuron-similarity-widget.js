@@ -28,8 +28,9 @@
     // A currently displayed import job in the point cloud tab.
     this.importJob = null;
 
-    this.mode = 'similarity';
-    this.modes = ['similarity', 'configrations', 'pointclouds', 'pointcloud-import'];
+    CATMAID.DOM.asTabbedWidget(this, NeuronSimilarityWidget.Modes,
+        ['similarity', 'configrations', 'pointclouds', 'pointcloud-import'],
+        'similarity', () => this.update());
 
     this.neuronNameService = CATMAID.NeuronNameService.getInstance();
 
@@ -69,37 +70,8 @@
     return {
       controlsID: this.idPrefix + 'controls',
       createControls: function(controls) {
-        var self = this;
-        var tabNames = this.modes.map(function(m) {
-          return NeuronSimilarityWidget.Modes[m].title;
-        }, this);
-        var tabs = CATMAID.DOM.addTabGroup(controls, '-neuron-similarity', tabNames);
-        this.modes.forEach(function(mode, i) {
-          var mode = NeuronSimilarityWidget.Modes[mode];
-          var tab = tabs[mode.title];
-          CATMAID.DOM.appendToTab(tab, mode.createControls(this));
-          tab.dataset.index = i;
-        }, this);
         this.controls = controls;
-        this.tabControls = $(controls).tabs({
-          active: this.modes.indexOf(this.mode),
-          activate: function(event, ui) {
-            var oldStepIndex = parseInt(ui.oldPanel.attr('data-index'), 10);
-            var newStepIndex = parseInt(ui.newPanel.attr('data-index'), 10);
-
-            var tabs = $(self.tabControls);
-            var activeIndex = tabs.tabs('option', 'active');
-            if (activeIndex !== self.modes.indexOf(self.mode)) {
-              if (!self.setMode(self.modes[activeIndex])) {
-                // Return to old tab if selection was unsuccessful
-                if (oldStepIndex !== newStepIndex) {
-                  $(event.target).tabs('option', 'active', oldStepIndex);
-                }
-              }
-              self.update();
-            }
-          }
-        });
+        this.createTabControls(controls, '-neuron-similarity');
       },
       contentID: this.idPrefix + 'content',
       createContent: function(content) {
@@ -257,39 +229,11 @@
   };
 
   NeuronSimilarityWidget.prototype.refresh = function() {
-    let mode = NeuronSimilarityWidget.Modes[this.mode];
-    if (CATMAID.tools.isFn(mode.refresh)) {
-      mode.refresh(this);
-    }
+    this.refreshTabContent();
   };
 
   NeuronSimilarityWidget.prototype.update = function() {
-    // Clear content
-    while (this.content.lastChild) {
-      this.content.removeChild(this.content.lastChild);
-    }
-    var tabs = $(this.tabControls);
-    var activeIndex = tabs.tabs('option', 'active');
-    var widgetIndex = this.modes.indexOf(this.mode);
-    if (activeIndex !== widgetIndex) {
-      tabs.tabs('option', 'active', widgetIndex);
-    }
-
-    let mode = NeuronSimilarityWidget.Modes[this.mode];
-
-    // Update actual content
-    delete this.content.dataset.msg;
-    mode.createContent(this.content, this);
-  };
-
-  NeuronSimilarityWidget.prototype.setMode = function(mode) {
-    var index = this.modes.indexOf(mode);
-    if (index === -1) {
-      throw new CATMAID.ValueError('Unknown Neuron Similarity Widget mode: ' + mode);
-    }
-    this.mode = mode;
-    this.update();
-    return true;
+    this.updateTabContent(this.content);
   };
 
   NeuronSimilarityWidget.prototype.handleAddedConfig = function(config) {

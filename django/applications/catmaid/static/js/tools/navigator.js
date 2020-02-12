@@ -461,7 +461,7 @@
     var actions = [
 
       new CATMAID.Action({
-        helpText: "Zoom in (smaller increments with <kbd>Shift</kbd> held; hold with <kbd>Ctrl</kbd> to animate)",
+        helpText: "Zoom in (<kbd>Shift</kbd>: smaller increments; <kbd>Ctrl</kbd>: animated movement)",
         keyShortcuts: {
           '+': [ '+', '=', 'Ctrl + =', 'Ctrl + Shift + =', 'Shift + +' ]
         },
@@ -476,7 +476,7 @@
       }),
 
       new CATMAID.Action({
-        helpText: "Zoom out (smaller increments with <kbd>Shift</kbd> held; hold with <kbd>Ctrl</kbd> to animate)",
+        helpText: "Zoom out (<kbd>Shift</kbd>: smaller increments; <kbd>Ctrl</kbd>: animated movement)",
         keyShortcuts: {
           '-': [ '-', 'Ctrl + -', 'Ctrl + Shift + -', 'Shift + -' ]
         },
@@ -491,7 +491,7 @@
       }),
 
       new CATMAID.Action({
-        helpText: "Move back 1 slice in z (10x with <kbd>Shift</kbd> held; proportionate to zoom level with <kbd>Alt</kbd> held; hold with <kbd>Ctrl</kbd> to animate)",
+        helpText: "Move back 1 slice in z (<kbd>Shift</kbd>: larger steps; <kbd>Alt</kbd>: proportionate to zoom level; <kbd>Ctrl</kbd>: animated movement)",
         keyShortcuts: {
           ',': CATMAID.modifierKeyCombinationStrings(['Shift', 'Ctrl', 'Alt'], ',')
         },
@@ -508,7 +508,7 @@
       }),
 
       new CATMAID.Action({
-        helpText: "Move forward 1 slice in z (10x with <kbd>Shift</kbd> held; proportionate to zoom level with <kbd>Alt</kbd> held; hold with <kbd>Ctrl</kbd> to animate)",
+        helpText: "Move forward 1 slice in z (<kbd>Shift</kbd>: larger steps; <kbd>Alt</kbd>: proportionate to zoom level; <kbd>Ctrl</kbd>: animated movement)",
         keyShortcuts: {
           '.': CATMAID.modifierKeyCombinationStrings(['Shift', 'Ctrl', 'Alt'], '.')
         },

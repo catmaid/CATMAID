@@ -188,6 +188,7 @@
       if (e.ctrlKey || e.metaKey) { // Zoom.
         self.slider_s.move(w, !e.shiftKey);
       } else { // Move sections.
+        if (e.altKey) w *= Math.round(Math.pow(2, self.stackViewer.s));
         if (e.shiftKey) w *= Navigator.Settings.session.major_section_step;
         self.slider_z.move(w);
       }
@@ -798,6 +799,7 @@
       result += '<li><strong>Middle mouse drag:</strong> pan the view</li>';
       result += '<li><strong>Mouse wheel:</strong> move up/down 1 section in z</li>';
       result += '<li><strong>Mouse wheel with <kbd>Shift</kbd>:</strong> move up/down 10 sections in z</li>';
+      result += '<li><strong>Mouse wheel with <kbd>Alt</kbd>:</strong> move up/down in z proportionate to zoom level</li>';
       result += '<li><strong>Mouse wheel with <kbd>Ctrl</kbd>:</strong> zoom in/out to the next integer zoom level</li>';
       result += '<li><strong>Mouse wheel with <kbd>Ctrl</kbd> and <kbd>Shift</kbd>:</strong> zoom in/out 1/10th of a zoom level</li>';
       result += '</ul>';

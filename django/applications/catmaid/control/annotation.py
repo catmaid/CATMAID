@@ -49,7 +49,7 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
         allowed_classes=['neuron', 'annotation'], sort_by=None, sort_dir=None,
         range_start=None, range_length=None, with_annotations:bool=True,
         with_skeletons:bool=True, with_timestamps:bool=False,
-        import_only:Union[None, str]=None) -> Tuple[List, int]:
+        import_only:Union[None, str]=None, ignore_nonexisting:bool=False) -> Tuple[List, int]:
     """Get a list of annotated entities based on the passed in search criteria.
     """
     if not relations:
@@ -99,6 +99,8 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
         def to_id(inval) -> int: # Python wants the signatures for "conditional program variants" to be the same, incl variable names
             id = annotation_id_map.get(inval)
             if not id:
+                if ignore_nonexisting:
+                    return None
                 raise ValueError("Unknown annotation: " + inval)
             return id
     else:
@@ -110,15 +112,15 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
     for key in params:
         if key.startswith('annotated_with'):
             if len(params[key]) > 0:
-                annotation_set = frozenset(to_id(a) for a in params[key].split(','))
+                annotation_set = frozenset(to_id(a) for a in params[key].split(',') if to_id(a) is not None)
                 annotation_sets.add(annotation_set)
         elif key.startswith('not_annotated_with'):
             if len(params[key]) > 0:
-                not_annotation_set = frozenset(to_id(a) for a in params[key].split(','))
+                not_annotation_set = frozenset(to_id(a) for a in params[key].split(',') if to_id(a) is not None)
                 not_annotation_sets.add(not_annotation_set)
         elif key.startswith('sub_annotated_with'):
             if len(params[key]) > 0:
-                annotation_set = frozenset(to_id(a) for a in params[key].split(','))
+                annotation_set = frozenset(to_id(a) for a in params[key].split(',') if to_id(a) is not None)
                 annotation_sets_to_expand.add(annotation_set)
 
     filters = [
@@ -574,6 +576,14 @@ def query_annotated_classinstances(request:HttpRequest, project_id:Optional[Unio
         type: string
         required: false
         paramType: form
+      - name: ignore_nonexisting
+        description: |
+            Whether non-existing query annotations should be ignored instead of
+            raising an error.
+        type: boolean
+        required: false
+        defaultValue: false
+        paramType: form
     models:
       annotated_entity:
         id: annotated_entity
@@ -629,11 +639,13 @@ def query_annotated_classinstances(request:HttpRequest, project_id:Optional[Unio
     with_annotations = get_request_bool(request.POST, 'with_annotations', False)
     with_timestamps = get_request_bool(request.POST, 'with_timestamps', False)
     import_only = request.POST.get('import_only', None)
+    import_only = request.POST.get('import_only', None)
+    ignore_nonexisting = get_request_bool(request.POST, 'ignore_nonexisting', False)
 
     entities, num_total_records = get_annotated_entities(p.id, request.POST,
             relations, classes, allowed_classes, sort_by, sort_dir, range_start,
             range_length, with_annotations, with_timestamps=with_timestamps,
-            import_only=import_only)
+            import_only=import_only, ignore_nonexisting=ignore_nonexisting)
 
     return JsonResponse({
         'entities': entities,

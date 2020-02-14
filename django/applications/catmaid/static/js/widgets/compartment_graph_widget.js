@@ -1188,10 +1188,12 @@
                     node_count: 0,
                     color: color,
                     label_color: color},
-          createNode = function(id, label, is_branch) {
+          createNode = (id, label, is_branch) => {
             return {data: $.extend(is_branch ? {branch: true} : {}, common,
               {id: id,
                label: label,
+               node_height: this.node_height,
+               node_width: this.node_width,
                upstream_skids: {}, // map of skeleton ID vs number of postsynaptic relations
                downstream_skids: {}})}; // map of skeleton ID vs number of presynaptic relations
           };

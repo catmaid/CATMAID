@@ -208,6 +208,18 @@
     },
 
     /**
+     * Remoe the annotations in the first list and adds the annotations in the
+     * second set.
+     */
+    replaceAnnotations: function(projectId, targetIds, annotationsToRemove, annotationsToAdd) {
+      return CATMAID.fetch(`${projectId}/annotations/replace`, 'POST', {
+        'target_ids': targetIds,
+        'to_remove': annotationsToRemove,
+        'to_add': annotationsToAdd,
+      });
+    },
+
+    /**
      * Annotate all neurons of the passed in skeletons with the base name of their
      * neurons.
      */

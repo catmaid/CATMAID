@@ -1170,6 +1170,48 @@ def _remove_annotation(user, project_id:Union[int,str], entity_ids, annotation_i
 
     return cicis_to_delete, missed_cicis, deleted, num_left
 
+@api_view(['POST'])
+@requires_user_role(UserRole.Annotate)
+def replace_annotations(request:HttpRequest, project_id=None) -> JsonResponse:
+    """ Replace a set of annotations for a list of target class instances by
+    removing a set of annotations and adding another one.
+    """
+    to_remove = set(get_request_list(request.POST, 'to_remove', []))
+    to_add = set(get_request_list(request.POST, 'to_add', []))
+    target_ids = get_request_list(request.POST, 'target_ids', [], map_fn=int)
+
+    cursor = connection.cursor()
+    classes = get_class_to_id_map(project_id, ('annotation',), cursor)
+
+    id_map = dict(ClassInstance.objects.filter(name__in=to_remove.union(to_add),
+            project_id=project_id).values_list('name', 'id'))
+
+    deleted_total = 0
+    for a in to_remove:
+        annotation_id = id_map.get(a)
+        # Non-existant annotations don't need to be removed
+        if annotation_id is None:
+            continue
+        cicis_to_delete, missed_cicis, deleted, num_left = _remove_annotation(
+                request.user, project_id, target_ids, annotation_id)
+        deleted_total += deleted
+
+    to_add_map = {}
+    for a in to_add:
+        to_add_map[a] = {
+            'user_id': request.user.id,
+        }
+    annotations, new_annotations, existing_annotation = _annotate_entities(project_id,
+            target_ids, to_add_map)
+    print(annotations)
+    print(new_annotations)
+    print(existing_annotation)
+
+    return JsonResponse({
+        'n_linked_annotations': len(new_annotations) + len(existing_annotation),
+        'n_unlinked_annotations': deleted_total,
+    })
+
 def create_annotation_query(project_id, param_dict):
 
     classes = dict(Class.objects.filter(project_id=project_id).values_list('class_name', 'id'))

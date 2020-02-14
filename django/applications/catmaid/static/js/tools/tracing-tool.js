@@ -2428,26 +2428,6 @@
   TracingTool.actions = [
 
     new CATMAID.Action({
-      helpText: "Neuron Similarity: Compare between skeletons",
-      buttonID: "data_button_similarity",
-      buttonName: 'table_similarity',
-      run: function (e) {
-        WindowMaker.show('neuron-similarity');
-        return true;
-      }
-    }),
-
-    new CATMAID.Action({
-      helpText: "Neuroglancer Widget: Interact with Neuroglancer",
-      buttonID: "data_button_neuroglancer",
-      buttonName: 'table_review',
-      run: function (e) {
-        WindowMaker.show('neuroglancer');
-        return true;
-      }
-    }),
-
-    new CATMAID.Action({
       helpText: "Review Widget: Review existing skeletons",
       buttonID: "data_button_review",
       buttonName: 'table_review',
@@ -2622,6 +2602,26 @@
       buttonName: 'synapse_fractions',
       run: function (e) {
         WindowMaker.create('synapse-fractions');
+        return true;
+      }
+    }),
+
+    new CATMAID.Action({
+      helpText: "Neuron Similarity: Compare between skeletons",
+      buttonID: "data_button_similarity",
+      buttonName: 'table_similarity',
+      run: function (e) {
+        WindowMaker.show('neuron-similarity');
+        return true;
+      }
+    }),
+
+    new CATMAID.Action({
+      helpText: "Neuroglancer Widget: Interact with Neuroglancer",
+      buttonID: "data_button_neuroglancer",
+      buttonName: 'neuroglancer',
+      run: function (e) {
+        WindowMaker.show('neuroglancer');
         return true;
       }
     }),

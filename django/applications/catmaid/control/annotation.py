@@ -362,6 +362,10 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
             'type': class_name,
         }
 
+        if with_timestamps:
+            entity_info['creation_time'] = ent[2]
+            entity_info['edition_time'] = ent[3]
+
         # Depending on the type of entity, some extra information is added.
         if class_name == 'neuron':
             entity_info['skeleton_ids'] = ent[7]

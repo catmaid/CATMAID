@@ -553,6 +553,9 @@ Miscellaneous:
   between two nodes. They would be shown twice before, once for each of the
   partners being the "source" or "target".
 
+- Graph widget: apply currently selected layout after graph update. This fixes
+  occasional fall-backs to the force-directed layout.
+
 - SWC skeleton import: if `force = true`, treenodes of a replaced skeleton are
   now correctly removed on a successful import.
 

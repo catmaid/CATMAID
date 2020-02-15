@@ -101,6 +101,7 @@
     this.tag_title_others = '';
 
     this.layout_fit = true;
+    this.selectedLayoutIndex = 0;
 
     this.layout_options = {
       preset: {
@@ -352,7 +353,8 @@
                 GG.loadFromFile(evt.target.files);
               }));
 
-        var layout = CATMAID.DOM.appendSelect(tabs['Nodes'], null, null, GG.layoutStrings);
+        var layout = CATMAID.DOM.appendSelect(tabs['Nodes'], null, null, GG.layoutStrings,
+          "The layout to use for the graph", undefined, e => this.selectedLayoutIndex = e.target.selectedIndex);
 
         var edges = document.createElement('select');
         edges.setAttribute('id', 'graph_edge_threshold' + GG.widgetID);
@@ -381,7 +383,7 @@
         linkTypeSelectionWrapper.appendChild(linkTypeSelection);
 
         CATMAID.DOM.appendToTab(tabs['Nodes'],
-            [['Re-layout', GG.updateLayout.bind(GG, layout, null)],
+            [['Re-layout', () => GG.updateLayout(layout.selectedIndex, null)],
              [' fit', true, GG.toggleLayoutFit.bind(GG), true],
              [document.createTextNode(' - Color: ')],
              [CATMAID.DOM.createSelect('graph_color_choice' + GG.widgetID,
@@ -1063,8 +1065,7 @@
            "Arbor (force-directed)", "Springy (force-directed)"];
 
   /** Unlocks locked nodes, if any, when done. */
-  GroupGraph.prototype.updateLayout = function(layout, callback) {
-    var index = layout ? layout.selectedIndex : 0;
+  GroupGraph.prototype.updateLayout = function(index = 0, callback = undefined) {
     var name = ['spread', 'breadthfirst', 'grid', 'circle', 'concentric', 'concentric out', 'concentric in', 'random', 'cose', 'preset', 'dagre', 'cola', 'arbor', 'springy'][index];
     var options = this.createLayoutOptions(name);
     options.stop = function() { if (callback) callback(); };
@@ -1761,7 +1762,7 @@
     this.cy.endBatch();
 
     this.updateLayout(
-        null,
+        this.selectedLayoutIndex,
         (function() {
           this.cy.nodes().each(function(i, node) {
             // All old nodes and newly formed groups (from old nodes) are locked

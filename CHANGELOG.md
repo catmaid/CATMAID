@@ -74,7 +74,7 @@
 - The application of migrations 88-91 and 98-99 might take a while to complete,
   because they rewrite potentially big database table (treenode_edge, treenode,
   class_instance, and more). Therefore, make also sure that there is enough
-  space available at the database storate location (25% of database data
+  space available at the database storage location (25% of database data
   directory should be plenty). If no replication is used, setting the following
   Postgres options can speed up the process: `wal_level = minimal`,
   `archive_mode = off` and `max_wal_senders = 0`.
@@ -188,7 +188,7 @@ Tracing tool:
 - Skeleton splitting: if a skeleton sampler was in use, a split could so far
   only be successfully executed if the split node is within a sampler domain.
   This is fixed now and sampled skeletons can now be split upstream or
-  downstream of a domain as well. If split uptream, the domain will be deleted,
+  downstream of a domain as well. If split upstream, the domain will be deleted,
   because it is part of the split-off fragment.
 
 Tracing overlay:
@@ -585,6 +585,7 @@ Miscellaneous:
 - 3D Viewer: fix skeleton vs. name CSV in "Synapses as CSV" export.
 
 - Measurement table: fix CSV export for aggregated multi-fragment results.
+
 
 ## 2019.06.20
 

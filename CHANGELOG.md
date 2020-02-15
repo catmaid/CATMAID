@@ -125,6 +125,12 @@ CLI importer:
 - Performance improvement: only the skeleton summary entries of the imported
   skeletons are now created.
 
+- Only update treenode edges and skeleton summary if treenodes were actually
+  imported (rather than e.g. only volumes).
+
+- Add --auto-name-unknown-users option, to automatically generate names for
+  users that are not available from an import, but referenced in it (by ID).
+
 CLI exporter:
 
 - The new --annotation-annotation option allows to specify a meta-annotation
@@ -133,6 +139,8 @@ CLI exporter:
   "exportable" and "--annotation-annotation exportable" is used, only
   annotations from those annotation hierarchies marked as "exportable" will be
   exported. Without this option, all annotations are exported.
+
+- If users should be exported, also export users of volumes.
 
 Project statistics:
 
@@ -171,6 +179,16 @@ Tracing tool:
   are marked "stable", the merge is canceled. This can be disabled by setting
   the project or instance setting "Stable join annotation" in the Tracing
   section of the Settings Widget to an empty string.
+
+- Alt + G will now select the closest node in the active skeleton. If no
+  skeleton is selected, the globally closest node is select. Regular G works as
+  before in the current section.
+
+- Skeleton splitting: if a skeleton sampler was in use, a split could so far
+  only be successfully executed if the split node is within a sampler domain.
+  This is fixed now and sampled skeletons can now be split upstream or
+  downstream of a domain as well. If split uptream, the domain will be deleted,
+  because it is part of the split-off fragment.
 
 Tracing overlay:
 
@@ -256,6 +274,12 @@ Administration:
   Clicking "Only non-user groups" will now only show groups with a name that
   isn't a username. Additionally, it is possible to filter by a minimum and
   maximum number of group members.
+
+- Settings: add CLIENT_SETTINGS and FORCE_CLIENT_SETTINGS options so that
+  an initial instance-wide client configuration can be specified.
+
+- Setup: the create_configuration.py script will now create backups of existing
+  settings.py and django.wsgi files.
 
 Volumes:
 
@@ -361,6 +385,9 @@ Neuron navigator:
   instances, not only between all 3D Viewers like it is done now. This means
   they are also persisted on the back-end and can be retrieved at a later point.
 
+- 3D viewer: the line width has now an upper limit of 25px to prevent crashes of
+  the 3D viewer with larger values and many skeletons.
+
 Neuroglancer widget:
 
 - CATMAID now includes a copy of Neuroglancer that can be accessed at
@@ -458,6 +485,17 @@ Miscellaneous:
   problem, because all widgets can be reached through the "Open Widget" dialog
   or Ctrl + Space.
 
+- Potential WebGL performance problems are now detected when stacks and stack
+  groups are loaded. If problems are expected by the browser, a warning is
+  shown.
+
+- Spatial update worker: cache cells are not queued for updates anymore if the
+  source project of a spatial event doesn't have any caches.
+
+- Data views: add option "show_empty_projects" to simple project list data view.
+  It is false by default and can be turned on to show empty projects, including
+  the classification dummy project.
+
 ### Bug fixes
 
 - Connector list: dates are now display correctly.
@@ -507,21 +545,10 @@ Miscellaneous:
   between two nodes. They would be shown twice before, once for each of the
   partners being the "source" or "target".
 
-## Maintenance updates
-
-- CLI Exporter: if users should be exported, also export users of volumes.
-
-- CLI Importer: only update treenode edges and skeleton summary if treenodes
-  were actually imported (rather than e.g. only volumes).
-
-- CLI Importer: add --auto-name-unknown-users option, to automatically generate
-  names for users that are not available from an import, but referenced in it
-  (by ID).
-
-- CLI Importer: creating unknown users manually works now as expected.
-
 - SWC skeleton import: if `force = true`, treenodes of a replaced skeleton are
   now correctly removed on a successful import.
+
+- CLI Importer: creating unknown users manually works now as expected.
 
 - Node filters: the application of node filters with rules applied in an
   intersected fashion is fixed now and the filtered result of all skeletons is
@@ -529,10 +556,6 @@ Miscellaneous:
 
 - Spatial update notifications: only try to update the database configuration if
   the database isn't running as a database replica.
-
-- Potential WebGL performance problems are now detected when stacks and stack
-  groups are loaded. If problems are expected by the browser, a warning is
-  shown.
 
 - Synapse plot: fix read-out of settings input fields.
 
@@ -547,9 +570,6 @@ Miscellaneous:
 
 - Graph widget: fix error caused by quickly refreshing the graph successively.
 
-- Settings: add CLIENT_SETTINGS and FORCE_CLIENT_SETTINGS options so that
-  an initial instance-wide client configuration can be specified.
-
 - Neuron navigator: fix name display after rename of neuron.
 
 - Neuron search: the tab key focus order within one widget is now maintained if
@@ -562,29 +582,6 @@ Miscellaneous:
   neuron naming) is now adjusted automatically to fit the content.
 
 - 3D Viewer: fix skeleton vs. name CSV in "Synapses as CSV" export.
-
-- Tracing tool: Alt + G will now select the closest node in the active skeleton.
-  If no skeleton is selected, the globally closest node is select. Regular G
-  works as before in the current section.
-
-- Spatial update worker: cache cells are not queued for updates anymore if the
-  source project of a spatial event doesn't have any caches.
-
-- Setup: the create_configuration.py script will now create backups of existing
-  settings.py and django.wsgi files.
-
-- 3D viewer: the line width has now an upper limit of 25px to prevent crashes of
-  the 3D viewer with larger values and many skeletons.
-
-- Skeleton splitting: if a skeleton sampler was in use, a split could so far
-  only be successfully executed if the split node is within a sampler domain.
-  This is fixed now and sampled skeletons can now be split upstream or
-  downstream of a domain as well. If split uptream, the domain will be deleted,
-  because it is part of the split-off fragment.
-
-- Data views: add option "show_empty_projects" to simple project list data view.
-  It is false by default and can be turned on to show empty projects, including
-  the classification dummy project.
 
 - Measurement table: fix CSV export for aggregated multi-fragment results.
 

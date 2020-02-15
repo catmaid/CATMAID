@@ -7,12 +7,14 @@ import re
 from typing import Any, Dict
 from unittest import skipIf
 
-from django.db import transaction
+from django.db import connection, transaction
 from django.shortcuts import get_object_or_404
 from guardian.shortcuts import assign_perm
 
+from catmaid.control.annotation import _annotate_entities
 from catmaid.models import (
-    ClassInstance, ClassInstanceClassInstance, Log, Review, TreenodeConnector, ReviewerWhitelist, Treenode, User
+    ClassInstance, ClassInstanceClassInstance, Log, Review, TreenodeConnector,
+    ReviewerWhitelist, Treenode, User, ClientDatastore, ClientData
 )
 
 from .common import CatmaidApiTestCase, CatmaidApiTransactionTestCase
@@ -793,6 +795,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
                 'fromid': link_from,
                 'result_skeleton_id': 2411,
                 'deleted_skeleton_id': 2388,
+                'stable_annotation_swap': False,
                 'toid': link_to}
         self.assertEqual(expected_result, parsed_response)
 
@@ -804,6 +807,137 @@ class SkeletonsApiTests(CatmaidApiTestCase):
 
         self.assertEqual(0, ClassInstance.objects.filter(id=2388).count())
         self.assertEqual(0, ClassInstanceClassInstance.objects.filter(id=2390).count())
+
+        self.assertEqual(new_skeleton_id, get_object_or_404(TreenodeConnector, id=2405).skeleton_id)
+
+
+    def test_join_skeletons_with_two_stable_annotations_disabled(self):
+        self.fake_authentication()
+
+        new_root = 2394
+        link_to = 2394 # Skeleton ID: 2388, Neuron ID: 2389
+        link_from = 2415 # Skeleton ID: 2411, Neuron ID 2412
+
+        count_logs = lambda: Log.objects.all().count()
+        log_count = count_logs()
+        new_skeleton_id = get_object_or_404(Treenode, id=link_from).skeleton_id
+
+        # Annotate both neueons as stable, we expect the join to fail then.
+        _annotate_entities(self.test_project_id, [2389, 2412],
+                {'stable': {'user_id': self.test_user_id}})
+
+        cds, _ = ClientDatastore.objects.get_or_create(name='settings')
+        cd, _ = ClientData.objects.get_or_create(datastore=cds,
+                project_id=self.test_project_id, user=None,
+                key="skeleton-annotations")
+
+        last_component = cd.value
+        for c in ['entries', 'stable_join_annotation', 'value']:
+            if c not in last_component:
+                new_component = {}
+                last_component[c] = new_component
+                last_component = new_component
+            else:
+                last_component = last_component[c]
+        cd.value['entries']['stable_join_annotation']['value'] = ''
+        cd.save()
+
+        response = self.client.post(
+                '/%d/skeleton/join' % self.test_project_id, {
+                    'from_id': link_from,
+                    'to_id': link_to,
+                    'annotation_set': '{}'})
+        parsed_response = json.loads(response.content.decode('utf-8'))
+
+        expected_result = {
+                'message': 'success',
+                'fromid': link_from,
+                'result_skeleton_id': 2411,
+                'deleted_skeleton_id': 2388,
+                'stable_annotation_swap': False,
+                'toid': link_to}
+        self.assertEqual(expected_result, parsed_response)
+
+        self.assertEqual(1 + log_count, count_logs())
+
+        self.assertTreenodeHasProperties(2396, 2394, new_skeleton_id)
+        self.assertTreenodeHasProperties(2392, 2394, new_skeleton_id)
+        self.assertTreenodeHasProperties(2394, 2415, new_skeleton_id)
+
+        self.assertEqual(0, ClassInstance.objects.filter(id=2388).count())
+        self.assertEqual(0, ClassInstanceClassInstance.objects.filter(id=2390).count())
+
+        self.assertEqual(new_skeleton_id, get_object_or_404(TreenodeConnector, id=2405).skeleton_id)
+
+
+    def test_join_skeletons_with_two_stable_annotations(self):
+        self.fake_authentication()
+
+        new_root = 2394
+        link_to = 2394 # Skeleton ID: 2388, Neuron ID: 2389
+        link_from = 2415 # Skeleton ID: 2411, Neuron ID 2412
+
+        count_logs = lambda: Log.objects.all().count()
+        log_count = count_logs()
+        new_skeleton_id = get_object_or_404(Treenode, id=link_from).skeleton_id
+
+        # Annotate both neueons as stable, we expect the join to fail then.
+        _annotate_entities(self.test_project_id, [2389, 2412],
+                {'stable': {'user_id': self.test_user_id}})
+
+        response = self.client.post(
+                '/%d/skeleton/join' % self.test_project_id, {
+                    'from_id': link_from,
+                    'to_id': link_to,
+                    'annotation_set': '{}'})
+        self.assertStatus(response, code=400)
+        parsed_response = response.content.decode('utf-8')
+        self.assertIn('both are marked as stable', parsed_response)
+
+
+    def test_join_skeletons_with_one_stable_annotation(self):
+        self.fake_authentication()
+
+        new_root = 2394
+        link_to = 2394 # Skeleton ID: 2388, Neuron ID: 2389
+        link_from = 2415 # Skeleton ID: 2411, Neuron ID 2412
+
+        count_logs = lambda: Log.objects.all().count()
+        log_count = count_logs()
+        new_skeleton_id = get_object_or_404(Treenode, id=link_to).skeleton_id
+
+        # Annotate both neueons as stable, we expect the join to fail then.
+        _annotate_entities(self.test_project_id, [2389],
+                {'stable': {'user_id': self.test_user_id}})
+
+        response = self.client.post(
+                '/%d/skeleton/join' % self.test_project_id, {
+                    'from_id': link_from,
+                    'to_id': link_to,
+                    'annotation_set': '{}'})
+        self.assertStatus(response)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+
+        # The result order should be different from what we specified, because
+        # of the stable annotation swap.
+        expected_result = {
+                'message': 'success',
+                'fromid': link_from,
+                'result_skeleton_id': 2388,
+                'deleted_skeleton_id': 2411,
+                'stable_annotation_swap': True,
+                'toid': link_to}
+        self.assertEqual(expected_result, parsed_response)
+
+        self.assertEqual(1 + log_count, count_logs())
+
+        self.assertTreenodeHasProperties(2392, None, new_skeleton_id)
+        self.assertTreenodeHasProperties(2394, 2392, new_skeleton_id)
+        self.assertTreenodeHasProperties(2396, 2394, new_skeleton_id)
+
+        self.assertEqual(1, ClassInstance.objects.filter(id=2388).count())
+        self.assertEqual(0, ClassInstance.objects.filter(id=2411).count())
+        self.assertEqual(1, ClassInstanceClassInstance.objects.filter(id=2390).count())
 
         self.assertEqual(new_skeleton_id, get_object_or_404(TreenodeConnector, id=2405).skeleton_id)
 

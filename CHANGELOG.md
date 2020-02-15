@@ -166,6 +166,12 @@ Tracing tool:
   Settings Widget in the Tracing Overlay section, option "Remote node marker". A
   ring is used by default.
 
+- Merges will now by default respect the special annotation "stable". If a
+  neuron is marked as such it will always win a merge and if both merge partners
+  are marked "stable", the merge is canceled. This can be disabled by setting
+  the project or instance setting "Stable join annotation" in the Tracing
+  section of the Settings Widget to an empty string.
+
 Tracing overlay:
 
 - The remote mirror CATMAID instance configuration is now taken from the central

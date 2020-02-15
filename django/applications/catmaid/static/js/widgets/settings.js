@@ -2042,6 +2042,33 @@
           'detailed_review_colors',
           SETTINGS_SCOPE));
 
+      if (CATMAID.hasPermission(project.id, 'can_administer')) {
+        ds.append(wrapSettingsControl(
+            CATMAID.DOM.createInputSetting(
+                "Stable join annotation",
+                SkeletonAnnotations.Settings[SETTINGS_SCOPE].stable_join_annotation,
+                "If a skeleton is annotated with this annotation during a join, " +
+                "the back-end will enforce that it is the winner in the join, i.e. " +
+                "its ID remains. If both join partners have this annotation, the " +
+                "join is canceled. If this field is empty, no stable annotation " +
+                "test is performed and neurons are joined in the specified order. " +
+                "Only the project/instance level config is respected by the back-end.",
+                function () {
+                  if (SETTINGS_SCOPE !== 'global' && SETTINGS_SCOPE !== 'project') {
+                    CATMAID.warn('Stable annotations for joins are only configurable on an instance and project level.');
+                    return;
+                  }
+                  SkeletonAnnotations.Settings
+                      .set(
+                        'stable_join_annotation',
+                        $(this).val(),
+                        SETTINGS_SCOPE);
+                }),
+            SkeletonAnnotations.Settings,
+            'stable_join_annotation',
+            SETTINGS_SCOPE));
+      }
+
       // Fast split mode
       var dsFastSplit = CATMAID.DOM.addSettingsContainer(ds,
           "Fast split mode", true);

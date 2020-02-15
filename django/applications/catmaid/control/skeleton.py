@@ -659,8 +659,10 @@ def _get_neuronname_from_skeletonid( project_id, skeleton_id ):
                 project=p,
                 class_instance_a=int(skeleton_id)).select_related("class_instance_b")
     try:
-        return {'neuronname': qs[0].class_instance_b.name,
-            'neuronid': qs[0].class_instance_b.id }
+        return {
+            'neuronname': qs[0].class_instance_b.name,
+            'neuronid': qs[0].class_instance_b.id
+        }
     except IndexError:
         raise ValueError("Couldn't find a neuron linking to a skeleton with " \
                 "ID %s" % skeleton_id)
@@ -2215,7 +2217,8 @@ def join_skeleton(request:HttpRequest, project_id=None) -> JsonResponse:
             'fromid': from_treenode_id,
             'toid': to_treenode_id,
             'result_skeleton_id': join_info['from_skeleton_id'],
-            'deleted_skeleton_id': join_info['to_skeleton_id']
+            'deleted_skeleton_id': join_info['to_skeleton_id'],
+            'stable_annotation_swap': join_info['stable_annotation_swap'],
         })
 
     except Exception as e:
@@ -2252,6 +2255,33 @@ def make_annotation_map(annotation_vs_user_id, neuron_id, cursor=None) -> Dict:
             entry['edition_time'] = row[2]
 
     return annotation_map
+
+
+def get_stable_partner_annotation(project_id):
+    """Find a stable partner annotation if it is configured for the passed in
+    project. Returns the default value 'stable' if there is no such annotation
+    configured. A stable annotation is stored in the "settings" client data
+    store, in the "skeleton-annotations" key. The front-end allows admins to
+    configure this in the Settings Widget > Tracing section. User-settings are
+    ignored, and project settings dominate instance settings. This setting
+    defaults to 'stable'.
+    """
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT COALESCE((value->'entries'->'stable_join_annotation'->'value')::text, 'stable')
+        FROM client_datastore cds
+        JOIN client_data cd
+            ON cd.datastore_id = cds.id
+        WHERE cds.name = 'settings'
+            AND user_id IS NULL
+            AND cd.key = 'skeleton-annotations'
+        ORDER BY cd.project_id NULLS LAST
+        LIMIT 1
+    """, {
+        'project_id': project_id,
+    })
+    row = cursor.fetchone()
+    return row[0] if row else 'stable'
 
 
 def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
@@ -2307,6 +2337,51 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
                 user, to_neuron['neuronid'], 'neuron')
 
         cursor = connection.cursor()
+
+        # Test if either join partner is marked as stable. If this is the case,
+        # the neuron marked as stable is enforced to be the winner of the join.
+        # If both join partners are marked stable, the join is canceld. This
+        # behavior can be disabled by not passing in a stable annotation.
+        stable_induced_swap = False
+        stable_annotation = get_stable_partner_annotation(project_id)
+        if stable_annotation:
+            cursor.execute("""
+                SELECT array_agg(n.id)
+                FROM class_instance n
+                JOIN class_instance_class_instance cici
+                    ON cici.class_instance_a = n.id
+                JOIN class_instance a
+                    ON a.id = cici.class_instance_b
+                WHERE cici.relation_id = (
+                        SELECT id FROM relation
+                        WHERE project_id = %(project_id)s
+                        AND relation_name = 'annotated_with'
+                        LIMIT 1)
+                    AND a.name = %(stable_annotation)s
+                    AND n.project_id = %(project_id)s
+                    AND n.id IN (%(partner_a)s, %(partner_b)s)
+            """, {
+                'project_id': project_id,
+                'stable_annotation': stable_annotation,
+                'partner_a': from_neuron['neuronid'],
+                'partner_b': to_neuron['neuronid'],
+            })
+            stable_result = cursor.fetchone()
+            stable_neuron_ids = set(stable_result[0]) if stable_result and stable_result[0] else set()
+
+            # If the from-neuron is marked as stable and to to-neuron isn't,
+            # everything is okay.
+            if to_neuron['neuronid'] in stable_neuron_ids:
+                if from_neuron['neuronid'] in stable_neuron_ids:
+                    raise ValueError(f"Can't join skeletons {from_skid} and {to_skid}, because both are marked as stable.")
+                # Swap from and to, if to is marked as stable
+                original_from_treenode, original_from_treenode_id = from_treenode, from_treenode_id
+                original_from_skid, original_from_neuron = from_skid, from_neuron
+                from_skid, from_neuron = to_skid, to_neuron
+                from_treenode, from_treenode_id = to_treenode, to_treenode_id
+                to_skid, to_neuron = original_from_skid, original_from_neuron
+                to_treenode, to_treenode_id = original_from_treenode, original_from_treenode_id
+                stable_induced_swap = True
 
         # We are going to change the skeleton ID of the "to" neuron, therefore
         # all its nodes need to be locked to prevent modification from other
@@ -2437,15 +2512,18 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
 
         from_location = (from_treenode.location_x, from_treenode.location_y,
                          from_treenode.location_z)
+        swap_info = ', partners swapped due to stable annotation' if stable_induced_swap else ''
         insert_into_log(project_id, user.id, 'join_skeleton',
                 from_location, 'Joined skeleton with ID %s (neuron: ' \
-                '%s) into skeleton with ID %s (neuron: %s, annotations: %s)' % \
+                '%s) into skeleton with ID %s (neuron: %s, annotations: %s)%s' % \
                 (to_skid, to_neuron['neuronname'], from_skid,
-                        from_neuron['neuronname'], ', '.join(winning_map.keys())))
+                        from_neuron['neuronname'], ', '.join(winning_map.keys()),
+                        swap_info))
 
         response = {
             'from_skeleton_id': from_skid,
-            'to_skeleton_id': to_skid
+            'to_skeleton_id': to_skid,
+            'stable_annotation_swap': stable_induced_swap,
         }
 
         if sampler_info and sampler_info['n_samplers'] > 0:

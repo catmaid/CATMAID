@@ -93,6 +93,9 @@ var SkeletonAnnotations = {};
           },
           default_connector_type: {
             default: CATMAID.Connectors.SUBTYPE_SYNAPTIC_CONNECTOR,
+          },
+          stable_join_annotation: {
+            default: 'stable'
           }
         },
         migrations: {}

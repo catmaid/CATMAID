@@ -591,6 +591,11 @@ Miscellaneous:
 
 - 3D Viewer: fix skeleton vs. name CSV in "Synapses as CSV" export.
 
+- 3D Viewer: fix accidental hiding of soma node sphere when hiding radius
+  meshes. This happened if the node tagged 'soma' wasn't the root node. Now the
+  test for whether to hide radius meshes for a node now requires that the node
+  isn't tagged with 'soma', which is more robust than root node alone.
+
 - Measurement table: fix CSV export for aggregated multi-fragment results.
 
 

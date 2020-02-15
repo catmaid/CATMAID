@@ -7591,7 +7591,10 @@
    */
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.setRadiusVisibility = function(visible) {
     // Remove all non-root radius cylinders
-    let nodesToUpdate = this.nodeMetaData.filter(d => d.parent_id !== undefined && d.parent_id !== null);
+    let somaTags = this.tags && this.tags['soma'] ? new Set(this.tags['soma']) : new Set();
+    let nodesToUpdate = this.nodeMetaData.filter(d => {
+        return d.parent_id !== undefined && d.parent_id !== null && !somaTags.has(d.node_id);
+    });
     let nonRootRadiusMeshes = nodesToUpdate.map(d => {
       let mesh = this.radiusVolumes[d.node_id];
       delete this.radiusVolumes[d.node_id];

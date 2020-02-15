@@ -178,7 +178,8 @@ Tracing tool:
   neuron is marked as such it will always win a merge and if both merge partners
   are marked "stable", the merge is canceled. This can be disabled by setting
   the project or instance setting "Stable join annotation" in the Tracing
-  section of the Settings Widget to an empty string.
+  section of the Settings Widget to an empty string. The merge dialog will show
+  a warning if stable merge annotations have any bearing on the merge direction.
 
 - Alt + G will now select the closest node in the active skeleton. If no
   skeleton is selected, the globally closest node is select. Regular G works as

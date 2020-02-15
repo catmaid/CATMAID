@@ -3513,7 +3513,9 @@
     this.textGeometryCache = new WebGLApplication.prototype.Space.prototype.TextGeometryCache(options);
     this.connectorLineColors = {'presynaptic_to': new THREE.LineBasicMaterial({color: 0xff0000, opacity: 1.0, linewidth: 6}),
                                 'postsynaptic_to': new THREE.LineBasicMaterial({color: 0x00f6ff, opacity: 1.0, linewidth: 6}),
-                                'gapjunction_with': new THREE.LineBasicMaterial({color: 0x9f25c2, opacity: 1.0, linewidth: 6})};
+                                'gapjunction_with': new THREE.LineBasicMaterial({color: 0x9f25c2, opacity: 1.0, linewidth: 6}),
+                                'desmosome_with': new THREE.LineBasicMaterial({
+                                    color: CATMAID.TracingOverlay.Settings.session.desmosome_rel_color, opacity: 1.0, linewidth: 6})};
   };
 
   WebGLApplication.prototype.Space.prototype.StaticContent.prototype = {};
@@ -6212,8 +6214,8 @@
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype = {};
 
   // Find better way to define connector types
-  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.CTYPES = ['neurite', 'presynaptic_to', 'postsynaptic_to', 'gapjunction_with'];
-  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.synapticTypes = ['presynaptic_to', 'postsynaptic_to', 'gapjunction_with'];
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.CTYPES = ['neurite', 'presynaptic_to', 'postsynaptic_to', 'gapjunction_with', 'desmosome_with'];
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.synapticTypes = ['presynaptic_to', 'postsynaptic_to', 'gapjunction_with', 'desmosome_with'];
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.synapticTypesToModelVisibility = {
     'presynaptic_to': 'pre_visible',
     'postsynaptic_to': 'post_visible'
@@ -6263,6 +6265,7 @@
     this.geometry[CTYPES[1]] = new THREE.Geometry();
     this.geometry[CTYPES[2]] = new THREE.Geometry();
     this.geometry[CTYPES[3]] = new THREE.Geometry();
+    this.geometry[CTYPES[4]] = new THREE.Geometry();
 
     var MeshType = options.triangulated_lines ?
           THREE.LineSegments2 : THREE.LineSegments;
@@ -6272,6 +6275,7 @@
     this.actor[CTYPES[1]] = new THREE.LineSegments(this.geometry[CTYPES[1]], this.space.staticContent.connectorLineColors[CTYPES[1]]);
     this.actor[CTYPES[2]] = new THREE.LineSegments(this.geometry[CTYPES[2]], this.space.staticContent.connectorLineColors[CTYPES[2]]);
     this.actor[CTYPES[3]] = new THREE.LineSegments(this.geometry[CTYPES[3]], this.space.staticContent.connectorLineColors[CTYPES[3]]);
+    this.actor[CTYPES[4]] = new THREE.LineSegments(this.geometry[CTYPES[4]], this.space.staticContent.connectorLineColors[CTYPES[4]]);
 
     this.specialTagSpheres = {};
     this.synapticSpheres = {};
@@ -6364,6 +6368,7 @@
     this.actor[this.CTYPES[1]].geometry.dispose();
     this.actor[this.CTYPES[2]].geometry.dispose();
     this.actor[this.CTYPES[3]].geometry.dispose();
+    this.actor[this.CTYPES[4]].geometry.dispose();
 
     var meshes = collection || [];
     [this.actor, this.radiusVolumes].forEach(function(ob) {
@@ -7496,6 +7501,7 @@
     this.connectorgeometry[this.CTYPES[1]] = new THREE.Geometry();
     this.connectorgeometry[this.CTYPES[2]] = new THREE.Geometry();
     this.connectorgeometry[this.CTYPES[3]] = new THREE.Geometry();
+    this.connectorgeometry[this.CTYPES[4]] = new THREE.Geometry();
 
     var scaling = this.space.options.link_node_scaling;
     var materialType = this.space.options.neuron_material;

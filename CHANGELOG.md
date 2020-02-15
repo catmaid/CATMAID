@@ -389,6 +389,9 @@ Neuron navigator:
 - 3D viewer: the line width has now an upper limit of 25px to prevent crashes of
   the 3D viewer with larger values and many skeletons.
 
+- Desmosome links can now be displayed. The color assigned in the Settings
+  Widget section for desmosomes in the Tracing Overlay is used here as well.
+
 Neuroglancer widget:
 
 - CATMAID now includes a copy of Neuroglancer that can be accessed at

@@ -196,7 +196,7 @@
 
     // Get all annotations for a skeleton and fill the list boxes
     var add_annotations_fn = function(skid, listboxes, disable_unpermitted, api) {
-      CATMAID.Annotations.forSkeleton(project.id, skid, api).then(function(annotations) {
+      return CATMAID.Annotations.forSkeleton(project.id, skid, api).then(function(annotations) {
             // Create annotation check boxes
             annotations.forEach(function(aobj) {
               var create_cb = function(a_info, checked) {
@@ -229,6 +229,7 @@
                 lb.obj.appendChild(document.createTextNode(msg));
               });
             }
+            return annotations;
           }).catch(CATMAID.handleError);
       };
 
@@ -311,8 +312,23 @@
             `Merged: ${losingModel.baseName} (reference to merged in neuron)`);
         big.appendChild(cb, checked);
         // Add annotations
-        add_annotations_fn(this.over_model_id, [{obj: big, checked: true}], true, this.models[this.over_model_id].api);
-        add_annotations_fn(this.under_model_id, [{obj: small, checked: true}], true, this.models[this.under_model_id].api);
+        Promise.all([
+          add_annotations_fn(this.over_model_id, [{obj: big, checked: true}], true, this.models[this.over_model_id].api),
+          add_annotations_fn(this.under_model_id, [{obj: small, checked: true}], true, this.models[this.under_model_id].api)
+        ]).then(results => {
+          let stableJoinDirAnnotation = SkeletonAnnotations.Settings.session.stable_join_annotation;
+          let largerSkeletonAnnotations = new Set(results[0].map(a => a.name));
+          let smallerSkeletonAnnotations = new Set(results[1].map(a => a.name));
+
+          if (stableJoinDirAnnotation.length > 0) {
+            if (largerSkeletonAnnotations.has(stableJoinDirAnnotation) &&
+                smallerSkeletonAnnotations.has(stableJoinDirAnnotation)) {
+              CATMAID.warn('Both skeletons are marked as "stable". Won\'t be able to join');
+            } else if (largerSkeletonAnnotations.has(stableJoinDirAnnotation)) {
+              CATMAID.warn(`Skeleton "${losingModel.baseName}" is marked as stable, it will win the merge even if not set as target like now.`);
+            }
+          }
+        });
       } else {
         var skeleton = this.webglapp.space.content.skeletons[this.model1_id],
             arbor = skeleton.createArbor(),

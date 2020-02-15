@@ -17,6 +17,7 @@
     var timeUnit = "day";
     // The users that are currently aggregated
     var aggregatedUsers = new Set();
+    this.aggregatedUsers = aggregatedUsers;
 
     // Whether import activity should be included in the displayed statistics.
     this.includeImports = false;
@@ -776,10 +777,27 @@
           userAnalytics.setAttribute("type", "button");
           userAnalytics.setAttribute("value", "User Analytics");
           userAnalytics.onclick = function() {
-            openUserAnalytics({
-              startDate: $("#stats-history-start-date").val(),
-              endDate: $("#stats-history-end-date").val()
-            });
+            if (self.aggregatedUsers.size > 0) {
+              if (self.aggregatedUsers.size > 3) {
+                CATMAID.warn("Only showing user analytics for first three selected users");
+              }
+              let openedWindows = 0;
+
+              for (let u of self.aggregatedUsers) {
+                if (openedWindows >= 3) break;
+                openUserAnalytics({
+                  startDate: $("#stats-history-start-date").val(),
+                  endDate: $("#stats-history-end-date").val(),
+                  userId: u,
+                });
+                ++openedWindows;
+              }
+            } else {
+              openUserAnalytics({
+                startDate: $("#stats-history-start-date").val(),
+                endDate: $("#stats-history-end-date").val(),
+              });
+            }
           };
           controls.appendChild(userAnalytics);
         }
@@ -890,7 +908,7 @@
   };
 
   var openUserAnalytics = function(options) {
-    var ui = WindowMaker.show('user-analytics', {
+    var ui = WindowMaker.create('user-analytics', {
       'initialUpdate': false
     });
     var widget = ui.widget;

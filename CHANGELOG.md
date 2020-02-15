@@ -500,6 +500,10 @@ Miscellaneous:
   It is false by default and can be turned on to show empty projects, including
   the classification dummy project.
 
+- Project statistics: clicking the "User analytics" button with user selected
+  will open the respective user analytics views for all of them (max. the first
+  three).
+
 ### Bug fixes
 
 - Connector list: dates are now display correctly.

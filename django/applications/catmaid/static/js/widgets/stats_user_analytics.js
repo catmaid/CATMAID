@@ -9,6 +9,8 @@
   "use strict";
 
   var UserAnalytics = function(options) {
+    this.widgetID = this.registerInstance();
+    this.idPrefix = `user-analytics${this.widgetID}-`;
     options = options || {};
     this.userId = options.userId || CATMAID.session.userid;
     this.startDate = options.startDate || "-10";
@@ -17,13 +19,19 @@
         true : options.initialUpdate;
   };
 
+  UserAnalytics.prototype = new InstanceRegistry();
+
   UserAnalytics.prototype.getName = function() {
-    return "User Analytics";
+    return `User Analytics ${this.widgetID}`;
+  };
+
+  UserAnalytics.prototype.destroy = function() {
+    this.unregisterInstance();
   };
 
   UserAnalytics.prototype.getWidgetConfiguration = function() {
     return {
-      controlsID: "user-analytics-controls",
+      controlsID: `${this.idPrefix}controls`,
       createControls: function(controls) {
         var userSelectLabel = document.createElement('label');
         userSelectLabel.appendChild(document.createTextNode('User'));
@@ -97,7 +105,7 @@
         controls.appendChild(allWrites);
         controls.appendChild(refresh);
       },
-      contentID: "user-analytics-content",
+      contentID: `${this.idPrefix}content`,
       createContent: function(content) {
         var img = document.createElement('img');
         img.src = CATMAID.makeURL(project.id + '/useranalytics');
@@ -107,14 +115,14 @@
       init: function() {
 
         // Autocompletion for user selection
-        $('#user-analytics-controls select[data-name=user]')
+        $(`#${this.idPrefix}controls select[data-name=user]`)
             .combobox();
 
         // Init date fields
-        $('#user-analytics-controls input[data-name=start_date]')
+        $(`#${this.idPrefix}controls input[data-name=start_date]`)
           .datepicker({ dateFormat: "yy-mm-dd", defaultDate: -10 })
           .datepicker('setDate', this.startDate);
-        $('#user-analytics-controls input[data-name=end_date]')
+        $(`#${this.idPrefix}controls input[data-name=end_date]`)
           .datepicker({ dateFormat: "yy-mm-dd", defaultDate: 0 })
           .datepicker('setDate', this.endDate);
 
@@ -131,11 +139,12 @@
   UserAnalytics.prototype.refresh = function() {
     $.blockUI();
     try {
-      var userSelect = document.querySelector('#user-analytics-controls select[data-name=user]');
-      var startInput = document.querySelector('#user-analytics-controls input[data-name=start_date]');
-      var endInput = document.querySelector('#user-analytics-controls input[data-name=end_date]');
-      var maxInactivityInput = document.querySelector('#user-analytics-controls input[data-name=max_inactivity]');
-      var allWritesInput = document.querySelector('#user-analytics-controls input[data-name=all_writes]');
+      let controls = document.querySelector(`#${this.idPrefix}controls`);
+      var userSelect = controls.querySelector('select[data-name=user]');
+      var startInput = controls.querySelector('input[data-name=start_date]');
+      var endInput = controls.querySelector('input[data-name=end_date]');
+      var maxInactivityInput = controls.querySelector('input[data-name=max_inactivity]');
+      var allWritesInput = controls.querySelector('input[data-name=all_writes]');
       var start = startInput.value,
           end = endInput.value,
           userId = userSelect.value,
@@ -143,7 +152,7 @@
           maxInactivity = maxInactivityInput.value,
           project_id = project.id;
 
-      var img = document.querySelector('#user-analytics-content img[data-name=useranalyticsimg]');
+      var img = document.querySelector(`#${this.idPrefix}content img[data-name=useranalyticsimg]`);
       img.src = CATMAID.makeURL(project.id + '/useranalytics' + "?userid=" + userId) +
         "&start=" + start + "&end=" + end + '&all_writes=' + allWrites + '&max_inactivity=' +
         maxInactivity;
@@ -156,19 +165,19 @@
 
   UserAnalytics.prototype.setStartDate = function(newDate) {
     this.startDate = newDate;
-    $('#user-analytics-controls input[data-name=start_date]')
+    $(`#${this.idPrefix}controls input[data-name=start_date]`)
       .datepicker('setDate', this.startDate);
   };
 
   UserAnalytics.prototype.setEndDate = function(newDate) {
     this.endDate = newDate;
-    $('#user-analytics-controls input[data-name=end_date]')
+    $(`#${this.idPrefix}controls input[data-name=end_date]`)
       .datepicker('setDate', this.endDate);
   };
 
   UserAnalytics.prototype.setUserId = function(newUserId) {
     this.userId = newUserId;
-    $('#user-analytics-controls select[data-name=user]')
+    $(`#${this.idPrefix}controls select[data-name=user]`)
         .combobox('set_value', newUserId);
   };
 

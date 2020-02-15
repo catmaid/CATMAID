@@ -1577,8 +1577,10 @@
         var i_ = nodeID.indexOf('_'),
             skeleton_id = -1 === i_ ? nodeID : nodeID.substring(0, i_),
             model = models[skeleton_id],
-            node_width = CATMAID.tools.getDefined(sizes[nodeID], globalNodeWidth),
-            node_height = CATMAID.tools.getDefined(sizes[nodeID], globalNodeHeight);
+            node_width = !sizes[nodeID] ? globalNodeWidth :
+                CATMAID.tools.getDefined(sizes[nodeID].width, globalNodeWidth),
+            node_height = !sizes[nodeID] ? globalNodeHeight :
+                CATMAID.tools.getDefined(sizes[nodeID].height, globalNodeHeight);
         return {data: {id: nodeID, // MUST be a string, or fails
                         skeletons: [model.clone()],
                         label: CATMAID.NeuronNameService.getInstance().getName(model.id),
@@ -1613,7 +1615,7 @@
       var id = node.id();
       positions[id] = node.position();
       if (!(id in sizes)) {
-        sizes[id] = node.size();
+        sizes[id] = {width: node.width(), height: node.height()};
       }
       if (node.selected()) selected[id] = true;
       if (node.hidden()) hidden[id] = true;
@@ -4148,7 +4150,7 @@
     let sizes = null;
     if (setSize) {
       sizes = nodes.reduce((o, n) => {
-        o[n.id] = n.size;
+        o[n.id] = {width: n.size, height: n.size};
         return o;
       }, {});
     }

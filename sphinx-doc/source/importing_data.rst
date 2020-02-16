@@ -121,14 +121,6 @@ source is a simple folder structure of tiled image data for each stack. To be
 accessible, a stack mirror's image base has to give access to such a folder from
 the web. Of course, stacks, stack mirrors and projects can be created by hand,
 but there is also an importing tool available in Django's admin interface. It
-<<<<<<< HEAD
-can be found under *Custom Views* and is named *Image data importer*.
-
-The importing tool expects a certain data folder layout to work on and also
-relies on so called *project files* (a simple YAML file) to identify potential
-projects. The next section will introduce the project file format and after that
-the data layout will be explained.
-=======
 can be found under *Custom Views* and is named *Import projects and image
 stacks*.
 
@@ -206,7 +198,6 @@ be ``user`` or ``group``. ``name`` is either a username or a groupname and
 The import can be configured with additional options which are explained when
 using the ``--help`` option.
 
->>>>>>> maintenance/2019.06.20
 Project Files
 ^^^^^^^^^^^^^
 

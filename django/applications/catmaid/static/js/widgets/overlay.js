@@ -125,7 +125,9 @@ var SkeletonAnnotations = {};
   })();
 
   SkeletonAnnotations.MODES = Object.freeze({SKELETON: 0, SYNAPSE: 1, SELECT: 2, MOVE: 3, IMPORT: 4});
-  SkeletonAnnotations.currentmode = SkeletonAnnotations.MODES.SKELETON;
+
+  // Will be initialized separately.
+  SkeletonAnnotations.currentmode = null;
 
   /**
    * Sets the active node, if node is not null. Otherwise, the active node is
@@ -1284,6 +1286,9 @@ var SkeletonAnnotations = {};
             },
             remote_data_marker_type: {
               default: 'ring',
+            },
+            interaction_mode: {
+              default: SkeletonAnnotations.MODES.SKELETON,
             },
           },
           migrations: {

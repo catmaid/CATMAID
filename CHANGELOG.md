@@ -195,6 +195,10 @@ Tracing tool:
   downstream of a domain as well. If split upstream, the domain will be deleted,
   because it is part of the split-off fragment.
 
+- The default interaction mode (skeleton tracing, synapse dropping, select,
+  move, import) can now be configured in the Tracing section of the Settings
+  Widget. This interaction mode will be enabled when opening the Tracing tool.
+
 Tracing overlay:
 
 - The remote mirror CATMAID instance configuration is now taken from the central

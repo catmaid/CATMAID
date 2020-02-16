@@ -896,6 +896,30 @@
           'display_node_radii',
           SETTINGS_SCOPE));
 
+  SkeletonAnnotations.MODES = Object.freeze({SKELETON: 0, SYNAPSE: 1, SELECT: 2, MOVE: 3, IMPORT: 4});
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createSelectSetting(
+              "Default interaction mode",
+              {'Skeleton tracing': '0',
+               'Synapse dropping': '1',
+               'Select': '2',
+               'Move': '3',
+               'Import': '4'},
+              "The default mouse interaction mode is skeleton tracing. For less " +
+              "immediate interaction, choose 'Select' or 'Move'.",
+              function() {
+                let value = parseInt(this.value, 10);
+                CATMAID.TracingOverlay.Settings
+                    .set(
+                      'interaction_mode',
+                      value,
+                      SETTINGS_SCOPE);
+              },
+              `${CATMAID.TracingOverlay.Settings[SETTINGS_SCOPE].interaction_mode}`),
+          CATMAID.TracingOverlay.Settings,
+          'interaction_mode',
+          SETTINGS_SCOPE));
+
       ds.append(wrapSettingsControl(
           CATMAID.DOM.createCheckboxSetting(
               'Show extended status bar information',

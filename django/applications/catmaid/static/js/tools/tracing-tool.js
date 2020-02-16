@@ -382,6 +382,10 @@
         lengthColorButton.className = CATMAID.TracingOverlay.Settings.session.color_by_length ? "button_active" : "button";
       }
 
+      if (SkeletonAnnotations.currentmode === null) {
+        SkeletonAnnotations.currentmode = CATMAID.TracingOverlay.Settings.session.interaction_mode;
+      }
+
       if (parentStackViewer) {
         // Try to get existing pointer bindings for this layer
         if (!bindings.has(parentStackViewer)) createPointerBindings(parentStackViewer, layer, view);

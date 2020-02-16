@@ -2128,6 +2128,30 @@
                 SkeletonAnnotations.Settings.session.fast_merge_mode);
           }));
 
+      dsFastMerge.append(wrapSettingsControl(
+          CATMAID.DOM.createInputSetting(
+              "Only allow on (name regex)",
+              SkeletonAnnotations.Settings[SETTINGS_SCOPE].fast_merge_application_pattern,
+              "If this is non-empty it is treated as a regular expression to " +
+              "test whether fast merge mode can be applied to a merged-in fragment. " +
+              "Should the neuron name not pass, a full merge dialog is shown.",
+              function () {
+                try {
+                  let value = $(this).val();
+                  let test = new RegExp(value);
+                  SkeletonAnnotations.Settings
+                      .set(
+                        'fast_merge_application_pattern',
+                        value,
+                        SETTINGS_SCOPE);
+                } catch (error) {
+                  CATMAID.warn('Invalid regular expression');
+                }
+              }),
+          SkeletonAnnotations.Settings,
+          'fast_merge_application_pattern',
+          SETTINGS_SCOPE).css('margin-top', '2em'));
+
       // Warning
       var dsTracingWarnings = CATMAID.DOM.addSettingsContainer(ds,
           "Warnings", true);

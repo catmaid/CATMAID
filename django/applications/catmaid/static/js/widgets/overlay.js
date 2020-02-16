@@ -91,6 +91,9 @@ var SkeletonAnnotations = {};
           fast_split_mode: {
             default: {universal: 'none'}
           },
+          fast_merge_application_pattern: {
+            default: ''
+          },
           default_connector_type: {
             default: CATMAID.Connectors.SUBTYPE_SYNAPTIC_CONNECTOR,
           },
@@ -2309,8 +2312,12 @@ var SkeletonAnnotations = {};
               var merge_multiple_nodes = function() {
                 // If a fast merge mode is enabled, check if this operation
                 // matches the settings and don't show the UI if this is the case.
+                let fastMergeSkeletonPattern = SkeletonAnnotations.Settings.session.fast_merge_application_pattern;
+                let skeletonIsFastMergable = fastMergeSkeletonPattern ?
+                  new RegExp(fastMergeSkeletonPattern).test(json.neuron_name) : true;
                 let noConfirmation = (SkeletonAnnotations.FastMergeMode.isNodeMatched(
-                    self.nodes.get(toid)) || showUI === false) && showUI !== true;
+                    self.nodes.get(toid)) || showUI === false) && showUI !== true &&
+                    skeletonIsFastMergable;
 
                 if (noConfirmation) {
                   // Providing no annotation set, will result in all annotations

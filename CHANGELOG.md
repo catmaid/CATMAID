@@ -181,6 +181,10 @@ Tracing tool:
   section of the Settings Widget to an empty string. The merge dialog will show
   a warning if stable merge annotations have any bearing on the merge direction.
 
+- Fast merge mode can now optionally be applied only to neurons/fragments with
+  a particular name pattern (regular expression). This can be configured in the
+  Fast Merge section of the Tracing section in the Settings Widget.
+
 - Alt + G will now select the closest node in the active skeleton. If no
   skeleton is selected, the globally closest node is select. Regular G works as
   before in the current section.

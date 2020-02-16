@@ -21,6 +21,20 @@ The **C**\ ollaborative **A**\ nnotation **T**\ oolkit for **M**\ assive **A**\ 
 
 **User interface**
 
+.. thumbnail:: _static/screenshots/catmaid-screenshot-workplace-2.jpeg
+    :class: lightimage
+    :group: index
+    :width: 150px
+    :height: 100px
+    :title: CATMAID user interface showing a typical tracing setup with graph, 3D viewer, plots and connectivity
+
+.. thumbnail:: _static/screenshots/catmaid-screenshot-workplace.jpeg
+    :class: lightimage
+    :group: index
+    :width: 150px
+    :height: 100px
+    :title: CATMAID user interface showing a typical tracing setup with NBLAST tools and nuron/point-cloud similarity search.
+
 .. thumbnail:: _static/screenshots/ui-tracing.jpg
     :class: lightimage
     :group: index

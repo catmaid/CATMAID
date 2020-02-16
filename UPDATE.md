@@ -3,25 +3,90 @@ and other administration related changes are listed in order.
 
 ## Under development
 
-- Python 3.5 is not supported anymore. Use Python 3.6 or 3.7.
+- Python 3.5 is not supported anymore. Use Python 3.6, 3.7 or 3.8.
+
+- Postgres 11 and PostGIS 2.5 is required, Postgres 12 and PostGIS 3 is
+  recommended. If Postgres needs to be updated, update directly to Postgres 12.
+  If both needs to be updated, update PostGIS first and run ``ALTER EXTENSION
+  postgis UPDATE;`` in every database. For docker-compose setups this database
+  update is performed automatically. If a replication setup is in use, the
+  database configuration changes for Postgres 12. CATMAID's replication
+  documentation explains what needs to be done.
+
+- The next version of CATMAID will require Postgres 12 and PostGIS 3.
 
 - A virtualenv update is required. Before you start it, please remove some
   packages that are not needed anymore first:
 
-  pip uninstall asgi_ipc
+  pip uninstall asgi-ipc asgi-rabbitmq
 
 - If ASGI was set up before, make sure to install channels_rabbitmq or
   channels_redis (depending on what yous use). The older asgi_rabbitmq and
-  asgi_redis packages aren't supported anymore.
+  asgi_redis packages aren't supported anymore. This also requires an update of
+  the CHANNELS_LAYERS in settings.py. The channels_rabbitmq documentation for an
+  example: https://github.com/CJWorkbench/channels_rabbitmq/. This variable
+  isn't defined by default anymore. Therefore you likely have to replace any
+  `CHANNELS_LAYERS[…] = …` with something like `CHANNELS_LAYERS = { … }`. The
+  new format is (use custom credentials on any production system!):
 
-- Postgres 11 and PostGIS 2.5 is required. If both needs to be updated, update
-  PostGIS first and run `ALTER EXTENSION postgis UPDATE;` in every database. For
-  docker-compose setups this database update is performed automatically.
+  ```
+  CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_rabbitmq.core.RabbitmqChannelLayer",
+        "CONFIG": {
+            "host": "amqp://guest:guest@127.0.0.1/asgi",
+        },
+    },
+  }
+  ```
+
+  Also, if supervisord is in use to manage CATMAID process groups, the main
+  Daphne process needs an adjustment: instead of calling `daphne` with the
+  `mysite.asgi:channel_layer` parameter, use `mysite.asgi:application`. A
+  complete supervisord entry would then look something like this:
+
+  ```
+  [program:catmaid-daphne]
+  directory = /home/catmaid/catmaid/django/projects/
+  command = /home/catmaid/catmaid/django/env/bin/daphne --unix-socket=/var/run/daphne/catmaid.sock mysite.asgi:application
+  user = www-data
+  stdout_logfile = /var/log/daphne/catmaid-server.log
+  redirect_stderr = true
+  ```
+
+  As last step, the supervisor entry for the `daphne worker` process has to be
+  removed. New types of workers can be added, but are not needed in most cases.
+  The channels documentation has more information on this.
+
+- GDAL v2 or newer is now needed. If your Ubuntu version doesn't support this
+  yet, there is an official PPA:
+
+  sudo add-apt-repository ppa:ubuntugis/ppa
+  sudo apt-get update
+
+- The management command catmaid_populate_summary_tables is now known as
+  catmaid_refresh_node_statistics.
+
+- The application of migrations 88-91 and 98-99 might take a while to complete,
+  because they rewrite potentially big database table (treenode_edge, treenode,
+  class_instance, and more). Therefore, make also sure that there is enough
+  space available at the database storage location (25% of database data
+  directory should be plenty). If no replication is used, setting the following
+  Postgres options can speed up the process: `wal_level = minimal`,
+  `archive_mode = off` and `max_wal_senders = 0`.
+
+  Due to this database update data consistency and correctness was improved,
+  because additional foreign key relationships have been added that were missing
+  before.
 
 - Back-end errors result now in actual HTTP error status codes. Third-party
   clients need possibly some adjustments to handle API errors. In case of an
   error, status 400 is returned if an input data or parameter problem, 401 for
   permission problems and 500 otherwise.
+
+- On startup, CATMAID will now test if the output directory is accessible as
+  well as if its expected folder layout is present. If expected subfolders are
+  missing, they will now be created.
 
 ## 2019.06.20
 

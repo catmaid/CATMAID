@@ -3,7 +3,15 @@
 
 ### Notes
 
-- Python 3.5 is not supported anymore. Use Python 3.6 or 3.7.
+- Python 3.5 is not supported anymore. Use Python 3.6, 3.7 or 3.8.
+
+- Postgres 11 and PostGIS 2.5 is required, Postgres 12 and PostGIS 3 is
+  recommended. If Postgres needs to be updated, update directly to Postgres 12.
+  If both needs to be updated, update PostGIS first and run ``ALTER EXTENSION
+  postgis UPDATE;`` in every database. For docker-compose setups this database
+  update is performed automatically. If a replication setup is in use, the
+  database configuration changes for Postgres 12. CATMAID's replication
+  documentation explains what needs to be done.
 
 - A virtualenv update is required. Before you start it, please remove some
   packages that are not needed anymore first:
@@ -53,14 +61,6 @@
 
   sudo add-apt-repository ppa:ubuntugis/ppa
   sudo apt-get update
-
-- Postgres 11 and PostGIS 2.5 is required, Postgres 12 and PostGIS 3 is
-  recommended. If Postgres needs to be updated, update directly to Postgres 12.
-  If both needs to be updated, update PostGIS first and run ``ALTER EXTENSION
-  postgis UPDATE;`` in every database. For docker-compose setups this database
-  update is performed automatically. If a replication setup is in use, the
-  database configuration changes for Postgres 12. CATMAID's replication
-  documentation explains what needs to be done.
 
 - The next version of CATMAID will require Postgres 12 and PostGIS 3.
 

@@ -20,6 +20,7 @@ from django.contrib.auth.management.commands import createsuperuser
 
 try:
     import rpy2.rinterface as rinterface
+    import rpy2.rinterface_lib.embedded
     r_available = True
 except ImportError:
     r_available = False
@@ -261,8 +262,8 @@ class CATMAIDConfig(AppConfig):
 
         # Init R interface, which is used by some parts of CATMAID
         if r_available:
-            rinterface.set_initoptions((b'rpy2', b'--no-save', b'--no-restore',
-                    b'--no-init-file', b'--no-environ'))
+            rpy2.rinterface_lib.embedded.set_initoptions(('rpy2', '--no-save',
+                    '--no-restore', '--no-init-file', '--no-environ'))
             rinterface.initr()
 
     # A list of settings that are expected to be available.

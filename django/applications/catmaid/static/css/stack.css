@@ -135,6 +135,7 @@ div.LayerControl {
 div.LayerControl .setting {
   float: none;
   display: flex;
+  align-items: center;
 }
 
 div.LayerControl ol {

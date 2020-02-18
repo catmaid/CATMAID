@@ -28,6 +28,14 @@ def identity(x:Any) -> Any:
     """Simple identity."""
     return x
 
+
+def is_empty(iter):
+    """ Test if the passed in iterator is empty.
+    """
+    for _ in iter:
+        return False
+    return True
+
 def get_catmaid_version(request:HttpRequest) -> JsonResponse:
     return JsonResponse({'SERVER_VERSION': settings.VERSION})
 

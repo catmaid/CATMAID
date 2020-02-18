@@ -26,7 +26,7 @@ from catmaid.models import UserRole, ClassInstance, Treenode, \
 from catmaid.control import export_NeuroML_Level3
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.common import (get_relation_to_id_map, get_request_bool,
-        get_request_list)
+        get_request_list, is_empty)
 from catmaid.control.review import get_treenodes_to_reviews, \
         get_treenodes_to_reviews_with_time
 from catmaid.control.tree_util import edge_count_to_root, partition
@@ -1526,14 +1526,15 @@ def _export_review_skeleton(project_id=None, skeleton_id=None,
     for t in treenodes:
         # While at it, send the reviewer IDs, which is useful to iterate fwd
         # to the first unreviewed node in the segment.
-        g.add_node(t[0], {'id': t[0],
-                          'x': t[2],
-                          'y': t[3],
-                          'z': t[4],
-                          'rids': reviews[t[0]],
-                          'sup': [[o, l] for [o, l] in zip(t[5], t[6]) if o is not None],
-                          'user_id': t[7],
-                          })
+        g.add_node(t[0], **{
+            'id': t[0],
+            'x': t[2],
+            'y': t[3],
+            'z': t[4],
+            'rids': reviews[t[0]],
+            'sup': [[o, l] for [o, l] in zip(t[5], t[6]) if o is not None],
+            'user_id': t[7],
+        })
         if reviews[t[0]]:
             reviewed.add(t[0])
         if t[1]:  # if parent
@@ -1548,14 +1549,14 @@ def _export_review_skeleton(project_id=None, skeleton_id=None,
                              "provided skeleton (%s)" % (subarbor_node_id, skeleton_id))
 
         # Remove connection to parent
-        parent = g.predecessors(subarbor_node_id)[0]
+        parent = list(g.predecessors(subarbor_node_id))[0]
         g.remove_edge(parent, subarbor_node_id)
         # Remove all nodes that are upstream from the subarbor node
         to_delete = set()
         to_lookat = [root_id]
         while to_lookat:
             n = to_lookat.pop()
-            to_lookat.extend(g.successors(n))
+            to_lookat.extend(list(g.successors(n)))
             to_delete.add(n)
         g.remove_nodes_from(to_delete)
         # Replace root id with sub-arbor ID
@@ -1574,17 +1575,17 @@ def _export_review_skeleton(project_id=None, skeleton_id=None,
     seen:Set = set()
     sequences = []
     # Iterate end nodes sorted from highest to lowest distance to root
-    endNodeIDs = (nID for nID in g.nodes() if 0 == len(g.successors(nID)))
+    endNodeIDs = list(nID for nID in g.nodes() if is_empty(g.successors(nID)))
     for nodeID in sorted(endNodeIDs, key=distances.get, reverse=True):
-        sequence = [g.node[nodeID]]
-        parents = g.predecessors(nodeID)
+        sequence = [g.nodes[nodeID]]
+        parents = list(g.predecessors(nodeID))
         while parents:
             parentID = parents[0]
-            sequence.append(g.node[parentID])
+            sequence.append(g.nodes[parentID])
             if parentID in seen:
                 break
             seen.add(parentID)
-            parents = g.predecessors(parentID)
+            parents = list(g.predecessors(parentID))
 
         if len(sequence) > 1:
             sequences.append(sequence)

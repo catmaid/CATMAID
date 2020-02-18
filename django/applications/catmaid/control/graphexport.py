@@ -42,24 +42,22 @@ def export_jsongraph(request:HttpRequest, project_id) -> JsonResponse:
 
     circuit = _skeleton_graph(project_id, skeletonlist, confidence_threshold, bandwidth, set(), compute_risk, cable_spread, path_confluence)
     newgraph = nx.DiGraph()
-    for digraph, props in circuit.nodes_iter(data=True):
-        newgraph.add_node( props['id'], {
+    for digraph, props in circuit.nodes(data=True):
+        newgraph.add_node(props['id'], **{
             'node_count': props['node_count'],
             'skeleton_id': props['skeleton_id'],
             'label': props['label'],
-            'node_reviewed_count': props['node_reviewed_count'] })
-    for g1, g2, props in circuit.edges_iter(data=True):
-        id1 = circuit.node[g1]['id']
-        id2 = circuit.node[g2]['id']
-        newgraph.add_edge(
-            id1, id2,
-            {
-                'id': '%s-%s' % (id1, id2),
-                'weight': props['c'],
-                'label': str(props['c']) if props['directed'] else None,
-                'directed': props['directed'],
-            },
-        )
+            'node_reviewed_count': props['node_reviewed_count']
+        })
+    for g1, g2, props in circuit.edges(data=True):
+        id1 = circuit.nodes[g1]['id']
+        id2 = circuit.nodes[g2]['id']
+        newgraph.add_edge( id1, id2, **{
+            'id': '%s-%s' % (id1, id2),
+            'weight': props['c'],
+            'label': str(props['c']) if props['directed'] else None,
+            'directed': props['directed'],
+        })
 
     return JsonResponse(json_graph.node_link_data(newgraph), safe=False,
             json_dumps_params={'indent': 2})

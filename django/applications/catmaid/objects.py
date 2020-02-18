@@ -150,9 +150,7 @@ class Skeleton(object):
         graph = nx.DiGraph()
         for e in treenode_qs:
             reviews = tid_to_reviews[e.id]
-            graph.add_node( e.id )
-            # TODO: add attributes
-            graph.node[e.id] = {
+            graph.add_node(e.id, **{
                 'user_id': e.user_id,
                 'creation_time': e.creation_time,
                 'edition_time': e.edition_time,
@@ -161,9 +159,9 @@ class Skeleton(object):
                 'review_times': [r.review_time for r in reviews],
                 'radius': e.radius,
                 'tags': []
-            }
+            })
             if e.parent_id:
-                graph.add_edge( e.parent_id, e.id, {'confidence': e.confidence} )
+                graph.add_edge( e.parent_id, e.id, confidence=e.confidence)
 
         # add labels
         tci = TreenodeClassInstance.objects.filter(
@@ -173,7 +171,7 @@ class Skeleton(object):
             project=self.project_id).select_related('class_instance')
 
         for t in tci:
-            graph.node[t.treenode_id]['tags'].append( t.class_instance.name )
+            graph.nodes[t.treenode_id]['tags'].append( t.class_instance.name )
 
         return graph
 
@@ -182,22 +180,29 @@ class Skeleton(object):
         if self._edge_length_sum != 0.0:
             return self._edge_length_sum
         sum = 0.0
-        node = self.graph.node
+        g = self.graph
         for ID_from, ID_to in self.graph.edges(data=False):
-            sum += np.linalg.norm(node[ID_to]['location'] - node[ID_from]['location'])
+            sum += np.linalg.norm(g.nodes[ID_to]['location'] - g.nodes[ID_from]['location'])
         self._edge_length_sum = sum
         return self._edge_length_sum
 
     def _compute_skeleton_edge_deltatime(self):
-        node = self.graph.node
-        edge = self.graph.edge
+        g = self.graph
         for ID_from, ID_to in self.graph.edges(data=False):
-            stamp1 = node[ID_from]['creation_time']
-            stamp2 = node[ID_to]['creation_time']
+            stamp1 = g.nodes[ID_from]['creation_time']
+            stamp2 = g.nodes[ID_to]['creation_time']
             if stamp1 >= stamp2:
-                edge[ID_from][ID_to]['delta_creation_time'] = stamp1-stamp2
+                nx.set_edge_attributes(g, {
+                    (ID_from, ID_to): {
+                        'delta_creation_time': stamp1 - stamp2
+                    }
+                })
             else:
-                edge[ID_from][ID_to]['delta_creation_time'] = stamp2-stamp1
+                nx.set_edge_attributes(g, {
+                    (ID_from, ID_to): {
+                        'delta_creation_time': stamp2 - stamp1
+                    }
+                })
 
     def measure_construction_time(self, threshold=300):
         """ Measure the amount of time consumed in creating this Skeleton.
@@ -237,7 +242,7 @@ class SkeletonGroup(object):
         graph = nx.DiGraph()
 
         for skeleton_id in self.skeleton_id_list:
-            graph.add_node( skeleton_id, {
+            graph.add_node( skeleton_id, **{
                 'baseName': f'{self.skeletons[skeleton_id].neuron.name} (SkeletonID: {skeleton_id})',
                 'neuronname': self.skeletons[skeleton_id].neuron.name,
                 'skeletonid': str(skeleton_id),
@@ -270,12 +275,15 @@ class SkeletonGroup(object):
                 for to_skeleton in v['post']:
 
                     if not graph.has_edge( from_skeleton, to_skeleton ):
-                        graph.add_edge( from_skeleton, to_skeleton, {'count': 0, 'connector_ids': set() } )
+                        graph.add_edge(from_skeleton, to_skeleton, **{
+                            'count': 0,
+                            'connector_ids': set()
+                        })
 
                     graph.edge[from_skeleton][to_skeleton]['count'] += 1
                     graph.edge[from_skeleton][to_skeleton]['connector_ids'].add( connector_id )
 
-        for u,v,d in graph.edges_iter(data=True):
+        for u,v,d in graph.edges(data=True):
             d['connector_ids'] = list(d['connector_ids'])
 
         return graph
@@ -284,12 +292,12 @@ class SkeletonGroup(object):
         """ Returns a set of connector ids that connect skeletons in the group
         """
         resulting_connectors:Set = set()
-        for u,v,d in self.graph.edges_iter(data=True):
+        for u,v,d in self.graph.edges(data=True):
             resulting_connectors.update(d['connector_ids'])
         return resulting_connectors
 
 def confidence_filtering( skeleton, confidence_threshold ):
-    for u,v,d in skeleton.graph.edges_iter(data=True):
+    for u,v,d in skeleton.graph.edges(data=True):
         if d['confidence'] <= confidence_threshold:
             skeleton.graph.remove_edge( u, v )
 
@@ -299,7 +307,7 @@ def edgecount_filtering( skeleton, edgecount ):
 
     # init edge count (and compute distance) on the edges
     for ID_from, ID_to in graph.edges(data=False):
-        # graph.edge[ID_from][ID_to]['distance'] = np.linalg.norm(graph.node[ID_to]['location'] - graph.node[ID_from]['location'])
+        # graph.edge[ID_from][ID_to]['distance'] = np.linalg.norm(graph.nodes[ID_to]['location'] - graph.nodes[ID_from]['location'])
         graph.edge[ID_from][ID_to]['edgecount'] = 1
 
     # list of nodes which are either pre or postsynaptic
@@ -317,21 +325,21 @@ def edgecount_filtering( skeleton, edgecount ):
     ends = False
     while not ends:
         ends = True
-        for nodeid, d in graph.nodes_iter(data=True):
+        for nodeid, d in graph.nodes(data=True):
             if nodeid in keep:
                 continue
-            fromnode = graph.predecessors(nodeid)[0]
-            tonode = graph.successors(nodeid)[0]
+            fromnode = list(graph.predecessors(nodeid))[0]
+            tonode = list(graph.successors(nodeid))[0]
             # newdistance = graph.edge[fromnode][nodeid]['distance'] + graph.edge[nodeid][tonode]['distance']
             newedgecount = graph.edge[fromnode][nodeid]['edgecount'] + graph.edge[nodeid][tonode]['edgecount']
-            graph.add_edge(fromnode, tonode, {'edgecount': newedgecount}) # 'distance': newdistance,
+            graph.add_edge(fromnode, tonode, edgecount=newedgecount) # 'distance': newdistance,
             graph.remove_edge( fromnode, nodeid )
             graph.remove_edge( nodeid, tonode )
             graph.remove_node( nodeid )
             ends = False
             break
 
-    for u,v,d in graph.edges_iter(data=True):
+    for u,v,d in graph.edges(data=True):
         if d['edgecount'] >= edgecount:
             skeleton.graph.remove_edge( u, v )
 
@@ -369,16 +377,16 @@ def compartmentalize_skeletongroup( skeleton_id_list, project_id, **kwargs ):
         compartment_graph_of_skeletons[ skeleton_id ] = subgraphs
 
         for i,subg in enumerate(subgraphs):
-            for nodeid, d in subg.nodes_iter(data=True):
+            for nodeid, d in subg.nodes(data=True):
                 d['compartment_index'] = i
-                skeleton.graph.node[nodeid]['compartment_index'] = i
+                skeleton.graph.nodes[nodeid]['compartment_index'] = i
 
             if len(skeleton.neuron.name) > 30:
                 neuronname = f'{skeleton.neuron.name[:30]}... [{i}]'
             else:
                 neuronname = f'{skeleton.neuron.name} [{i}]'
 
-            resultgraph.add_node(f'{skeleton_id}_{i}', {
+            resultgraph.add_node(f'{skeleton_id}_{i}', **{
                 'neuronname': neuronname,
                 'skeletonid': str(skeleton_id),
                 'compartment_index': i,
@@ -397,12 +405,12 @@ def compartmentalize_skeletongroup( skeleton_id_list, project_id, **kwargs ):
                 # add the skeleton id for each treenode that is in v['presynaptic_to']
                 # This can duplicate skeleton id entries which is correct
                 for e in v['presynaptic_to']:
-                    skeleton_compartment_id = f'{skeleton_id}_{skeleton.graph.node[e]["compartment_index"]}'
+                    skeleton_compartment_id = f'{skeleton_id}_{skeleton.graph.nodes[e]["compartment_index"]}'
                     connectors[connector_id]['pre'].append( skeleton_compartment_id )
 
             if len(v['postsynaptic_to']):
                 for e in v['postsynaptic_to']:
-                    skeleton_compartment_id = f'{skeleton_id}_{skeleton.graph.node[e]["compartment_index"]}'
+                    skeleton_compartment_id = f'{skeleton_id}_{skeleton.graph.nodes[e]["compartment_index"]}'
                     connectors[connector_id]['post'].append( skeleton_compartment_id )
 
     # merge connectors into graph
@@ -411,7 +419,10 @@ def compartmentalize_skeletongroup( skeleton_id_list, project_id, **kwargs ):
             for to_skeleton in v['post']:
 
                 if not resultgraph.has_edge( from_skeleton, to_skeleton ):
-                    resultgraph.add_edge( from_skeleton, to_skeleton, {'count': 0, 'connector_ids': set() } )
+                    resultgraph.add_edge(from_skeleton, to_skeleton, **{
+                        'count': 0,
+                        'connector_ids': set(),
+                    })
 
                 resultgraph.edge[from_skeleton][to_skeleton]['count'] += 1
                 resultgraph.edge[from_skeleton][to_skeleton]['connector_ids'].add( connector_id )

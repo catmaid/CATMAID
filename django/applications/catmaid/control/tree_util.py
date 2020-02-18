@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
 
 # A 'tree' is a networkx.DiGraph with a single root node (a node without parents)
+import networkx as nx
 
 from collections import defaultdict
 from itertools import islice
 from math import sqrt
-from networkx import Graph, DiGraph
 from operator import itemgetter
 from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple
 
+from catmaid.control.common import is_empty
 from catmaid.models import Treenode
 
 
@@ -17,7 +18,7 @@ def find_root(tree):
     Will be the root node in directed graphs.
     Avoids one database lookup. """
     for node in tree:
-        if not next(tree.predecessors_iter(node), None):
+        if not next(tree.predecessors(node), None):
             return node
 
 def edge_count_to_root(tree, root_node=None) -> Dict:
@@ -31,7 +32,7 @@ def edge_count_to_root(tree, root_node=None) -> Dict:
         while current_level:
             node = current_level.pop()
             distances[node] = count
-            next_level.extend(tree.successors_iter(node))
+            next_level.extend(tree.successors(node))
         # Rotate lists (current_level is now empty)
         current_level, next_level = next_level, current_level
         count += 1
@@ -49,13 +50,13 @@ def find_common_ancestor(tree, nodes, ds=None, root_node=None) -> Tuple[Any, Any
     first, second = sorted({node: distances(node) for node in nodes}.items(), key=itemgetter(1))[:2]
     # Start from the second, and bring it to an edge count equal to the first
     while second[1] < first[1]:
-        second = (next(tree.predecessors_iter(second[0])), second[1] - 1)
+        second = (next(tree.predecessors(second[0])), second[1] - 1)
     # Walk parents up for both until finding the common ancestor
     first = first[0]
     second = second[0]
     while first != second:
-        first = next(tree.predecessors_iter(first))
-        second = next(tree.predecessors_iter(second))
+        first = next(tree.predecessors(first))
+        second = next(tree.predecessors(second))
     return first, distances[first]
 
 def find_common_ancestors(tree, node_groups):
@@ -64,7 +65,7 @@ def find_common_ancestors(tree, node_groups):
 
 def reroot(tree, new_root):
     """ Reverse in place the direction of the edges from the new_root to root. """
-    parent = next(tree.predecessors_iter(new_root), None)
+    parent = next(tree.predecessors(new_root), None)
     if not parent:
         # new_root is already the root
         return
@@ -72,10 +73,10 @@ def reroot(tree, new_root):
     while parent is not None:
         tree.remove_edge(parent, path[-1])
         path.append(parent)
-        parent = next(tree.predecessors_iter(parent), None)
-    tree.add_path(path)
+        parent = next(tree.predecessors(parent), None)
+    nx.add_path(tree, path)
 
-def simplify(tree, keepers) -> Graph:
+def simplify(tree, keepers) -> nx.Graph:
     """ Given a tree and a set of nodes to keep, create a new tree
     where only the nodes to keep and the branch points between them are preserved.
     WARNING: will reroot the tree at the first of the keepers.
@@ -83,7 +84,7 @@ def simplify(tree, keepers) -> Graph:
     # Ensure no repeats
     keepers = set(keepers)
     # Add all keeper nodes to the minified graph
-    mini = Graph()
+    mini = nx.Graph()
     for node in keepers:
         mini.add_node(node)
     # Pick the first to be the root node of the tree, removing it
@@ -98,7 +99,7 @@ def simplify(tree, keepers) -> Graph:
     for node in keepers:
         path = [node]
         paths.append(path)
-        parent = next(tree.predecessors_iter(node), None)
+        parent = next(tree.predecessors(node), None)
         while parent is not None:
             if parent in mini:
                 # Reached one of the keeper nodes
@@ -111,7 +112,7 @@ def simplify(tree, keepers) -> Graph:
                 if parent in seen_branch_nodes:
                     break
                 seen_branch_nodes.add(parent)
-            parent = next(tree.predecessors_iter(parent), None)
+            parent = next(tree.predecessors(parent), None)
     for path in paths:
         # A path starts and ends with desired nodes for the minified tree.
         # The nodes in the middle of the path are branch nodes
@@ -133,34 +134,34 @@ def partition(tree, root_node=None):
     distances = edge_count_to_root(tree, root_node=root_node) # distance in number of edges from root
     seen:Set = set()
     # Iterate end nodes sorted from highest to lowest distance to root
-    endNodeIDs = (nID for nID in tree.nodes() if 0 == len(tree.successors(nID)))
+    endNodeIDs = (nID for nID in tree.nodes() if is_empty(tree.successors(nID)))
     for nodeID in sorted(endNodeIDs, key=distances.get, reverse=True):
         sequence = [nodeID]
-        parentID = next(tree.predecessors_iter(nodeID), None)
+        parentID = next(tree.predecessors(nodeID), None)
         while parentID is not None:
             sequence.append(parentID)
             if parentID in seen:
                 break
             seen.add(parentID)
-            parentID = next(tree.predecessors_iter(parentID), None)
+            parentID = next(tree.predecessors(parentID), None)
 
         if len(sequence) > 1:
             yield sequence
 
 
-def spanning_tree(tree, preserve) -> DiGraph:
+def spanning_tree(tree, preserve) -> nx.DiGraph:
     """ Return a new DiGraph with the spanning tree including the desired nodes.
     preserve: the set of nodes that delimit the spanning tree. """
-    spanning = DiGraph()
+    spanning = nx.DiGraph()
     preserve = set(preserve) # duplicate, will be altered
     if 1 == len(preserve):
         spanning.add_node(next(iter(preserve)))
         return spanning
 
-    if len(tree.successors(find_root(tree))) > 1:
+    if len(list(tree.successors(find_root(tree)))) > 1:
         tree = tree.copy()
         # First end node found
-        endNode = next(node for node in tree if not next(tree.successors_iter(node), None))
+        endNode = next(node for node in tree if not next(tree.successors(node), None))
         reroot(tree, endNode)
 
     n_seen = 0
@@ -179,7 +180,7 @@ def spanning_tree(tree, preserve) -> DiGraph:
                 path.append(node)
 
         if path:
-            spanning.add_path(path)
+            nx.add_path(spanning, path)
             if seq[-1] == path[-1]:
                 preserve.add(path[-1])
 
@@ -191,11 +192,11 @@ def spanning_tree(tree, preserve) -> DiGraph:
 def cable_length(tree, locations) -> float:
     """ locations: a dictionary of nodeID vs iterable of node position (1d, 2d, 3d, ...)
     Returns the total cable length. """
-    return sum(sqrt(sum(pow(loc2 - loc1, 2) for loc1, loc2 in zip(locations[a], locations[b]))) for a,b in tree.edges_iter())
+    return sum(sqrt(sum(pow(loc2 - loc1, 2) for loc1, loc2 in zip(locations[a], locations[b]))) for a,b in tree.edges)
 
 
 def lazy_load_trees(skeleton_ids, node_properties):
-    """ Return a lazy collection of pairs of (long, DiGraph)
+    """ Return a lazy collection of pairs of (long, nx.DiGraph)
     representing (skeleton_id, tree).
     The node_properties is a list of strings, each being a name of a column
     in the django model of the Treenode table that is not the treenode id, parent_id
@@ -209,17 +210,17 @@ def lazy_load_trees(skeleton_ids, node_properties):
             .order_by('skeleton') \
             .values_list(*values_list)
     skid = None
-    tree:Optional[DiGraph] = None
+    tree:Optional[nx.DiGraph] = None
     for t in ts:
         if t[2] != skid:
             if tree:
                 yield (skid, tree)
             # Prepare for the next one
             skid = t[2]
-            tree = DiGraph()
+            tree = nx.DiGraph()
 
         fields = {k: v for k,v in zip(props, islice(t, 3, 3 + len(props)))}
-        tree.add_node(t[0], fields) # type: ignore # mypy cannot prove tree will have a value by this point
+        tree.add_node(t[0], **fields) # type: ignore # mypy cannot prove tree will have a value by this point
 
         if t[1]:
             # From child to parent

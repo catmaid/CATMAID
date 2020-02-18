@@ -5,7 +5,7 @@ import logging
 import sys
 
 import networkx as nx
-from networkx.algorithms import weakly_connected_component_subgraphs
+from networkx.algorithms import weakly_connected_components
 
 from collections import defaultdict
 from functools import partial
@@ -53,7 +53,7 @@ def split_by_confidence_and_add_edges(confidence_threshold, digraphs, rows) -> D
                 digraphs[row[3]].add_edge(row[1], row[0])
         for skid, digraph in digraphs.items():
             if skid in to_split:
-                arbors[skid] = list(weakly_connected_component_subgraphs(digraph))
+                arbors[skid] = list(digraph.subgraph(c).copy() for c in weakly_connected_components(digraph))
             else:
                 arbors[skid] = [digraph]
 
@@ -73,7 +73,7 @@ def split_by_synapse_domain(bandwidth, locations, arbors, treenode_connector, mi
             treenode_ids = []
             connector_ids =[]
             relation_ids = []
-            for treenode_id in filter(treenode_connector.has_key, graph.nodes_iter()): # type: ignore
+            for treenode_id in filter(treenode_connector.has_key, graph.nodes): # type: ignore
                 for c in treenode_connector.get(treenode_id):
                     connector_id, relation = c
                     treenode_ids.append(treenode_id)
@@ -84,7 +84,7 @@ def split_by_synapse_domain(bandwidth, locations, arbors, treenode_connector, mi
                 subdomains.append(graph)
                 continue
 
-            for parent_id, treenode_id in graph.edges_iter():
+            for parent_id, treenode_id in graph.edges:
                 loc0 = locations[treenode_id]
                 loc1 = locations[parent_id]
                 graph[parent_id][treenode_id]['weight'] = norm(subtract(loc0, loc1))
@@ -104,16 +104,16 @@ def split_by_synapse_domain(bandwidth, locations, arbors, treenode_connector, mi
             # Define edges between domains: create a simplified graph
             mini = simplify(graph, anchors.keys())
             # Replace each node by the corresponding graph, or a graph of a single node
-            for node in mini.nodes_iter():
+            for node in mini.nodes:
                 g = anchors.get(node)
                 if not g:
                     # A branch node that was not an anchor, i.e. did not represent a synapse group
                     g = nx.Graph()
-                    g.add_node(node, {'branch': True})
+                    g.add_node(node, **{'branch': True})
                     subdomains.append(g)
                 # Associate the Graph with treenodes that have connectors
                 # with the node in the minified tree
-                mini.node[node]['g'] = g
+                mini.nodes[node]['g'] = g
             # Put the mini into a map of skeleton_id and list of minis,
             # to be used later for defining intra-neuron edges in the circuit graph
             minis[skeleton_id].append(mini)
@@ -144,7 +144,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
 
     # Create a DiGraph for every skeleton
     for row in rows:
-        arbors[row[3]].add_node(row[0], {'reviewer_ids': reviews.get(row[0], [])})
+        arbors[row[3]].add_node(row[0], **{'reviewer_ids': reviews.get(row[0], [])})
 
     # Dictionary of skeleton IDs vs list of DiGraph instances
     arbors = split_by_confidence_and_add_edges(confidence_threshold, arbors, rows)
@@ -205,12 +205,14 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
                 label = "%s [%s]" % (base_label, i+1)
             else:
                 label = base_label
-            circuit.add_node(g, {'id': "%s_%s" % (skid, i+1),
-                                 'label': label,
-                                 'skeleton_id': skid,
-                                 'node_count': len(g),
-                                 'node_reviewed_count': sum(1 for v in g.node.values() if 0 != len(v.get('reviewer_ids', []))), # TODO when bandwidth > 0, not all nodes are included. They will be included when the bandwidth is computed with an O(n) algorithm rather than the current O(n^2)
-                                 'branch': False})
+            circuit.add_node(g, **{
+                'id': "%s_%s" % (skid, i+1),
+                'label': label,
+                'skeleton_id': skid,
+                'node_count': len(g),
+                'node_reviewed_count': sum(1 for v in g.node.values() if 0 != len(v.get('reviewer_ids', []))), # TODO when bandwidth > 0, not all nodes are included. They will be included when the bandwidth is computed with an O(n) algorithm rather than the current O(n^2)
+                'branch': False,
+            })
             i += 1
 
     # Define edges between arbors, with number of synapses as an edge property
@@ -229,7 +231,13 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
                                     edge_props['pre_treenodes'].append(pre_treenode)
                                     edge_props['post_treenodes'].append(post_treenode)
                                 else:
-                                    circuit.add_edge(pre_arbor, post_arbor, {'c': 1, 'pre_treenodes': [pre_treenode], 'post_treenodes': [post_treenode], 'arrow': 'triangle', 'directed': True})
+                                    circuit.add_edge(pre_arbor, post_arbor, **{
+                                        'c': 1,
+                                        'pre_treenodes': [pre_treenode],
+                                        'post_treenodes': [post_treenode],
+                                        'arrow': 'triangle',
+                                        'directed': True,
+                                    })
                                 break
                     break
 
@@ -267,7 +275,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
         # as a function of the number of synapses and their location within the arbor.
         # Algorithm by Casey Schneider-Mizell
         # Implemented by Albert Cardona
-        for pre_arbor, post_arbor, edge_props in circuit.edges_iter(data=True):
+        for pre_arbor, post_arbor, edge_props in circuit.edges(data=True):
             if pre_arbor == post_arbor:
                 # Signal autapse
                 edge_props['risk'] = -2
@@ -281,9 +289,9 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
                 tc = post_arbor.treenode_synapse_counts
                 count = spanning.number_of_nodes()
                 if count < 3:
-                    median_synapse_centrality = sum(tc[treenodeID].synapse_centrality for treenodeID in spanning.nodes_iter()) / count
+                    median_synapse_centrality = sum(tc[treenodeID].synapse_centrality for treenodeID in spanning.nodes) / count
                 else:
-                    median_synapse_centrality = sorted(tc[treenodeID].synapse_centrality for treenodeID in spanning.nodes_iter())[count / 2]
+                    median_synapse_centrality = sorted(tc[treenodeID].synapse_centrality for treenodeID in spanning.nodes)[count / 2]
                 cable = cable_length(spanning, locations)
                 if -1 == median_synapse_centrality:
                     # Signal not computable
@@ -300,19 +308,25 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
         # Add edges between circuit nodes that represent different domains of the same neuron
         for skeleton_id, list_mini in minis.items():
             for mini in list_mini:
-                for node in mini.nodes_iter():
-                    g = mini.node[node]['g']
-                    if 1 == len(g) and next(g.nodes_iter(data=True))[1].get('branch'):
+                for node in mini.nodes:
+                    g = mini.nodes[node]['g']
+                    if 1 == len(g) and next(g.nodes(data=True))[1].get('branch'):
                         # A branch node that was preserved in the minified arbor
-                        circuit.add_node(g, {'id': '%s-%s' % (skeleton_id, node),
-                                             'skeleton_id': skeleton_id,
-                                             'label': "", # "%s [%s]" % (names[skeleton_id], node),
-                                             'node_count': 1,
-                                             'branch': True})
-                for node1, node2 in mini.edges_iter():
-                    g1 = mini.node[node1]['g']
-                    g2 = mini.node[node2]['g']
-                    circuit.add_edge(g1, g2, {'c': 10, 'arrow': 'none', 'directed': False})
+                        circuit.add_node(g, **{
+                            'id': '%s-%s' % (skeleton_id, node),
+                            'skeleton_id': skeleton_id,
+                            'label': "", # "%s [%s]" % (names[skeleton_id], node),
+                            'node_count': 1,
+                            'branch': True,
+                        })
+                for node1, node2 in mini.edges:
+                    g1 = mini.nodes[node1]['g']
+                    g2 = mini.nodes[node2]['g']
+                    circuit.add_edge(g1, g2, **{
+                        'c': 10,
+                        'arrow': 'none',
+                        'directed': False
+                    })
 
     return circuit
 
@@ -347,9 +361,9 @@ def skeleton_graph(request:HttpRequest, project_id=None) -> JsonResponse:
         package:Dict[str, Any] = {'nodes': [{'data': props} for props in circuit.node.values()],
                    'edges': []}
         edges:List = package['edges']
-        for g1, g2, props in circuit.edges_iter(data=True):
-            id1 = circuit.node[g1]['id']
-            id2 = circuit.node[g2]['id']
+        for g1, g2, props in circuit.edges(data=True):
+            id1 = circuit.nodes[g1]['id']
+            id2 = circuit.nodes[g2]['id']
             data = {'id': '%s_%s' % (id1, id2),
                     'source': id1,
                     'target': id2,
@@ -429,10 +443,10 @@ def _node_centrality_by_synapse(tree, nodes:Dict, totalOutputs:int, totalInputs:
             counts.synapse_centrality = -1
         return
 
-    if len(tree.successors(find_root(tree))) > 1:
+    if len(list(tree.successors(find_root(tree)))) > 1:
         # Reroot at the first end node found
         tree = tree.copy()
-        endNode = next(nodeID for nodeID in nodes.keys() if not tree.successors(nodeID))
+        endNode = next(nodeID for nodeID in nodes.keys() if not list(tree.successors(nodeID)))
         reroot(tree, endNode)
 
     # 2. Partition into sequences, sorted from small to large

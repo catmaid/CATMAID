@@ -216,18 +216,18 @@ def get_skeleton_as_dataarray(project_id=None, skeleton_id=None):
     g = get_annotation_graph( project_id )
     skeletonmap={}
     if skeleton_id is None:
-        allskeletonids = [nid for nid,di in g.nodes_iter(data=True) if di['class']=='skeleton']
+        allskeletonids = [nid for nid,di in g.nodes(data=True) if di['class']=='skeleton']
     else:
         allskeletonids = [skeleton_id]
-    rid = [nid for nid,di in g.nodes_iter(data=True) if di['class']=='root']
+    rid = [nid for nid,di in g.nodes(data=True) if di['class']=='root']
     maxiter = 10
     for id in allskeletonids:
         outstr = ''
         iterat = 0
         currid = [id]
         while currid[0] != rid[0] and iterat < maxiter:
-            currid = g.predecessors(currid[0])
-            outstr = g.node[currid[0]]['name']+'|'+outstr
+            currid = list(g.predecessors(currid[0]))
+            outstr = g.nodes[currid[0]]['name']+'|'+outstr
             iterat+=1
         skeletonmap[id] = outstr.rstrip('|')
     data['meta'] = skeletonmap

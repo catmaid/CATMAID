@@ -5,7 +5,7 @@ from functools import partial
 from itertools import count
 import json
 import networkx as nx
-from networkx.algorithms import weakly_connected_component_subgraphs
+from networkx.algorithms import weakly_connected_components
 from numpy import subtract
 from numpy.linalg import norm
 from typing import Any, DefaultDict, Dict, List, Optional, Tuple, Union
@@ -312,7 +312,7 @@ def populate_connectors(chunkIDs, chunks, cs, connectors) -> None:
 
 
 def subgraphs(digraph, skeleton_id) -> Tuple[List, Tuple]:
-    chunks = list(weakly_connected_component_subgraphs(digraph))
+    chunks = list(digraph.subgraph(c).copy() for c in weakly_connected_components(digraph))
     if 1 == len(chunks):
         chunkIDs:Tuple = (str(skeleton_id),) # Note: Here we're loosening the implicit type
     else:
@@ -336,7 +336,7 @@ def split_by_both(skeleton_id, digraph, locations, bandwidth, cs, connectors, in
 
     for i, chunkID, chunk in zip(count(start=1), chunkIDs, chunks):
         # Populate edge properties with the weight
-        for parent, child in chunk.edges_iter():
+        for parent, child in chunk.edges():
             chunk[parent][child]['weight'] = norm(subtract(locations[child], locations[parent]))
 
         # Check if need to expand at all
@@ -378,7 +378,7 @@ def split_by_both(skeleton_id, digraph, locations, bandwidth, cs, connectors, in
         # * custom-apply populate_connectors with the known synapses of each domain
         #   (rather than having to sift through all in cs)
         mini_nodes = {}
-        for node in mini.nodes_iter():
+        for node in mini.nodes:
             nblob = anchors.get(node)
             if nblob:
                 index, domain = nblob
@@ -392,7 +392,7 @@ def split_by_both(skeleton_id, digraph, locations, bandwidth, cs, connectors, in
                 branch_nodes.append(domainID)
             mini_nodes[node] = domainID
 
-        for a1, a2 in mini.edges_iter():
+        for a1, a2 in mini.edges:
             intraedges.append((mini_nodes[a1], mini_nodes[a2]))
 
     return nodes, branch_nodes

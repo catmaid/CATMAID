@@ -22,9 +22,9 @@ def _find_nearest(tree, nodes, loc1) -> Tuple[Any, float]:
     """ Returns a tuple of the closest node and the square of the distance. """
     min_sqdist = float('inf')
     for node in nodes:
-        loc2 = (tree.node[node]['location_x'],
-                tree.node[node]['location_y'],
-                tree.node[node]['location_z'])
+        loc2 = (tree.nodes[node]['location_x'],
+                tree.nodes[node]['location_y'],
+                tree.nodes[node]['location_z'])
         dsq = pow(loc1[0] - loc2[0], 2) + pow(loc1[1] - loc2[1], 2) + pow(loc1[2] - loc2[2], 2)
         if dsq < min_sqdist:
             min_sqdist = dsq
@@ -89,7 +89,7 @@ def _evaluate_epochs(epochs, skeleton_id, tree, reviews, relations) -> List:
         newer_synapses_count:DefaultDict = defaultdict(partial(defaultdict, int))
 
         for node in nodes:
-            props = tree.node[node]
+            props = tree.nodes[node]
             # Find out review date range for this epoch, based on most recent
             # reviews
             tr = reviews[node][0].review_time
@@ -130,12 +130,12 @@ def _evaluate_epochs(epochs, skeleton_id, tree, reviews, relations) -> List:
             if pre:
                 for s in pre:
                     if in_range(s.creation_time):
-                        reviewer_n_pre[tree.node[s.treenode_id]['user_id']] += 1
+                        reviewer_n_pre[tree.nodes[s.treenode_id]['user_id']] += 1
             post = reviewer_synapses.get(relations['postsynaptic_to'])
             if post:
                 for s in post:
                     if in_range(s.creation_time):
-                        reviewer_n_post[tree.node[s.treenode_id]['user_id']] += 1
+                        reviewer_n_post[tree.nodes[s.treenode_id]['user_id']] += 1
 
 
         date_range = [start_date, end_date]
@@ -173,20 +173,20 @@ def _evaluate_epochs(epochs, skeleton_id, tree, reviews, relations) -> List:
             node, sqdist = _find_nearest(tree, nodes, _parse_location(location))
 
             if 'split_skeleton' == operation_type:
-                splits[tree.node[node]['user_id']] += 1
+                splits[tree.nodes[node]['user_id']] += 1
 
             elif 'join_skeleton' == operation_type:
                 edges = tree[node]
                 if edges:
                     # Replace node with its parent
                     node = next(edges.keys())
-                merges[tree.node[node]['user_id']] += 1
+                merges[tree.nodes[node]['user_id']] += 1
 
         # Count nodes created by the reviewer, as well as
         # the number of connected arbors made by that nodes
         # which will add to the count of merges missed.
         def newlyAdded(node):
-            props = tree.node[node]
+            props = tree.nodes[node]
             return props['user_id'] == reviewer_id and in_range(props['creation_time'])
 
         owned = filter(newlyAdded, nodes)
@@ -203,7 +203,7 @@ def _evaluate_epochs(epochs, skeleton_id, tree, reviews, relations) -> List:
                     edges = tree[node]
                     if edges:
                         parent = next(edges.keys())
-                        creator_id = tree.node[parent]['user_id']
+                        creator_id = tree.nodes[parent]['user_id']
                         if creator_id != reviewer_id:
                             appended[creator_id].append(len(addition))
                             break
@@ -221,7 +221,7 @@ def _split_into_epochs(skeleton_id, tree, reviews, max_gap) -> List:
     # Sort nodes by date of most recent review (first in list)
     def get_review_time(e):
         return reviews[e[0]][0].review_time
-    nodes = sorted(tree.nodes_iter(data=True), key=get_review_time)
+    nodes = sorted(tree.nodes(data=True), key=get_review_time)
 
     # Grab the oldest node
     oldest = nodes[0]

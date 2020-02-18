@@ -96,10 +96,15 @@ def export_wiring_diagram_nx(request:HttpRequest, project_id=None) -> JsonRespon
     g=nx.DiGraph()
 
     for n in nodes_and_edges['nodes']:
-        g.add_node( n['id'], {'label': n['label'], 'node_count': n['node_count'] } )
+        g.add_node(n['id'], **{
+            'label': n['label'],
+            'node_count': n['node_count'],
+        })
 
     for e in nodes_and_edges['edges']:
-        g.add_edge( e['source'], e['target'], {'number_of_connector': e['number_of_connector'] } )
+        g.add_edge(e['source'], e['target'], **{
+            'number_of_connector': e['number_of_connector'],
+        })
 
     data = json_graph.node_link_data(g)
     return JsonResponse(data, safe=False, json_dumps_params={

@@ -151,7 +151,7 @@ def _open_leaves(project_id, skeleton_id, tnid=None):
     distances = edge_count_to_root(tree, root_node=tnid)
     leaves = set()
 
-    for node_id, out_degree in tree.out_degree_iter():
+    for node_id, out_degree in tree.out_degree():
         if 0 == out_degree or node_id == tnid and 1 == out_degree:
             # Found an end node
             leaves.add(node_id)
@@ -292,9 +292,9 @@ def _find_labels(project_id, skeleton_id, label_regex, tnid=None,
             tree.add_edge(row[1], nodeID)
         else:
             tree.add_node(nodeID)
-        tree.node[nodeID]['loc'] = (row[2], row[3], row[4])
+        tree.nodes[nodeID]['loc'] = (row[2], row[3], row[4])
         if row[5]:
-            props = tree.node[nodeID]
+            props = tree.nodes[nodeID]
             tags = props.get('tags')
             if tags:
                 tags.append(row[5])
@@ -311,12 +311,12 @@ def _find_labels(project_id, skeleton_id, label_regex, tnid=None,
     leaves = set()
 
     if only_leaves:
-        for node_id, out_degree in tree.out_degree_iter():
+        for node_id, out_degree in tree.out_degree():
             if 0 == out_degree or node_id == tnid and 1 == out_degree:
                 # Found an end node
                 leaves.add(node_id)
 
-    for nodeID, props in tree.nodes_iter(data=True):
+    for nodeID, props in tree.nodes(data=True):
         if only_leaves and nodeID not in leaves:
             continue
         if 'tags' in props:
@@ -1215,7 +1215,7 @@ def split_skeleton(request:HttpRequest, project_id=None) -> JsonResponse:
             graph.add_edge( row[1], row[0] )
     # find downstream nodes starting from target treenode_id
     # and generate the list of IDs to change, starting at treenode_id (inclusive)
-    change_list = nx.bfs_tree(graph, treenode_id).nodes()
+    change_list = list(nx.bfs_tree(graph, treenode_id).nodes)
     if not change_list:
         # When splitting an end node, the bfs_tree doesn't return any nodes,
         # which is surprising, because when the splitted tree has 2 or more nodes
@@ -1308,8 +1308,8 @@ def create_subgraph(source_graph, target_graph, start_node, end_nodes) -> None:
     # Create a graph for the domain
     while working_set:
         current_node = working_set.pop(0)
-        for n in source_graph.successors_iter(current_node):
-            target_graph.add_path([current_node,n])
+        for n in source_graph.successors(current_node):
+            nx.add_path(target_graph, [current_node,n])
             if n not in end_nodes:
                 working_set.append(n)
 
@@ -2621,7 +2621,7 @@ def _update_samplers_in_merge(project_id, user_id, win_skeleton_id, lose_skeleto
             # edge from parent_id to id
             lose_graph.add_edge(row[1], row[0])
 
-    lose_graph_end_nodes = [x for x in lose_graph.nodes_iter()
+    lose_graph_end_nodes = [x for x in lose_graph.nodes()
             if lose_graph.out_degree(x)==0 and lose_graph.in_degree(x)==1]
 
     regular_domain_type = SamplerDomainType.objects.get(name='regular')
@@ -2932,10 +2932,12 @@ def import_skeleton_swc(user, project_id, swc_string, neuron_id=None,
 
         node_id = int(row[0])
         parent_id = int(row[6])
-        g.add_node(node_id, {'x': float(row[2]),
-                             'y': float(row[3]),
-                             'z': float(row[4]),
-                             'radius': float(row[5])})
+        g.add_node(node_id, **{
+            'x': float(row[2]),
+            'y': float(row[3]),
+            'z': float(row[4]),
+            'radius': float(row[5])
+        })
 
         if parent_id != -1:
             g.add_edge(parent_id, node_id)
@@ -2946,7 +2948,7 @@ def import_skeleton_swc(user, project_id, swc_string, neuron_id=None,
     import_info = _import_skeleton(user, project_id, g, neuron_id, skeleton_id,
             name, annotations, force, auto_id, source_id, source_url,
             source_project_id, source_type)
-    node_id_map = {n: d['id'] for n, d in import_info['graph'].nodes_iter(data=True)}
+    node_id_map = {n: d['id'] for n, d in import_info['graph'].nodes(data=True)}
 
     return JsonResponse({
         'neuron_id': import_info['neuron_id'],
@@ -2985,7 +2987,7 @@ def import_skeleton_eswc(user, project_id, swc_string, neuron_id=None,
 
         node_id = int(row[0])
         parent_id = int(row[6])
-        g.add_node(node_id, {
+        g.add_node(node_id, **{
             'x': float(row[2]),
             'y': float(row[3]),
             'z': float(row[4]),
@@ -3006,7 +3008,7 @@ def import_skeleton_eswc(user, project_id, swc_string, neuron_id=None,
     import_info = _import_skeleton(user, project_id, g, neuron_id, skeleton_id,
             name, annotations, force, auto_id, source_id, source_url,
             source_project_id, source_type, extended_data=True)
-    node_id_map = {n: d['id'] for n, d in import_info['graph'].nodes_iter(data=True)}
+    node_id_map = {n: d['id'] for n, d in import_info['graph'].nodes(data=True)}
 
     return JsonResponse({
         'neuron_id': import_info['neuron_id'],
@@ -3206,24 +3208,24 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
     treenode_ids = cursor.fetchall()
     # Flatten IDs
     treenode_ids = list(chain.from_iterable(treenode_ids))
-    nx.set_node_attributes(arborescence, 'id', dict(zip(arborescence.nodes(), treenode_ids)))
+    nx.set_node_attributes(arborescence, name='id', values=dict(zip(arborescence.nodes(), treenode_ids)))
 
     # Set parent node ID
-    for n, nbrs in arborescence.adjacency_iter():
+    for n, nbrs in arborescence.adjacency():
         for nbr in nbrs:
             # FIXME: the cast here and below in the SQL (::bigint) shouldn't be
             # needed
-            arborescence.node[nbr]['parent_id'] = int(arborescence.node[n]['id'])
-            if 'radius' not in arborescence.node[nbr]:
-                arborescence.node[nbr]['radius'] = -1
-    arborescence.node[root]['parent_id'] = None
-    if 'radius' not in arborescence.node[root]:
-        arborescence.node[root]['radius'] = -1
-    new_location = tuple([arborescence.node[root][k] for k in ('x', 'y', 'z')])
+            arborescence.nodes[nbr]['parent_id'] = int(arborescence.nodes[n]['id'])
+            if 'radius' not in arborescence.nodes[nbr]:
+                arborescence.nodes[nbr]['radius'] = -1
+    arborescence.nodes[root]['parent_id'] = None
+    if 'radius' not in arborescence.nodes[root]:
+        arborescence.nodes[root]['radius'] = -1
+    new_location = tuple([arborescence.nodes[root][k] for k in ('x', 'y', 'z')])
 
     if extended_data:
         treenode_template = '(' + '),('.join(
-            '%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s' for _ in arborescence.nodes_iter()
+            '%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s' for _ in arborescence.nodes
         ) + ')'
         treenode_values = list(chain.from_iterable(
             [
@@ -3231,7 +3233,7 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
                 d['parent_id'], d['radius'], d['user_id'],
                 d['creation_time'], d['editor_id'],
                 d['edition_time'], d['confidence']
-            ] for n, d in arborescence.nodes_iter(data=True)
+            ] for n, d in arborescence.nodes(data=True)
         ))
         # Include skeleton ID for index performance.
         cursor.execute(f"""
@@ -3253,9 +3255,9 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
                 AND treenode.skeleton_id = %s
         """, treenode_values + [new_skeleton.id])
     else:
-        treenode_template = '(' + '),('.join('%s,%s,%s,%s,%s,%s' for _ in arborescence.nodes_iter()) + ')'
+        treenode_template = '(' + '),('.join('%s,%s,%s,%s,%s,%s' for _ in arborescence.nodes) + ')'
         treenode_values = list(chain.from_iterable([d['id'], d['x'], d['y'], d['z'], d['parent_id'], d['radius']] \
-                for n, d in arborescence.nodes_iter(data=True)))
+                for n, d in arborescence.nodes(data=True)))
         # Include skeleton ID for index performance.
         cursor.execute(f"""
             UPDATE treenode SET
@@ -3587,7 +3589,7 @@ def adjacency_matrix(request:HttpRequest, project_id=None) -> JsonResponse:
 
     nodeslist = [ {'group': 1,
                    'id': k,
-                   'name': d['neuronname']} for k,d in skelgroup.graph.nodes_iter(data=True)  ]
+                   'name': d['neuronname']} for k,d in skelgroup.graph.nodes(data=True)  ]
     nodesid_list = [ele['id'] for ele in nodeslist]
 
     data = {
@@ -3595,7 +3597,7 @@ def adjacency_matrix(request:HttpRequest, project_id=None) -> JsonResponse:
         'links': [ {'id': '%i_%i' % (u,v),
                     'source': nodesid_list.index(u),
                     'target': nodesid_list.index(v),
-                    'value': d['count']} for u,v,d in skelgroup.graph.edges_iter(data=True)  ]
+                    'value': d['count']} for u,v,d in skelgroup.graph.edges(data=True)  ]
     }
 
     return JsonResponse(data, json_dumps_params={'sort_keys': True, 'indent': 4})
@@ -3613,13 +3615,13 @@ def skeletonlist_subgraph(request:HttpRequest, project_id=None) -> JsonResponse:
                     'label': str(d['baseName']),
                     'skeletonid': str(d['skeletonid']),
                     'node_count': d['node_count']
-                    } for k,d in skelgroup.graph.nodes_iter(data=True)  ],
+                    } for k,d in skelgroup.graph.nodes(data=True)  ],
         'edges': [ {'id': '%i_%i' % (u,v),
                     'source': str(u),
                     'target': str(v),
                     'weight': d['count'],
                     'label': str(d['count']),
-                    'directed': True} for u,v,d in skelgroup.graph.edges_iter(data=True)  ]
+                    'directed': True} for u,v,d in skelgroup.graph.edges(data=True)  ]
     }
 
     return JsonResponse(data, json_dumps_params={'sort_keys': True, 'indent': 4})
@@ -3639,13 +3641,13 @@ def skeletonlist_confidence_compartment_subgraph(request:HttpRequest, project_id
         'nodes': [ { 'data': {'id': str(k),
                     'label': str(d['neuronname']),
                     'skeletonid': str(d['skeletonid']),
-                    'node_count': d['node_count']} } for k,d in resultgraph.nodes_iter(data=True)  ],
+                    'node_count': d['node_count']} } for k,d in resultgraph.nodes(data=True)  ],
         'edges': [ { 'data': {'id': '%s_%s' % (u,v),
                     'source': str(u),
                     'target': str(v),
                     'weight': d['count'],
                     'label': str(d['count']),
-                    'directed': True}} for u,v,d in resultgraph.edges_iter(data=True)  ]
+                    'directed': True}} for u,v,d in resultgraph.edges(data=True)  ]
     }
 
     return JsonResponse(data, json_dumps_params={'sort_keys': True, 'indent': 4})
@@ -3665,13 +3667,13 @@ def skeletonlist_edgecount_compartment_subgraph(request:HttpRequest, project_id=
         'nodes': [ { 'data': {'id': str(k),
                     'label': str(d['neuronname']),
                     'skeletonid': str(d['skeletonid']),
-                    'node_count': d['node_count']} } for k,d in resultgraph.nodes_iter(data=True)  ],
+                    'node_count': d['node_count']} } for k,d in resultgraph.nodes(data=True)  ],
         'edges': [ { 'data': {'id': '%s_%s' % (u,v),
                     'source': str(u),
                     'target': str(v),
                     'weight': d['count'],
                     'label': str(d['count']),
-                    'directed': True}} for u,v,d in resultgraph.edges_iter(data=True)  ]
+                    'directed': True}} for u,v,d in resultgraph.edges(data=True)  ]
     }
 
     return JsonResponse(data, json_dumps_params={'sort_keys': True, 'indent': 4})

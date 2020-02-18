@@ -1217,11 +1217,11 @@ def find_previous_branchnode_or_root(request:HttpRequest, project_id=None, treen
         # or reaching the root node
         seq = [] # Does not include the starting node tnid
         while True:
-            parents = graph.predecessors(tnid)
+            parents = list(graph.predecessors(tnid))
             if parents: # list of parents is not empty
                 tnid = parents[0] # Can ony have one parent
                 seq.append(tnid)
-                if 1 != len(graph.successors(tnid)):
+                if 1 != len(list(graph.successors(tnid))):
                     break # Found a branch node
             else:
                 break # Found the root node
@@ -1241,7 +1241,7 @@ def find_next_branchnode_or_end(request:HttpRequest, project_id=None, treenode_i
         skid = Treenode.objects.get(pk=tnid).skeleton_id
         graph = _skeleton_as_graph(skid)
 
-        children = graph.successors(tnid)
+        children = list(graph.successors(tnid))
         branches = []
         for child_node_id in children:
             # Travel downstream until finding a child node with more than one
@@ -1249,7 +1249,7 @@ def find_next_branchnode_or_end(request:HttpRequest, project_id=None, treenode_i
             seq = [child_node_id] # Does not include the starting node tnid
             branch_end = child_node_id
             while True:
-                branch_children = graph.successors(branch_end)
+                branch_children = list(graph.successors(branch_end))
                 if 1 == len(branch_children):
                     branch_end = branch_children[0]
                     seq.append(branch_end)

@@ -86,7 +86,7 @@ def skeleton_graph(connection, project_id, skeleton_id):
     for treenode in d[1]:
         if treenode[1]:
             # Will create the nodes when not existing yet
-            g.add_edge(treenode[1], treenode[0], {'confidence': treenode[7]})
+            g.add_edge(treenode[1], treenode[0], confidence=treenode[7])
         else:
             # The root node
             g.add_node(treenode[0])

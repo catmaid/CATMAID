@@ -322,11 +322,13 @@
   };
 
   /**
-   * Returns a set of set settings for this layer. This will only contain
+   * Returns a map of settings for this layer by group. This will only contain
    * anything if the tile layer's tile source provides additional settings.
    */
   StackLayer.prototype.getLayerSettings = function () {
-    var settings = [{
+    let settings = new Map();
+
+    settings.set('Stack', [{
         name: 'hideIfBroken',
         displayName: 'Hide if nearest slice is broken',
         type: 'checkbox',
@@ -334,14 +336,6 @@
         help: 'Hide this tile layer if the nearest section is marked as ' +
               'broken, rather than the default behavior of displaying the ' +
               'nearest non-broken section.'
-    },{
-        name: 'changeMirrorIfNoData',
-        displayName: 'Change mirror on inaccessible data',
-        type: 'checkbox',
-        value: this.changeMirrorIfNoData,
-        help: 'Automatically switch to the next accessible mirror if ' +
-              'the current mirror is inaccessible. This is usually recomended ' +
-              'except for some use cases involving custom mirrors.'
     },{
       name: 'stackInfo',
       displayName: 'Stack info',
@@ -351,6 +345,22 @@
           name: 'Open',
           onclick: (function () {WindowMaker.create('stack-info', this.stack.id);}).bind(this)
         }]
+    },{
+      name: 'interpolationMode',
+      displayName: 'Interpolation',
+      type: 'select',
+      value: this._interpolationMode,
+      options: Object.values(CATMAID.StackLayer.INTERPOLATION_MODES).map(mode => [mode, mode]),
+    }]);
+
+    settings.set('Mirrors', [{
+        name: 'changeMirrorIfNoData',
+        displayName: 'Change mirror on inaccessible data',
+        type: 'checkbox',
+        value: this.changeMirrorIfNoData,
+        help: 'Automatically switch to the next accessible mirror if ' +
+              'the current mirror is inaccessible. This is usually recomended ' +
+              'except for some use cases involving custom mirrors.'
     },{
       name: 'mirrorSelection',
       displayName: 'Stack mirror',
@@ -373,17 +383,12 @@
           name: 'Clear',
           onclick: this.clearCustomMirrors.bind(this)
         }]
-    },{
-      name: 'interpolationMode',
-      displayName: 'Interpolation',
-      type: 'select',
-      value: this._interpolationMode,
-      options: Object.values(CATMAID.StackLayer.INTERPOLATION_MODES).map(mode => [mode, mode]),
-    }];
+    }]);
 
     if (this.stack.isReorientable()) {
       let otherOrientations = CATMAID.Stack.ORIENTATIONS.filter(o => o !== this.stack.orientation);
-      settings.splice(settings.findIndex(s => s.name === 'stackInfo') + 1, 0,
+      let stackSettings = settings.get('Stack');
+      stackSettings.splice(stackSettings.findIndex(s => s.name === 'stackInfo') + 1, 0,
           {
             name: 'openReorientation',
             displayName: 'Open orientation',
@@ -401,7 +406,7 @@
     }
 
     if (this.tileSource) {
-      settings = settings.concat(this.tileSource.getSettings());
+      settings = settings.set('Source', this.tileSource.getSettings());
     }
 
     return settings;

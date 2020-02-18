@@ -197,75 +197,20 @@
 
       // Layer settings
       if (CATMAID.tools.isFn(layer.getLayerSettings)) {
-        var settings = layer.getLayerSettings();
-        if (0 < settings.length) {
-          var layerSettings = $('<div />');
-          for (var j=0; j<settings.length; ++j) {
-            var setting = settings[j];
-            var settingElement = $('<div />').addClass('setting');
-            var label = $('<label />').append(setting.displayName);
-            settingElement.append(label);
-            label.attr('title', setting.help);
-            if ('text' === setting.type || 'number' === setting.type || 'checkbox' == setting.type) {
-              var input = $('<input />').attr({
-                'type': setting.type,
-                'placeholder': '(none)',
-                'name': setting.name
-              });
-              if (setting.range && 2 === setting.range.length) {
-                input.attr('min', setting.range[0]);
-                input.attr('max', setting.range[1]);
-              } else {
-                if (setting.min !== undefined) {
-                  input.attr('min', setting.min);
-                }
-                if (setting.max !== undefined) {
-                  input.attr('max', setting.max);
-                }
-              }
-              if (setting.step) {
-                input.attr('step', setting.step);
-              }
-              input.addClass('layerSetting');
-              if (setting.hasOwnProperty('value')) {
-                if ('checkbox' === setting.type) {
-                  input.prop('checked', !!setting.value);
-                } else {
-                  input.attr('value', setting.value);
-                }
-              }
-              if ('checkbox' === setting.type) {
-                label.prepend(input);
-              } else {
-                settingElement.append(input);
-              }
-
-            } else if ('select' === setting.type) {
-              var select = $('<select />').attr({
-                'name': setting.name,
-              });
-              setting.options.forEach(function (option) {
-                select.append($('<option />', {
-                    value: option[0],
-                    text: option[1]
-                }));
-              });
-              select.val(setting.value);
-              select.addClass('layerSetting');
-              settingElement.append(select);
-            } else if ('buttons' === setting.type) {
-              var controls = $('<span />')
-                .addClass('layerSetting');
-              setting.buttons.forEach(function(b) {
-                var button = $('<button />')
-                  .addClass('layerSetting')
-                  .on('click', b.onclick)
-                  .append(b.name);
-                this.append(button);
-              }, controls);
-              settingElement.append(controls);
+        let settings = layer.getLayerSettings();
+        if (0 < settings.size) {
+          let layerSettings = $('<div />');
+          for (let [groupName, group] of settings) {
+            if (group.length) layerSettings.append($('<h5 />').append(groupName));
+            for (let setting of group) {
+              let settingElement = $('<div />').addClass('setting');
+              let label = $('<label />').append(setting.displayName);
+              settingElement.append(label);
+              label.attr('title', setting.help);
+              CATMAID.LayerControl.SettingControls[setting.type]
+                .createControl(setting, settingElement, label);
+              layerSettings.append(settingElement);
             }
-            layerSettings.append(settingElement);
           }
 
           container.append(layerSettings);
@@ -283,6 +228,8 @@
           });
         }
       }
+
+      container.append($('<h5 />'));
 
       // Blend mode
       if (layer.getAvailableBlendModes) {
@@ -384,6 +331,92 @@
         stackViewer.redraw();
       }
     });
+  };
+
+  // Static classes here are only used for dispatch because the settings
+  // themselves are flat objects and there's no point in constructing real
+  // instances.
+  class SettingControl {
+    static createControl(setting, element, label) {
+      throw new CATMAID.NotImplementedException();
+    }
+  }
+
+  class InputControl extends SettingControl {
+    static createControl(setting, element, label) {
+      var input = $('<input />').attr({
+        type: setting.type,
+        placeholder: '(none)',
+        name: setting.name
+      });
+      if (setting.range && 2 === setting.range.length) {
+        input.attr('min', setting.range[0]);
+        input.attr('max', setting.range[1]);
+      } else {
+        if (setting.min !== undefined) {
+          input.attr('min', setting.min);
+        }
+        if (setting.max !== undefined) {
+          input.attr('max', setting.max);
+        }
+      }
+      if (setting.step) {
+        input.attr('step', setting.step);
+      }
+      input.addClass('layerSetting');
+      if (setting.hasOwnProperty('value')) {
+        if ('checkbox' === setting.type) {
+          input.prop('checked', !!setting.value);
+        } else {
+          input.attr('value', setting.value);
+        }
+      }
+      if ('checkbox' === setting.type) {
+        label.prepend(input);
+      } else {
+        element.append(input);
+      }
+    }
+  }
+
+  class SelectControl extends SettingControl {
+    static createControl(setting, element, label) {
+      var select = $('<select />').attr({
+        'name': setting.name,
+      });
+      setting.options.forEach(function (option) {
+        select.append($('<option />', {
+            value: option[0],
+            text: option[1]
+        }));
+      });
+      select.val(setting.value);
+      select.addClass('layerSetting');
+      element.append(select);
+    }
+  }
+
+  class ButtonControl extends SettingControl {
+    static createControl(setting, element, label) {
+      var controls = $('<span />')
+        .addClass('layerSetting');
+      setting.buttons.forEach(function(b) {
+        var button = $('<button />')
+          .addClass('layerSetting')
+          .on('click', b.onclick)
+          .append(b.name);
+        this.append(button);
+      }, controls);
+      element.append(controls);
+    }
+  }
+
+  LayerControl.SettingControls = {
+    buttons: ButtonControl,
+    checkbox: InputControl,
+    number: InputControl,
+    select: SelectControl,
+    text: InputControl,
   };
 
   CATMAID.LayerControl = LayerControl;

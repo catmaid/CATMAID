@@ -594,13 +594,14 @@
   };
 
   /**
-   * Returns a set of set settings for this layer. This will only contain
+   * Returns a map of settings for this layer by group. This will only contain
    * anything if the tile layer's tile source provides additional settings.
    */
   TileLayer.prototype.getLayerSettings = function () {
-    var settings = CATMAID.StackLayer.prototype.getLayerSettings.call(this);
-    settings.splice(
-      settings.findIndex(s => s.name === 'stackInfo'),
+    let settings = CATMAID.StackLayer.prototype.getLayerSettings.call(this);
+    let stackSettings = settings.get('Stack');
+    stackSettings.splice(
+      stackSettings.findIndex(s => s.name === 'stackInfo'),
       undefined,
       {
         name: 'webGL',

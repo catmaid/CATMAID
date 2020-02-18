@@ -247,7 +247,7 @@
   };
 
   TracingLayer.prototype.getLayerSettings = function() {
-    return [{
+    return new Map([[null, [{
       name: 'updateWhilePanning',
       displayName: 'Update tracing data while panning',
       type: 'checkbox',
@@ -375,7 +375,7 @@
           ['postgis3dmultijoin', '3D index multi-join'],
           ['postgis3dspgist', '3D index unbalanced']],
       help: 'Override the back-end selected node provider',
-    }];
+    }]]]);
   };
 
   TracingLayer.prototype.setLayerSetting = function(name, value) {

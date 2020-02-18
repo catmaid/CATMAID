@@ -85,7 +85,6 @@ class ProjectsApiTests(CatmaidApiTestCase):
         self.fake_authentication()
         # We expect four projects, one of them (project 2) is empty.
         response = self.client.get('/projects/')
-        print(response.content)
         self.assertEqual(response.status_code, 200)
         result = json.loads(response.content.decode('utf-8'))
         original_n_project_entries = len(result)

@@ -1128,13 +1128,6 @@ div.review-block::after {
   margin-left: 15em;
 }
 
-.setting input[type=checkbox] {
-  position: relative;
-  margin-left: 0;
-  margin-bottom: 0;
-  bottom: -0.2em;
-}
-
 .result-container {
   width: 100%;
 }

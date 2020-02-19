@@ -1111,8 +1111,6 @@
    * makes the tool working.
    */
   StackViewer.prototype.setTool = function (newTool) {
-  //    if ( typeof tool != "undefined" && tool )
-  //      tool.unregister();
     // If this tool is already registered to this stack, do nothing.
     if ( this._tool === newTool ) return;
     this._tool = newTool;

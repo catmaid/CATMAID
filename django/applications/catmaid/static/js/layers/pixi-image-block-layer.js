@@ -2,6 +2,8 @@
 
   "use strict";
 
+  const PREFETCH_SETTING_PREFIX = 'prefetch-';
+
   class PixiImageBlockLayer extends CATMAID.PixiTileLayer {
     constructor(...args) {
       super(...args);
@@ -50,6 +52,43 @@
           CATMAID.info(`Stack mirror has ${numSourceLevels} scale levels but stack specifies ${numStackLevels}`);
         }
       });
+
+      this.prefetchOrder = [
+        CATMAID.ImageBlock.Prefetch.Policies.NormalNeighboringSlabs,
+        CATMAID.ImageBlock.Prefetch.Policies.ZoomIn,
+        CATMAID.ImageBlock.Prefetch.Policies.PlanarNeighboringBorder,
+      ];
+      this.prefetch = new Set(this.prefetchOrder);
+      this._prefetchTimeout = null;
+      this.prefetchDelay = 500;
+    }
+
+    getLayerSettings() {
+      let settings = super.getLayerSettings();
+
+      settings.set('Prefetch',
+        this.prefetchOrder.map(p => ({
+          name: PREFETCH_SETTING_PREFIX + p.name,
+          displayName: p.description(),
+          type: 'checkbox',
+          value: this.prefetch.has(p),
+        })));
+
+      return settings;
+    }
+
+    setLayerSetting(name, value) {
+      if (name.startsWith(PREFETCH_SETTING_PREFIX)) {
+        let prefetcherName = name.substring(PREFETCH_SETTING_PREFIX.length);
+        let prefetcher = CATMAID.ImageBlock.Prefetch.Policies[prefetcherName];
+        if (value) {
+          this.prefetch.add(prefetcher);
+        } else {
+          this.prefetch.delete(prefetcher);
+        }
+      } else {
+        super.setLayerSetting(name, value);
+      }
     }
 
     _initTiles(rows, cols) {
@@ -228,6 +267,9 @@
         this._oldZ    = this._swapZ;
         this._renderIfReady();
       }
+
+      window.clearTimeout(this._prefetchTimeout);
+      this._prefetchTimeout = window.setTimeout(this._queuePrefetch.bind(this), this.prefetchDelay);
 
       if (typeof completionCallback !== 'undefined') {
         if (loading && blocking) {
@@ -545,6 +587,35 @@
       let blockZ = tile.coord[4] % this.blockSizeZ;
       return this._readBlock(...tile.coord.slice(0, 4))
           .then(block => this._sliceBlock(block, blockZ).get(Math.round(x), Math.round(y)));
+    }
+
+    blockCoordsForLocation(scaledStackPosition) {
+      let tileInfo = this.tilesForLocation(
+          scaledStackPosition.xc,
+          scaledStackPosition.yc,
+          scaledStackPosition.z,
+          scaledStackPosition.s,
+          this.efficiencyThreshold);
+
+      let z = Math.floor(tileInfo.z / this.blockSizeZ);
+
+      return new CATMAID.BlockCoordBounds(
+        [tileInfo.zoom, ...CATMAID.tools.permute(
+          [tileInfo.firstCol, tileInfo.firstRow, z], this.recipDimPerm)],
+        [tileInfo.zoom, ...CATMAID.tools.permute(
+          [tileInfo.lastCol, tileInfo.lastRow, z], this.recipDimPerm)]
+      );
+    }
+
+    _queuePrefetch() {
+      let scaledStackPosition = this.stackViewer.scaledPositionInStack(this.stack);
+
+      let queue = this._blockCache.queue.get('prefetch' + this.stackViewer.getId());
+      queue.length = 0;
+      this.prefetchOrder
+        .filter(p => this.prefetch.has(p))
+        .forEach(p => queue.push(...p.coordinatesFor(this, scaledStackPosition)));
+      this._blockCache.queue.dispatch();
     }
   }
 

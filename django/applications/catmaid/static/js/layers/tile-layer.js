@@ -479,6 +479,10 @@
     this.cacheTiles(tileIndices, progressCallback);
   };
 
+  TileLayer.prototype.tileSizeForZoom = function (zoom) {
+    return [this.tileWidth, this.tileHeight];
+  };
+
   /**
    * Generate bounds on the tile indices for a specified view using the current
    * stack view size.
@@ -520,8 +524,9 @@
     }
 
     var anisotropy = this.stack.anisotropy(zoom);
-    var effectiveTileWidth = this.tileWidth * mag * anisotropy.x;
-    var effectiveTileHeight = this.tileHeight * mag * anisotropy.y;
+    let [tileWidth, tileHeight] = this.tileSizeForZoom(zoom);
+    var effectiveTileWidth = tileWidth * mag * anisotropy.x;
+    var effectiveTileHeight = tileHeight * mag * anisotropy.y;
 
     var fr = Math.floor(yc / effectiveTileHeight);
     var fc = Math.floor(xc / effectiveTileWidth);
@@ -575,9 +580,9 @@
 
     // Clamp last tile coordinates within the slice edges.
     lc = Math.min(lc, Math.floor((this.stack.dimension.x / this.stack.downsample_factors[closestDownsampleZoom].x - 1)
-                      / this.tileWidth));
+                      / tileWidth));
     lr = Math.min(lr, Math.floor((this.stack.dimension.y / this.stack.downsample_factors[closestDownsampleZoom].y - 1)
-                      / this.tileHeight));
+                      / tileHeight));
 
     return {
       firstRow:  fr,

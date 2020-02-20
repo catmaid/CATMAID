@@ -25,6 +25,10 @@
     clear() {
       this._pending.clear();
     }
+
+    pending() {
+      return this._pending.size;
+    }
   };
 
 })(CATMAID);

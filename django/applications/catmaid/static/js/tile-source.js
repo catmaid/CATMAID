@@ -539,6 +539,10 @@
       throw new CATMAID.NotImplementedError();
     }
 
+    blockCoordBounds(zoomLevel) {
+      throw new CATMAID.NotImplementedError();
+    }
+
     dataType() {
       throw new CATMAID.NotImplementedError();
     }
@@ -662,6 +666,24 @@
             }
           })
           .then(() => this.ready = true);
+    }
+
+    blockCoordBounds(zoomLevel) {
+      if (!this.ready) return;
+
+      let attrs = this.datasetAttributes[zoomLevel];
+      let bs = attrs.get_block_size();
+      let max = attrs.get_dimensions().map((d, i) => {
+        let b = BigInt(bs[i]);
+        // - 1 because this is inclusive.
+        return (d + 1n) / b + (d % b != 0n  ? 1n : 0n) - 1n;
+      });
+      // FIXME: check conversion is valid
+      let maxNum = new Array(max.length);
+      max.forEach((n, i) => maxNum[i] = Number(n));
+
+      let min = new Array(maxNum.length).fill(0);
+      return new CATMAID.BlockCoordBounds(min, maxNum);
     }
 
     blockSize(zoomLevel) {

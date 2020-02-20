@@ -2225,7 +2225,7 @@
     };
 
     var addRemoteSettings = function(container) {
-      var ds = CATMAID.DOM.addSettingsContainer(container, "Other CATMAID instances");
+      var ds = CATMAID.DOM.addSettingsContainer(container, "Remote servers and data providers");
 
       // The remote instance list
       let componentList = $('<select/>').addClass('multiline').attr('size', '4')[0];
@@ -2235,11 +2235,11 @@
           .load()
           .then(function () {
             remoteAsyncContainer.append(wrapSettingsControl(
-                CATMAID.DOM.createLabeledControl('Known CATMAID instances', componentList,
-                  "The list of known CATMAID instances that can be used to " +
-                  "e.g. retrieve tracing data.", 'cm-top'),
+                CATMAID.DOM.createLabeledControl('Known data providers', componentList,
+                  "The list of known data providers (e.g. CATMAID instances) that can be used to " +
+                  "retrieve tracing data and other information.", 'cm-top'),
                 CATMAID.Client.Settings,
-                'remote_catmaid_instances',
+                'remote_servers',
                 SETTINGS_SCOPE,
                 function () {}));
           });
@@ -2247,10 +2247,10 @@
       // Remove selected remote instance
       var removeButton = $('<button/>').text('Remove instance reference').click(function() {
         if (componentList.selectedIndex < componentList.length) {
-          let newList = CATMAID.tools.deepCopy(CATMAID.Client.Settings[SETTINGS_SCOPE].remote_catmaid_instances);
+          let newList = CATMAID.tools.deepCopy(CATMAID.Client.Settings[SETTINGS_SCOPE].remote_servers);
           newList.splice(componentList.selectedIndex, 1);
           CATMAID.Client.Settings.set(
-              'remote_catmaid_instances',
+              'remote_servers',
               newList,
               SETTINGS_SCOPE)
             .then(function() {
@@ -2266,11 +2266,11 @@
       // Remote instance list update
       var updateComponentList = function() {
         $(componentList).empty();
-        let remotes = CATMAID.Client.Settings[SETTINGS_SCOPE].remote_catmaid_instances;
+        let remotes = CATMAID.Client.Settings[SETTINGS_SCOPE].remote_servers;
         remotes.map(function(o, i) {
           // Add each remote list element to the select control
           var optionElement = $('<option/>').attr('value', o.id)
-              .text(`${o.name}: ${o.url}`);
+              .text(`${o.name}: ${o.url} [${o.type ? o.type : 'catmaid'}]`);
           return optionElement[0];
         }).forEach(function(o) {
           componentList.appendChild(o);
@@ -2281,21 +2281,32 @@
       updateComponentList();
 
       let newRemoteName = '';
+      let newRemoteType = null;
       let newRemoteUrl = '';
       let newRemoteApiKey = '';
       let newRemoteAuthUser = '';
       let newRemoteAuthPass = '';
 
       let newRemoteNameInput = CATMAID.DOM.createInputSetting(
-          "Instance name", newRemoteName, "The name under which the new " +
-          "remote CATMAID instance will be accessible.", function() {
+          "Server name", newRemoteName, "The name under which the new " +
+          "remote server (e.g. a CATMAID instance) will be accessible.", function() {
             newRemoteName = this.value.trim();
           });
       ds.append(newRemoteNameInput);
 
+      let newRemoteTypeSelect = CATMAID.DOM.createSelectSetting(
+          "Server type",
+          {'CATMAID': 'catmaid',
+           'NeuPrint': 'neuprint'},
+          "What type of server this is.",
+          function() {
+            newRemoteType = this.value;
+          });
+      ds.append(newRemoteTypeSelect);
+
       let newRemoteNameUrlInput = CATMAID.DOM.createInputSetting(
           "Instance URL", newRemoteName, "The main URL under which the new " +
-          "remote CATMAID instance can be reached, e.g. https://example.com/catmaid/",
+          "remote server (e.g. a CATMAID instance) can be reached, e.g. https://example.com/catmaid/",
           function() {
             newRemoteUrl = this.value.trim();
           });
@@ -2324,7 +2335,7 @@
       ds.append(newRemoteAuthPassInput);
 
       // Add selected remote instance
-      var addButton = $('<button/>').text('Add remote CATMAID instance').click(function() {
+      var addButton = $('<button/>').text('Add remote server').click(function() {
         if (!newRemoteName || newRemoteName.length === 0) {
           CATMAID.warn("Need a name for the new remote reference");
           return;
@@ -2335,22 +2346,24 @@
         }
         let newRemote = {
           name: newRemoteName,
+          type: newRemoteType,
           url: newRemoteUrl,
           api_key: newRemoteApiKey,
           http_auth_user: newRemoteAuthUser,
           http_auth_pass: newRemoteAuthPass,
         };
 
-        let newList = CATMAID.tools.deepCopy(CATMAID.Client.Settings[SETTINGS_SCOPE].remote_catmaid_instances);
+        let newList = CATMAID.tools.deepCopy(CATMAID.Client.Settings[SETTINGS_SCOPE].remote_servers);
         newList.push(newRemote);
         CATMAID.Client.Settings.set(
-            'remote_catmaid_instances',
+            'remote_servers',
             newList,
             SETTINGS_SCOPE)
           .then(function() {
             CATMAID.Init.trigger(CATMAID.Init.EVENT_KNOWN_REMOTES_CHANGED, newList);
             updateComponentList();
             newRemoteNameInput.find('input').val('');
+            newRemoteTypeSelect.find('select').val('catmaid');
             newRemoteNameUrlInput.find('input').val('');
             newRemoteApiKeyInput.find('input').val('');
             newRemoteAuthUserInput.find('input').val('');

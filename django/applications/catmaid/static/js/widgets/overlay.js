@@ -3974,7 +3974,7 @@ var SkeletonAnnotations = {};
       let mirrorIndex = CATMAID.TracingOverlay.Settings.session.read_only_mirror_index;
       let api = self.api;
       if (!api && mirrorIndex > -1) {
-        api = CATMAID.Client.Settings.session.remote_catmaid_instances[mirrorIndex - 1];
+        api = CATMAID.Client.Settings.session.remote_servers[mirrorIndex - 1];
         if (api) {
           dedicatedActiveSkeletonUpdate = true;
         }

@@ -202,12 +202,14 @@ var project;
           default: false
         },
         // Expect objects with the fields: id, name, url, api_key,
-        // http_auth_user, http_auth_pass.
-        remote_catmaid_instances: {
+        // http_auth_user, http_auth_pass, space, type. The type key can
+        // currently be catmaid or neuprint.
+        remote_servers: {
           default: []
         },
-        // A list of known remote CATMAID projects, referencing above instance.
-        remote_catmaid_projects: {
+        // A list of known remote projects (typically CATMAID projects),
+        // referencing above data source instances.
+        remote_projects: {
           default: [],
         },
         last_stack_viewer_closes_project: {

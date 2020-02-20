@@ -10,15 +10,18 @@
    * @param {string} api_key   (optional) An API key used for this API
    * @param {string} http_user (optional) HTTP authentication user
    * @param {string} http_pass (optional) HTTP authentication password
+   * @param {string} apiType   (optional) A token to represent the type of API.
+   *                           If not probided, 'catmaid' is assumed.
    */
   class API {
-    constructor(name, url, apiKey, httpAuthUser, httpAuthPass) {
+    constructor(name, url, apiKey, httpAuthUser, httpAuthPass, apiType) {
       this.name = name;
       this.url = url;
       this.apiKey = apiKey;
       this.httpAuthUser = httpAuthUser;
       this.httpAuthPass = httpAuthPass;
       this.dataSourceId = undefined;
+      this.type = apiType || 'catmaid';
     }
 
 
@@ -42,7 +45,7 @@
    */
   API.fromSetting = function(setting) {
     return new API(setting.name, setting.url, setting.api_key,
-        setting.http_auth_user, setting.http_auth_pass);
+        setting.http_auth_user, setting.http_auth_pass, setting.type);
   };
 
   /**

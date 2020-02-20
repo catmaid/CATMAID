@@ -21,7 +21,7 @@
       });
     }
 
-    return CATMAID.Client.Settings.session.remote_catmaid_instances.reduce(function(o, rci) {
+    return CATMAID.Client.Settings.session.remote_servers.reduce(function(o, rci) {
       o.push({
         title: rci.name,
         value: rci.name,
@@ -50,7 +50,7 @@
 
     // In case, no particular source remote is defined, we use the local instance.
     // Find selected remote configuration based on name
-    let remoteConfigs = CATMAID.Client.Settings.session.remote_catmaid_instances;
+    let remoteConfigs = CATMAID.Client.Settings.session.remote_servers;
     if (!remoteConfigs) {
       return Promise.reject(new CATMAID.ValueError("No configured remote instances found"));
     }
@@ -259,7 +259,7 @@
    * returned.
    */
   Remote.getAPI = function(remoteHandle) {
-    let remoteConfigs = CATMAID.Client.Settings.session.remote_catmaid_instances;
+    let remoteConfigs = CATMAID.Client.Settings.session.remote_servers;
     if (!remoteConfigs) {
       CATMAID.warn("No configured remote instances found");
       return;

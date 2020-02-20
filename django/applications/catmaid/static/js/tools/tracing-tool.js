@@ -27,7 +27,7 @@
     // Reference to the currently active 'More tools' context menu, if any.
     this.moreToolsMenu = new Menu();
     // A collection of remote tracing layer information. For each remote CATMAID
-    // identifier (as stored in Client.Settings.remote_catmaid_instances), a
+    // identifier (as stored in Client.Settings.remote_servers), a
     // list of tracing layers is stored.
     this.remoteTracingProjcts = new Map();
     // Names of remote layers
@@ -2174,22 +2174,24 @@
   TracingTool.prototype.updateRemoteTracingInfo = function() {
     this.remoteTracingProjcts.clear();
     let work = [];
-    for (let ri of CATMAID.Client.Settings.session.remote_catmaid_instances) {
+    for (let ri of CATMAID.Client.Settings.session.remote_servers) {
       try {
         let api = CATMAID.Remote.getAPI(ri.name);
-        // Get remote projects with tracing data
-        work.push(CATMAID.Project.list(true, true, api)
-          .then(projects => {
-            projects.sort((a,b) => sortProjectsByTitle);
-            this.remoteTracingProjcts.set(ri.name, {
-              api: api,
-              name: ri.name,
-              projects: projects,
-            });
-          })
-          .catch(e => {
-            CATMAID.warn(e.message);
-          }));
+        if (api.type === 'catmaid') {
+          // Get remote projects with tracing data
+          work.push(CATMAID.Project.list(true, true, api)
+            .then(projects => {
+              projects.sort((a,b) => sortProjectsByTitle);
+              this.remoteTracingProjcts.set(ri.name, {
+                api: api,
+                name: ri.name,
+                projects: projects,
+              });
+            })
+            .catch(e => {
+              CATMAID.warn(e.message);
+            }));
+        }
       } catch (error) {
         CATMAID.warn(`Could not create API for remote instance "${ri}"`);
       }

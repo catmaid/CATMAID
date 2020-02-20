@@ -27,6 +27,10 @@
     "jquery"        : true,     // jQuery
     "qunit"         : true,     // QUnit
 
+    "unstable"      : {
+        "bigint"    : true
+    },
+
     // Custom Globals
     "globals"       : {
         "$": false,

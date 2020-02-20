@@ -673,10 +673,13 @@
 
       let attrs = this.datasetAttributes[zoomLevel];
       let bs = attrs.get_block_size();
+      // Use `BigInt` rather than literals to not break old parsers.
+      let n0 = BigInt(0);
+      let n1 = BigInt(1);
       let max = attrs.get_dimensions().map((d, i) => {
         let b = BigInt(bs[i]);
         // - 1 because this is inclusive.
-        return (d + 1n) / b + (d % b != 0n  ? 1n : 0n) - 1n;
+        return (d + n1) / b + (d % b != n0  ? n1 : n0) - n1;
       });
       // FIXME: check conversion is valid
       let maxNum = new Array(max.length);

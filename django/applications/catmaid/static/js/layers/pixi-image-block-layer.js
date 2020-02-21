@@ -251,6 +251,7 @@
         Promise.all(toLoad.map(([[i, j], coord]) => this
             ._readBlock(...coord.slice(0, 4))
             .then(block => {
+              if (this._context.renderer === null) return; // Layer was destroyed.
               if (!this._tilesBuffer || !this._tilesBuffer[i] || !this._tilesBuffer[i][j] ||
                   !CATMAID.tools.arraysEqual(this._tilesBuffer[i][j].coord, coord)) return;
 

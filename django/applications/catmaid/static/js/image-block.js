@@ -253,8 +253,6 @@
         .map(([s, ...c]) => [s, ...CATMAID.tools.permute(c, imageBlockLayer.recipDimPerm)])
         .filter(coord => sourceBounds.contains(coord));
 
-      console.log(bounds.min, bounds.max);
-      console.log(prefetch);
       return prefetch;
     }
 

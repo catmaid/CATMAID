@@ -171,7 +171,6 @@
         .map(bounds => [bounds.min, bounds.max]
           .map(([s, ...c]) => [s, ...CATMAID.tools.permute(c, imageBlockLayer.dimPerm)]))
         .forEach(([[mins, minx, miny, minz], [maxs, maxx, maxy, maxz]]) => {
-          // TODO: check max bounds
           prefetchBounds.push([[mins, minx, miny, minz + 1], [maxs, maxx, maxy, maxz + 1]]);
           prefetchBounds.push([[mins, minx, miny, minz - 1], [maxs, maxx, maxy, maxz - 1]]);
         });

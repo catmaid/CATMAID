@@ -1,3 +1,5 @@
 rpy2==3.2.6
 pandas==0.24.1
 channels_rabbitmq==1.2.0
+h5py==2.10.0; platform_python_implementation != "PyPy"
+

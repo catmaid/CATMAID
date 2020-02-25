@@ -1340,288 +1340,288 @@ forward = """
 """
 
 forward_create_indices = """
-    CREATE INDEX change_request_connector_id ON change_request USING btree (connector_id);
-    CREATE INDEX change_request_recipient_id ON change_request USING btree (recipient_id);
-    CREATE INDEX change_request_treenode_id ON change_request USING btree (treenode_id);
+    CREATE INDEX CONCURRENTLY change_request_connector_id ON change_request USING btree (connector_id);
+    CREATE INDEX CONCURRENTLY change_request_recipient_id ON change_request USING btree (recipient_id);
+    CREATE INDEX CONCURRENTLY change_request_treenode_id ON change_request USING btree (treenode_id);
 
-    CREATE INDEX class_project_id ON class USING btree (project_id);
-    CREATE INDEX class_user_id ON class USING btree (user_id);
+    CREATE INDEX CONCURRENTLY class_project_id ON class USING btree (project_id);
+    CREATE INDEX CONCURRENTLY class_user_id ON class USING btree (user_id);
 
-    CREATE INDEX class_class_class_a ON class_class USING btree (class_a);
-    CREATE INDEX class_class_class_b ON class_class USING btree (class_b);
-    CREATE INDEX class_class_project_id ON class_class USING btree (project_id);
-    CREATE INDEX class_class_relation_id ON class_class USING btree (relation_id);
-    CREATE INDEX class_class_user_id ON class_class USING btree (user_id);
+    CREATE INDEX CONCURRENTLY class_class_class_a ON class_class USING btree (class_a);
+    CREATE INDEX CONCURRENTLY class_class_class_b ON class_class USING btree (class_b);
+    CREATE INDEX CONCURRENTLY class_class_project_id ON class_class USING btree (project_id);
+    CREATE INDEX CONCURRENTLY class_class_relation_id ON class_class USING btree (relation_id);
+    CREATE INDEX CONCURRENTLY class_class_user_id ON class_class USING btree (user_id);
 
-    CREATE INDEX class_instance_class_id ON class_instance USING btree (class_id);
-    CREATE INDEX class_instance_name_trgm_idx ON class_instance USING gin (name gin_trgm_ops);
-    CREATE INDEX class_instance_project_id ON class_instance USING btree (project_id);
-    CREATE INDEX class_instance_user_id ON class_instance USING btree (user_id);
-    CREATE INDEX class_instance_upper_name_idx ON class_instance USING btree (upper(name::text));
+    CREATE INDEX CONCURRENTLY class_instance_class_id ON class_instance USING btree (class_id);
+    CREATE INDEX CONCURRENTLY class_instance_name_trgm_idx ON class_instance USING gin (name gin_trgm_ops);
+    CREATE INDEX CONCURRENTLY class_instance_project_id ON class_instance USING btree (project_id);
+    CREATE INDEX CONCURRENTLY class_instance_user_id ON class_instance USING btree (user_id);
+    CREATE INDEX CONCURRENTLY class_instance_upper_name_idx ON class_instance USING btree (upper(name::text));
 
-    CREATE INDEX class_instance_class_instance_class_instance_a ON class_instance_class_instance
+    CREATE INDEX CONCURRENTLY class_instance_class_instance_class_instance_a ON class_instance_class_instance
         USING btree (class_instance_a) INCLUDE (relation_id, class_instance_b, project_id);
-    CREATE INDEX class_instance_class_instance_class_instance_b ON class_instance_class_instance
+    CREATE INDEX CONCURRENTLY class_instance_class_instance_class_instance_b ON class_instance_class_instance
         USING btree (class_instance_b) INCLUDE (relation_id, class_instance_a, project_id);
-    CREATE INDEX class_instance_class_instance_project_id ON class_instance_class_instance
+    CREATE INDEX CONCURRENTLY class_instance_class_instance_project_id ON class_instance_class_instance
         USING btree (project_id);
-    CREATE INDEX class_instance_class_instance_relation_id ON class_instance_class_instance
+    CREATE INDEX CONCURRENTLY class_instance_class_instance_relation_id ON class_instance_class_instance
         USING btree (relation_id);
-    CREATE INDEX class_instance_class_instance_user_id ON class_instance_class_instance
+    CREATE INDEX CONCURRENTLY class_instance_class_instance_user_id ON class_instance_class_instance
         USING btree (user_id);
 
-    CREATE INDEX connector_class_instance_class_instance_id ON connector_class_instance
+    CREATE INDEX CONCURRENTLY connector_class_instance_class_instance_id ON connector_class_instance
         USING btree (class_instance_id);
-    CREATE INDEX connector_class_instance_project_id ON connector_class_instance
+    CREATE INDEX CONCURRENTLY connector_class_instance_project_id ON connector_class_instance
         USING btree (project_id);
-    CREATE INDEX connector_class_instance_connector_id ON connector_class_instance
+    CREATE INDEX CONCURRENTLY connector_class_instance_connector_id ON connector_class_instance
         USING btree (connector_id);
-    CREATE INDEX connector_class_instance_relation_id ON connector_class_instance
+    CREATE INDEX CONCURRENTLY connector_class_instance_relation_id ON connector_class_instance
         USING btree (relation_id);
-    CREATE INDEX connector_class_instance_user_id ON connector_class_instance
+    CREATE INDEX CONCURRENTLY connector_class_instance_user_id ON connector_class_instance
         USING btree (user_id);
 
-    CREATE INDEX treenode_creation_time_idx ON treenode
+    CREATE INDEX CONCURRENTLY treenode_creation_time_idx ON treenode
         USING btree (creation_time);
-    CREATE INDEX treenode_edition_time_idx ON treenode
+    CREATE INDEX CONCURRENTLY treenode_edition_time_idx ON treenode
         USING btree (edition_time);
-    CREATE INDEX treenode_project_id_location_x_idx ON treenode
+    CREATE INDEX CONCURRENTLY treenode_project_id_location_x_idx ON treenode
         USING btree (project_id, location_x);
-    CREATE INDEX treenode_project_id_location_y_idx ON treenode
+    CREATE INDEX CONCURRENTLY treenode_project_id_location_y_idx ON treenode
         USING btree (project_id, location_y);
-    CREATE INDEX treenode_project_id_location_z_idx ON treenode
+    CREATE INDEX CONCURRENTLY treenode_project_id_location_z_idx ON treenode
         USING btree (project_id, location_z);
-    CREATE INDEX treenode_parent_id_idx ON treenode
+    CREATE INDEX CONCURRENTLY treenode_parent_id_idx ON treenode
         USING btree (parent_id);
-    CREATE INDEX treenode_skeleton_id_project_id_idx ON treenode
+    CREATE INDEX CONCURRENTLY treenode_skeleton_id_project_id_idx ON treenode
         USING btree (skeleton_id, project_id);
-    CREATE INDEX treenode_project_id_user_id_idx ON treenode
+    CREATE INDEX CONCURRENTLY treenode_project_id_user_id_idx ON treenode
         USING btree (user_id, project_id);
 
-    CREATE INDEX catmaid_sampler_skeleton_id_idx ON catmaid_sampler
+    CREATE INDEX CONCURRENTLY catmaid_sampler_skeleton_id_idx ON catmaid_sampler
         USING btree (skeleton_id);
-    CREATE INDEX catmaid_sampler_project_id_idx ON catmaid_sampler
+    CREATE INDEX CONCURRENTLY catmaid_sampler_project_id_idx ON catmaid_sampler
         USING btree (project_id);
-    CREATE INDEX catmaid_sampler_user_id_idx ON catmaid_sampler
+    CREATE INDEX CONCURRENTLY catmaid_sampler_user_id_idx ON catmaid_sampler
         USING btree (user_id);
-    CREATE INDEX catmaid_sampler_sampler_state_id_idx ON catmaid_sampler
+    CREATE INDEX CONCURRENTLY catmaid_sampler_sampler_state_id_idx ON catmaid_sampler
         USING btree (sampler_state_id);
 
-    CREATE INDEX catmaid_skeleton_summary_last_editor_id_idx ON catmaid_skeleton_summary
+    CREATE INDEX CONCURRENTLY catmaid_skeleton_summary_last_editor_id_idx ON catmaid_skeleton_summary
         USING btree (last_editor_id);
-    CREATE INDEX catmaid_skeleton_summary_project_id_idx ON catmaid_skeleton_summary
+    CREATE INDEX CONCURRENTLY catmaid_skeleton_summary_project_id_idx ON catmaid_skeleton_summary
         USING btree (project_id);
-    CREATE INDEX catmaid_skeleton_summary_skeleton_id_idx ON catmaid_skeleton_summary
+    CREATE INDEX CONCURRENTLY catmaid_skeleton_summary_skeleton_id_idx ON catmaid_skeleton_summary
         USING btree (skeleton_id, project_id);
-    CREATE INDEX catmaid_skeleton_summary_cable_length_idx ON catmaid_skeleton_summary
+    CREATE INDEX CONCURRENTLY catmaid_skeleton_summary_cable_length_idx ON catmaid_skeleton_summary
         USING btree (cable_length);
-    CREATE INDEX catmaid_skeleton_summary_num_nodes_idx ON catmaid_skeleton_summary
+    CREATE INDEX CONCURRENTLY catmaid_skeleton_summary_num_nodes_idx ON catmaid_skeleton_summary
         USING btree (num_nodes);
-    CREATE INDEX catmaid_skeleton_summary_num_imported_nodes_idx
+    CREATE INDEX CONCURRENTLY catmaid_skeleton_summary_num_imported_nodes_idx
         ON catmaid_skeleton_summary (num_imported_nodes);
 
-    CREATE INDEX review_project_id_idx ON review USING btree (project_id);
-    CREATE INDEX review_review_time_idx ON review USING btree (review_time);
-    CREATE INDEX review_reviewer_id_idx ON review USING btree (reviewer_id);
-    CREATE INDEX review_skeleton_id_idx ON review USING btree (skeleton_id);
-    CREATE INDEX review_treenode_id_idx ON review USING btree (treenode_id);
+    CREATE INDEX CONCURRENTLY review_project_id_idx ON review USING btree (project_id);
+    CREATE INDEX CONCURRENTLY review_review_time_idx ON review USING btree (review_time);
+    CREATE INDEX CONCURRENTLY review_reviewer_id_idx ON review USING btree (reviewer_id);
+    CREATE INDEX CONCURRENTLY review_skeleton_id_idx ON review USING btree (skeleton_id);
+    CREATE INDEX CONCURRENTLY review_treenode_id_idx ON review USING btree (treenode_id);
 
-    CREATE INDEX treenode_class_instance_class_instance_id_idx ON treenode_class_instance
+    CREATE INDEX CONCURRENTLY treenode_class_instance_class_instance_id_idx ON treenode_class_instance
         USING btree (class_instance_id);
-    CREATE INDEX treenode_class_instance_project_id_idx ON treenode_class_instance
+    CREATE INDEX CONCURRENTLY treenode_class_instance_project_id_idx ON treenode_class_instance
         USING btree (project_id);
-    CREATE INDEX treenode_class_instance_relation_id_idx ON treenode_class_instance
+    CREATE INDEX CONCURRENTLY treenode_class_instance_relation_id_idx ON treenode_class_instance
         USING btree (relation_id);
-    CREATE INDEX treenode_class_instance_user_id_idx ON treenode_class_instance
+    CREATE INDEX CONCURRENTLY treenode_class_instance_user_id_idx ON treenode_class_instance
         USING btree (user_id);
-    CREATE INDEX treenode_class_instance_treenode_id_idx ON treenode_class_instance
+    CREATE INDEX CONCURRENTLY treenode_class_instance_treenode_id_idx ON treenode_class_instance
         USING btree (treenode_id);
 
-    CREATE INDEX treenode_connector_connector_id_idx ON treenode_connector
+    CREATE INDEX CONCURRENTLY treenode_connector_connector_id_idx ON treenode_connector
         USING btree (connector_id);
-    CREATE INDEX treenode_connector_creation_time_idx_idx ON treenode_connector (creation_time);
-    CREATE INDEX treenode_connector_project_id_idx ON treenode_connector
+    CREATE INDEX CONCURRENTLY treenode_connector_creation_time_idx_idx ON treenode_connector (creation_time);
+    CREATE INDEX CONCURRENTLY treenode_connector_project_id_idx ON treenode_connector
         USING btree (project_id);
-    CREATE INDEX treenode_connector_relation_id_idx ON treenode_connector
+    CREATE INDEX CONCURRENTLY treenode_connector_relation_id_idx ON treenode_connector
         USING btree (relation_id);
-    CREATE INDEX treenode_connector_skeleton_id_idx ON treenode_connector
+    CREATE INDEX CONCURRENTLY treenode_connector_skeleton_id_idx ON treenode_connector
         USING btree (skeleton_id);
-    CREATE INDEX treenode_connector_treenode_id_idx ON treenode_connector
+    CREATE INDEX CONCURRENTLY treenode_connector_treenode_id_idx ON treenode_connector
         USING btree (treenode_id);
-    CREATE INDEX treenode_connector_user_id_idx ON treenode_connector
+    CREATE INDEX CONCURRENTLY treenode_connector_user_id_idx ON treenode_connector
         USING btree (user_id);
 
-    CREATE INDEX skeleton_origin_skeleton_id_idx ON skeleton_origin (skeleton_id);
-    CREATE INDEX skeleton_origin_data_source_id_idx ON skeleton_origin (data_source_id);
-    CREATE INDEX skeleton_origin_source_id_idx ON skeleton_origin (source_id);
+    CREATE INDEX CONCURRENTLY skeleton_origin_skeleton_id_idx ON skeleton_origin (skeleton_id);
+    CREATE INDEX CONCURRENTLY skeleton_origin_data_source_id_idx ON skeleton_origin (data_source_id);
+    CREATE INDEX CONCURRENTLY skeleton_origin_source_id_idx ON skeleton_origin (source_id);
 
-    CREATE INDEX skeleton_origin__history_skeleton_id_idx
+    CREATE INDEX CONCURRENTLY skeleton_origin__history_skeleton_id_idx
         ON skeleton_origin__history (skeleton_id);
-    CREATE INDEX skeleton_origin__history_data_source_id_idx
+    CREATE INDEX CONCURRENTLY skeleton_origin__history_data_source_id_idx
         ON skeleton_origin__history (data_source_id);
-    CREATE INDEX skeleton_origin__history_source_id_idx
+    CREATE INDEX CONCURRENTLY skeleton_origin__history_source_id_idx
         ON skeleton_origin__history (source_id);
 
 
     -- History indices
-    CREATE INDEX treenode__history_creation_time_id_index
+    CREATE INDEX CONCURRENTLY treenode__history_creation_time_id_index
         ON treenode__history (creation_time);
-    CREATE INDEX treenode__history_skeleton_id_index ON treenode__history (skeleton_id);
+    CREATE INDEX CONCURRENTLY treenode__history_skeleton_id_index ON treenode__history (skeleton_id);
 
-    CREATE INDEX treenode_connector__history_skeleton_id_index ON treenode_connector__history (skeleton_id);
-    CREATE INDEX review__history_skeleton_id_index ON review__history (skeleton_id);
-    CREATE INDEX class_instance_class_instance__history_class_instance_a_index ON class_instance_class_instance__history (class_instance_a);
-    CREATE INDEX class_instance_class_instance__history_class_instance_b_index ON class_instance_class_instance__history (class_instance_b);
-    CREATE INDEX treenode_class_instance__history_relation_id_index ON treenode_class_instance__history (relation_id);
-    CREATE INDEX treenode_class_instance__history_treenode_id_index ON treenode_class_instance__history (treenode_id );
+    CREATE INDEX CONCURRENTLY treenode_connector__history_skeleton_id_index ON treenode_connector__history (skeleton_id);
+    CREATE INDEX CONCURRENTLY review__history_skeleton_id_index ON review__history (skeleton_id);
+    CREATE INDEX CONCURRENTLY class_instance_class_instance__history_class_instance_a_index ON class_instance_class_instance__history (class_instance_a);
+    CREATE INDEX CONCURRENTLY class_instance_class_instance__history_class_instance_b_index ON class_instance_class_instance__history (class_instance_b);
+    CREATE INDEX CONCURRENTLY treenode_class_instance__history_relation_id_index ON treenode_class_instance__history (relation_id);
+    CREATE INDEX CONCURRENTLY treenode_class_instance__history_treenode_id_index ON treenode_class_instance__history (treenode_id );
 
 
     -- Previously non-existent indexes. They don't need to be dropped in the
     -- backward migration, because the tables are recreated.
 
-    CREATE INDEX class_class_name_idx ON class USING btree (class_name) INCLUDE (id, project_id);
+    CREATE INDEX CONCURRENTLY class_class_name_idx ON class USING btree (class_name) INCLUDE (id, project_id);
 """
 
 
 backward_create_indices = """
-    CREATE INDEX change_request_connector_id ON change_request USING btree (connector_id);
-    CREATE INDEX change_request_recipient_id ON change_request USING btree (recipient_id);
-    CREATE INDEX change_request_treenode_id ON change_request USING btree (treenode_id);
+    CREATE INDEX CONCURRENTLY change_request_connector_id ON change_request USING btree (connector_id);
+    CREATE INDEX CONCURRENTLY change_request_recipient_id ON change_request USING btree (recipient_id);
+    CREATE INDEX CONCURRENTLY change_request_treenode_id ON change_request USING btree (treenode_id);
 
-    CREATE INDEX class_project_id ON class USING btree (project_id);
-    CREATE INDEX class_user_id ON class USING btree (user_id);
+    CREATE INDEX CONCURRENTLY class_project_id ON class USING btree (project_id);
+    CREATE INDEX CONCURRENTLY class_user_id ON class USING btree (user_id);
 
-    CREATE INDEX class_class_class_a ON class_class USING btree (class_a);
-    CREATE INDEX class_class_class_b ON class_class USING btree (class_b);
-    CREATE INDEX class_class_project_id ON class_class USING btree (project_id);
-    CREATE INDEX class_class_relation_id ON class_class USING btree (relation_id);
-    CREATE INDEX class_class_user_id ON class_class USING btree (user_id);
+    CREATE INDEX CONCURRENTLY class_class_class_a ON class_class USING btree (class_a);
+    CREATE INDEX CONCURRENTLY class_class_class_b ON class_class USING btree (class_b);
+    CREATE INDEX CONCURRENTLY class_class_project_id ON class_class USING btree (project_id);
+    CREATE INDEX CONCURRENTLY class_class_relation_id ON class_class USING btree (relation_id);
+    CREATE INDEX CONCURRENTLY class_class_user_id ON class_class USING btree (user_id);
 
-    CREATE INDEX class_instance_class_id ON class_instance USING btree (class_id);
-    CREATE INDEX class_instance_name_trgm_idx ON class_instance USING gin (name gin_trgm_ops);
-    CREATE INDEX class_instance_project_id ON class_instance USING btree (project_id);
-    CREATE INDEX class_instance_user_id ON class_instance USING btree (user_id);
-    CREATE INDEX class_instance_upper_name_idx ON class_instance USING btree (upper(name::text));
+    CREATE INDEX CONCURRENTLY class_instance_class_id ON class_instance USING btree (class_id);
+    CREATE INDEX CONCURRENTLY class_instance_name_trgm_idx ON class_instance USING gin (name gin_trgm_ops);
+    CREATE INDEX CONCURRENTLY class_instance_project_id ON class_instance USING btree (project_id);
+    CREATE INDEX CONCURRENTLY class_instance_user_id ON class_instance USING btree (user_id);
+    CREATE INDEX CONCURRENTLY class_instance_upper_name_idx ON class_instance USING btree (upper(name::text));
 
-    CREATE INDEX class_instance_class_instance_class_instance_a ON class_instance_class_instance
+    CREATE INDEX CONCURRENTLY class_instance_class_instance_class_instance_a ON class_instance_class_instance
         USING btree (class_instance_a);
-    CREATE INDEX class_instance_class_instance_class_instance_b ON class_instance_class_instance
+    CREATE INDEX CONCURRENTLY class_instance_class_instance_class_instance_b ON class_instance_class_instance
         USING btree (class_instance_b);
-    CREATE INDEX class_instance_class_instance_project_id ON class_instance_class_instance
+    CREATE INDEX CONCURRENTLY class_instance_class_instance_project_id ON class_instance_class_instance
         USING btree (project_id);
-    CREATE INDEX class_instance_class_instance_relation_id ON class_instance_class_instance
+    CREATE INDEX CONCURRENTLY class_instance_class_instance_relation_id ON class_instance_class_instance
         USING btree (relation_id);
-    CREATE INDEX class_instance_class_instance_user_id ON class_instance_class_instance
+    CREATE INDEX CONCURRENTLY class_instance_class_instance_user_id ON class_instance_class_instance
         USING btree (user_id);
 
-    CREATE INDEX connector_class_instance_class_instance_id ON connector_class_instance
+    CREATE INDEX CONCURRENTLY connector_class_instance_class_instance_id ON connector_class_instance
         USING btree (class_instance_id);
-    CREATE INDEX connector_class_instance_project_id ON connector_class_instance
+    CREATE INDEX CONCURRENTLY connector_class_instance_project_id ON connector_class_instance
         USING btree (project_id);
-    CREATE INDEX connector_class_instance_connector_id ON connector_class_instance
+    CREATE INDEX CONCURRENTLY connector_class_instance_connector_id ON connector_class_instance
         USING btree (connector_id);
-    CREATE INDEX connector_class_instance_relation_id ON connector_class_instance
+    CREATE INDEX CONCURRENTLY connector_class_instance_relation_id ON connector_class_instance
         USING btree (relation_id);
-    CREATE INDEX connector_class_instance_user_id ON connector_class_instance
+    CREATE INDEX CONCURRENTLY connector_class_instance_user_id ON connector_class_instance
         USING btree (user_id);
 
-    CREATE INDEX treenode_creation_time_index ON treenode
+    CREATE INDEX CONCURRENTLY treenode_creation_time_index ON treenode
         USING btree (creation_time);
-    CREATE INDEX treenode_edition_time_index ON treenode
+    CREATE INDEX CONCURRENTLY treenode_edition_time_index ON treenode
         USING btree (edition_time);
-    CREATE INDEX treenode_location_x_index ON treenode
+    CREATE INDEX CONCURRENTLY treenode_location_x_index ON treenode
         USING btree (project_id, location_x);
-    CREATE INDEX treenode_location_y_index ON treenode
+    CREATE INDEX CONCURRENTLY treenode_location_y_index ON treenode
         USING btree (project_id, location_y);
-    CREATE INDEX treenode_location_z_index ON treenode
+    CREATE INDEX CONCURRENTLY treenode_location_z_index ON treenode
         USING btree (project_id, location_z);
-    CREATE INDEX treenode_parent_id ON treenode
+    CREATE INDEX CONCURRENTLY treenode_parent_id ON treenode
         USING btree (parent_id);
-    CREATE INDEX treenode_project_id_skeleton_id_index ON treenode
+    CREATE INDEX CONCURRENTLY treenode_project_id_skeleton_id_index ON treenode
         USING btree (project_id, skeleton_id);
-    CREATE INDEX treenode_skeleton_id_index ON treenode
+    CREATE INDEX CONCURRENTLY treenode_skeleton_id_index ON treenode
         USING btree (skeleton_id);
-    CREATE INDEX treenode_project_id_user_id_index ON treenode
+    CREATE INDEX CONCURRENTLY treenode_project_id_user_id_index ON treenode
         USING btree (project_id, user_id);
 
-    CREATE INDEX catmaid_sampler_skeleton_id_dfc98008 ON catmaid_sampler
+    CREATE INDEX CONCURRENTLY catmaid_sampler_skeleton_id_dfc98008 ON catmaid_sampler
         USING btree (skeleton_id);
-    CREATE INDEX catmaid_sampler_project_id_c93395a7 ON catmaid_sampler
+    CREATE INDEX CONCURRENTLY catmaid_sampler_project_id_c93395a7 ON catmaid_sampler
         USING btree (project_id);
-    CREATE INDEX catmaid_sampler_user_id_8d1c228f ON catmaid_sampler
+    CREATE INDEX CONCURRENTLY catmaid_sampler_user_id_8d1c228f ON catmaid_sampler
         USING btree (user_id);
-    CREATE INDEX catmaid_sampler_sampler_state_id_80e7961f ON catmaid_sampler
+    CREATE INDEX CONCURRENTLY catmaid_sampler_sampler_state_id_80e7961f ON catmaid_sampler
         USING btree (sampler_state_id);
 
-    CREATE INDEX catmaid_skeleton_summary_last_editor_id_idx ON catmaid_skeleton_summary
+    CREATE INDEX CONCURRENTLY catmaid_skeleton_summary_last_editor_id_idx ON catmaid_skeleton_summary
         USING btree (last_editor_id);
-    CREATE INDEX catmaid_skeleton_summary_project_id_7340fa33 ON catmaid_skeleton_summary
+    CREATE INDEX CONCURRENTLY catmaid_skeleton_summary_project_id_7340fa33 ON catmaid_skeleton_summary
         USING btree (project_id);
-    CREATE INDEX catmaid_skeleton_summary_skeleton_id_idx ON catmaid_skeleton_summary
+    CREATE INDEX CONCURRENTLY catmaid_skeleton_summary_skeleton_id_idx ON catmaid_skeleton_summary
         USING btree (skeleton_id, project_id);
-    CREATE INDEX catmaid_skeleton_summary_cable_length_idx ON catmaid_skeleton_summary
+    CREATE INDEX CONCURRENTLY catmaid_skeleton_summary_cable_length_idx ON catmaid_skeleton_summary
         USING btree (cable_length);
-    CREATE INDEX catmaid_skeleton_summary_num_nodes_idx ON catmaid_skeleton_summary
+    CREATE INDEX CONCURRENTLY catmaid_skeleton_summary_num_nodes_idx ON catmaid_skeleton_summary
         USING btree (num_nodes);
-    CREATE INDEX catmaid_skeleton_summary_num_imported_nodes_idx
+    CREATE INDEX CONCURRENTLY catmaid_skeleton_summary_num_imported_nodes_idx
         ON catmaid_skeleton_summary (num_imported_nodes);
 
-    CREATE INDEX review_review_time_idx ON review USING btree (review_time);
-    CREATE INDEX review_project_id ON review USING btree (project_id);
-    CREATE INDEX review_reviewer_id ON review USING btree (reviewer_id);
-    CREATE INDEX review_skeleton_id ON review USING btree (skeleton_id);
-    CREATE INDEX review_treenode_id ON review USING btree (treenode_id);
+    CREATE INDEX CONCURRENTLY review_review_time_idx ON review USING btree (review_time);
+    CREATE INDEX CONCURRENTLY review_project_id ON review USING btree (project_id);
+    CREATE INDEX CONCURRENTLY review_reviewer_id ON review USING btree (reviewer_id);
+    CREATE INDEX CONCURRENTLY review_skeleton_id ON review USING btree (skeleton_id);
+    CREATE INDEX CONCURRENTLY review_treenode_id ON review USING btree (treenode_id);
 
-    CREATE INDEX treenode_class_instance_class_instance_id ON treenode_class_instance
+    CREATE INDEX CONCURRENTLY treenode_class_instance_class_instance_id ON treenode_class_instance
         USING btree (class_instance_id);
-    CREATE INDEX treenode_class_instance_project_id ON treenode_class_instance
+    CREATE INDEX CONCURRENTLY treenode_class_instance_project_id ON treenode_class_instance
         USING btree (project_id);
-    CREATE INDEX treenode_class_instance_relation_id ON treenode_class_instance
+    CREATE INDEX CONCURRENTLY treenode_class_instance_relation_id ON treenode_class_instance
         USING btree (relation_id);
-    CREATE INDEX treenode_class_instance_user_id ON treenode_class_instance
+    CREATE INDEX CONCURRENTLY treenode_class_instance_user_id ON treenode_class_instance
         USING btree (user_id);
-    CREATE INDEX treenode_class_instance_treenode_id ON treenode_class_instance
+    CREATE INDEX CONCURRENTLY treenode_class_instance_treenode_id ON treenode_class_instance
         USING btree (treenode_id);
 
-    CREATE INDEX treenode_connector_connector_id ON treenode_connector
+    CREATE INDEX CONCURRENTLY treenode_connector_connector_id ON treenode_connector
         USING btree (connector_id);
-    CREATE INDEX treenode_connector_creation_time_idx ON treenode_connector (creation_time);
-    CREATE INDEX treenode_connector_project_id ON treenode_connector
+    CREATE INDEX CONCURRENTLY treenode_connector_creation_time_idx ON treenode_connector (creation_time);
+    CREATE INDEX CONCURRENTLY treenode_connector_project_id ON treenode_connector
         USING btree (project_id);
-    CREATE INDEX treenode_connector_relation_id ON treenode_connector
+    CREATE INDEX CONCURRENTLY treenode_connector_relation_id ON treenode_connector
         USING btree (relation_id);
-    CREATE INDEX treenode_connector_skeleton_id ON treenode_connector
+    CREATE INDEX CONCURRENTLY treenode_connector_skeleton_id ON treenode_connector
         USING btree (skeleton_id);
-    CREATE INDEX treenode_connector_treenode_id ON treenode_connector
+    CREATE INDEX CONCURRENTLY treenode_connector_treenode_id ON treenode_connector
         USING btree (treenode_id);
-    CREATE INDEX treenode_connector_user_id ON treenode_connector
+    CREATE INDEX CONCURRENTLY treenode_connector_user_id ON treenode_connector
         USING btree (user_id);
     CREATE UNIQUE INDEX treenode_connector_project_id_uniq ON treenode_connector
         USING btree (project_id, treenode_id, connector_id, relation_id);
 
-    CREATE INDEX skeleton_origin_skeleton_id_idx ON skeleton_origin (skeleton_id);
-    CREATE INDEX skeleton_origin_data_source_id_idx ON skeleton_origin (data_source_id);
-    CREATE INDEX skeleton_origin_source_id_idx ON skeleton_origin (source_id);
+    CREATE INDEX CONCURRENTLY skeleton_origin_skeleton_id_idx ON skeleton_origin (skeleton_id);
+    CREATE INDEX CONCURRENTLY skeleton_origin_data_source_id_idx ON skeleton_origin (data_source_id);
+    CREATE INDEX CONCURRENTLY skeleton_origin_source_id_idx ON skeleton_origin (source_id);
 
-    CREATE INDEX skeleton_origin__history_skeleton_id_idx
+    CREATE INDEX CONCURRENTLY skeleton_origin__history_skeleton_id_idx
         ON skeleton_origin__history (skeleton_id);
-    CREATE INDEX skeleton_origin__history_data_source_id_idx
+    CREATE INDEX CONCURRENTLY skeleton_origin__history_data_source_id_idx
         ON skeleton_origin__history (data_source_id);
-    CREATE INDEX skeleton_origin__history_source_id_idx
+    CREATE INDEX CONCURRENTLY skeleton_origin__history_source_id_idx
         ON skeleton_origin__history (source_id);
 
 
     -- History indices
-    CREATE INDEX treenode__history_creation_time_id_index
+    CREATE INDEX CONCURRENTLY treenode__history_creation_time_id_index
         ON treenode__history (creation_time);
-    CREATE INDEX treenode__history_skeleton_id_index ON treenode__history (skeleton_id);
+    CREATE INDEX CONCURRENTLY treenode__history_skeleton_id_index ON treenode__history (skeleton_id);
 
-    CREATE INDEX treenode_connector__history_skeleton_id_index ON treenode_connector__history (skeleton_id);
-    CREATE INDEX review__history_skeleton_id_index ON review__history (skeleton_id);
-    CREATE INDEX class_instance_class_instance__history_class_instance_a_index ON class_instance_class_instance__history (class_instance_a);
-    CREATE INDEX class_instance_class_instance__history_class_instance_b_index ON class_instance_class_instance__history (class_instance_b);
-    CREATE INDEX treenode_class_instance__history_relation_id_index ON treenode_class_instance__history (relation_id);
-    CREATE INDEX treenode_class_instance__history_treenode_id_index ON treenode_class_instance__history (treenode_id );
+    CREATE INDEX CONCURRENTLY treenode_connector__history_skeleton_id_index ON treenode_connector__history (skeleton_id);
+    CREATE INDEX CONCURRENTLY review__history_skeleton_id_index ON review__history (skeleton_id);
+    CREATE INDEX CONCURRENTLY class_instance_class_instance__history_class_instance_a_index ON class_instance_class_instance__history (class_instance_a);
+    CREATE INDEX CONCURRENTLY class_instance_class_instance__history_class_instance_b_index ON class_instance_class_instance__history (class_instance_b);
+    CREATE INDEX CONCURRENTLY treenode_class_instance__history_relation_id_index ON treenode_class_instance__history (relation_id);
+    CREATE INDEX CONCURRENTLY treenode_class_instance__history_treenode_id_index ON treenode_class_instance__history (treenode_id );
 """
 
 db_maintenance = """

@@ -904,8 +904,8 @@
               "border-color": "#555",
               "text-valign": this.label_valign,
               "text-halign": this.label_halign,
-              "width": "data(node_width)",
-              "height": "data(node_height)"
+              "width": ele => CATMAID.tools.getDefined(ele.data('node_width'), this.node_width),
+              "height": ele => CATMAID.tools.getDefined(ele.data('node_height'), this.node_height),
             })
           .selector("edge")
             .css({

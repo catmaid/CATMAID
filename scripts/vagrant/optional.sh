@@ -28,7 +28,6 @@ if [ ! "$LINE_EXISTS" ]; then
     sudo cat $HBA_PATH >> ~/tmp.txt
     sudo mv ~/tmp.txt $HBA_PATH
     sudo systemctl restart postgresql
-done
 fi
 
 cd /CATMAID

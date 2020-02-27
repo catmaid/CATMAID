@@ -39,6 +39,9 @@
     // A skeleton source that is selected to provide skeleton ID constraints for
     // listing skeletons in a volume.
     this.selectedSkeletonConstraintSource = 'none';
+    // Whether removal tools are visible. Hidden by default to avoid accidental
+    // removal.
+    this.showRemovalTools = false;
 
     // Optional filter for displayed volumes
     this.volumeIdFilter = null;
@@ -717,6 +720,16 @@
     });
   };
 
+  VolumeManagerWidget.prototype.refresh = function() {
+    if (!this.content) return;
+
+    this.content.querySelectorAll('table').forEach(e => {
+      let datatable = $(e).DataTable();
+      datatable.rows().invalidate();
+      datatable.draw();
+    });
+  };
+
   VolumeManagerWidget.prototype.setMode = function(mode) {
     var index = this.modes.indexOf(mode);
     if (index === -1) {
@@ -843,6 +856,15 @@
             widget.unitScaleFactor = 1.0 / Number(this.value);
             widget.redraw();
           },
+        }, {
+          type: 'checkbox',
+          label: 'Show removal tools',
+          title: 'If enabled, each volume table row will also provide a removal option. This is typically not frequently needed.',
+          value: widget.showRemovalTools,
+          onclick: e => {
+            widget.showRemovalTools = e.target.checked;
+            widget.refresh();
+          },
         }];
       },
       createContent: function(container, widget) {
@@ -954,13 +976,15 @@
               data: null,
               orderable: false,
               width: '15%',
-              defaultContent: '<ul class="resultTags">' +
-                  '<li><a href="#" data-action="list-skeletons">List skeletons</a></li> ' +
-                  '<li><a href="#" data-action="list-connectors">List connectors</a></li> ' +
-                  '<li><a href="#" data-action="export-STL">Export STL</a></li> ' +
-                  '<li><a href="#" data-action="edit-volume">Edit</a></li> ' +
-                  '<li><a href="#" data-action="recompute-meta" title="Update area, volume and watertightnes information">Refresh</a></li> ' +
-                  '<li><a href="#" data-action="remove">Remove</a></li></ul>',
+              render: function(data, type, row, meta) {
+                return '<ul class="resultTags">' +
+                    '<li><a href="#" data-action="list-skeletons">List skeletons</a></li> ' +
+                    '<li><a href="#" data-action="list-connectors">List connectors</a></li> ' +
+                    '<li><a href="#" data-action="export-STL">Export STL</a></li> ' +
+                    '<li><a href="#" data-action="edit-volume">Edit</a></li> ' +
+                    '<li><a href="#" data-action="recompute-meta" title="Update area, volume and watertightnes information">Refresh</a></li> ' +
+                    (widget.showRemovalTools ? '<li><a href="#" data-action="remove">Remove</a></li></ul>' : '</ul>');
+              },
             }
           ],
         })
@@ -1375,10 +1399,13 @@
               data: null,
               orderable: false,
               width: '15%',
-              defaultContent: '<ul class="resultTags"><li><a href="#" data-action="remove">Remove</a></li> ' +
-                  '<li><a href="#" data-action="list-skeletons">List skeletons</a></li> ' +
-                  '<li><a href="#" data-action="list-connectors">List connectors</a></li>' +
-                  '<li><a href="#" data-action="export-STL">Export STL</a></ul></ul>'
+              render: function(data, type, row, meta) {
+                return '<ul class="resultTags">' + (widget.showRemovalTools ?
+                        '<li><a href="#" data-action="remove">Remove</a></li> ' : '') +
+                    '<li><a href="#" data-action="list-skeletons">List skeletons</a></li> ' +
+                    '<li><a href="#" data-action="list-connectors">List connectors</a></li>' +
+                    '<li><a href="#" data-action="export-STL">Export STL</a></ul></ul>';
+              },
             }
           ],
         })

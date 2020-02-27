@@ -1,3 +1,11 @@
+## Maintenance updates
+
+- Volume widget: don't show removal options by default. It happens generally
+  rarely that one wants to remove volumes, especially in the skeleton
+  innervation tab. To reduce the risk of accidental removals (even though a
+  confirmation dialog is shown), removal buttons are now only shown if the "Show
+  removal options" checkbox is enabled in the Main tab.
+
 ## 2020.02.15
 
 Contributors: Chris Barnes, Andrew Champion, Stephan Gerhard, Pat Gunn, Tom Kazimiers

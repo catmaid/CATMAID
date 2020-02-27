@@ -356,3 +356,28 @@ the catmaid group::
 
 For changed configuration files also both ``reread`` and ``update`` are
 required.
+
+Maintenance mode
+----------------
+
+A simple way to display a maintenance mode page in case of an unreachable WSGI
+server can be configured with the help of Nginx. First, a simple HTML error page
+is made available as named location block. The CATMAID repo includes an example.
+The main CATMAID entry location block then references the maintenance location
+in the case of an unreachable upstream server::
+
+  location / {
+    # Handle error pages
+    location @maintenance {
+      root /home/catmaid/docs/html;
+      rewrite ^(.*)$ /maintenance.html break;
+    }
+
+    location /tracing/fafb/v14/ {
+      error_page 502 503 504 @maintenance;
+      include uwsgi_params;
+      uwsgi_pass catmaid-fafb-v14;
+      expires 0;
+      # Add optional CORS header
+    }
+  }

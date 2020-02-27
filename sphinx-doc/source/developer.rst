@@ -4,6 +4,7 @@ Developer Documentation
 .. toctree::
    :maxdepth: 1
 
+   vagrant
    contributing
    tile_sources
    creating_widgets

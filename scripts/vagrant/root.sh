@@ -27,6 +27,7 @@ apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB
 
 apt-key update
 apt-get update
+apt-get upgrade -y
 
 VERSION="$(lsb_release -rs)"
 cd /CATMAID

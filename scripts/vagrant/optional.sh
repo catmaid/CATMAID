@@ -27,7 +27,8 @@ if [ ! "$LINE_EXISTS" ]; then
     echo "$HBA_LINE" > ~/tmp.txt
     sudo cat $HBA_PATH >> ~/tmp.txt
     sudo mv ~/tmp.txt $HBA_PATH
-    sudo service postgresql restart
+    sudo systemctl restart postgresql
+done
 fi
 
 cd /CATMAID

@@ -4,6 +4,10 @@ set -x
 
 export DEBIAN_FRONTEND=noninteractive
 
+# fix DNS errors
+# https://bugzilla.mozilla.org/show_bug.cgi?id=1372684
+echo "nameserver 1.1.1.1" > /etc/resolv.conf
+
 CODENAME="$(lsb_release -cs)"
 
 PG_URL="http://apt.postgresql.org/pub/repos/apt/"
@@ -14,6 +18,10 @@ PG_KEY_URL="https://www.postgresql.org/media/keys/ACCC4CF8.asc"
 wget --quiet -O - ${PG_KEY_URL} | sudo apt-key add -
 
 add-apt-repository ppa:deadsnakes/ppa
+
+# fix "user or team does not exist"
+# https://bugzilla.mozilla.org/show_bug.cgi?id=1372684
+apt-get install --reinstall ca-certificates
 add-apt-repository ppa:ubuntugis/ppa
 # necessary for git 2.8's user.useConfigOnly option
 add-apt-repository ppa:git-core/ppa

@@ -10,7 +10,9 @@ class VagrantPlugins::ProviderVirtualBox::Action::Network
 end
 
 Vagrant.configure("2") do |config|
-  config.vm.box = "ubuntu/bionic64"
+  # extremely slow web host
+  #config.vm.box = "ubuntu/bionic64"
+  config.vm.box = "bento/ubuntu-18.04"
   config.vm.synced_folder "./", "/CATMAID"
   config.vm.network "forwarded_port", guest: 8000, host: 8888, host_ip: "127.0.0.1"
   config.vm.network "forwarded_port", guest: 5432, host: 5555, host_ip: "127.0.0.1"

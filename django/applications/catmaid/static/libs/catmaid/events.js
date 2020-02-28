@@ -80,6 +80,31 @@
     },
 
     /**
+     * Unregister all registered listeners for the passed in context.
+     */
+    offForContext: function(context) {
+      if (!context) {
+        throw new CATMAID.ValueError("No context provided");
+      }
+      if (this.hasOwnProperty('events')) {
+        var indexes = [];
+        for (let event of this.events) {
+          let listeners = this.events.get(event[0]);
+          for (var i=0, l=listeners.length; i<l; i++) {
+            let ctxMatches = (context === listeners[i][1]);
+            if (ctxMatches) {
+              indexes.push(i);
+            }
+          }
+        }
+        for (var i=0, l=indexes.length; i<l; i++) {
+          // Remove the event and keep offset due to removed elements in mind
+          listeners.splice(indexes[i] - i, 1);
+        }
+      }
+    },
+
+    /**
      * Remove all listeners from the given event.
      */
     clear: function(event) {
@@ -140,6 +165,7 @@
   var EventSource = function() {
     this.on = Event.on;
     this.off = Event.off;
+    this.offAllInContext = Event.offForContext;
     this.clear = Event.clear;
     this.clearAllEvents = Event.clearAllEvents;
     this.trigger = Event.trigger;

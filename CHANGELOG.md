@@ -8,6 +8,9 @@
 
 ### Bug fixes
 
+- Volume lists (drop down menus) are now automatically refreshed if a volume is
+  added, updated or removed.
+
 
 ## Maintenance updates
 

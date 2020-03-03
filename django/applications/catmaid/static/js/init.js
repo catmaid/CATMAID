@@ -172,6 +172,22 @@ var project;
     CATMAID.RequestQueue.on(CATMAID.RequestQueue.EVENT_REQUEST_ENDED,
         this._handleRequestEnd, this);
 
+    //If the set of available volumes was updatedd, refresh respectvie UI
+    //elements.
+    let updateVolumeLists = function() {
+      let elements = document.querySelectorAll('span[data-role=volume-select][data-auto-update=true]');
+      if (elements) {
+        for (let e of elements) {
+          if (CATMAID.tools.isFn(e.refresh)) {
+            e.refresh();
+          }
+        }
+      }
+    };
+    CATMAID.Volumes.on(CATMAID.Volumes.EVENT_VOLUME_ADDED, updateVolumeLists);
+    CATMAID.Volumes.on(CATMAID.Volumes.EVENT_VOLUME_DELETED, updateVolumeLists);
+    CATMAID.Volumes.on(CATMAID.Volumes.EVENT_VOLUME_UPDATED, updateVolumeLists);
+
     this.init(options);
   };
 

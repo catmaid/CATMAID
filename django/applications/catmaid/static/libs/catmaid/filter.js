@@ -694,7 +694,8 @@
         selectedVolumeIds: [options.volumeId],
         select: function(volumeId, selected, element){
           options.volumeId = volumeId;
-        }
+        },
+        autoUpdate: true,
       });
 
       container.appendChild(volumeSelectionWrapper);
@@ -1431,34 +1432,16 @@
       // No additional options for dendrite filter
     },
     'volume': function(container, options) {
-      // Update volume list
-      var initVolumeList = function() {
-        return CATMAID.Volumes.listAll(project.id).then(function(json) {
-            var volumes = json.sort(function(a, b) {
-              return CATMAID.tools.compareStrings(a.name, b.name);
-            }).map(function(volume) {
-              return {
-                title: volume.name,
-                value: volume.id
-              };
-            });
-            var selectedVolume = options.volumeId;
-            // Create actual element based on the returned data
-            var node = CATMAID.DOM.createRadioSelect('Volumes', volumes,
-                selectedVolume, true);
-            // Add a selection handler
-            node.onchange = function(e) {
-              options.volumeId = e.target.value;
-            };
-            return node;
-          });
-      };
+      let volumeSelectionWrapper = CATMAID.createVolumeSelector({
+        mode: "radio",
+        selectedVolumeIds: [options.volumeId],
+        select: function(volumeId, selected, element){
+          options.volumeId = volumeId;
+        },
+        autoUpdate: true,
+      });
 
-      // Create async selection and wrap it in container to have handle on initial
-      // DOM location
-      var volumeSelection = CATMAID.DOM.createAsyncPlaceholder(initVolumeList());
-      var volumeSelectionWrapper = document.createElement('span');
-      $(container).append(volumeSelection);
+      container.appendChild(volumeSelectionWrapper);
     },
     'users': function(container, options) {
       var allUsers = CATMAID.User.all();

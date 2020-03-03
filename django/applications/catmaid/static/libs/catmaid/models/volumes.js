@@ -56,10 +56,11 @@
      */
     update: function(projectId, volumeId, serializedVolume) {
       var url = project.id + "/volumes/" + volumeId + "/";
-
-      return CATMAID.fetch(url, "POST", serializedVolume).then(function(json) {
-        return json;
+      let response = CATMAID.fetch(url, "POST", serializedVolume);
+      response.then(e => {
+        CATMAID.Volumes.trigger(CATMAID.Volumes.EVENT_VOLUME_UPDATED, volumeId);
       });
+      return response;
     },
 
     /**
@@ -79,6 +80,23 @@
         CATMAID.Volumes.trigger(CATMAID.Volumes.EVENT_VOLUME_ADDED, json.volume_id);
         return json;
       });
+    },
+
+    /**
+     * Delete a volume.
+     *
+     * @param {integer} projectId        The project the node is part of
+     * @param {integer} volumeId         Id of volume to update
+     *
+     * @returns {Object} Promise that is resolved with deletion information once
+     *                   the update request returned successfully.
+     */
+    delete: function(projectId, volumeId) {
+      let result = CATMAID.fetch(project.id + '/volumes/' + volume.id + '/', 'DELETE');
+      result.then(e => {
+        CATMAID.Volumes.trigger(CATMAID.Volumes.EVENT_VOLUME_DELETED, json.volume_id);
+      });
+      return result;
     },
 
     /**
@@ -285,6 +303,8 @@
   // Add events
   CATMAID.asEventSource(Volumes);
   Volumes.EVENT_VOLUME_ADDED = "volume_added";
+  Volumes.EVENT_VOLUME_DELETED = "volume_deleted";
+  Volumes.EVENT_VOLUME_UPDATED = "volume_updated";
 
   // Export voume namespace into CATMAID namespace
   CATMAID.Volumes = Volumes;

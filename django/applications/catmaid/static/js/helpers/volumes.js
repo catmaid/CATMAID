@@ -56,6 +56,10 @@
 
   CATMAID.createVolumeSelector = function (options) {
     var volumeSelectionWrapper = document.createElement('span');
+    volumeSelectionWrapper.setAttribute('data-role', 'volume-select');
+    if (options.autoUpdate) {
+      volumeSelectionWrapper.setAttribute('data-auto-update', 'true');
+    }
     let volumeSelection;
     if (options.label){
       volumeSelection = CATMAID.DOM.createLabeledAsyncPlaceholder(options.label, initVolumeList(options), options.title);

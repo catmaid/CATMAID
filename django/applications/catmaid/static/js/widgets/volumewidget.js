@@ -1018,7 +1018,7 @@
 
           var confirmDialog = new CATMAID.OptionsDialog("Remove volume", {
             "Yes": function() {
-              CATMAID.fetch(project.id + '/volumes/' + volume.id + '/', 'DELETE')
+              CATMAID.Volumes.delete(project.id, volume.id)
                 .then(function(json) {
                   CATMAID.msg('Success', 'Volume ' + json.volume_id + ' removed');
                   widget.redraw();
@@ -1431,7 +1431,7 @@
 
           var confirmDialog = new CATMAID.OptionsDialog("Remove volume", {
             "Yes": function() {
-              CATMAID.fetch(project.id + '/volumes/' + volume.id + '/', 'DELETE')
+              CATMAID.Volumes.delete(project.id, volume.id)
                 .then(function(json) {
                   CATMAID.msg('Success', 'Volume ' + json.volume_id + ' removed');
                   widget.redraw();

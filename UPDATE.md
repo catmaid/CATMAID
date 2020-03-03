@@ -48,7 +48,7 @@ and other administration related changes are listed in order.
   ```
   [program:catmaid-daphne]
   directory = /home/catmaid/catmaid/django/projects/
-  command = /home/catmaid/catmaid/django/env/bin/daphne --unix-socket=/var/run/daphne/catmaid.sock mysite.asgi:application
+  command = /home/catmaid/catmaid/django/env/bin/daphne --unix-socket=/var/run/daphne/catmaid.sock --access-log - --proxy-headers mysite.asgi:application
   user = www-data
   stdout_logfile = /var/log/daphne/catmaid-server.log
   redirect_stderr = true
@@ -57,6 +57,9 @@ and other administration related changes are listed in order.
   As last step, the supervisor entry for the `daphne worker` process has to be
   removed. New types of workers can be added, but are not needed in most cases.
   The channels documentation has more information on this.
+
+  Note, it seems to be also required to upgrade RabbitMQ to the latest version.
+  Using v3.8 worked, while 3.5 didn't.
 
 - GDAL v2 or newer is now needed. If your Ubuntu version doesn't support this
   yet, there is an official PPA:

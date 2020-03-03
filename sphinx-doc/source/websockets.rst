@@ -55,7 +55,7 @@ following ``location`` block:
 .. code-block:: nginx
 
     location /channels/ {
-        proxy_pass http://127.0.0.1:8001;
+        proxy_pass http://127.0.0.1:8001/channels/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";

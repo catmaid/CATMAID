@@ -54,7 +54,7 @@ def installBasePackages():
         # Update image and install needed base components
         run("sudo apt-get -y --force-yes update", pty = True)
         run("sudo apt-get -y --force-yes upgrade", pty = True)
-        packagelist = ['git', 'apache2', 'build-essential', 'g++', 'libapache2-mod-php5', 'php5-pgsql', 'imagemagick', \
+        packagelist = ['git', 'apache2', 'build-essential', 'g++', 'libapache2-mod-php5', 'php5-pgsql', \
                        'python-psycopg2', 'python-yaml', 'python-tz', 'postgresql', 'pgadmin3','phppgadmin','postgresql-contrib']
         for each_package in packagelist:
             print(each_package)
@@ -133,8 +133,6 @@ def installDjangoBackend():
             'libxslt1-dev',
             'libjpeg-dev',
             'libtiff-dev',
-            'libgraphicsmagick++3',
-            'libgraphicsmagick++1-dev',
             'libboost-python1.48.0',
             'libboost-python1.48-dev',
             'ipython',
@@ -145,7 +143,7 @@ def installDjangoBackend():
             print(each_package)
             run('sudo apt-get -y --force-yes install %s' % each_package, pty = True)
 
-        packagelist = ['python-numpy', 'python-h5py' ,'graphicsmagick']
+        packagelist = ['python-numpy', 'python-h5py']
         for each_package in packagelist:
             print(each_package)
             run('sudo apt-get -y --force-yes build-dep %s' % each_package, pty = True)
@@ -164,7 +162,6 @@ def installDjangoBackend():
                 run('pip install sqlparse==0.1.3')
                 run('pip install wsgiref==0.1.2')
                 run('pip install networkx==1.6')
-                run('pip install pgmagick==0.5.1')
                 run('pip install celery==2.4.6')
                 run('pip install django-celery==2.4.2')
                 run('pip install kombu==2.0.0')

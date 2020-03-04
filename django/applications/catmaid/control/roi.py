@@ -220,13 +220,13 @@ def create_roi_image_task(user, project_id, roi_id, file_path) -> str:
         job = cropping.CropJob(user, project_id, [roi.stack.id],
             x_min, x_max, y_min, y_max, z_min, z_max, roi.rotation_cw,
             roi.zoom_level, single_channel)
-        # Create the pgmagick images
+        # Create the PIL images
         cropped_stacks = cropping.extract_substack( job )
         if len(cropped_stacks) == 0:
             raise Exception("Couldn't create ROI image")
         # There is only one image here
         img = cropped_stacks[0]
-        img.write(str(file_path))
+        img.save(str(file_path))
     finally:
         release_lock()
 

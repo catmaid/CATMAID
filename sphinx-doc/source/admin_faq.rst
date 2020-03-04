@@ -56,18 +56,6 @@ it::
 This will reinstall (and recompile) the HDF5 python bindings with the version
 specified in our dependency file (``requirements.txt``).
 
-I get an error 500 response and in debug mode I see the error "libboost_python.so.1.56.0: cannot open shared object file: No such file or directory". (Or any other boost version) This might have started after a system update.*
-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-It seems that the Boost library was updated and therefore one module that we
-depend on has to be recompiled: pgmagick. Given you are within the
-``virtualenv`` and in CATMAID's ``django`` directory, the following should fix
-it::
-
-    grep pgmagick requirements.txt | xargs pip install -I
-
-This will reinstall (and recompile) the pgmagick module, using the version
-specified in our dependency file (``requirements.txt``).
 
 .. _faq-postgis-update-problems:
 

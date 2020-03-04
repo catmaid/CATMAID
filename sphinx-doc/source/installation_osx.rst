@@ -27,7 +27,6 @@ Install system package dependencies through homebrew::
    brew install postgresql
    brew install postgis
    brew install python --framework
-   brew install imagemagick --with-magick-plus-plus
    brew install boost-python
    brew tap homebrew/science
    brew install hdf5
@@ -35,9 +34,6 @@ Install system package dependencies through homebrew::
    brew install ossp-uuid
 
    export LIBRARY_PATH=“/usr/local/lib:$LIBRARY_PATH”
-
-   brew tap hhatto/pgmagick
-   brew install pgmagick
 
 You may want to use a process control system to manage the PostgreSQL daemon.
 See `this post

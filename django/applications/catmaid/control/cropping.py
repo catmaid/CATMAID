@@ -185,7 +185,8 @@ class ImagePart:
 
         if self.width != src_width or self.height != src_height:
             # left upper right lower
-            image = image.crop(self.x_min_src, self.y_min_src, self.x_min_src + self.width, self.y_min_src + self.height).load()
+            image = image.crop((self.x_min_src, self.y_min_src, self.x_min_src + self.width, self.y_min_src + self.height))
+            image.load()
 
         # Estimates the size in Bytes of this image part by scaling the number
         # of Bytes read with the ratio between the needed part of the image and

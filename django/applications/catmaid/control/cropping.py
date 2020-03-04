@@ -23,16 +23,12 @@ from catmaid.control.common import (id_generator, get_request_bool,
 from catmaid.control.tile import get_tile_source
 from catmaid.control.message import notify_user
 
+from celery.task import task
+from io import BytesIO
+
 logger = logging.getLogger(__name__)
 
-try:
-    from pgmagick import Blob, Image, ImageList, Geometry, ChannelType, \
-            CompositeOperator as co, ColorRGB
-except ImportError:
-    logger.warning("CATMAID was unable to load the pgmagick module. "
-        "Cropping will not be available")
-
-from celery.task import task
+TWO_WEEKS_SECONDS = 1209600
 
 # Prefix for stored microstacks
 file_prefix = settings.CROPPING_OUTPUT_FILE_PREFIX
@@ -44,12 +40,10 @@ crop_output_path = os.path.join(settings.MEDIA_ROOT,
 # Whether SSL certificates should be verified
 verify_ssl = getattr(settings, 'CROPPING_VERIFY_CERTIFICATES', True)
 
-# Note: some functions cannot be fully type-annotated because of the
-# conditional import of pgmagick.
 
 class CropJob(object):
     """ A small container class to keep information about the cropping
-    job to be done. Stack ids can be passed as single integer, a list of
+    job to be done. Stack ids can be passed as single integer, or a list of
     integers. If no output_path is given, a random one (based on the
     settings) is generated.
     """
@@ -96,6 +90,55 @@ class CropJob(object):
         tile_source = self.stack_tile_sources[stack.id]
         return tile_source.get_tile_url(mirror, tile_coords, self.zoom_level)
 
+    def create_tiff_metadata(self, n_images):
+        # Add resolution information in pixel per nanometer. The stack info
+        # available is nm/px and refers to a zoom-level of zero.
+        res_x_scaled = self.ref_stack.resolution.x * 2**self.zoom_level
+        res_y_scaled = self.ref_stack.resolution.y * 2**self.zoom_level
+        res_x_nm_px = 1.0 / res_x_scaled
+        res_y_nm_px = 1.0 / res_y_scaled
+        res_z_nm_px = 1.0 / self.ref_stack.resolution.z
+        ifd = TiffImagePlugin.ImageFileDirectory_v2()
+        ifd[TiffImagePlugin.X_RESOLUTION] = res_x_nm_px
+        ifd[TiffImagePlugin.Y_RESOLUTION] = res_y_nm_px
+        ifd[TiffImagePlugin.RESOLUTION_UNIT] = 1 # 1 = None
+
+        # ImageJ specific meta data to allow easy embedding of units and
+        # display options.
+        ij_version= "1.51n"
+        unit = "nm"
+
+        n_channels = len(self.stack_mirrors)
+        if n_images % n_channels != 0:
+            raise ValueError( "Meta data creation: the number of images " \
+                    "modulo the channel count is not zero" )
+        n_slices = n_images / n_channels
+
+        # sample with (the actual is a line break instead of a .):
+        # ImageJ=1.45p.images={0}.channels=1.slices=2.hyperstack=true.mode=color.unit=micron.finterval=1.spacing=1.5.loop=false.min=0.0.max=4095.0.
+        ij_data = [
+            f"ImageJ={ij_version}",
+            f"unit={unit}",
+            f"spacing={str(res_z_nm_px)}",
+        ]
+
+        if n_channels > 1:
+            ij_data.append(f"images={n_images}")
+            ij_data.append(f"slices={n_slices}")
+            ij_data.append(f"channels={n_channels}")
+            ij_data.append("hyperstack=true")
+            ij_data.append("mode=composite")
+
+        # We want to end with a final newline
+        ij_data.append("")
+
+        ifd[TiffImagePlugin.IMAGEDESCRIPTION] = "\n".join(ij_data)
+
+        # Information about the software used
+        ifd[TiffImagePlugin.SOFTWARE] = f"CATMAID {settings.VERSION}"
+
+        return ifd
+
 
 class ImageRetrievalError(IOError):
     def __init__(self, path, error):
@@ -136,14 +179,13 @@ class ImagePart:
         except requests.exceptions.RequestException as e:
             raise ImageRetrievalError(self.path, str(e))
 
-        blob = Blob( img_data )
-        image = Image( blob )
-        # Check if the whole image should be used and cropped if necessary.
-        src_width = image.size().width()
-        src_height = image.size().height()
+        image = PILImage.open(BytesIO(img_data))
+
+        src_width, src_height = image.size
+
         if self.width != src_width or self.height != src_height:
-            box = Geometry( self.width, self.height, self.x_min_src, self.y_min_src )
-            image.crop( box )
+            # left upper right lower
+            image = image.crop(self.x_min_src, self.y_min_src, self.x_min_src + self.width, self.y_min_src + self.height).load()
 
         # Estimates the size in Bytes of this image part by scaling the number
         # of Bytes read with the ratio between the needed part of the image and
@@ -179,70 +221,9 @@ def to_z_index(z, stack, zoom_level, enforce_bounds=True) -> int:
         section = min(max(section, 0.0), stack.dimension.z - 1.0)
     return int(section)
 
-def addMetaData(path:str, job, result) -> None:
-    """ Use this method to add meta data to the image. Due to a bug in
-    exiv2, its python wrapper pyexiv2 is of no use to us. This bug
-    (http://dev.exiv2.org/issues/762) hinders us to work on multi-page
-    TIFF files. Instead, we use Pillow to write meta data.
-    """
-    # Add resolution information in pixel per nanometer. The stack info
-    # available is nm/px and refers to a zoom-level of zero.
-    res_x_scaled = job.ref_stack.resolution.x * 2**job.zoom_level
-    res_y_scaled = job.ref_stack.resolution.y * 2**job.zoom_level
-    res_x_nm_px = 1.0 / res_x_scaled
-    res_y_nm_px = 1.0 / res_y_scaled
-    res_z_nm_px = 1.0 / job.ref_stack.resolution.z
-    ifd = TiffImagePlugin.ImageFileDirectory_v2()
-    ifd[TiffImagePlugin.X_RESOLUTION] = res_x_nm_px
-    ifd[TiffImagePlugin.Y_RESOLUTION] = res_y_nm_px
-    ifd[TiffImagePlugin.RESOLUTION_UNIT] = 1 # 1 = None
-
-    # ImageJ specific meta data to allow easy embedding of units and
-    # display options.
-    n_images = len(result)
-    ij_version= "1.51n"
-    unit = "nm"
-
-    n_channels = len(job.stack_mirrors)
-    if n_images % n_channels != 0:
-        raise ValueError( "Meta data creation: the number of images " \
-                "modulo the channel count is not zero" )
-    n_slices = n_images / n_channels
-
-    # sample with (the actual is a line break instead of a .):
-    # ImageJ=1.45p.images={0}.channels=1.slices=2.hyperstack=true.mode=color.unit=micron.finterval=1.spacing=1.5.loop=false.min=0.0.max=4095.0.
-    ij_data = [
-        f"ImageJ={ij_version}",
-        f"unit={unit}",
-        f"spacing={str(res_z_nm_px)}",
-    ]
-
-    if n_channels > 1:
-        ij_data.append(f"images={n_images}")
-        ij_data.append(f"slices={n_slices}")
-        ij_data.append(f"channels={n_channels}")
-        ij_data.append("hyperstack=true")
-        ij_data.append("mode=composite")
-
-    # We want to end with a final newline
-    ij_data.append("")
-
-    ifd[TiffImagePlugin.IMAGEDESCRIPTION] = "\n".join(ij_data)
-
-    # Information about the software used
-    ifd[TiffImagePlugin.SOFTWARE] = f"CATMAID {settings.VERSION}"
-
-    image = PILImage.open(path)
-    # Can't use libtiff for saving non core libtiff exif tags, therefore
-    # compression="raw" is used. Also, we don't want to re-encode.
-    tmp_path = path + ".tmp"
-    image.save(tmp_path, "tiff", compression="raw", tiffinfo=ifd, save_all=True)
-    os.remove(path)
-    os.rename(tmp_path, path)
-
 def extract_substack(job) -> List:
     """ Extracts a sub-stack as specified in the passed job while respecting
-    rotation requests. A list of pgmagick images is returned -- one for each
+    rotation requests. A list of PIL images is returned -- one for each
     slice, starting on top.
     """
     # Treat rotation requests special
@@ -251,19 +232,16 @@ def extract_substack(job) -> List:
         cropped_stack = extract_substack_no_rotation( job )
     elif abs(job.rotation_cw - 90.0) < 0.00001:
         # 90 degree rotation, create the sub-stack and do a simple rotation
-        cropped_stack = extract_substack_no_rotation( job )
-        for img in cropped_stack:
-            img.rotate(270.0)
+        cropped_stack = extract_substack_no_rotation(job)
+        cropped_stack = [img.rotate(270) for img in cropped_stack]
     elif abs(job.rotation_cw - 180.0) < 0.00001:
         # 180 degree rotation, create the sub-stack and do a simple rotation
-        cropped_stack = extract_substack_no_rotation( job )
-        for img in cropped_stack:
-            img.rotate(180.0)
+        cropped_stack = extract_substack_no_rotation(job)
+        cropped_stack = [img.rotate(180) for img in cropped_stack]
     elif abs(job.rotation_cw - 270.0) < 0.00001:
         # 270 degree rotation, create the sub-stack and do a simple rotation
-        cropped_stack = extract_substack_no_rotation( job )
-        for img in cropped_stack:
-            img.rotate(90.0)
+        cropped_stack = extract_substack_no_rotation(job)
+        cropped_stack = [img.rotate(90) for img in cropped_stack]
     else:
         # Some methods do counter-clockwise rotation
         rotation_ccw = 360.0 - job.rotation_cw
@@ -296,8 +274,7 @@ def extract_substack(job) -> List:
 
         # Next, rotate the whole result stack counterclockwise to have the
         # actual ROI axis aligned.
-        for img in cropped_stack:
-            img.rotate(rotation_ccw)
+        cropped_stack = [img.rotate(rotation_ccw) for img in cropped_stack]
 
         # Last, do a second crop to remove the not needed parts. The region
         # to crop is defined by the relative original crop-box coordinates to
@@ -328,11 +305,16 @@ def extract_substack(job) -> List:
         crop_y_max_px = to_y_index(crop_y_max, job.ref_stack, job.zoom_level, False)
         crop_width_px = crop_x_max_px - crop_x_min_px
         crop_height_px = crop_y_max_px - crop_y_min_px
-        # Crop all images (Geometry: width, height, xOffset, yOffset)
-        crop_geometry = Geometry(crop_width_px, crop_height_px,
-            crop_x_min_px, crop_y_min_px)
+
+        # Crop all images (left, upper, right, lower)
+        crop_geometry = (crop_x_min_px, crop_y_min_px, crop_x_min_px + crop_width_px, crop_y_min_px + crop_height_px)
+        out_stack = []
         for img in cropped_stack:
-            img.crop(crop_geometry)
+            cropped = img.crop(crop_geometry)
+            cropped.load()
+            out_stack.append(cropped)
+
+        cropped_stack = out_stack
 
         # Reset the original job parameters
         job.x_min = real_x_min
@@ -360,7 +342,7 @@ class BB:
 
 def extract_substack_no_rotation(job) -> List:
     """ Extracts a sub-stack as specified in the passed job without respecting
-    rotation requests. A list of pgmagick images is returned -- one for each
+    rotation requests. A list of PIL images is returned -- one for each
     slice, starting on top.
     """
 
@@ -481,7 +463,8 @@ def extract_substack_no_rotation(job) -> List:
 
             # Write out the image parts and make sure the maximum allowed file
             # size isn't exceeded.
-            cropped_slice = Image(Geometry(bb.width, bb.height), ColorRGB(0, 0, 0))
+
+            cropped_slice = PILImage.new(bb.width, bb.height)
             for ip in image_parts:
                 # Get (correctly cropped) image
                 image = ip.get_image()
@@ -496,14 +479,16 @@ def extract_substack_no_rotation(job) -> List:
                                      (estimated_total_size,
                                       settings.GENERATED_FILES_MAXIMUM_SIZE))
                 # Draw the image onto result image
-                cropped_slice.composite( image, ip.x_dst, ip.y_dst, co.OverCompositeOp )
+                cropped_slice.paste(image, ip.x_dst, ip.y_dst)
                 # Delete tile image - it's not needed anymore
                 del image
 
-            if cropped_slice:
+            if cropped_slice:  # TODO: always true?
                 # Optionally, use only a single channel
                 if job.single_channel:
-                    cropped_slice.channel( ChannelType.RedChannel )
+                    # r g b
+                    cropped_slice, _, _ = cropped_slice.split()
+
                 # Add the image to the cropped stack
                 cropped_stack.append( cropped_slice )
 
@@ -524,27 +509,20 @@ def rotate2d(degrees, point, origin) -> Tuple[float, float]:
     return newx, newyorz
 
 @task()
-def process_crop_job(job, create_message=True) -> str:
+def process_crop_job(job: CropJob, create_message=True) -> str:
     """ This method does the actual cropping. It controls the data extraction
     and the creation of the sub-stack. It can be executed as Celery task.
     """
     try:
         # Create the sub-stack
         cropped_stack = extract_substack(job)
-
-        # Create tho output image
-        outputImage = ImageList()
-        for img in cropped_stack:
-            outputImage.append( img )
-
         # Save the resulting micro_stack to a temporary location
         no_error_occured = True
         error_message = ""
         # Only produce an image if parts of stacks are within the output
-        if len( cropped_stack ) > 0:
-            outputImage.writeImages( job.output_path.encode('ascii', 'ignore') )
-            # Add some meta data to the image
-            addMetaData( job.output_path, job, cropped_stack )
+        if len(cropped_stack) > 0:
+            metadata = job.create_tiff_metadata(len(cropped_stack))
+            cropped_stack[0].save(job.output_path.encode("ascii", "ignore"), compression="raw", save_all=True, append_images=cropped_stack[1:], tiffinfo=metadata)
         else:
             no_error_occured = False
             error_message = "A region outside the stack has been selected. " \
@@ -685,10 +663,10 @@ def crop(request:HttpRequest, project_id=None) -> JsonResponse:
     result = start_asynch_process(job)
     return result
 
-def cleanup(max_age:int=1209600) -> None:
+def cleanup(max_age:int=TWO_WEEKS_SECONDS) -> None:
     """ Cleans up the temporarily space of the cropped stacks.
     Such a stack is deleted if it is older than max_age, which
-    is specified in seconds and defaults to two weeks (1209600).
+    is specified in seconds and defaults to two weeks.
     """
     search_pattern = os.path.join(crop_output_path, file_prefix + "*." + file_extension)
     now = time()

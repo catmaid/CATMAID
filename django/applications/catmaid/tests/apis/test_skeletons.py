@@ -664,7 +664,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         # Since order is not important, check length and matches separately.
         self.assertEqual(len(expected_result_edges), len(parsed_response['edges']))
         for row in expected_result_edges:
-            self.assertTrue(row in parsed_response['edges'])
+            self.assertIn(row, parsed_response["edges"])
 
         # Confidence split
         # Change confidence that affects 1 edge from 235 to 373
@@ -687,7 +687,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         # Since order is not important, check length and matches separately.
         self.assertEqual(len(expected_result_edges), len(parsed_response['edges']))
         for row in expected_result_edges:
-            self.assertTrue(row in parsed_response['edges'])
+            self.assertIn(row, parsed_response["edges"])
 
         # Use confidence criteria that should split edges from 235 to 373.
         response = self.client.post(
@@ -707,7 +707,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         # Since order is not important, check length and matches separately.
         self.assertEqual(len(expected_result_edges), len(parsed_response['edges']))
         for row in expected_result_edges:
-            self.assertTrue(row in parsed_response['edges'])
+            self.assertIn(row, parsed_response['edges'])
 
         # Dual split
         # Again split with confidence, but also cluster the split synapses
@@ -731,7 +731,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         # Since order is not important, check length and matches separately.
         self.assertEqual(len(expected_result_edges), len(parsed_response['edges']))
         for row in expected_result_edges:
-            self.assertTrue(row in parsed_response['edges'])
+            self.assertIn(row, parsed_response['edges'])
 
         # Should not include edges involving skeletons not in the set
         # See https://github.com/catmaid/CATMAID/issues/1249
@@ -745,7 +745,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         # Since order is not important, check length and matches separately.
         self.assertEqual(len(expected_result_edges), len(parsed_response['edges']))
         for row in expected_result_edges:
-            self.assertTrue(row in parsed_response['edges'])
+            self.assertIn(row, parsed_response["edges"])
         # ...also with confidence splitting...
         response = self.client.post(
             '/%d/skeletons/confidence-compartment-subgraph' % self.test_project_id,
@@ -759,7 +759,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         # Since order is not important, check length and matches separately.
         self.assertEqual(len(expected_result_edges), len(parsed_response['edges']))
         for row in expected_result_edges:
-            self.assertTrue(row in parsed_response['edges'])
+            self.assertIn(row, parsed_response["edges"])
 
 
     def test_reroot_and_join_skeletons(self):

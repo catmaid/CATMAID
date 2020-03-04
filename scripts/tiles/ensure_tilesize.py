@@ -1,49 +1,43 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#
-# This is a helper script to ensure an image has the correct tile size.
-# It uses pgmagick[1] to read and (if needed) correct the image. To use
-# it on a number of files one could use e.g. the find command:
-#
-#   find <data-folder> -name *.jpg -exec scripts/ensure_tilesize.py {} 256 \;
-#
-# [1] http://pypi.python.org/pypi/pgmagick/
+"""
+This is a helper script to ensure an image has the correct tile size.
+It uses PIL to read and (if needed) correct the image. To use
+it on a number of files one could use e.g. the find command:
+
+  find <data-folder> -name *.jpg -exec scripts/ensure_tilesize.py {} 256 \;
+"""
 
 import sys
 import os
-from pgmagick import Image, Geometry, Color, CompositeOperator as co
+from pathlib import Path
+from argparse import ArgumentParser
 
-# Make sure we got the arguments we expect
-if len(sys.argv) != 3:
-    print("Usage: ensure_tilesize.py <FILENAME> <TILESIZE>", file=sys.stderr)
-    sys.exit(1)
+from PIL import Image
 
-image_path = sys.argv[1]
-tile_size = int(sys.argv[2])
+parser = ArgumentParser(description=__doc__)
+parser.add_argument("image_path", type=Path)
+parser.add_argument("tile_size", type=int)
+parsed = parser.parse_args()
 
-# Make sure the file actually exists
-if not os.path.exists(image_path):
-    print("Could not find file!", file=sys.stderr)
-    sys.exit(1)
+image_path = parsed.image_path
+tile_size = parsed.tile_size
 
-# Get properties of image
-image = Image(image_path)
-image_width = image.size().width()
-image_height = image.size().height()
-image_name = image.fileName()
+if not image_path.is_file():
+    raise FileNotFoundError(f"No image file at {image_path}")
 
-# If the image has the correct size, just exit
-if image_width == tile_size and image_height == tile_size:
+img = Image.open(image_path)
+width, height = img.size
+
+if width == height == tile_size:
     sys.exit(0)
 
-# A new image with the correct size is needed, create it
-geometry = Geometry(tile_size, tile_size)
-color = Color("black")
-new_image = Image(geometry, color)
-# Copy original image to position 0,0 of new image
-new_image.composite(image, 0, 0, co.OverCompositeOp)
-# Override original image
-new_image.write(image_name)
+# crop away overhanging regions(left upper right lower)
+cropped = img.crop((0, 0, min(width, tile_size), min(width, tile_size)))
 
-print("Corrected " + image_name + " from " + str(image_width) + "x" + str(image_height) + " to " + str(tile_size) + "x" + str(tile_size), file=sys.stderr)
+# create black image of the right size to pad as necessary
+out = Image.new(cropped.mode, (tile_size, tile_size))
+out.paste(cropped)
 
+out.save(image_path)
+print(f"Corrected {image_path} from {width}x{height} to {tile_size}x{tile_size}", file=sys.stderr)

@@ -13,6 +13,7 @@ RUN apt-get update -y \
     && apt-get install -y software-properties-common \
     && add-apt-repository ppa:deadsnakes/ppa \
     && add-apt-repository -y ppa:nginx/stable \
+    && add-apt-repository -y ppa:ubuntugis/ppa \
     && add-apt-repository "deb http://apt.postgresql.org/pub/repos/apt/ xenial-pgdg main" \
     && apt-get install -y wget ca-certificates \
     && wget --quiet -O - https://postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \

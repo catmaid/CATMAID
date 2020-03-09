@@ -10,6 +10,11 @@ Publications using CATMAID
 `````````````````````````````````````
 *The following publications used CATMAID for neural circuit reconstruction or other tasks. Please get in touch with us if your publication is missing.*
 
+2020
+~~~~
+
+* Fei Wang, Kaiyu Wang, Nora Forknall, Christopher Patrick, Tansy Yang, Ruchi Parekh, Davi Bock, Barry J. Dickson. `Neural circuitry linking mating and egg laying in Drosophila females <https://www.nature.com/articles/s41586-020-2055-9>`_, Nature, 2020.
+
 2019
 ~~~~
 

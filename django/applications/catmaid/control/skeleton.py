@@ -1613,7 +1613,6 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2,
     SELECT skeleton_id, num_nodes
     FROM catmaid_skeleton_summary
     WHERE skeleton_id = ANY(%s::bigint[])
-    GROUP BY skeleton_id
     ''', (partner_skids,))
     for row in cursor.fetchall():
         partners[row[0]].num_nodes = row[1]

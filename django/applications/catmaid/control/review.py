@@ -108,11 +108,7 @@ def get_review_status(skeleton_ids, project_id=None, whitelist_id=False,
     cursor.execute('''
         SELECT skeleton_id, num_nodes
         FROM catmaid_skeleton_summary s
-        JOIN (
-            SELECT * FROM UNNEST(%(skeleton_ids)s::bigint[])
-        ) query_skeleton(id)
-        ON s.skeleton_id = query_skeleton.id
-        GROUP BY skeleton_id
+        WHERE s.skeleton_id = ANY(%(skeleton_ids)s::bigint[])
     ''', {
         'skeleton_ids': list(skeleton_ids)
     })

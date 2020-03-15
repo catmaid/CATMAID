@@ -171,7 +171,7 @@ init_catmaid () {
   echo "Configuring uWSGI to run on socket ${CM_HOST}:${CM_PORT}"
   sed -i "s/socket = .*/socket = ${CM_HOST}:${CM_PORT}/g" /home/scripts/docker/uwsgi-catmaid.ini
 
-  echo "Starting CATMAID"
+  echo "Starting CATMAID and Celery workers"
   supervisord -n -c /etc/supervisor/supervisord.conf
 }
 

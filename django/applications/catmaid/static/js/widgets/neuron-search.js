@@ -1264,6 +1264,7 @@
 
         // Update current result table classes
         self.update_result_row_classes();
+        self.refresh();
 
         // Find all unique skeletons that now are not available anymore from
         // this widget (i.e. that are not part of any other expansion or the

@@ -20,6 +20,10 @@
   confirmation dialog is shown), removal buttons are now only shown if the "Show
   removal options" checkbox is enabled in the Main tab.
 
+- Neuron search: expanded elements (e.g. annotations) are now sorted correctly
+  within their expansion group. This also fixes the out-of-order expansion
+  display.
+
 ## 2020.02.15
 
 Contributors: Chris Barnes, Andrew Champion, Stephan Gerhard, Pat Gunn, Tom Kazimiers

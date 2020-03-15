@@ -107,6 +107,84 @@ $.fn.dataTable.ext.oSort['hslcolor-desc']  = function(a, b) {
   return -1 * CATMAID.tools.compareHSLColors(a, b);
 };
 
+let compareHierarchicalName = function(a, b, reverse=false) {
+  let samePath = 0;
+  let [aPath, aNamePath] = a;
+  let [bPath, bNamePath] = b;
+
+  // Find the first unequal path element and compare only it.
+  let minPathLength = Math.min(aPath.length, bPath.length);
+  let firstDifferentIndex = -1;
+  for (let i=0; i<minPathLength; ++i) {
+    if (aPath[i] !== bPath[i]) {
+      firstDifferentIndex = i;
+      break;
+    }
+  }
+
+  if (firstDifferentIndex === -1) {
+    if (aPath.length > bPath.length) return 1;
+    if (aPath.length < bPath.length) return -1;
+    return 0;
+  }
+  return reverse ?
+      CATMAID.tools.compareStrings(bNamePath[firstDifferentIndex], aNamePath[firstDifferentIndex]) :
+      CATMAID.tools.compareStrings(aNamePath[firstDifferentIndex], bNamePath[firstDifferentIndex]);
+};
+
+/**
+ * We assume we sort search entities.
+ */
+$.fn.dataTable.ext.oSort['hierarchical-search-name-asc'] = function(a, b) {
+  return compareHierarchicalName(a, b);
+};
+
+/**
+ * We assume we sort search entities.
+ */
+$.fn.dataTable.ext.oSort['hierarchical-search-name-desc']  = function(a, b) {
+  return compareHierarchicalName(a, b, true);
+};
+
+let compareHierarchicalType = function(a, b, reverse=false) {
+  let samePath = 0;
+  let [aPath, aTypePath] = a;
+  let [bPath, bTypePath] = b;
+
+  // Find the first unequal path element and compare only it.
+  let minPathLength = Math.min(aPath.length, bPath.length);
+  let firstDifferentIndex = -1;
+  for (let i=0; i<minPathLength; ++i) {
+    if (aPath[i] !== bPath[i]) {
+      firstDifferentIndex = i;
+      break;
+    }
+  }
+
+  if (firstDifferentIndex === -1) {
+    if (aPath.length > bPath.length) return 1;
+    if (aPath.length < bPath.length) return -1;
+    return 0;
+  }
+  return reverse ?
+      CATMAID.tools.compareStrings(bTypePath[firstDifferentIndex], aTypePath[firstDifferentIndex]) :
+      CATMAID.tools.compareStrings(aTypePath[firstDifferentIndex], bTypePath[firstDifferentIndex]);
+};
+
+/**
+ * We assume we sort search entities.
+ */
+$.fn.dataTable.ext.oSort['hierarchical-search-type-asc'] = function(a, b) {
+  return compareHierarchicalType(a, b);
+};
+
+/**
+ * We assume we sort search entities.
+ */
+$.fn.dataTable.ext.oSort['hierarchical-search-type-desc']  = function(a, b) {
+  return compareHierarchicalType(a, b, true);
+};
+
 /**
  * Add case insensitive :contains content filter.
  * Based on: https://stackoverflow.com/questions/187537

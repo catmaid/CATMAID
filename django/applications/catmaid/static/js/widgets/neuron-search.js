@@ -23,6 +23,8 @@
     this.expansions = new Map();
     // Map entity IDs to entities
     this.entityMap = {};
+    // A map of path IDs vs. entity ID path lists
+    this.paths = {};
 
     this.entity_selection_map = {};
     this.pid = project.id;
@@ -222,12 +224,6 @@
           '</table>';
         // Replace {{NA-ID}} with the actual widget ID
         content.innerHTML = container_html.replace(/{{NA-ID}}/g, this.widgetID);
-
-        // Add a header click handler to know when a sorting event happens
-        $("thead th:nth-child(-n+2)", content).on('click', (function() {
-          // Remove any expansions before sorting
-          this.removeAllExpansions();
-        }).bind(this));
 
         // Add a container that gets displayed if no results could be found
         var no_results = document.createElement('div');
@@ -574,7 +570,19 @@
     var requestAnnotationUpdate = false;
 
     return function() {
+      let widget = this;
       var selector = 'table#neuron_annotations_query_results_table' + this.widgetID;
+
+      let nns = CATMAID.NeuronNameService.getInstance();
+      let asName = entityId => {
+        let entity = widget.entityMap[entityId];
+        return entity.type === 'neuron' ? nns.getName(entity.skeleton_ids[0]) : entity.name;
+      };
+      let asType = entityId => {
+        let entity = widget.entityMap[entityId];
+        return entity.type;
+      };
+
       var datatable = $(selector).DataTable({
         destroy: true,
         dom: "lrptip",
@@ -586,8 +594,51 @@
         order: this.order,
         processing: true,
         columns: [
-          { "orderable": true },
-          { "orderable": true },
+          {
+            "type": "hierarchical-search-name",
+            "orderable": true,
+            "render": function(data, type, row, meta) {
+              // For sorting, append the expansion information
+              if (type === 'display') {
+                return data;
+              } else {
+                let keyMatch = new RegExp('key="([0-9\-]\+)"').exec(data);
+                if (!keyMatch || !keyMatch[1]) return data;
+                let key = keyMatch[1];
+                let entityIdMatch = new RegExp('entity_id="([0-9]\+)"').exec(data);
+                if (!entityIdMatch || !entityIdMatch[1]) return data;
+                let entityId = entityIdMatch[1];
+                let name = asName(entityId);
+                let entity = widget.entityMap[entityId];
+                if (type === "sort") {
+                  let path = widget.paths[key];
+                  return [path, path.map(asName)];
+                } else {
+                  return name;
+                }
+              }
+            },
+          },
+          {
+            "type": "hierarchical-search-type",
+            "orderable": true,
+            "render": function(data, type, row, meta) {
+              // For sorting, append the expansion information
+              if (type === 'display') {
+                return data;
+              } else {
+                let keyMatch = new RegExp('key="([0-9\-]\+)"').exec(data);
+                if (!keyMatch || !keyMatch[1]) return data;
+                let key = keyMatch[1];
+                if (type === "sort") {
+                  let path = widget.paths[key];
+                  return [path, path.map(asType)];
+                } else {
+                  return data;
+                }
+              }
+            },
+          },
           { "orderable": false, "visible": this.displayAnnotations }
         ],
         language: {
@@ -604,6 +655,30 @@
         // After every page chage, annotations should be updated. This can't be
         // done directly, because this event happens before redrawing.
         requestAnnotationUpdate = true;
+      }).on('order.dt', this, function(e) {
+        this.order = datatable.order();
+        // Update header sort icon. For some reason this doesn't change
+        // automatically with DOM data.
+        let [sortCol, sortDir] = this.order && this.order.length > 0 ? this.order[0] : [null, null];
+        $(`${selector} th`).each((i, element) => {
+          if (element.classList.contains('sorting_asc')) {
+            element.classList.remove('sorting_asc');
+            element.classList.add("sorting");
+          } else if (element.classList.contains('sorting_desc')) {
+            element.classList.remove('sorting_desc');
+            element.classList.add("sorting");
+          }
+          if (i === sortCol) {
+            if (sortDir == 'asc') {
+              element.classList.remove('sorting');
+              element.classList.add("sorting_asc");
+            }
+            else {
+              element.classList.remove('sorting');
+              element.classList.add("sorting_desc");
+            }
+          }
+        });
       });
     };
   })();
@@ -614,10 +689,12 @@
    * avoid repetitions for cycling annotations.
    */
   NeuronSearch.prototype.appendEntities = function(entities, appender, indent,
-      expandedIds, sourceSlot) {
+      expandedIds, sourceSlot, path = []) {
     // Mark entities as unselected and create result table rows
     entities.forEach(function(entity) {
-      var tr = this.add_result_table_row(entity, appender, indent);
+      var tr = this.add_result_table_row(entity, appender, indent, undefined, path);
+      let newPath = [...path, entity.id];
+      this.paths[newPath.join('-')] = newPath;
       // Add source information, if this entry resulted from expansion
       if (sourceSlot) {
         tr.setAttribute('expansion', sourceSlot);
@@ -631,7 +708,7 @@
         // Add entity ID to stack to not expand it twice
         expandedIds.push(entity.id);
         this.appendEntities(expandedEntities, appender, indent + 1, expandedIds,
-            expansionSlot);
+            expansionSlot, newPath);
         // Remove ID from expansion stack, now that it is expanded
         expandedIds.pop();
       }
@@ -644,7 +721,7 @@
    * steps that should be used.
    */
   NeuronSearch.prototype.add_result_table_row = function(entity, add_row_fn,
-      indent, selected)
+      indent, selected, path=[])
   {
     // Build table row
     var tr = document.createElement('tr');
@@ -652,6 +729,7 @@
             this.widgetID + '_' + entity.id);
     tr.setAttribute('type', entity.type);
     tr.dataset.entityId = entity.id;
+    tr.dataset.key = [...path, entity.id].join('-');
     tr.entity = entity;
 
     // Checkbox & name column, potentially indented
@@ -664,6 +742,7 @@
     var cb = document.createElement('input');
     cb.setAttribute('type', 'checkbox');
     cb.setAttribute('entity_id', entity.id);
+    cb.dataset.key = [...path, entity.id].join('-');
     cb.setAttribute('class', 'result' + this.widgetID + '_' +
             entity.id);
     cb.checked = !!selected;
@@ -683,8 +762,10 @@
 
     // Type column
     var td_type = document.createElement('td');
-    td_type.appendChild(document.createTextNode(
-            entity.type));
+    var span_type = document.createElement('span');
+    span_type.dataset.key = [...path, entity.id].join('-');
+    span_type.appendChild(document.createTextNode(entity.type));
+    td_type.appendChild(span_type);
     tr.appendChild(td_type);
 
     // Annotations column
@@ -943,6 +1024,7 @@
         this.entityMap = {};
         this.expansions.clear();
         this.queryResults = [];
+        this.paths = {};
         this.queryResults[0] = e.entities;
         this.total_n_results = e.entities.length;
         // Get new models for notification
@@ -1147,6 +1229,8 @@
       var aID = CATMAID.annotations.getID(annotation);
       var tr = $(this).closest('tr');
       var entity = $(tr)[0].entity;
+      var key = $(tr)[0].dataset.key;
+
 
       // If expanded, collapse it. Expand it otherwise.
       if (tr.is('[expanded]')) {
@@ -1180,6 +1264,7 @@
 
         // Update current result table classes
         self.update_result_row_classes();
+        self.refresh();
 
         // Find all unique skeletons that now are not available anymore from
         // this widget (i.e. that are not part of any other expansion or the
@@ -1225,6 +1310,7 @@
           'annotated_with': aID,
           'with_annotations': self.displayAnnotations
         };
+        let path = [];
         CATMAID.fetch(project.id + '/annotations/query-targets', 'POST', query_data)
           .then(function(e) {
             // Register search results with neuron name service and rebuild
@@ -1252,13 +1338,16 @@
 
               // Mark entities as selected if they are markes as such in the
               // widget.
-              e.entities.filter(function(entity, i, a) {
-                let selected = !!self.entity_selection_map[entity.id];
-                self.entity_selection_map[entity.id] = selected;
-                if(!(entity.id in self.entityMap)) {
-                  self.entityMap[entity.id] = entity;
+              let path = self.paths[$(tr)[0].dataset.key];
+              e.entities.filter(function(subEntity, i, a) {
+                let selected = !!self.entity_selection_map[subEntity.id];
+                self.entity_selection_map[subEntity.id] = selected;
+                if(!(subEntity.id in self.entityMap)) {
+                  self.entityMap[subEntity.id] = subEntity;
                 }
-                self.add_result_table_row(entity, appender, indent + 1, selected);
+                let newPath = [...path, subEntity.id];
+                self.paths[newPath.join('-')] = newPath;
+                self.add_result_table_row(subEntity, appender, indent + 1, selected, newPath);
               });
 
               // The order of the query result array doesn't matter.
@@ -1267,6 +1356,7 @@
               self.expansions.set(entity, sub_id);
               // Update current result table classes
               self.update_result_row_classes();
+              self.refresh();
               // Announce new models, if any
               if (newSkeletons.length > 0) {
                 var newModels = newSkeletons.reduce(function(o, skid) {

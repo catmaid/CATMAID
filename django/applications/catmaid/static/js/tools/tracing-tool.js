@@ -685,16 +685,18 @@
 
     /**
      * Display both project and stack space center coordinates in the status
-     * bar.
+     * bar. In case no active stack is available, only project coordinates are
+     * visible.
      */
     var updateStatusBar = function(e) {
       CATMAID.statusBar.replaceLast("Project: " +
           project.coordinates.x.toFixed(3) + ", " +
           project.coordinates.y.toFixed(3) + ", " +
-          project.coordinates.z.toFixed(3) + " Stack: " +
-          activeStackViewer.x.toFixed(3) + ", " +
-          activeStackViewer.y.toFixed(3) + ", " +
-          activeStackViewer.z.toFixed(3));
+          project.coordinates.z.toFixed(3) +
+          (activeStackViewer ? (" Stack: " +
+            activeStackViewer.x.toFixed(3) + ", " +
+            activeStackViewer.y.toFixed(3) + ", " +
+            activeStackViewer.z.toFixed(3)) : ''));
       return true;
     };
 

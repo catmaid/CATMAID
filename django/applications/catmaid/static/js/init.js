@@ -1163,8 +1163,10 @@ var project;
         console.log('There was an error establishing WebSockets connections. ' +
             'Falling back to long polling.');
         this.refreshLongPolling();
-        // Don't call clone handler after error
-        this._updateSocket.onclose = null;
+        // Don't call clone handler after error, if the is still a socket around.
+        if (this._updateSocket) {
+          this._updateSocket.onclose = null;
+        }
       }).bind(this);
 
       // When a WebSockets connection is closed, try to re-open it three times

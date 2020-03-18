@@ -537,7 +537,7 @@
       }
       if (i === segment.length) {
         // corner case
-        CATMAID.msg("Can't looky beyond node", "Can't decide whether to move " +
+        CATMAID.msg("Can't look beyond node", "Can't decide whether to move " +
             "forward or backward one section!");
         return;
       }

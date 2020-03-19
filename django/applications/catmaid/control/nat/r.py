@@ -1349,7 +1349,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
 def as_matrix(scores, a, b, transposed=False):
     score_type = type(scores)
 
-    if score_type == robjects.vectors.Matrix:
+    if score_type in (robjects.vectors.Matrix, robjects.vectors.FloatMatrix):
         return scores
 
     base = importr('base')

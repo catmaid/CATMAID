@@ -1756,7 +1756,7 @@
           });
 
           if (skeletonIds.length === 0) {
-            CATMAID.wan('CSV file does not contain any usable lines');
+            CATMAID.warn('CSV file does not contain any usable lines');
             return;
           }
           // Get names
@@ -1788,7 +1788,7 @@
               }, {});
 
               // Load models, respecting their order
-              self._append(models, skeletonIds);
+              self._append(models, foundSkeletons);
           });
         };
 

@@ -27,6 +27,8 @@
 
 - Volume lists (drop down menus) are now automatically refreshed if a volume is
   added, updated or removed.
+- CSVs imported into the skeleton selection widget may contain nonexistent
+  skeleton IDs, as intended.
 
 
 ## Maintenance updates
@@ -147,7 +149,7 @@ Contributors: Chris Barnes, Andrew Champion, Stephan Gerhard, Pat Gunn, Tom Kazi
   missing, they will now be created.
 
 - Python code is now linted by flake8. The config is fairly relaxed
-  (see .travis.flake8), but contributions which do not conform with the selected 
+  (see .travis.flake8), but contributions which do not conform with the selected
   rules will fail CI checks.
 
 ### Features and enhancements

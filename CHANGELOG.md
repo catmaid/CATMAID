@@ -1,6 +1,23 @@
 ## Under development
 
 
+### Notes
+
+- If R extensions are used, make sure to use R 3.6. On Ubuntu this can be made
+  available by first installing the official R PPA repository:
+
+  sudo gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-key E084DAB9
+  sudo gpg -a --export E084DAB9 | sudo apt-key add -
+  echo "deb https://cloud.r-project.org/bin/linux/ubuntu xenial-cran35/" | sudo tee -a /etc/apt/sources.list
+
+  And second update the package index and update the local R setup:
+
+  sudo apt-get update
+  sudo apt-get install r-base r-base-dev mesa-common-dev libglu1-mesa-dev \
+                     libssl-dev libssh2-1-dev libcurl4-openssl-dev cmtk
+
+  This also requires updating all installed R packages. In all likelihood this
+  requires executing "manage.py catmaid_setup_nblast_environment".
 
 ### Features and enhancements
 

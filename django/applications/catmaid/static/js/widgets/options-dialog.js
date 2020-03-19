@@ -186,14 +186,16 @@
 
   OptionsDialog.prototype.appendCheckbox = function(title, checkboxID, selected, helptext) {
     var p = document.createElement('p');
+    var label = document.createElement('label');
     var checkbox = document.createElement('input');
     checkbox.setAttribute('type', 'checkbox');
     checkbox.setAttribute('id', checkboxID);
     if (selected) checkbox.setAttribute('checked', 'true');
-    p.appendChild(checkbox);
-    p.appendChild(document.createTextNode(title));
+    label.appendChild(checkbox);
+    label.appendChild(document.createTextNode(title));
+    p.appendChild(label);
     if (helptext) {
-      p.setAttribute('title', helptext);
+      label.setAttribute('title', helptext);
     }
     this.dialog.appendChild(p);
     return checkbox;

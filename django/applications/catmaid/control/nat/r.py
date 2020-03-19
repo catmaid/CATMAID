@@ -33,7 +33,7 @@ rnat_enaled = True
 
 try:
     from rpy2.robjects.packages import importr
-    from rpy2.rinterface import RRuntimeError
+    from rpy2.rinterface_lib.embedded import RRuntimeError
     import rpy2.robjects as robjects
     import rpy2.rinterface as rinterface
     import rpy2.rlike.container as rlc

@@ -38,6 +38,7 @@ CM_SUBDIRECTORY=$(sanitize "${CM_SUBDIRECTORY:-""}")
 CM_CSRF_TRUSTED_ORIGINS=$(sanitize "${CM_CSRF_TRUSTED_ORIGINS:-""}")
 CM_FORCE_CLIENT_SETTINGS=$(sanitize "${CM_FORCE_CLIENT_SETTINGS:-false}")
 CM_CLIENT_SETTINGS=${CM_CLIENT_SETTINGS:-""}
+CM_SERVER_SETTINGS=${CM_SERVER_SETTINGS:-""}
 TIMEZONE=`readlink /etc/localtime | sed "s/.*\/\(.*\)$/\1/"`
 PG_VERSION='11'
 
@@ -89,6 +90,12 @@ init_catmaid () {
   fi
 
   cd /home/django/projects
+
+  # General settings config
+  if [ ! -z "${CM_SERVER_SETTINGS}" ]; then
+    echo -e "Updating settings.py\n${CM_SERVER_SETTINGS}"
+    echo -e "\n${CM_SERVER_SETTINGS}" >> mysite/settings.py
+  fi
 
   # Update debug setting
   sed -i "/^\(DEBUG = \).*/d" mysite/settings.py

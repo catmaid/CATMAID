@@ -435,6 +435,15 @@ password should be changed to something more secure (``CM_INITIAL_ADMIN_PASS``).
       CLIENT_SETTINGS: '{"neuron-name-service": {"component_list": [{"id": "skeletonid", "name": "Skeleton ID"}, {"id": "neuronname", "name": "Neuron name"}, {"id": "all-meta", "name": "All annotations annotated with \"neuron name\"", "option": "neuron name"}]}}'
 
 .. glossary::
+  ``CM_SERVER_SETTINGS``
+  A valid Python string that is added to the container's settings.py file. All
+  specific settings above override these more general settings. For instance, an
+  alternative way to set the node query limit and enabling the cropping tool by
+  default would be::
+
+    CM_SERVER_SETTINGS="NODE_LIST_MAXIMUM_COUNT=50000\nPROFILE_SHOW_CROPPING_TOOL=True"
+
+.. glossary::
   ``CM_FORCE_CLIENT_SETTINGS``
     Normally, the above client settings are only used if there is none already
     defined for a user. To enforce the use of the CM_CLIENT_SETTINGS settings,

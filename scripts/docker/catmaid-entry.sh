@@ -31,7 +31,7 @@ CM_IMPORTED_SKELETON_FILE_MAXIMUM_SIZE=$(sanitize "${CM_IMPORTED_SKELETON_FILE_M
 CM_HOST=$(sanitize "${CM_HOST:-0.0.0.0}")
 CM_PORT=$(sanitize "${CM_PORT:-8000}")
 CM_FORCE_CONFIG_UPDATE=$(sanitize "${CM_FORCE_CONFIG_UPDATE:-false}")
-CM_WRITEABLE_PATH=$(sanitize "${CM_WRITEABLE_PATH:-"'/tmp'"}")
+CM_WRITEABLE_PATH=$(sanitize "${CM_WRITEABLE_PATH:-"'/opt/catmaid-data'"}")
 CM_NODE_LIMIT=$(sanitize "${CM_NODE_LIMIT:-10000}")
 CM_NODE_PROVIDERS=$(sanitize "${CM_NODE_PROVIDERS:-"['postgis2d']"}")
 CM_SUBDIRECTORY=$(sanitize "${CM_SUBDIRECTORY:-""}")
@@ -88,6 +88,10 @@ init_catmaid () {
     cd /home/django && python create_configuration.py
     mkdir -p /home/django/static
   fi
+
+  # Create writable path and make sure the www-data user owns it.
+  mkdir -p "${CM_WRITEABLE_PATH}"
+  chown -R www-data "${CM_WRITEABLE_PATH}"
 
   cd /home/django/projects
 

@@ -49,7 +49,10 @@ RUN /bin/bash -c "source /usr/share/virtualenvwrapper/virtualenvwrapper.sh \
     && workon catmaid \
     && pip install uwsgi" \
     && ln -s /home/scripts/docker/supervisor-catmaid.conf /etc/supervisor/conf.d/ \
+    && mkdir -p /var/run/catmaid \
+    && chown www-data /var/run/catmaid \
     && chmod +x /home/scripts/docker/start-catmaid.sh \
+    && chmod +x /home/scripts/docker/start-celery.sh \
     && chmod +x /home/scripts/docker/catmaid-entry.sh
 
 # Fix AUFS bug that breaks PostgreSQL

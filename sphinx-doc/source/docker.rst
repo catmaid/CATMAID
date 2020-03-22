@@ -170,7 +170,7 @@ database. To stop the database, call the following three commands from the
 ``catmaid-docker`` directory (containing the ``docker-compose.yml`` file)::
 
   PG_STOP_CMD='export PGCTL=$(which pg_ctl); su postgres -c "${PGCTL} stop"'
-  docker exec -i -t catmaid-docker_db_1 /bin/bash -c "${PG_STOP_CMD}"
+  docker exec -i -t catmaid_db_1 /bin/bash -c "${PG_STOP_CMD}"
   docker-compose stop
 
 And then copy the complete ``volumes`` folder::

@@ -74,6 +74,19 @@ to run multiple isolated Celery servers with a single RabbmitMQ instance::
 
 Now we can configure Celery to talk to this message broker.
 
+.. note::
+
+    To troubleshoot whether messages get received and consumed, it is useful to
+    enable the management plugin like shown above and then download from the
+    local RabbitMQ server the rabbitmqadmin tool. This allows to interact with
+    the server and its queues from the command line::
+
+      wget http://localhost:15672/cli/rabbitmqadmin
+      chmod +x rabbitmqadmin
+      ./rabbitmqadmin list queues vhost name node messages message_stats.publish_details.rate
+      ./rabbitmqadmin -f long -d 3 list queues
+      ./rabbitmqadmin get queue=<queue-name> requeue=true
+
 Celery configuration
 --------------------
 

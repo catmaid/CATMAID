@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# We want job control to optionally start Celery in parallel.
+set -m
+
 # Remove quotes around a string
 sanitize() { echo "$1" | sed "s/^[\"']\?\(.*[^\"']\)[\"']\?$/\1/"; }
 
@@ -39,6 +42,9 @@ CM_CSRF_TRUSTED_ORIGINS=$(sanitize "${CM_CSRF_TRUSTED_ORIGINS:-""}")
 CM_FORCE_CLIENT_SETTINGS=$(sanitize "${CM_FORCE_CLIENT_SETTINGS:-false}")
 CM_CLIENT_SETTINGS=${CM_CLIENT_SETTINGS:-""}
 CM_SERVER_SETTINGS=${CM_SERVER_SETTINGS:-""}
+CM_CELERY_BROKER_URL=$(sanitize "${CM_CELERY_BROKER_URL:-"amqp://guest:guest@localhost:5672//"}")
+CM_CELERY_WORKER_CONCURRENCY=$(sanitize "${CM_CELERY_WORKER_CONCURRENCY:-1}")
+CM_RUN_CELERY=$(sanitize "${CM_RUN_CELERY:-true}")
 TIMEZONE=`readlink /etc/localtime | sed "s/.*\/\(.*\)$/\1/"`
 PG_VERSION='11'
 
@@ -49,6 +55,11 @@ if [ "${1:0:1}" = '-' ]; then
 fi
 
 init_catmaid () {
+  # Make sure there is a folder writable by www-data in the /var/run folder,
+  # used for some sockets and PID files.
+  mkdir -p /var/run/catmaid
+  chown www-data /var/run/catmaid
+
   PGBIN="/usr/lib/postgresql/${PG_VERSION}/bin"
   echo "Wait until database $DB_HOST:$DB_PORT is ready..."
   until su postgres -c "${PGBIN}/pg_isready -h '${DB_HOST}' -p ${DB_PORT} -q; exit \$?"
@@ -182,8 +193,38 @@ init_catmaid () {
   echo "Configuring uWSGI to run on socket ${CM_HOST}:${CM_PORT}"
   sed -i "s/socket = .*/socket = ${CM_HOST}:${CM_PORT}/g" /home/scripts/docker/uwsgi-catmaid.ini
 
-  echo "Starting CATMAID and Celery workers"
-  supervisord -n -c /etc/supervisor/supervisord.conf
+  sed -i "/^\(CELERY_BROKER_URL = \).*/d" mysite/settings.py
+  sed -i "/^\(CELERY_WORKER_CONCURRENCY = \).*/d" mysite/settings.py
+  if [ "$CM_RUN_CELERY" = true ]; then
+    # Let CATMAID know about available async processing.
+    echo "Updating settings.py:"
+    echo "Setting CELERY_BROKER_URL = \"${CM_CELERY_BROKER_URL}\""
+    echo "CELERY_BROKER_URL = \"${CM_CELERY_BROKER_URL}\"" >> mysite/settings.py
+    echo "Setting CELERY_WORKER_CONCURRENCY = ${CM_CELERY_WORKER_CONCURRENCY}"
+    echo "CELERY_WORKER_CONCURRENCY = ${CM_CELERY_WORKER_CONCURRENCY}" >> mysite/settings.py
+
+    echo "Starting RabbitMQ"
+    service rabbitmq-server start
+    until wget --spider -t1 -T1 -O /dev/null -q 127.0.0.1:5672; do
+      sleep 0.1
+    done
+
+    # First start supervisor in background, start Celery and pull supervisor
+    # into foreground.
+    echo "Starting CATMAID"
+    supervisord -n -c /etc/supervisor/supervisord.conf &
+    # Sleep a second to give supervisor a chance to start
+    until supervisorctl status; do
+      sleep 0.1
+    done
+    echo "Starting Celery"
+    supervisorctl start celery-catmaid
+    # Move supervisor back into foreground
+    fg
+  else
+    echo "Starting CATMAID"
+    supervisord -n -c /etc/supervisor/supervisord.conf
+  fi
 }
 
 if [ "$1" = 'standalone' ]; then

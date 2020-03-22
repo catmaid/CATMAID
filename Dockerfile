@@ -20,6 +20,7 @@ RUN apt-get update -y \
     && apt-get update -y \
     && apt-get install -y python3.6 python3.6-dev git python-pip \
     && apt-get install -y nginx supervisor \
+    && apt-get install -y rabbitmq-server \
     && rm -rf /var/lib/apt/lists/*
 ADD packagelist-ubuntu-16.04-apt.txt /home/
 RUN apt-get update -y  \

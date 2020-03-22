@@ -21,7 +21,12 @@
 
 ### Features and enhancements
 
+Docker:
 
+- Asynchronous tasks can now also be run inside the Docker container. Celery and
+  RabbitMQ are run by default, but can also be run in separte containers (see
+  CM_CELERY_BROKER_URL, CM_CELERY_WORKER_CONCURRENCY and CM_RUN_CELERY
+  Docker environment variables).
 
 ### Bug fixes
 

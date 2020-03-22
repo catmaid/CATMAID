@@ -450,6 +450,25 @@ password should be changed to something more secure (``CM_INITIAL_ADMIN_PASS``).
     this can be set to true. Default: false
 
 .. glossary::
+  ``CM_RUN_CELERY``
+    For asynchronous tasks, CATMAID uses Celery. By default a Celery instance is
+    also run inside the Docker container. Since Celery isn't neccessarily required for
+    normal operation (only some operations like cropping or NBLAST won't work)
+    and Celery can also be run in a spearate container, running Celery within
+    the CATMAID container can be disabled by setting this to "false". By
+    default, Celery is started.
+
+.. glossary::
+  ``CM_CELERY_BROKER_URL``
+  If Celery is not run within this Container but somewhere else, this variable
+  can be used to let CATMAID know about where to find Celery.
+
+.. glossary::
+  ``CM_CELERY_WORKER_CONCURRENCY``
+  By defeault Celery runs with one worker in the container. This can be adjusted
+  here by setting it to a higher number.
+
+.. glossary::
   ``TIMEZONE``
     The timezone this server runs in. By default CATMAID tries to guess.
     Otherwise see https://en.wikipedia.org/wiki/List_of_tz_zones_by_name.

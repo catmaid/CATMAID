@@ -685,7 +685,7 @@ def download_crop(request:HttpRequest, file_path=None) -> HttpResponse:
     and deletes the files afterwards.
     """
     # Optionally delete old files
-    if settings.CROP_AUTO_CLEANUP:
+    if getattr(settings, 'CROP_AUTO_CLEANUP', False):
         cleanup()
 
     # Check if the requested file exists

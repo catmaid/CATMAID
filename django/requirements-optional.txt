@@ -1,4 +1,3 @@
 rpy2==3.2.6
 pandas==0.24.1
-pgmagick==0.7.5; platform_python_implementation != 'PyPy'
 channels_rabbitmq==1.2.0

@@ -173,7 +173,7 @@ class TreenodeExporter:
             # Save image in output path, named <treenode-id>.tiff
             image_name = "%s.tiff" % treenode.id
             treenode_image_path = os.path.join(output_path, image_name)
-            img.write(treenode_image_path)
+            img.save(treenode_image_path)
 
     def post_process(self, nodes) -> None:
         """ Create a meta data file for all the nodes passed (usually all of the

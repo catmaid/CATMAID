@@ -478,7 +478,7 @@ def extract_substack_no_rotation(job) -> List:
                                      (estimated_total_size,
                                       settings.GENERATED_FILES_MAXIMUM_SIZE))
                 # Draw the image onto result image
-                cropped_slice.paste(image, ip.x_dst, ip.y_dst)
+                cropped_slice.paste(image, (ip.x_dst, ip.y_dst))
                 # Delete tile image - it's not needed anymore
                 del image
 

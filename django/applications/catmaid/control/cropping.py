@@ -186,7 +186,6 @@ class ImagePart:
         if self.width != src_width or self.height != src_height:
             # left upper right lower
             image = image.crop((self.x_min_src, self.y_min_src, self.x_min_src + self.width, self.y_min_src + self.height))
-            image.load()
 
         # Estimates the size in Bytes of this image part by scaling the number
         # of Bytes read with the ratio between the needed part of the image and
@@ -312,7 +311,6 @@ def extract_substack(job) -> List:
         out_stack = []
         for img in cropped_stack:
             cropped = img.crop(crop_geometry)
-            cropped.load()
             out_stack.append(cropped)
 
         cropped_stack = out_stack
@@ -465,7 +463,7 @@ def extract_substack_no_rotation(job) -> List:
             # Write out the image parts and make sure the maximum allowed file
             # size isn't exceeded.
 
-            cropped_slice = PILImage.new(bb.width, bb.height)
+            cropped_slice = PILImage.new(mode="RGB", size=(bb.width, bb.height))
             for ip in image_parts:
                 # Get (correctly cropped) image
                 image = ip.get_image()
@@ -484,14 +482,13 @@ def extract_substack_no_rotation(job) -> List:
                 # Delete tile image - it's not needed anymore
                 del image
 
-            if cropped_slice:  # TODO: always true?
-                # Optionally, use only a single channel
-                if job.single_channel:
-                    # r g b
-                    cropped_slice, _, _ = cropped_slice.split()
+            # Optionally, use only a single channel
+            if job.single_channel:
+                # r g b
+                cropped_slice, _, _ = cropped_slice.split()
 
-                # Add the image to the cropped stack
-                cropped_stack.append( cropped_slice )
+            # Add the image to the cropped stack
+            cropped_stack.append( cropped_slice )
 
     return cropped_stack
 
@@ -523,7 +520,8 @@ def process_crop_job(job: CropJob, create_message=True) -> str:
         # Only produce an image if parts of stacks are within the output
         if len(cropped_stack) > 0:
             metadata = job.create_tiff_metadata(len(cropped_stack))
-            cropped_stack[0].save(job.output_path.encode("ascii", "ignore"), compression="raw", save_all=True, append_images=cropped_stack[1:], tiffinfo=metadata)
+            cropped_stack[0].save(job.output_path, compression="raw", save_all=True,
+                    append_images=cropped_stack[1:], tiffinfo=metadata)
         else:
             no_error_occured = False
             error_message = "A region outside the stack has been selected. " \

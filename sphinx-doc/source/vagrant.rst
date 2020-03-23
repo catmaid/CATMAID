@@ -15,9 +15,9 @@ Quickstart (linux)
 * Make a fresh clone of the CATMAID repository and ``cd`` into it
 * ``vagrant up``
 * ``vagrant ssh``, then once inside
-  * Go to code directory: ``cd /CATMAID``
-  * Finish setup: ``scripts/vagrant/optional.sh``
-  * Start the dev server: ``django/projects/manage.py runserver [::]:8888``
+    * Go to code directory: ``cd /CATMAID``
+    * Finish setup: ``scripts/vagrant/optional.sh``
+    * Start the dev server: ``django/projects/manage.py runserver [::]:8888``
 * Develop, inside or outside the container!
 
 Vagrant

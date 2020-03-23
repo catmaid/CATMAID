@@ -11,8 +11,6 @@ echo "source ~/catmaid-env/bin/activate" >> ~/.bashrc
 cd /CATMAID/django
 pip install -U pip
 pip install -r requirements-dev.txt -r requirements-optional.txt
-# useful additional packages
-pip install ipython pgcli
 
 # install node dependencies
 cd /CATMAID

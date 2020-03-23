@@ -14,21 +14,18 @@ TIMEZONE=${TIMEZONE:-$DEFAULT_TZ}
 
 mkdir -p ~/data
 
-# if it is not already,
-# prepend line to pg_hba.conf
-# and restart postgres
-HBA_LINE="local $DB_NAME $DB_USER md5"
-HBA_PATH="/etc/postgresql/11/main/pg_hba.conf"
-LINE_EXISTS=""
-#LINE_EXISTS=$(sudo grep "$HBA_LINE" $HBA_PATH)
-echo "value is $LINE_EXISTS"
-if [ ! "$LINE_EXISTS" ]; then
-    echo "Allowing postgres to accept password connections"
-    echo "$HBA_LINE" > ~/tmp.txt
-    sudo cat $HBA_PATH >> ~/tmp.txt
-    sudo mv ~/tmp.txt $HBA_PATH
-    sudo systemctl restart postgresql
-fi
+echo "Making postgres accessible from host"
+# TODO: make idempotent
+PG_CONF_DIR="/etc/postgresql/11/main"
+# https://gist.github.com/carymrobbins/39b75df64a1201407c80
+sudo sed -i -e "s/#listen_addresses = 'localhost'/listen_addresses = '*'/" $PG_CONF_DIR/postgresql.conf
+HBA_PATH="$PG_CONF_DIR/pg_hba.conf"
+echo "Allowing postgres to accept password connections"
+echo -e "local $DB_NAME $DB_USER md5" > ~/tmp.txt
+echo -e "host $DB_NAME $DB_USER 0.0.0.0/0 md5" >> ~/tmp.txt
+sudo cat $HBA_PATH >> ~/tmp.txt
+sudo mv ~/tmp.txt $HBA_PATH
+sudo systemctl restart postgresql
 
 cd /CATMAID
 
@@ -66,6 +63,8 @@ if [ ! -f projects/mysite/settings.py ]; then
     echo "EXPAND_FRONTEND_ERRORS = True" >> projects/mysite/settings.py
 
     # cat projects/mysite/settings.py
+else
+    echo "django/projects/mysite/settings.py exists: skipping configuration"
 fi
 
 cd projects

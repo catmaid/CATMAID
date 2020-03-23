@@ -14,7 +14,11 @@ Vagrant.configure("2") do |config|
   #config.vm.box = "ubuntu/bionic64"
   config.vm.box = "bento/ubuntu-18.04"
   config.vm.synced_folder "./", "/CATMAID"
-  config.vm.network "forwarded_port", guest: 8000, host: 8888, host_ip: "127.0.0.1"
+  
+  config.vm.hostname = "catmaid-vm"
+  config.vm.define "catmaid-vm"
+
+  config.vm.network "forwarded_port", guest: 8888, host: 8888, host_ip: "127.0.0.1"
   config.vm.network "forwarded_port", guest: 5432, host: 5555, host_ip: "127.0.0.1"
   config.vm.network "private_network", type: "dhcp"
 
@@ -24,3 +28,4 @@ Vagrant.configure("2") do |config|
   tz_name = `timedatectl | grep "Time zone" | awk '{print $3}'`.strip
   config.vm.provision :shell, privileged: false, :inline => "echo \"#{tz_name}\" > ~/timezone"
 end
+

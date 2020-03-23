@@ -205,6 +205,26 @@ After a successful upgrade, the ``DB_UPDATE`` variable should be set to
 ``false`` again, to not accidentally upgrade the data files without ensuring a
 back-up has been made.
 
+Starting docker-compose as systemd service
+------------------------------------------
+
+If placed in the ``/etc/systemd/system`` folder, the file ``catmaid.service``
+could look like this and allow the container management through systemd::
+
+  [Unit]
+  Description=CATMAID
+  Requires=docker.service
+  After=docker.service
+
+  [Service]
+  Restart=always
+  ExecStart=/usr/bin/docker-compose -f /path/to/catmaid-docker-compose/docker-compose.yml up
+  ExecStop=/usr/bin/docker-compose -f /path/to/catmaid-docker-compose/docker-compose.yml stop
+
+  [Install]
+  WantedBy=multi-user.target
+
+
 Notes on shared memory in Docker
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

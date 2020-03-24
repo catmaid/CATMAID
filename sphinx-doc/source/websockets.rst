@@ -19,6 +19,10 @@ setup.
 Note that ``manage.py runserver`` supports ASGI out of the box. This however is
 not meant to be used for production setups.
 
+All dependencies for this setup are optional and can be installed with::
+
+  pip install -r django/requirements-async.txt
+
 
 Setting up an ASGI server
 -------------------------
@@ -93,6 +97,10 @@ a similar setup, install the ``channels_rabbitmq`` layer package into the
 virtualenv::
 
     pip install -U channels_rabbitmq
+
+If you have installed packages from the dependency list
+``requirements-async.txt``, the package doesn't need to be installede
+separately.
 
 Additionally, the folllowing has to be added to ``settings.py``:
 

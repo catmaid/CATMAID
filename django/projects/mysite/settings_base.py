@@ -282,6 +282,11 @@ NEW_USER_DEFAULT_GROUPS = []
 CELERY_ACCEPT_CONTENT = ['pickle']
 CELERY_TASK_SERIALIZER = 'pickle'
 
+# The Celery beat schedule is defined in UTC by default. This can be changed
+# using the following two variables:
+# CELERY_TIMEZONE = 'America/New_York'
+# CELERY_ENABLE_UTC = False
+
 # The default set of periodic tasks
 CELERY_BEAT_SCHEDULE = {
     # Clean cropped stack directory every night at 23:30.

@@ -13,6 +13,8 @@ Publications using CATMAID
 2020
 ~~~~
 
+* Claire Eschbach, Akira Fushiki, Michael Winding, Casey M. Schneider-Mizell, Mei Shao, Rebecca Arruda, Katharina Eichler, Javier Valdes-Aleman, Tomoko Ohyama, Andreas S. Thum, Bertram Gerber, Richard D. Fetter, James W. Truman, Ashok Litwin-Kumar, Albert Cardona & Marta Zlatic. `Recurrent architecture for adaptive regulation of learning in the insect brain <https://www.nature.com/articles/s41593-020-0607-9>`_, Nature Neuroscience, 2020.
+
 * Fei Wang, Kaiyu Wang, Nora Forknall, Christopher Patrick, Tansy Yang, Ruchi Parekh, Davi Bock, Barry J. Dickson. `Neural circuitry linking mating and egg laying in Drosophila females <https://www.nature.com/articles/s41586-020-2055-9>`_, Nature, 2020.
 
 2019

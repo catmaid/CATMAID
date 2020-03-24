@@ -198,7 +198,7 @@ def find_directed_path_skeletons(request:HttpRequest, project_id=None) -> JsonRe
           AND tc1.connector_id = tc2.connector_id
           AND tc1.skeleton_id != tc2.skeleton_id
           AND tc1.relation_id = %(relation_1)s
-          AND tc2.relation_id = %(relation)2)s
+          AND tc2.relation_id = %(relation_2)s
         GROUP BY tc1.skeleton_id, tc2.skeleton_id
         HAVING count(*) >= %(min_synapses)s
         """, {

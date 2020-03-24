@@ -14,18 +14,26 @@ TIMEZONE=${TIMEZONE:-$DEFAULT_TZ}
 
 mkdir -p ~/data
 
-echo "Making postgres accessible from host"
-# TODO: make idempotent
-PG_CONF_DIR="/etc/postgresql/11/main"
-# https://gist.github.com/carymrobbins/39b75df64a1201407c80
-sudo sed -i -e "s/#listen_addresses = 'localhost'/listen_addresses = '*'/" $PG_CONF_DIR/postgresql.conf
-HBA_PATH="$PG_CONF_DIR/pg_hba.conf"
-echo "Allowing postgres to accept password connections"
-echo -e "local $DB_NAME $DB_USER md5" > ~/tmp.txt
-echo -e "host $DB_NAME $DB_USER 0.0.0.0/0 md5" >> ~/tmp.txt
-sudo cat $HBA_PATH >> ~/tmp.txt
-sudo mv ~/tmp.txt $HBA_PATH
-sudo systemctl restart postgresql
+HBA_PATH="/etc/postgresql/11/main/pg_hba.conf"
+LOCAL_LINE="local $DB_NAME $DB_USER md5"
+HOST_LINE="host $DB_NAME $DB_USER 0.0.0.0/0 md5"
+
+HBA_CONTENT=""
+
+if [ ! "$(grep \"$LOCAL_LINE\" $HBA_PATH)" ]; then
+    HBA_CONTENT="$HBA_CONTENT$LOCAL_LINE\n"
+fi
+if [ ! "$(grep \"$HOST_LINE\" $HBA_PATH)" ]; then
+    HBA_CONTENT="$HBA_CONTENT$HOST_LINE\n"
+fi
+if [ "$HBA_CONTENT" ]; then
+    echo "Allowing password access to database $DB_NAME for user $DB_USER"
+    echo "$HBA_CONTENT$(sudo cat $HBA_PATH)" > ~/tmp.txt
+    sudo mv ~/tmp.txt $HBA_PATH
+    sudo systemctl restart postgresql
+else
+    echo "Database already password-accessible"
+fi
 
 cd /CATMAID
 
@@ -73,4 +81,4 @@ cd projects
 
 echo "\n\nCreating CATMAID superuser account\n"
 ./manage.py createsuperuser
-./manage.py catmaid_insert_example_projects --user=1
+#./manage.py catmaid_insert_example_projects --user=1

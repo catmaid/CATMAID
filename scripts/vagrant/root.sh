@@ -58,3 +58,8 @@ cd /CATMAID
 sudo xargs apt-get install -y < packagelist-ubuntu-${VERSION}-apt.txt
 apt-get install -y nodejs python3-pip python3.6-venv python3-wheel git r-base
 
+PG_CONF="/etc/postgresql/11/main/postgresql.conf"
+sed -i "/^listen_addresses =.*/d" $PG_CONF
+echo "listen_addresses = '*'" >> $PG_CONF
+systemctl restart postgresql
+

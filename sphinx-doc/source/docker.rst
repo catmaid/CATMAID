@@ -470,6 +470,12 @@ password should be changed to something more secure (``CM_INITIAL_ADMIN_PASS``).
     this can be set to true. Default: false
 
 .. glossary::
+  ``CM_RUN_ASGI``
+  Whether or not to run the ASGI server Daphne inside the container. This
+  enables support for WebSockets, which add some convenience features on the
+  front-end. This is enabled by default, set ``CM_RUN_ASGI=false`` to disable.
+
+.. glossary::
   ``CM_RUN_CELERY``
     For asynchronous tasks, CATMAID uses Celery. By default a Celery instance is
     also run inside the Docker container. Since Celery isn't neccessarily required for

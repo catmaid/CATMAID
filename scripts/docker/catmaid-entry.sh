@@ -46,6 +46,7 @@ CM_CELERY_BROKER_URL=$(sanitize "${CM_CELERY_BROKER_URL:-"amqp://guest:guest@loc
 CM_CELERY_WORKER_CONCURRENCY=$(sanitize "${CM_CELERY_WORKER_CONCURRENCY:-1}")
 CM_RUN_CELERY=$(sanitize "${CM_RUN_CELERY:-true}")
 CM_CELERY_TIMEZONE=$(sanitize "${CM_CELERY_TIMEZONE:-""}")
+CM_RUN_ASGI=$(sanitize "${CM_RUN_ASGI:-true}")
 TIMEZONE=`readlink /etc/localtime | sed "s/.*\/\(.*\)$/\1/"`
 PG_VERSION='11'
 
@@ -212,31 +213,51 @@ init_catmaid () {
       echo "Setting CELERY_ENABLE_UTC = False"
       echo "CELERY_ENABLE_UTC = False" >> mysite/settings.py
     fi
+  fi
 
+  if [ "$CM_RUN_ASGI" = true ]; then
+    echo "Setting CHANNEL_LAYERS"
+    echo "CHANNEL_LAYERS = {
+  'default': {
+      'BACKEND': 'channels_rabbitmq.core.RabbitmqChannelLayer',
+      'CONFIG': {
+          'host': 'amqp://guest:guest@localhost:5672//',
+      },
+  },
+}" >> mysite/settings.py
+  fi
+
+  if [[ "$CM_RUN_CELERY" = true || "$CM_RUN_ASGI" = true ]]; then
     echo "Starting RabbitMQ"
     service rabbitmq-server start
     until wget --spider -t1 -T1 -O /dev/null -q 127.0.0.1:5672; do
       sleep 0.1
     done
+  fi
 
-    # First start supervisor in background, start Celery and pull supervisor
-    # into foreground.
-    echo "Starting CATMAID"
-    supervisord -n -c /etc/supervisor/supervisord.conf &
-    # Sleep a second to give supervisor a chance to start
-    until supervisorctl status; do
-      sleep 0.1
-    done
+  # First start supervisor in background, start Celery and pull supervisor
+  # into foreground.
+  echo "Starting CATMAID"
+  supervisord -n -c /etc/supervisor/supervisord.conf &
+  # Sleep a second to give supervisor a chance to start
+  until supervisorctl status; do
+    sleep 0.1
+  done
+
+  if [ "$CM_RUN_CELERY" = true ]; then
     echo "Starting Celery"
     supervisorctl start celery-catmaid
     echo "Starting Celery Beat"
     supervisorctl start celery-beat-catmaid
-    # Move supervisor back into foreground
-    fg
-  else
-    echo "Starting CATMAID"
-    supervisord -n -c /etc/supervisor/supervisord.conf
   fi
+
+  if [ "$CM_RUN_ASGI" = true ]; then
+    echo "Starting ASGI server Daphne"
+    supervisorctl start daphne-catmaid
+  fi
+
+  # Move supervisor back into foreground
+  fg
 }
 
 if [ "$1" = 'standalone' ]; then

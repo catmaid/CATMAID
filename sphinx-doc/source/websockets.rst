@@ -92,9 +92,10 @@ This happens though a separate database, typically Redis or RabbitMQ. While
 ``channels_redis`` is available and well supported, we so far only used
 ``channels_rabbitmq``, because `RabbitMQ
 <https://channels.readthedocs.io/en/stable/backends.html#rabbitmq>`_ is also
-used in other parts of our infrastructure (e.g. :ref:`Celery <celery>`). To have
-a similar setup, install the ``channels_rabbitmq`` layer package into the
-virtualenv::
+used in other parts of our infrastructure (e.g. :ref:`Celery <celery>`). If you
+install RabbitMQ make sure to install at least version 5.8. With previous
+version we experienced connectivity issues. To have a similar setup, install
+the ``channels_rabbitmq`` layer package into the virtualenv::
 
     pip install -U channels_rabbitmq
 

@@ -9,33 +9,38 @@ ARG DEBIAN_FRONTEND=noninteractive
 # instance, make sure we install the upstream version to match the manual (and
 # make building images on top of this one easier).
 RUN apt-get update -y \
-    && apt-get install -y apt-utils gawk \
+    && apt-get install -y apt-utils apt-transport-https gawk \
     && apt-get install -y software-properties-common \
     && add-apt-repository ppa:deadsnakes/ppa \
     && add-apt-repository -y ppa:nginx/stable \
     && add-apt-repository -y ppa:ubuntugis/ppa \
-    && add-apt-repository "deb http://apt.postgresql.org/pub/repos/apt/ xenial-pgdg main" \
     && apt-get install -y wget ca-certificates \
+    && add-apt-repository "deb http://apt.postgresql.org/pub/repos/apt/ xenial-pgdg main" \
     && wget --quiet -O - https://postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
+    && add-apt-repository "deb http://dl.bintray.com/rabbitmq-erlang/debian xenial erlang" \
+    && wget --quiet -O - https://github.com/rabbitmq/signing-keys/releases/download/2.0/rabbitmq-release-signing-key.asc | apt-key add - \
+    && add-apt-repository "deb https://packagecloud.io/rabbitmq/rabbitmq-server/ubuntu/ xenial main" \
+    && wget --quiet -O - https://packagecloud.io/rabbitmq/rabbitmq-server/gpgkey | apt-key add - \
     && apt-get update -y \
     && apt-get install -y python3.6 python3.6-dev git python-pip \
     && apt-get install -y nginx supervisor \
     && apt-get install -y rabbitmq-server \
     && rm -rf /var/lib/apt/lists/*
-ADD packagelist-ubuntu-16.04-apt.txt /home/
+COPY packagelist-ubuntu-16.04-apt.txt /home/
 RUN apt-get update -y  \
     && xargs apt-get install -y < /home/packagelist-ubuntu-16.04-apt.txt \
     && rm -rf /var/lib/apt/lists/*
-ADD django/requirements.txt /home/django/
+COPY django/requirements.txt django/requirements-async.txt /home/django/
 ENV WORKON_HOME /opt/virtualenvs
 RUN mkdir -p /opt/virtualenvs \
     && /bin/bash -c "source /usr/share/virtualenvwrapper/virtualenvwrapper.sh \
     && mkvirtualenv catmaid -p /usr/bin/python3.6 \
     && workon catmaid \
     && pip install -U pip setuptools \
-    && pip install -r /home/django/requirements.txt"
+    && pip install -r /home/django/requirements.txt \
+    && pip install -r /home/django/requirements-async.txt"
 
-ADD . /home/
+COPY . /home/
 
 # Add Git commit build information to container by copying the Git repo (.git
 # folder) into the container to run "git describe" and pipe its result in the

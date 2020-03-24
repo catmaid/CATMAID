@@ -3,6 +3,15 @@
 
 ### Notes
 
+- The version requires PostgreSQL 12. If you also want to upgrade PostGIS,
+  update PostGIS firstand run ``ALTER EXTENSION postgis UPDATE;`` in every
+  existing database in the cluster that should be upgraded. For docker-compose
+  setups this database update is performed automatically if `DB_UPDATE=true` is
+  set for the `db` container (watch the Docker output). CATMAID's documentation
+  Docker has more information. If a replication setup is in use, the database
+  configuration changes for Postgres 12. CATMAID's replication documentation
+  explains what needs to be done.
+
 - If R extensions are used, make sure to use R 3.6. On Ubuntu this can be made
   available by first installing the official R PPA repository:
 
@@ -27,6 +36,12 @@ Docker:
   RabbitMQ are run by default, but can also be run in separte containers (see
   CM_CELERY_BROKER_URL, CM_CELERY_WORKER_CONCURRENCY and CM_RUN_CELERY
   Docker environment variables).
+
+- Maintenance tasks are now automatically executed inside the Docker container
+  if Celery is enabled. This happens around midnight UTC by default, but the
+  time zone can be adjusted using the CM_CELERY_TIMEZONE environment variable.
+  For instance, use "America/New_York' for US east coast time. This way,
+  maintenance tasks can be moved to whenever local midnight is.
 
 ### Bug fixes
 

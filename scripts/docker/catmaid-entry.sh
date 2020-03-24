@@ -45,6 +45,7 @@ CM_SERVER_SETTINGS=${CM_SERVER_SETTINGS:-""}
 CM_CELERY_BROKER_URL=$(sanitize "${CM_CELERY_BROKER_URL:-"amqp://guest:guest@localhost:5672//"}")
 CM_CELERY_WORKER_CONCURRENCY=$(sanitize "${CM_CELERY_WORKER_CONCURRENCY:-1}")
 CM_RUN_CELERY=$(sanitize "${CM_RUN_CELERY:-true}")
+CM_CELERY_TIMEZONE=$(sanitize "${CM_CELERY_TIMEZONE:-""}")
 TIMEZONE=`readlink /etc/localtime | sed "s/.*\/\(.*\)$/\1/"`
 PG_VERSION='11'
 
@@ -203,6 +204,15 @@ init_catmaid () {
     echo "Setting CELERY_WORKER_CONCURRENCY = ${CM_CELERY_WORKER_CONCURRENCY}"
     echo "CELERY_WORKER_CONCURRENCY = ${CM_CELERY_WORKER_CONCURRENCY}" >> mysite/settings.py
 
+    # Optionally adjust maintenance task schedule, which is by default defined
+    # in UTC.
+    if [ "$CM_CELERY_TIMEZONE" != "" ]; then
+      echo "Setting CELERY_TIMEZONE = \"${CM_CELERY_TIMEZONE}\""
+      echo "CELERY_TIMEZONE = \"${CM_CELERY_TIMEZONE}\"" >> mysite/settings.py
+      echo "Setting CELERY_ENABLE_UTC = False"
+      echo "CELERY_ENABLE_UTC = False" >> mysite/settings.py
+    fi
+
     echo "Starting RabbitMQ"
     service rabbitmq-server start
     until wget --spider -t1 -T1 -O /dev/null -q 127.0.0.1:5672; do
@@ -219,6 +229,8 @@ init_catmaid () {
     done
     echo "Starting Celery"
     supervisorctl start celery-catmaid
+    echo "Starting Celery Beat"
+    supervisorctl start celery-beat-catmaid
     # Move supervisor back into foreground
     fg
   else

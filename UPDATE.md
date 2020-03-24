@@ -1,6 +1,33 @@
 Some CATMAID versions require manual changes to an existing setup. Below these
 and other administration related changes are listed in order.
 
+## Under development
+
+- The version requires PostgreSQL 12. If you also want to upgrade PostGIS,
+  update PostGIS firstand run ``ALTER EXTENSION postgis UPDATE;`` in every
+  existing database in the cluster that should be upgraded. For docker-compose
+  setups this database update is performed automatically if `DB_UPDATE=true` is
+  set for the `db` container (watch the Docker output). CATMAID's documentation
+  Docker has more information. If a replication setup is in use, the database
+  configuration changes for Postgres 12. CATMAID's replication documentation
+  explains what needs to be done.
+
+- If R extensions are used, make sure to use R 3.6. On Ubuntu this can be made
+  available by first installing the official R PPA repository:
+
+  sudo gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-key E084DAB9
+  sudo gpg -a --export E084DAB9 | sudo apt-key add -
+  echo "deb https://cloud.r-project.org/bin/linux/ubuntu xenial-cran35/" | sudo tee -a /etc/apt/sources.list
+
+  And second update the package index and update the local R setup:
+
+  sudo apt-get update
+  sudo apt-get install r-base r-base-dev mesa-common-dev libglu1-mesa-dev \
+                     libssl-dev libssh2-1-dev libcurl4-openssl-dev cmtk
+
+  This also requires updating all installed R packages. In all likelihood this
+  requires executing "manage.py catmaid_setup_nblast_environment".
+
 ## 2020.02.15
 
 - Python 3.5 is not supported anymore. Use Python 3.6, 3.7 or 3.8.

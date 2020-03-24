@@ -476,7 +476,9 @@ password should be changed to something more secure (``CM_INITIAL_ADMIN_PASS``).
     normal operation (only some operations like cropping or NBLAST won't work)
     and Celery can also be run in a spearate container, running Celery within
     the CATMAID container can be disabled by setting this to "false". By
-    default, Celery is started.
+    default, Celery is started. If Celery is enabled, an asynchronous task
+    scheduler will schedule some maintenance tasks every night (e.g. cleaning up
+    cropped image, updating statistics, etc.).
 
 .. glossary::
   ``CM_CELERY_BROKER_URL``
@@ -487,6 +489,13 @@ password should be changed to something more secure (``CM_INITIAL_ADMIN_PASS``).
   ``CM_CELERY_WORKER_CONCURRENCY``
   By defeault Celery runs with one worker in the container. This can be adjusted
   here by setting it to a higher number.
+
+.. glossary::
+  ``CM_CELERY_TIMEZONE``
+  There are a handful of maintenance tasks that are executed by CATMAID every
+  night. By default this happens around midnight in UTC time. The time zone
+  which is used here, can be configured with this variable. Use e.g.
+  'America/New_York' for US east coast time.
 
 .. glossary::
   ``TIMEZONE``

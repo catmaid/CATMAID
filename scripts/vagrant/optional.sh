@@ -20,15 +20,17 @@ HOST_LINE="host $DB_NAME $DB_USER 0.0.0.0/0 md5"
 
 HBA_CONTENT=""
 
-if [ ! "$(grep \"$LOCAL_LINE\" $HBA_PATH)" ]; then
+if [ ! "$(sudo grep "$LOCAL_LINE" $HBA_PATH)" ]; then
+    echo "Allowing password access to the database from guest"
     HBA_CONTENT="$HBA_CONTENT$LOCAL_LINE\n"
 fi
-if [ ! "$(grep \"$HOST_LINE\" $HBA_PATH)" ]; then
+if [ ! "$(sudo grep "$HOST_LINE" $HBA_PATH)" ]; then
+    echo "Allowing password access to the database from host"
     HBA_CONTENT="$HBA_CONTENT$HOST_LINE\n"
 fi
 if [ "$HBA_CONTENT" ]; then
-    echo "Allowing password access to database $DB_NAME for user $DB_USER"
-    echo "$HBA_CONTENT$(sudo cat $HBA_PATH)" > ~/tmp.txt
+    echo "Allowing password access to database $DB_NAME for role $DB_USER"
+    printf "$HBA_CONTENT$(sudo cat $HBA_PATH)" > ~/tmp.txt
     sudo mv ~/tmp.txt $HBA_PATH
     sudo systemctl restart postgresql
 else
@@ -81,4 +83,4 @@ cd projects
 
 echo "\n\nCreating CATMAID superuser account\n"
 ./manage.py createsuperuser
-#./manage.py catmaid_insert_example_projects --user=1
+./manage.py catmaid_insert_example_projects --user=1

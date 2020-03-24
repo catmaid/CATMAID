@@ -1,7 +1,7 @@
 Some CATMAID versions require manual changes to an existing setup. Below these
 and other administration related changes are listed in order.
 
-## Under development
+## 2020.02.15
 
 - Python 3.5 is not supported anymore. Use Python 3.6, 3.7 or 3.8.
 

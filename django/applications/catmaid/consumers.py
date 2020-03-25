@@ -16,19 +16,34 @@ class UpdateConsumer(WebsocketConsumer):
 
     def connect(self):
         """Add connecting users to user group so they can receive messages from the
-        server."""
+        server.
+        """
+        # Don't do anything, if there is no channels layer.
+        if not self.channel_layer:
+            logger.error(f'UpdateConsumer: can\'t handle WebSockets connection, no channels layer')
+            return
         # Add user to the matching user group
         user = self.scope["user"]
         async_to_sync(self.channel_layer.group_add)(get_user_group_name(user.id), self.channel_name)
         self.accept()
 
     def disconnect(self, message):
-        """Remove channel from group when user disconnects."""
+        """Remove channel from group when user disconnects.
+        """
+        # Don't do anything, if there is no channels layer.
+        if not self.channel_layer:
+            logger.error(f'UpdateConsumer: can\'t handle WebSockets disconnect, no channels layer')
+            return
         user = self.scope["user"]
         async_to_sync(self.channel_layer.group_discard)(get_user_group_name(user.id), self.channel_name)
 
     def receive(self, *, text_data):
-        """Handle client messages."""
+        """Handle client messages.
+        """
+        # Don't do anything, if there is no channels layer.
+        if not self.channel_layer:
+            logger.error(f'UpdateConsumer: can\'t handle WebSockets message, no channels layer')
+            return
         user = self.scope["user"]
         text_data_json = json.loads(text_data)
         message = text_data_json['message']

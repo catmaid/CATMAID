@@ -415,6 +415,14 @@ Database management system
   queries to set these parameters for each new connection.  Having those
   defaults set will improve the database performance slightly.
 
+* We found that making JIT compilation of queries less likely, helps with many
+  spatial queries, where cost estimates aren't very reliable in many cases. This
+  can be done by raising the default value for the ``jit_above_cost`` (100,000)
+  variable in the ``postgresql.conf`` file to a value of 1,000,000 or even
+  higher::
+
+    jit_above_cost = 1000000
+
 CATMAID
 ^^^^^^^
 

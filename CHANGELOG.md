@@ -12,6 +12,13 @@
   configuration changes for Postgres 12. CATMAID's replication documentation
   explains what needs to be done.
 
+  In Postgres 12, JIT compilation is available to the planner by default. We
+  found that being more conservative with the use of it helped a few common
+  queries (like the tracing data field of view). We set the required minimum
+  cost of JIT use to 1,000,000 in ``postgresql.conf``::
+
+    jit_above_cost = 1000000
+
 - If R extensions are used, make sure to use R 3.6. On Ubuntu this can be made
   available by first installing the official R PPA repository:
 

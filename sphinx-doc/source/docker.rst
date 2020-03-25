@@ -456,10 +456,10 @@ password should be changed to something more secure (``CM_INITIAL_ADMIN_PASS``).
 
 .. glossary::
   ``CM_SERVER_SETTINGS``
-  A valid Python string that is added to the container's settings.py file. All
-  specific settings above override these more general settings. For instance, an
-  alternative way to set the node query limit and enabling the cropping tool by
-  default would be::
+    A valid Python string that is added to the container's settings.py file. All
+    specific settings above override these more general settings. For instance, an
+    alternative way to set the node query limit and enabling the cropping tool by
+    default would be::
 
     CM_SERVER_SETTINGS="NODE_LIST_MAXIMUM_COUNT=50000\nPROFILE_SHOW_CROPPING_TOOL=True"
 
@@ -471,9 +471,9 @@ password should be changed to something more secure (``CM_INITIAL_ADMIN_PASS``).
 
 .. glossary::
   ``CM_RUN_ASGI``
-  Whether or not to run the ASGI server Daphne inside the container. This
-  enables support for WebSockets, which add some convenience features on the
-  front-end. This is enabled by default, set ``CM_RUN_ASGI=false`` to disable.
+    Whether or not to run the ASGI server Daphne inside the container. This
+    enables support for WebSockets, which add some convenience features on the
+    front-end. This is enabled by default, set ``CM_RUN_ASGI=false`` to disable.
 
 .. glossary::
   ``CM_RUN_CELERY``
@@ -488,20 +488,20 @@ password should be changed to something more secure (``CM_INITIAL_ADMIN_PASS``).
 
 .. glossary::
   ``CM_CELERY_BROKER_URL``
-  If Celery is not run within this Container but somewhere else, this variable
-  can be used to let CATMAID know about where to find Celery.
+    If Celery is not run within this Container but somewhere else, this variable
+    can be used to let CATMAID know about where to find Celery.
 
 .. glossary::
   ``CM_CELERY_WORKER_CONCURRENCY``
-  By defeault Celery runs with one worker in the container. This can be adjusted
-  here by setting it to a higher number.
+    By defeault Celery runs with one worker in the container. This can be adjusted
+    here by setting it to a higher number.
 
 .. glossary::
   ``CM_CELERY_TIMEZONE``
-  There are a handful of maintenance tasks that are executed by CATMAID every
-  night. By default this happens around midnight in UTC time. The time zone
-  which is used here, can be configured with this variable. Use e.g.
-  'America/New_York' for US east coast time.
+    There are a handful of maintenance tasks that are executed by CATMAID every
+    night. By default this happens around midnight in UTC time. The time zone
+    which is used here, can be configured with this variable. Use e.g.
+    'America/New_York' for US east coast time.
 
 .. glossary::
   ``TIMEZONE``

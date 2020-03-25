@@ -1,0 +1,2 @@
+channels_rabbitmq==1.2.1
+daphne==2.4.1

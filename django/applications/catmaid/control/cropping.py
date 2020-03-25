@@ -394,9 +394,10 @@ def extract_substack_no_rotation(job) -> List:
         bb.height = height
         s_to_bb[stack.id] = bb
 
-    # Get number of wanted slices
-    px_z_min = to_z_index(job.z_min, job.ref_stack, job.zoom_level)
-    px_z_max = to_z_index(job.z_max, job.ref_stack, job.zoom_level)
+    # Get number of wanted slices, only the relative distance is needed and no
+    # bounds need to be enforced (otherwise we'd need to respect the translation).
+    px_z_min = to_z_index(job.z_min, job.ref_stack, job.zoom_level, False)
+    px_z_max = to_z_index(job.z_max, job.ref_stack, job.zoom_level, False)
     n_slices = px_z_max + 1 - px_z_min
 
     # The images are generated per slice, so most of the following

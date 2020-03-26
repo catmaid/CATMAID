@@ -1763,7 +1763,7 @@
             datatable.rows().invalidate();
             datatable.ajax.reload();
           }
-        }, false, false, false, true);
+        }, true, false, false, true);
 
         // Get available rules
         var table = document.createElement('table');

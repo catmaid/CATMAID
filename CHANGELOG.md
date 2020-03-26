@@ -37,6 +37,9 @@ Volume manager:
   filter. This makes it easier to try different filters without removing all
   other filters
 
+- For new node filters during volume creation, the merge mode can now be
+  selected, i.e. whether additional filters will be combined using OR or AND.
+
 Docker:
 
 - Asynchronous tasks can now also be run inside the Docker container. Celery and

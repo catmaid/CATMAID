@@ -1763,14 +1763,14 @@
             datatable.rows().invalidate();
             datatable.ajax.reload();
           }
-        });
+        }, false, false, false, true);
 
         // Get available rules
         var table = document.createElement('table');
         table.style.width = "100%";
         var header = table.createTHead();
         var hrow = header.insertRow(0);
-        var columns = ['On', 'Name', 'Merge mode', 'Options', 'Is skeleton', 'Has name', 'Actions'];
+        var columns = ['On', 'Name', 'Merge mode', 'Options', 'Invert', 'Is skeleton', 'Has name', 'Actions'];
         columns.forEach(function(c) {
           hrow.insertCell().appendChild(document.createTextNode(c));
         });
@@ -1815,6 +1815,15 @@
               orderable: false,
               render: function(data, type, row, meta) {
                 return row.options ? JSON.stringify(row.options) : "-";
+              }
+            },
+            {
+              orderable: false,
+              render: function(data, type, row, meta) {
+                if (type === "display") {
+                  return row.invert ? 'Yes' : 'No';
+                }
+                return row.invert;
               }
             },
             {

@@ -832,7 +832,7 @@
   };
 
   DOM.appendNewNodeFilterControls = function(type, nodeFilters, target,
-      onNewRule, showMergeModeField, showSkeletonIdField, showNameField) {
+      onNewRule, showMergeModeField, showSkeletonIdField, showNameField, showExtraFieldsLast) {
     var $target = $(target);
     var nodeFilterSettingsContainer = document.createElement('span');
     var nodeFilterSettings = CATMAID.DOM.createLabeledControl("",
@@ -842,6 +842,7 @@
     var newRuleSkeletonID = null;
     var newRuleSkeletonName = null;
     var newRuleMergeMode = CATMAID.UNION;
+    let newRuleInvert = false;
     var mergeRules = {};
     mergeRules["Union"] = CATMAID.UNION;
     mergeRules["Intersection"] = CATMAID.INTERSECTION;
@@ -854,31 +855,46 @@
       CATMAID.DOM.removeAllChildren(nodeFilterSettingsContainer);
       // Add general settings
       var $nodeFilterSettingsContainer = $(nodeFilterSettingsContainer);
-      if (showMergeModeField) {
-        var $mergeMode = CATMAID.DOM.createSelectSetting("Merge operation", mergeRules,
-            "Rules are applied in a left-associative fashion. This selects which operation to use for this.",
+
+      let addExtraFields = function() {
+        if (showMergeModeField) {
+          var $mergeMode = CATMAID.DOM.createSelectSetting("Merge operation", mergeRules,
+              "Rules are applied in a left-associative fashion. This selects which operation to use for this.",
+              function() {
+                newRuleMergeMode = this.value;
+              });
+          $nodeFilterSettingsContainer.append($mergeMode);
+        }
+        if (showSkeletonIdField) {
+          var $skeletonId = CATMAID.DOM.createInputSetting(
+              "Apply only to skeleton ID (Optional)", "",
+              "If a valid skeleton ID is provided, this rule will apply to this skeleton exclusively.",
+              function() {
+                newRuleSkeletonID = this.value;
+              });
+          $nodeFilterSettingsContainer.append($skeletonId);
+        }
+        if (showNameField) {
+          var $skeletonName = CATMAID.DOM.createInputSetting(
+              "... having this name (Optional)", "",
+              "Along with a skeleton ID a name can also be used. If supplied, skeletons are also checked againsts it and only if skeleton ID and name match, the rule will be applied.",
+              function() {
+                newRuleSkeletonName = this.value;
+              });
+          $nodeFilterSettingsContainer.append($skeletonName);
+        }
+
+        let $invertRule = CATMAID.DOM.createCheckboxSetting(
+            "Invert", newRuleInvert, "If enabled the filter acts in an inverted way " +
+            "and will allow all nodes it would have otherwise ignored and vice versa.",
             function() {
-              newRuleMergeMode = this.value;
+              newRuleInvert = this.checked;
             });
-        $nodeFilterSettingsContainer.append($mergeMode);
-      }
-      if (showSkeletonIdField) {
-        var $skeletonId = CATMAID.DOM.createInputSetting(
-            "Apply only to skeleton ID (Optional)", "",
-            "If a valid skeleton ID is provided, this rule will apply to this skeleton exclusively.",
-            function() {
-              newRuleSkeletonID = this.value;
-            });
-        $nodeFilterSettingsContainer.append($skeletonId);
-      }
-      if (showNameField) {
-        var $skeletonName = CATMAID.DOM.createInputSetting(
-            "... having this name (Optional)", "",
-            "Along with a skeleton ID a name can also be used. If supplied, skeletons are also checked againsts it and only if skeleton ID and name match, the rule will be applied.",
-            function() {
-              newRuleSkeletonName = this.value;
-            });
-        $nodeFilterSettingsContainer.append($skeletonName);
+        $nodeFilterSettingsContainer.append($invertRule);
+      };
+
+      if (!showExtraFieldsLast) {
+        addExtraFields();
       }
 
       // Add filter specific settings
@@ -896,6 +912,10 @@
             "for node filter \"" + strategy + "\"");
       }
       createSettings(nodeFilterSettingsContainer, newRuleOptions);
+
+      if (showExtraFieldsLast) {
+        addExtraFields();
+      }
     };
 
     $target.append(CATMAID.DOM.createSelectSetting("Node filter",
@@ -903,16 +923,6 @@
         updateNodeFilterSettings(this.value);
       }));
     $target.append(nodeFilterSettings);
-
-    let newRuleInvert = false;
-    let invertRuleLabel = document.createElement('label');
-    let invertRuleCb = invertRuleLabel.appendChild(document.createElement('input'));
-    invertRuleCb.setAttribute('type', 'checkbox');
-    invertRuleCb.addEventListener('change', function(e) {
-      newRuleInvert = this.checked;
-    });
-    invertRuleLabel.appendChild(document.createTextNode('Invert'));
-    $target.append(invertRuleLabel);
 
     var addRuleButton = document.createElement('button');
     addRuleButton.appendChild(document.createTextNode("Add new filter rule"));

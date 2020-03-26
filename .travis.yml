@@ -30,7 +30,7 @@ before_install:
 install:
   # Install requirements for running CATMAID and its unit tests
   - ./scripts/travis/install_requirements.sh
-  - pip install coveralls flake8
+  - pip install coveralls
   - npm install
 before_script:
   # Set up and start postgres, create database, write config files

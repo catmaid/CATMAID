@@ -5,3 +5,4 @@ Markdown==2.6.9
 Pygments==2.2.0
 Sphinx==2.4.2
 sphinxcontrib-images==0.9.1
+watchdog[watchmedo]==0.10.2

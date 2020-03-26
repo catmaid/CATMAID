@@ -343,6 +343,8 @@ ci.org/catmaid/CATMAID/branches>`_, several automated processes are performed
 to help verify the correctness and quality of CATMAID:
 
 * :doc:`Unit and integration tests for Django backend <djangounittest>`
+* Linting (static analysis) of the python code with flake8
+* Type checking of the python code with mypy
 * Linting (static analysis) of the javascript code with JSHint
 * Linting of CSS with csslint
 * Unit tests of javascript code with QUnit
@@ -357,6 +359,12 @@ Django tests are run through Django's admin commands::
 
         cd /<path_to_catmaid_install>/django/projects
         ./manage.py test catmaid.tests
+
+flake8 and mypy are installed along with other python development dependencies.
+Run them with::
+
+    flake8 django
+    mypy django
 
 JSHint can be `installed from NPM or your platform's package manager
 <http://jshint.com/install/>`_ and should use CATMAID's config settings::

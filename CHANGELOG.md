@@ -54,6 +54,10 @@ Docker:
 
 - Volume lists (drop down menus) are now automatically refreshed if a volume is
   added, updated or removed.
+
+- Volume manager: the "Invert" checkbox for new filter rules for input skeletons
+  during volume creation is now position properly.
+
 - CSVs imported into the skeleton selection widget may contain nonexistent
   skeleton IDs, as intended.
 

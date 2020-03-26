@@ -92,8 +92,8 @@
      *                   the update request returned successfully.
      */
     delete: function(projectId, volumeId) {
-      let result = CATMAID.fetch(project.id + '/volumes/' + volume.id + '/', 'DELETE');
-      result.then(e => {
+      let result = CATMAID.fetch(`${project.id}/volumes/${volumeId}/`, 'DELETE');
+      result.then(json => {
         CATMAID.Volumes.trigger(CATMAID.Volumes.EVENT_VOLUME_DELETED, json.volume_id);
       });
       return result;

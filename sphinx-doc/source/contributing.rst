@@ -410,12 +410,13 @@ ReStructured Text. Documentation from commits pushed to the official CATMAID
 repository are built by `Read the Docs <https://readthedocs.org/>`_ and hosted
 at `catmaid.org <http://catmaid.org>`_.
 
-To build the general documentation from within your pip virtualenv, run::
+CATMAID's documentation can be built in various formats
+by navigating to the ``sphinx-doc`` directory and using `make <https://www.gnu.org/software/make/>`_.
+The default (i.e. ``make`` with no arguments) is HTML, which builds the documentation at sphinx-doc/build/html/index.html.
 
-    cd sphinx-doc
-    make html
-
-The built documentation is now in ``sphinx-doc/build/html/index.html``.
+Every build target can automatically be built when the source files change,
+by using ``make watch-<target>``.
+Build the HTML docs, watch for changes, and serve the documentation at ``http://localhost:8889`` using ``make serve``.
 
 In-Client Documentation
 #######################

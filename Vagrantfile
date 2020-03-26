@@ -14,11 +14,15 @@ Vagrant.configure("2") do |config|
   #config.vm.box = "ubuntu/bionic64"
   config.vm.box = "bento/ubuntu-18.04"
   config.vm.synced_folder "./", "/CATMAID"
-  
+
   config.vm.hostname = "catmaid-vm"
   config.vm.define "catmaid-vm"
 
+  # django dev server
   config.vm.network "forwarded_port", guest: 8888, host: 8888, host_ip: "127.0.0.1"
+  # HTML sphinx-docs with `make serve`
+  config.vm.network "forwarded_port", guest: 8889, host: 8889, host_ip: "127.0.0.1"
+  # postgreSQL
   config.vm.network "forwarded_port", guest: 5432, host: 5555, host_ip: "127.0.0.1"
   config.vm.network "private_network", type: "dhcp"
 

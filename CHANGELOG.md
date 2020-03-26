@@ -58,6 +58,10 @@ Docker:
 - Volume manager: the "Invert" checkbox for new filter rules for input skeletons
   during volume creation is now position properly.
 
+- Node filters: default values for extra options like merge operation,
+  skeleton/name filters or invert, are now correct on repeated filter creation
+  if these options were changed for the first filter.
+
 - CSVs imported into the skeleton selection widget may contain nonexistent
   skeleton IDs, as intended.
 

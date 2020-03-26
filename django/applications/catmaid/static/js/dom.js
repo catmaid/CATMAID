@@ -859,15 +859,15 @@
       let addExtraFields = function() {
         if (showMergeModeField) {
           var $mergeMode = CATMAID.DOM.createSelectSetting("Merge operation", mergeRules,
-              "Rules are applied in a left-associative fashion. This selects which operation to use for this.",
+              "Rules are applied in a left-associative fashion. This selects which operation to use for this. Doesn't apply to first rule.",
               function() {
                 newRuleMergeMode = this.value;
-              });
+              }, newRuleMergeMode);
           $nodeFilterSettingsContainer.append($mergeMode);
         }
         if (showSkeletonIdField) {
           var $skeletonId = CATMAID.DOM.createInputSetting(
-              "Apply only to skeleton ID (Optional)", "",
+              "Apply only to skeleton ID (Optional)", newRuleSkeletonID || "",
               "If a valid skeleton ID is provided, this rule will apply to this skeleton exclusively.",
               function() {
                 newRuleSkeletonID = this.value;
@@ -876,7 +876,7 @@
         }
         if (showNameField) {
           var $skeletonName = CATMAID.DOM.createInputSetting(
-              "... having this name (Optional)", "",
+              "... having this name (Optional)", newRuleSkeletonID || "",
               "Along with a skeleton ID a name can also be used. If supplied, skeletons are also checked againsts it and only if skeleton ID and name match, the rule will be applied.",
               function() {
                 newRuleSkeletonName = this.value;

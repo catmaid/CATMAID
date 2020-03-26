@@ -1770,7 +1770,7 @@
         table.style.width = "100%";
         var header = table.createTHead();
         var hrow = header.insertRow(0);
-        var columns = ['On', 'Name', 'Merge mode', 'Options', 'Is skeleton', 'Has name'];
+        var columns = ['On', 'Name', 'Merge mode', 'Options', 'Is skeleton', 'Has name', 'Actions'];
         columns.forEach(function(c) {
           hrow.insertCell().appendChild(document.createTextNode(c));
         });
@@ -1828,10 +1828,32 @@
               render: function(data, type, row, meta) {
                 return row.validOnlyForName ? row.validOnlyForName : "-";
               }
+            },
+            {
+              orderable: false,
+              render: function(data, type, row, meta) {
+                return `<a href="#" data-index="${meta.row}" data-role="remove-filter">Remove</a>`;
+              }
             }
           ],
           language: {
             emptyTable: "No filters added yet (defaults to take all nodes)"
+          }
+        }).on('click', 'a[data-role=remove-filter]', e => {
+          if (confirm("Remove filter?")) {
+            var ruleIndex = e.target.dataset.index;
+            if (!ruleIndex) {
+              CATMAID.warn("No rule index found");
+              return;
+            } else {
+              ruleIndex = parseInt(ruleIndex, 10);
+              volume.rules.splice(ruleIndex, 1);
+              // To trigger events, override with itself
+              volume.set("rules", volume.rules, true);
+              // Trigger table update
+              datatable.rows().invalidate();
+              datatable.ajax.reload();
+            }
           }
         });
 

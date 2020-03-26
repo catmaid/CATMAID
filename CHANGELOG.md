@@ -30,6 +30,13 @@
 
 ### Features and enhancements
 
+Volume manager:
+
+- The table of filters applied to input neurons for volume creation has now a
+  new "Actions" column. At the moment this includes a "Remove" link for each
+  filter. This makes it easier to try different filters without removing all
+  other filters
+
 Docker:
 
 - Asynchronous tasks can now also be run inside the Docker container. Celery and

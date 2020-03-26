@@ -902,7 +902,7 @@
         var tags = skeleton.tags;
         var cuts = tags[options.tag];
         var nodes = arbor.nodes();
-        let uparborNodes = cuts.forEach(function(cut) {
+        cuts.forEach(function(cut) {
           arbor.subArbor(cut).nodesArray().forEach(function(node) {
             delete nodes[node];
           });
@@ -910,9 +910,9 @@
 
 
         if (!invert) {
-          return uparborNodes;
+          return nodes;
         } else {
-          return Object.keys(uparborNodes).reduce(removeFromObject, arbor.nodes());
+          return Object.keys(nodes).reduce(removeFromObject, arbor.nodes());
         }
       }
     },

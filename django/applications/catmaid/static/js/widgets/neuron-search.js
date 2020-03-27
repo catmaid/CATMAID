@@ -1544,15 +1544,17 @@
   {
     var visited = {};
     return this.queryResults.reduce((function(o, qs) {
-        qs.forEach(function(e) {
-            // Avoid duplicates if the same neuron is checked multiple times and
-            // add it only if not yet present.
-            var valid = (checked === undefined || this.entity_selection_map[e.id] == checked);
-            if (valid && !(e.id in visited)) {
-                o.push(e);
-                visited[e.id] = true;
-            }
-          }, this);
+        if (qs && qs.length > 0) {
+          qs.forEach(e => {
+              // Avoid duplicates if the same neuron is checked multiple times and
+              // add it only if not yet present.
+              var valid = (checked === undefined || this.entity_selection_map[e.id] == checked);
+              if (valid && !(e.id in visited)) {
+                  o.push(e);
+                  visited[e.id] = true;
+              }
+            });
+        }
         return o;
       }).bind(this), []);
   };

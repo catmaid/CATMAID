@@ -97,3 +97,59 @@ works as expected, the URL to put in CATMAID's custom mirror dialog should be::
 
 If the image data is not directly available in the USB SDD's root, the relative
 path has to be added to the URL.
+
+How to create the small overview images in the lower right corner?
+------------------------------------------------------------------
+
+It is possible to show a small overview image of the current section in the
+lower right corner. Generally, CATMAID looks for them as ``small.<extension>``
+(e.g. ``small.jpg``) using the (remote) path for the current Z coordinate and
+makes the file fit into 192x192px. These files can be created of course in many
+ways and here is one waay doing ths using ``graphicsmagick`` (or alternatively
+``imagemagick``)::
+
+It makes sense to use the highest zoom level as possible, becasue we make the
+image only smaller and the less data to process the quicker we have our images.
+Also, in this simple example, it means that we don't need to combine tiles and
+only have to deal with a single image.
+
+Let's assume we have nine zoom levels and the data will occupy only one tile at
+this zoom level, i.e. the highest value displayed in the UI as *z-index* is 8,
+because zoom-levels are zero-indexed. Like said above, CATMAID wants these files
+to fit into 192x192px, so we need to find out how much we need to scale the
+zoom-level. However, at this zoom level, there will be zome extra void data,
+because the scaled-down dataset is less wide than the defined tile width. If we
+know our image data has a larger width than height, we can compute the actual width
+of the data at zoom-level 9 through
+``<dataset-width-at-zoom-0>/2**<zoom-level-to-use>)``. This can be used to
+obtain the scale factor required for the 192x overview image, which in turn can
+be used to find out by how much to scale a tile at that zoom level so that the
+data it contains fits into the 192x192px overview image::
+
+  new_tile_width = (192 / (<dataset-width-at-zoom-0>/2**<zoom-level-to-use>)) * <tile-width>
+
+For instance, a dataset that has a width of 135200 at zoom level zero, a tile
+size of 1024px and nine zoom levels::
+
+  744.55 = (192 / (135200/2**9)) * 1024
+
+From a tile that is scaled to this width, we would then only use the top left
+cutout for the overview, the rest is empty data. This can be done using
+``convert`` tool (of the ``graphicsmagick`` or ``imagemagick`` package)::
+
+  convert /path/to/input/tile/ -resize <data-width-at-zoom>x -gravity NorthWest -extent <overview-width>x<overview-height> /path/to/z/directory/small.<extension>
+
+Sticking to the example above, and assuming data in a tile source type type 4
+("Backslash tile source") directory structure under ``/data/tiles/`` and file
+extension ``jpg``, this command could look like the following to generate the
+overview for section 0::
+
+  convert /data/tiles/0/9/0_0.jpg -resize 745x -gravity NorthWest -extent 192x170 /data/tiles/0/small.jpg
+
+To run this for the whole image stack, a small Bash loop can be used::
+
+  for f in (ls /data/tiles/); do convert /data/tiles/f/9/0_0.jpg -resize 745x -gravity NorthWest -extent 192x170 /data/tiles/$f/small.jpg; done
+
+Note that the 170px height of the the overview image can be computed by
+scaling the original data so that its width fits into 192px. If the data was
+taller than wide, the height would be 192px and the width adjusted.

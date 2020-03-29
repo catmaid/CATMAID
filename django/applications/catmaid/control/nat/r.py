@@ -136,8 +136,8 @@ def export_skeleton_as_nrrd_async(project_id, skeleton_id, source_ref,
         else:
             url = urljoin(urljoin(settings.MEDIA_URL, settings.MEDIA_EXPORT_SUBDIRECTORY), result['nrrd_name'])
             msg.title = f"Exported skeleton {skeleton_id} as NRRD file"
-            msg.text = f"The requested skeleton was exported as NRRD file. You " \
-                    "can download it from this location: <a href='{url}'>{url}</a>"
+            msg.text = "The requested skeleton was exported as NRRD file. You " \
+                    f"can download it from this location: <a href='{url}'>{url}</a>"
             msg.action = url
         msg.save()
 

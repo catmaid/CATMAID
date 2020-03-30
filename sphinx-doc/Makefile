@@ -39,7 +39,7 @@ clean:
 	-rm -rf $(BUILDDIR)/*
 
 clean-%:
-	rm -rf $(BUILDDIR)/$*
+	rm -rf $(BUILDDIR)/$*/*
 
 apidoc:
 	@echo
@@ -61,7 +61,7 @@ watch: watch-html
 
 watch-%:
 	$(MAKE) $*
-	watchmedo shell-command --recursive --wait --pattern "*.rst;*.png;*.svg;*.jpg" --command '$(MAKE) $*' source/
+	watchmedo shell-command --debug-force-polling --recursive --wait --pattern "*.rst;*.png;*.svg;*.jpg" --command '$(MAKE) $*' source/
 
 html: clean-html
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html

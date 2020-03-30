@@ -1236,7 +1236,10 @@
     })(container);
 
     // Expand whe the container is clicked
-    container.onclick = toggleExpansion;
+    container.onclick = function(e) {
+      toggleExpansion();
+      return false;
+    };
     toggleSelect.onclick = function(e) {
       toggleExpansion();
       return false; // Don't bubble up

@@ -53,7 +53,7 @@ Once installed, you need only ``vagrant up`` inside the repository to create a f
 Tools like VScode need to be able to SSH into the container themselves.
 They get their configuration from your user's SSH configuration (``~/.ssh/config`` on Linux).
 Copy and paste the output of ``vagrant ssh-config`` (ignoring any warnings from ruby gems) into this file.
-The hostname of the container will be ``catmaid-vm``. 
+The hostname of the container will be ``catmaid-vm``.
 
 .. warning::
 
@@ -71,8 +71,17 @@ In Linux, ``/`` is the root directory, and ``~`` is the home directory of the us
 * R packages are in ``~/R``
 * Data is written to ``~/data``
 
-The virtual machine also forwards the ports that PostgreSQL and the Django development server listen on, so that you can access them as if they were local to the host.
-To avoid clashing with the host, these are forwarded to 5555 and 8888 respectively.
+Some guest ports are forwarded to the host machine so that you can access the database, test with the dev server, and look at the generated sphinx docs.
+
++-------------------+------------+-----------+---------------------------------------------------+
+| Service           | Guest port | Host port | Notes                                             |
++===================+============+===========+===================================================+
+| PostgreSQL        | 5432       | 5555      |                                                   |
++-------------------+------------+-----------+---------------------------------------------------+
+| Django dev server | 8888       | 8888      | ``django/projects/manage.py runserver [::]:8888`` |
++-------------------+------------+-----------+---------------------------------------------------+
+| Docs server       | 8889       | 8889      | ``cd sphinx-doc && make serve``                   |
++-------------------+------------+-----------+---------------------------------------------------+
 
 Setup
 -----

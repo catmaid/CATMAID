@@ -16,6 +16,11 @@
 
 - Node filters: the "Pruned arbor" filter works again.
 
+- Graph widget: applying node filters works now correctly and only removes an
+  edge if both source and target node are not allowed according to the filter
+  configuration. It is now also possible to use additional subgraphs (e.g.
+  axon/dendrite split) with filters applied.
+
 ## 2020.02.15
 
 Contributors: Chris Barnes, Andrew Champion, Stephan Gerhard, Pat Gunn, Tom Kazimiers

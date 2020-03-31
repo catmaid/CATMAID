@@ -774,6 +774,43 @@ def _list_completed(project_id, completed_by=None, from_date=None, to_date=None)
                   (row[15], row[16], row[17])) for row in cursor.fetchall())
 
 
+@api_view(['POST'])
+@requires_user_role(UserRole.Browse)
+def connectors_from_treenodes(request:HttpRequest, project_id) -> JsonResponse:
+    """Get a list of connectors that are linked to a set of treenodes.
+    ---
+    parameters:
+      - name: project_id
+        description: The project to operate in.
+        type: integeger
+        paramType: path
+        required: true
+      - name: treenode_ids
+        description: Treenode IDs that result nodes are connected to.
+        type: array
+        items:
+          type: integer
+        paramType: form
+        required: true
+    """
+    treenode_ids = get_request_list(request.POST, 'treenode_ids', map_fn=int)
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT DISTINCT ON (connector_id) connector_id
+        FROM treenode_connector tc
+        JOIN UNNEST(%(treenode_ids)s::bigint[]) query_treenode(id)
+            ON query_treenode.id = tc.treenode_id
+        WHERE project_id = %(project_id)s
+    """, {
+        'project_id': project_id,
+        'treenode_ids': treenode_ids,
+    })
+
+    return JsonResponse({
+        'connector_ids': [c[0] for c in cursor.fetchall()],
+    })
+
+
 @requires_user_role(UserRole.Browse)
 def connectors_info(request:HttpRequest, project_id) -> JsonResponse:
     """

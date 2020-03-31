@@ -1012,12 +1012,23 @@
         for (var i=0; i<skids.length; ++i) {
           nFilteredLinksPerSkeletonBuffer.set(skids[i], 0);
         }
+
+        let ignore = false;
+
+        // Ignore partner if all our partner sites connected to it are spatially
+        // filtered.
+        var nFilteredLinks = 0;
+        if (!ignore && activeNodeFilters) {
+          nFilteredLinks = this.getNFilteredPartnerLinks(partner, nFilteredLinksPerSkeletonBuffer);
+          ignore = ignore || nFilteredLinks === partner.links.length;
+        }
+
         // Ignore this line if all its synapse counts are below the threshold. If
         // the threshold is 'undefined', false is returned and to semantics of
         // this test.
-        var ignore = Object.keys(partner.skids).every(function(skid) {
-          // Return true if object is below threshold
-          var count = filter_synapses(partner.skids[skid], thresholds.confidence[skid]);
+        ignore = ignore || Object.keys(partner.skids).every(function(skid) {
+          // Return true if object is below threshold (respects node filters)
+          var count = filter_synapses(partner.skids[skid], thresholds.confidence[skid]) - nFilteredLinks;
           return count < (thresholds.count[skid] || 1);
         });
 
@@ -1031,13 +1042,6 @@
         ignore = ignore || partner.synaptic_count < thresholds.count['sum'];
         // Ignore partner if it has only fewer nodes than a threshold
         ignore = ignore || partner.num_nodes < hidePartnerThreshold;
-        // Ignore partner if all our partner sites connected to it are spatially
-        // filtered.
-        var nFilteredLinks = 0;
-        if (!ignore && activeNodeFilters) {
-          nFilteredLinks = this.getNFilteredPartnerLinks(partner, nFilteredLinksPerSkeletonBuffer);
-          ignore = ignore || nFilteredLinks === partner.links.length;
-        }
 
         if (ignore) {
           filtered.push(partner);

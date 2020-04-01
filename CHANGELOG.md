@@ -21,6 +21,12 @@
   configuration. It is now also possible to use additional subgraphs (e.g.
   axon/dendrite split) with filters applied.
 
+- Connectivity widget: make node filter test consistent with filter application
+  in the Graph Widget. A connection is now valid according to the selected
+  filters if it uses a connector node that is linked to a node allowed by the
+  node filters. The node filters are still only applied to the query skeletons.
+  This makes the filtering numbers consistent with the Graph Widget.
+
 ## 2020.02.15
 
 Contributors: Chris Barnes, Andrew Champion, Stephan Gerhard, Pat Gunn, Tom Kazimiers

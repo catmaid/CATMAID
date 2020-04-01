@@ -40,7 +40,7 @@
     // Filter rules can optionally be disabled
     this.applyFilterRules = true;
     // A set of nodes allowed by node filters
-    this.allowedNodes = new Set();
+    this.allowedConnectorNodes = new Set();
 
     // A mapping from partner skeletons to annotations
     this.annotationMapping = null;
@@ -2125,7 +2125,7 @@
     if (links) {
       for (var i=0; i<links.length; ++i) {
         var link = links[i];
-        if (!this.allowedNodes.has(link[0])) {
+        if (!this.allowedConnectorNodes.has(link[3])) {
           nFilteredLinks += 1;
           var skeletonId = link[2];
           perSkeletonCounter.set(skeletonId, perSkeletonCounter.get(skeletonId) + 1);
@@ -2144,21 +2144,26 @@
     var skeletons = this.skeletons;
     var skeletonIds = Object.keys(skeletons);
     if (skeletonIds.length === 0 || this.filterRules.length === 0) {
+      this.allowedConnectorNodes.clear();
       this.update();
       return Promise.resolve();
     }
 
-    var self = this;
     var filter = new CATMAID.SkeletonFilter(this.filterRules, skeletons);
-    filter.execute()
-      .then(function(filteredNodes) {
-        self.allowedNodes = new Set(Object.keys(filteredNodes.nodes).map(function(n) {
+    return filter.execute()
+      .then(filteredNodes => {
+        // Get all linked connectors for filtered nodes
+        let treenodeIds = Object.keys(filteredNodes.nodes).map(n => {
           return parseInt(n, 10);
-        }));
-        if (0 === self.allowedNodes.length) {
-          CATMAID.warn("No points left after filter application");
+        });
+        return CATMAID.Connectors.linkedToNodes(project.id, treenodeIds);
+      })
+      .then(result => {
+        this.allowedConnectorNodes = new Set(result.connector_ids);
+        if (0 === this.allowedConnectorNodes.length) {
+          CATMAID.warn("No valid connector nodes left after filter application");
         }
-        self.update();
+        this.update();
       })
       .catch(CATMAID.handleError);
   };

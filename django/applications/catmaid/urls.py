@@ -212,6 +212,7 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/connector/list/one_to_many$', connector.one_to_many_synapses),
     url(r'^(?P<project_id>\d+)/connector/list/many_to_many$', connector.many_to_many_synapses),
     url(r'^(?P<project_id>\d+)/connector/list/completed$', connector.list_completed),
+    url(r'^(?P<project_id>\d+)/connector/list/linked-to-nodes$', connector.connectors_from_treenodes),
     url(r'^(?P<project_id>\d+)/connector/skeletons$', connector.connector_skeletons),
     url(r'^(?P<project_id>\d+)/connector/edgetimes$', connector.connector_associated_edgetimes),
     url(r'^(?P<project_id>\d+)/connector/info$', connector.connectors_info),

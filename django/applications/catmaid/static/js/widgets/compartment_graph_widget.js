@@ -91,7 +91,6 @@
     // Map of skeleton ID vs one of:
     // * SUBGRAPH_AXON_DENDRITE
     // * SUBGRAPH_AXON_BACKBONE_TERMINALS
-    // * SUBGRAPH_NODE_FILTERS
     // * a number larger than zero (bandwidth value for synapse clustering)
     this.subgraphs = {};
 
@@ -304,8 +303,8 @@
     this.filterRules = [];
     // Filter rules can optionally be disabled
     this.applyFilterRules = true;
-    // A set of nodes allowed by node filters
-    this.allowedNodes = new Set();
+    // A set of connector nodes allowed by node filters
+    this.allowedConnectorNodes = new Set();
 
     // Handle neuron deletion and merge events
     CATMAID.Skeletons.on(CATMAID.Skeletons.EVENT_SKELETON_CHANGED, this.handleSkeletonChanged, this);
@@ -320,7 +319,6 @@
   GroupGraph.prototype.SUBGRAPH_AXON_DENDRITE =  -1;
   GroupGraph.prototype.SUBGRAPH_AXON_BACKBONE_TERMINALS = -2;
   GroupGraph.prototype.SUBGRAPH_SPLIT_AT_TAG = -3;
-  GroupGraph.prototype.SUBGRAPH_NODE_FILTERS = -4;
 
   GroupGraph.prototype.getWidgetConfiguration = function() {
     return {
@@ -438,6 +436,22 @@
                "triangle",
                null)],
              ['Set', GG.setArrowShapeToSelectedNodes.bind(GG)],
+             {
+               type: 'checkbox',
+               label: 'Apply node/edge filters',
+               title: 'Apply all enabled node filters (funnel icon in title bar). If node filters are active, only edges with at least one node allowed by the filter will be shown.',
+               value: GG.applyFilterRules,
+               onclick: (e) => {
+                GG.applyFilterRules = e.target.checked;
+                if (GG.filterRules.length > 0) {
+                  if (e.target.checked) {
+                    GG.updateFilter();
+                  } else {
+                    GG.update();
+                  }
+                }
+               },
+               id: "gg_apply_filter_rules" + GG.widgetID},
             ]);
 
         CATMAID.DOM.appendToTab(tabs['Selection'],
@@ -546,28 +560,7 @@
              ['Axon, backbone dendrite & dendritic terminals', GG.splitAxonAndTwoPartDendrite.bind(GG)],
              ['Synapse clusters', GG.splitBySynapseClustering.bind(GG)],
              ['Tag', GG.splitByTag.bind(GG)],
-             ['Reset', GG.unsplit.bind(GG)],
-             {
-               type: 'checkbox',
-               label: 'Apply node filters',
-               title: 'Apply all enabled node filters (funnel icon in title bar). If node filters are active, no further subgraphs can be created',
-               value: GG.applyFilterRules,
-               onclick: (e) => {
-                GG.applyFilterRules = e.target.checked;
-                if (GG.filterRules.length > 0) {
-                  if (e.target.checked) {
-                    GG.updateFilter();
-                  } else {
-                    for (let entry in this.subgraphs) {
-                      if (this.subgraphs[entry] === this.SUBGRAPH_NODE_FILTERS) {
-                        delete this.subgraphs[entry];
-                      }
-                    }
-                    GG.update();
-                  }
-                }
-               },
-               id: "gg_apply_filter_rules" + GG.widgetID},
+             ['Reset', GG.unsplit.bind(GG)]
              ]);
 
         $(controls).tabs();
@@ -1318,17 +1311,6 @@
           });
         } else {
           CATMAID.info("No subgraph possible for '" + name + "' and tag '" + this.tag_title + "'");
-        }
-      } else if (mode === this.SUBGRAPH_NODE_FILTERS) {
-        // Test if there is any connector node valid in skeleton.
-        let validConnectors = new Set(m[1].filter(c => this.allowedNodes.has(c[0])).map(c => c[0]));
-        if (validConnectors.size > 0) {
-          // The new node can have the original ID, we don't need to create
-          // multiple nodes.
-          let node = createNode(skid, name);
-          parts[node.data.id] = (treenodeId) => validConnectors.has(treenodeId);
-          subnodes[node.data.id] = node;
-          graph.push(node);
         }
       } else if (mode > 0) {
         // Synapse clustering: mode is the bandwidth
@@ -2104,7 +2086,9 @@
         data: {
             skeleton_ids: skeleton_ids,
             with_overall_counts: with_overall_counts,
-            link_types: Array.from(this.selectedLinkTypes)
+            link_types: Array.from(this.selectedLinkTypes),
+            allowed_connector_ids: this.applyFilterRules ?
+                Array.from(this.allowedConnectorNodes) : undefined,
         },
         replace: true,
         id: 'graph_widget_request',
@@ -2121,29 +2105,26 @@
    * allowed nodes.
    */
   GroupGraph.prototype.updateFilter = function(models, skipUpdate) {
-    for (let entry in this.subgraphs) {
-      if (this.subgraphs[entry] !== this.SUBGRAPH_NODE_FILTERS) {
-        CATMAID.warn("Please reset subgraphs before using node filters");
-        return;
-      }
-    }
     var skeletons = models || this.getSkeletonModels();
     var skeletonIds = Object.keys(skeletons);
     if (skeletonIds.length === 0 || this.filterRules.length === 0) {
+      this.allowedConnectorNodes.clear();
       if (!skipUpdate) this.update();
       return Promise.resolve();
     }
 
-    // Set subgraph type
-    skeletonIds.forEach(skeletonId => this.subgraphs[skeletonId] = this.SUBGRAPH_NODE_FILTERS);
-
     var filter = new CATMAID.SkeletonFilter(this.filterRules, skeletons);
     return filter.execute()
       .then(filteredNodes => {
-        this.allowedNodes = new Set(Object.keys(filteredNodes.nodes).map(n => {
+        // Get all linked connectors for filtered nodes
+        let treenodeIds = Object.keys(filteredNodes.nodes).map(n => {
           return parseInt(n, 10);
-        }));
-        if (0 === this.allowedNodes.length) {
+        });
+        return CATMAID.Connectors.linkedToNodes(project.id, treenodeIds);
+      })
+      .then(result => {
+        this.allowedConnectorNodes = new Set(result.connector_ids);
+        if (0 === this.allowedConnectorNodes.length) {
           CATMAID.warn("No points left after filter application");
         }
         if (!skipUpdate) this.update();
@@ -2350,12 +2331,14 @@
         s = this._findSkeletonsToGrow(this.cy.nodes(), p.min_downstream, p.min_upstream),
         accum = $.extend({}, s.split_partners); // TODO unused?
 
-    var grow = function(skids, n_circles, callback) {
+    var grow = (skids, n_circles, callback) => {
         CATMAID.fetch(project.id + "/graph/circlesofhell", "POST", {
             skeleton_ids: skids,
             n_circles: n_circles,
             min_pre: p.min_upstream,
             min_post: p.min_downstream,
+            allowed_connector_ids: this.applyFilterRules ?
+                Array.from(this.allowedConnectorNodes) : undefined,
           })
           .then(json => {
             if (p.filter_regex !== '') {
@@ -2377,7 +2360,7 @@
           })
           .catch(CATMAID.handleError);
         },
-        append = (function(skids) {
+        append = skids => {
           var color = new THREE.Color().setHex(0xffae56),
               models = skids.reduce(function(m, skid) {
                 var model = new CATMAID.SkeletonModel(skid, "", color);
@@ -2386,8 +2369,8 @@
                 return m;
               }, {});
           this.append(models);
-        }).bind(this),
-        rest = function(skids, n_circles) {
+        },
+        rest = (skids, n_circles) => {
           if (0 === p.n_circles -1) append(Object.keys(skids));
           else grow(Object.keys(skids), n_circles, append);
         },

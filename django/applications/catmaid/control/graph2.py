@@ -28,7 +28,8 @@ def make_new_synapse_count_array() -> List[int]:
     return [0, 0, 0, 0, 0]
 
 def basic_graph(project_id, skeleton_ids, relations=None,
-        source_link:str="presynaptic_to", target_link:str="postsynaptic_to") -> Dict[str, Tuple]:
+        source_link:str="presynaptic_to", target_link:str="postsynaptic_to",
+        allowed_connector_ids=None) -> Dict[str, Tuple]:
 
     if not skeleton_ids:
         raise ValueError("No skeleton IDs provided")
@@ -46,21 +47,23 @@ def basic_graph(project_id, skeleton_ids, relations=None,
     # reciprocal, we need to avoid getting two result rows back for each
     # treenode-connector-treenode connection. To keep things simple, we will add
     # a "skeleton ID 1" < "skeleton ID 2" test for reciprocal links.
-    cursor.execute(f'''
-    SELECT t1.skeleton_id, t2.skeleton_id, LEAST(t1.confidence, t2.confidence)
-    FROM treenode_connector t1,
-         treenode_connector t2
-    WHERE t1.skeleton_id = ANY(%(skeleton_ids)s::bigint[])
-      AND t1.relation_id = %(source_rel)s
-      AND t1.connector_id = t2.connector_id
-      AND t2.skeleton_id = ANY(%(skeleton_ids)s::bigint[])
-      AND t2.relation_id = %(target_rel)s
-      AND t1.id <> t2.id
-      {'AND t1.skeleton_id < t2.skeleton_id' if undirected_links else ''}
-    ''', {
+    cursor.execute(f"""
+        SELECT t1.skeleton_id, t2.skeleton_id, LEAST(t1.confidence, t2.confidence)
+        FROM treenode_connector t1,
+             treenode_connector t2
+        WHERE t1.skeleton_id = ANY(%(skeleton_ids)s::bigint[])
+          AND t1.relation_id = %(source_rel)s
+          AND t1.connector_id = t2.connector_id
+          AND t2.skeleton_id = ANY(%(skeleton_ids)s::bigint[])
+          AND t2.relation_id = %(target_rel)s
+          AND t1.id <> t2.id
+          {'AND t1.skeleton_id < t2.skeleton_id' if undirected_links else ''}
+          {'AND t1.connector_id = ANY(%(allowed_c_ids)s::bigint[])' if allowed_connector_ids else ''}
+    """, {
         'skeleton_ids': list(skeleton_ids),
         'source_rel': source_rel_id,
-        'target_rel': target_rel_id
+        'target_rel': target_rel_id,
+        'allowed_c_ids': allowed_connector_ids,
     })
 
     edges:DefaultDict = defaultdict(partial(defaultdict, make_new_synapse_count_array))
@@ -75,26 +78,36 @@ def basic_graph(project_id, skeleton_ids, relations=None,
 
 
 def confidence_split_graph(project_id, skeleton_ids, confidence_threshold,
-        relations=None, source_rel:str="presynaptic_to", target_rel:str="postsynaptic_to") -> Dict[str, Any]:
+        relations=None, source_rel:str="presynaptic_to",
+        target_rel:str="postsynaptic_to", allowed_connector_ids=None) -> Dict[str, Any]:
     """ Assumes 0 < confidence_threshold <= 5. """
     if not skeleton_ids:
         raise ValueError("No skeleton IDs provided")
 
+    # We need skeleton IDs as a list
+    skeleton_ids = list(skeleton_ids)
+
     cursor = connection.cursor()
-    skids = ",".join(str(int(skid)) for skid in skeleton_ids)
 
     if not relations:
         relations = get_relation_to_id_map(project_id, (source_rel, target_rel), cursor)
     source_rel_id, target_rel_id = relations[source_rel], relations[target_rel]
 
-    # Fetch synapses of all skeletons
-    cursor.execute('''
-    SELECT skeleton_id, treenode_id, connector_id, relation_id, confidence
-    FROM treenode_connector
-    WHERE project_id = %s
-      AND skeleton_id IN (%s)
-      AND (relation_id = %s OR relation_id = %s)
-    ''' % (int(project_id), skids, source_rel_id, target_rel_id))
+    # Fetch (valid) synapses of all skeletons
+    cursor.execute(f'''
+        SELECT skeleton_id, treenode_id, connector_id, relation_id, confidence
+        FROM treenode_connector
+        WHERE project_id = %(project_id)s
+          AND skeleton_id = ANY(%(skids)s::bigint[])
+          AND relation_id IN (%(source_rel_id)s, %(target_rel_id)s)
+          {'AND connector_id = ANY(%(allowed_c_ids)s::bigint[])' if allowed_connector_ids else ''}
+    ''', {
+        'project_id': int(project_id),
+        'skids': skeleton_ids,
+        'source_rel_id': source_rel_id,
+        'target_rel_id': target_rel_id,
+        'allowed_c_ids': allowed_connector_ids,
+    })
 
     stc:DefaultDict[Any, List] = defaultdict(list)
     for row in cursor.fetchall():
@@ -102,12 +115,15 @@ def confidence_split_graph(project_id, skeleton_ids, confidence_threshold,
 
     # Fetch all treenodes of all skeletons
     cursor.execute('''
-    SELECT skeleton_id, id, parent_id, confidence
-    FROM treenode
-    WHERE project_id = %s
-      AND skeleton_id IN (%s)
-    ORDER BY skeleton_id
-    ''' % (project_id, skids))
+        SELECT skeleton_id, id, parent_id, confidence
+        FROM treenode
+        WHERE project_id = %(project_id)s
+          AND skeleton_id = ANY(%(skeleton_ids)s::bigint[])
+        ORDER BY skeleton_id
+    ''', {
+        'project_id': project_id,
+        'skeleton_ids': skeleton_ids,
+    })
 
     # Dictionary of connector_id vs relation_id vs list of sub-skeleton ID
     connectors:DefaultDict = defaultdict(partial(defaultdict, list))
@@ -156,7 +172,7 @@ def confidence_split_graph(project_id, skeleton_ids, confidence_threshold,
 
 def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
         expand, relations=None, source_link="presynaptic_to",
-        target_link="postsynaptic_to") -> Dict[str, Any]:
+        target_link="postsynaptic_to", allowed_connector_ids=None) -> Dict[str, Any]:
     """ Assumes bandwidth > 0 and some skeleton_id in expand. """
     cursor = connection.cursor()
     skeleton_ids = set(skeleton_ids)
@@ -165,23 +181,25 @@ def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
     if not skeleton_ids:
         raise ValueError("No skeleton IDs provided")
 
-    # assumes all skeleton_id in expand are also present in skeleton_ids
-
-    skids = ",".join(str(int(skid)) for skid in skeleton_ids)
-
     if not relations:
         relations = get_relation_to_id_map(project_id, (source_link, target_link), cursor)
     source_rel_id, target_rel_id = relations[source_link], relations[target_link]
 
     # Fetch synapses of all skeletons
-    cursor.execute('''
-    SELECT skeleton_id, treenode_id, connector_id, relation_id, confidence
-    FROM treenode_connector
-    WHERE project_id = %s
-      AND skeleton_id IN (%s)
-      AND relation_id IN (%s,%s)
-    ''' % (int(project_id), ",".join(str(int(skid)) for skid in skeleton_ids),
-           source_rel_id, target_rel_id))
+    cursor.execute(f'''
+        SELECT skeleton_id, treenode_id, connector_id, relation_id, confidence
+        FROM treenode_connector
+        WHERE project_id = %(project_id)s
+          AND skeleton_id = ANY(%(skids)s::bigint[])
+          AND relation_id IN (%(source_rel_id)s, %(target_rel_id)s)
+          {'AND connector_id = ANY(%(allowed_c_ids)s::bigint[])' if allowed_connector_ids else ''}
+    ''', {
+        'project_id': int(project_id),
+        'skids': list(skeleton_ids),
+        'source_rel_id': source_rel_id,
+        'target_rel_id': target_rel_id,
+        'allowed_c_ids': allowed_connector_ids,
+    })
 
     stc:DefaultDict[Any, List] = defaultdict(list)
     for row in cursor.fetchall():
@@ -198,12 +216,15 @@ def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
     if confidence_threshold > 0 and not_to_expand:
         # Now fetch all treenodes of only skeletons in skeleton_ids (the ones not to expand)
         cursor.execute('''
-        SELECT skeleton_id, id, parent_id, confidence
-        FROM treenode
-        WHERE project_id = %s
-          AND skeleton_id IN (%s)
-        ORDER BY skeleton_id
-        ''' % (project_id, ",".join(str(int(skid)) for skid in not_to_expand)))
+            SELECT skeleton_id, id, parent_id, confidence
+            FROM treenode
+            WHERE project_id = %(project_id)s
+              AND skeleton_id = ANY(%(skids)s::bigint[])
+            ORDER BY skeleton_id
+        ''', {
+            'project_id': project_id,
+            'skids': list(not_to_expand),
+        })
 
         # Read out into memory only one skeleton at a time
         current_skid = None
@@ -238,12 +259,15 @@ def dual_split_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
 
     # Now fetch all treenodes of all skeletons to expand
     cursor.execute('''
-    SELECT skeleton_id, id, parent_id, confidence, location_x, location_y, location_z
-    FROM treenode
-    WHERE project_id = %s
-      AND skeleton_id IN (%s)
-    ORDER BY skeleton_id
-    ''' % (project_id, ",".join(str(int(skid)) for skid in expand)))
+        SELECT skeleton_id, id, parent_id, confidence, location_x, location_y, location_z
+        FROM treenode
+        WHERE project_id = %(project_id)s
+          AND skeleton_id = ANY(%(skids)s::bigint[])
+        ORDER BY skeleton_id
+    ''', {
+        'project_id': project_id,
+        'skids': list(expand),
+    })
 
     # list of edges among synapse domains
     intraedges:List = []
@@ -400,7 +424,8 @@ def split_by_both(skeleton_id, digraph, locations, bandwidth, cs, connectors, in
 
 def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
         expand, compute_risk, cable_spread, path_confluence,
-        with_overall_counts=False, relation_map=None, link_types=None) -> Optional[Dict]:
+        with_overall_counts=False, relation_map=None, link_types=None,
+        allowed_connector_ids=None) -> Optional[Dict]:
 
     by_link_type = bool(link_types)
     if not by_link_type:
@@ -425,33 +450,37 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
         if 0 == bandwidth:
             if 0 == confidence_threshold:
                 graph:Dict[str, Any] = basic_graph(project_id, skeleton_ids, relation_map,
-                                                   source_rel, target_rel)
+                                                   source_rel, target_rel,
+                                                   allowed_connector_ids)
             else:
                 graph = confidence_split_graph(project_id, skeleton_ids,
-                        confidence_threshold, relation_map, source_rel, target_rel)
+                        confidence_threshold, relation_map, source_rel,
+                        target_rel, allowed_connector_ids)
         else:
             graph = dual_split_graph(project_id, skeleton_ids, confidence_threshold,
                     bandwidth, expand, relation_map)
 
         if with_overall_counts:
-            preId = relation_map[source_rel]
-            postId = relation_map[target_rel]
-            query_params = list(skeleton_ids) + [preId, postId, preId, postId]
-
-            skeleton_id_template = ','.join('(%s)' for _ in skeleton_ids)
+            source_rel_id = relation_map[source_rel]
+            target_rel_id = relation_map[target_rel]
             cursor.execute(f'''
-            SELECT tc1.skeleton_id, tc2.skeleton_id,
-                tc1.relation_id, tc2.relation_id,
-                LEAST(tc1.confidence, tc2.confidence)
-            FROM treenode_connector tc1
-            JOIN (VALUES {skeleton_id_template}) skeleton(id)
-                ON tc1.skeleton_id = skeleton.id
-            JOIN treenode_connector tc2
-                ON tc1.connector_id = tc2.connector_id
-            WHERE tc1.id != tc2.id
-                AND tc1.relation_id IN (%s, %s)
-                AND tc2.relation_id IN (%s, %s)
-            ''', query_params)
+                SELECT tc1.skeleton_id, tc2.skeleton_id,
+                    tc1.relation_id, tc2.relation_id,
+                    LEAST(tc1.confidence, tc2.confidence)
+                FROM treenode_connector tc1
+                JOIN UNNEST(%(skeleton_id)s::bigint[]) skeleton(id)
+                    ON tc1.skeleton_id = skeleton.id
+                JOIN treenode_connector tc2
+                    ON tc1.connector_id = tc2.connector_id
+                WHERE tc1.id != tc2.id
+                    AND tc1.relation_id IN (%(source_rel_id)s, %(target_rel_id)s)
+                    AND tc2.relation_id IN (%(source_rel_id)s, %(target_rel_id)s)
+            ''', {
+                'skeleton_ids': skeleton_ids,
+                'source_rel_id': source_rel_id,
+                'target_rel_id': target_rel_id,
+
+            })
 
             query_skeleton_ids = set(skeleton_ids)
             overall_counts:DefaultDict = defaultdict(partial(defaultdict, make_new_synapse_count_array))
@@ -463,8 +492,8 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
             # Attach counts and a map of relation names to their IDs.
             graph['overall_counts'] = overall_counts
             graph['relation_map'] = {
-                source_rel: preId,
-                target_rel: postId
+                source_rel: source_rel_id,
+                target_rel: target_rel_id
             }
 
         if by_link_type:
@@ -519,6 +548,12 @@ def skeleton_graph(request, project_id=None):
           type: array
           items:
             type: string
+        - name: allowed_connector_ids[]
+          description: (Optional) IDs of allowed conectors. All other connectors will be ignored.
+          required: false
+          type: array
+          items:
+            type: integer
     models:
       skeleton_graph_edge:
         id: skeleton_graph_edge
@@ -597,10 +632,12 @@ def skeleton_graph(request, project_id=None):
     with_overall_counts = get_request_bool(request.POST, 'with_overall_counts', False)
     expand = set(int(v) for k,v in request.POST.items() if k.startswith('expand['))
     link_types = get_request_list(request.POST, 'link_types', None)
+    allowed_connector_ids = get_request_list(request.POST, 'allowed_connector_ids', None)
 
     graph = _skeleton_graph(project_id, skeleton_ids,
         confidence_threshold, bandwidth, expand, compute_risk, cable_spread,
-        path_confluence, with_overall_counts, link_types=link_types)
+        path_confluence, with_overall_counts, link_types=link_types,
+        allowed_connector_ids=allowed_connector_ids)
 
     if not graph:
         raise ValueError("Could not compute graph")

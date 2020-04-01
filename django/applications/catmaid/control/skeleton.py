@@ -1574,7 +1574,7 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2,
     # direction of the synapse, as specified by relation_id_1 and relation_id_2:
     cursor.execute('''
     SELECT t1.skeleton_id, t2.skeleton_id, LEAST(t1.confidence, t2.confidence),
-        t1.treenode_id, t2.treenode_id
+        t1.treenode_id, t2.treenode_id, t1.connector_id
     FROM treenode_connector t1,
          treenode_connector t2
     WHERE t1.skeleton_id = ANY(%s::bigint[])
@@ -1585,11 +1585,11 @@ def _connected_skeletons(skeleton_ids, op, relation_id_1, relation_id_2,
     ''', (list(skeleton_ids), int(relation_id_1), int(relation_id_2)))
 
     # Sum the number of synapses
-    for srcID, partnerID, confidence, tn1, tn2 in cursor.fetchall():
+    for srcID, partnerID, confidence, tn1, tn2, connector_id in cursor.fetchall():
         partner = partners[partnerID]
         partner.skids[srcID][confidence - 1] += 1
         if with_nodes:
-            partner.links.append([tn1, tn2, srcID])
+            partner.links.append([tn1, tn2, srcID, connector_id])
 
     # There may not be any synapses
     if not partners:

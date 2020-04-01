@@ -245,8 +245,10 @@
      *                                  skeletons linked to result connectors.
      * @param {integer} postSkeletonIds (Optional) The IDs of postsynaptic
      *                                  skeletons linked to result connectors.
+     * @param {integer[]} treenodeIds   (OptionalP A list of treenode IDs that
+     *                                  returned connectors have to be connected to.
      */
-    list: function(projectId, connectorIds, skeletonIds, preSkeletonIds, postSkeletonIds) {
+    list: function(projectId, connectorIds, skeletonIds, preSkeletonIds, postSkeletonIds, treenodeIds) {
       CATMAID.requirePermission(projectId, 'can_browse',
           'You don\'t have have permission to list connectors');
       var url = projectId + '/connector/info';
@@ -254,7 +256,8 @@
         cids: connectorIds,
         skids: skeletonIds,
         pre: preSkeletonIds,
-        post: postSkeletonIds
+        post: postSkeletonIds,
+        treenode_ids: treenodeIds,
       };
 
       return CATMAID.fetch(url, 'POST', params)
@@ -263,6 +266,16 @@
             connectors: result
           };
         });
+    },
+
+    /**
+     * Get the IDs of all connectors linked to treenodes from the passed in
+     * list.
+     */
+    linkedToNodes: function(projectId, treenodeIds) {
+      return CATMAID.fetch(`${projectId}/connector/list/linked-to-nodes`, 'POST', {
+        treenode_ids: treenodeIds,
+      });
     },
 
     /**

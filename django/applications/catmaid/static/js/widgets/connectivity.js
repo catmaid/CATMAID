@@ -1026,9 +1026,14 @@
         // Ignore this line if all its synapse counts are below the threshold. If
         // the threshold is 'undefined', false is returned and to semantics of
         // this test.
-        ignore = ignore || Object.keys(partner.skids).every(function(skid) {
+        ignore = ignore || skids.every(function(skid) {
+          // Should the current skeleton not appear as partner for the current
+          // partner, it would be okay to ignore this row for the current
+          // skeleton ID.
+          if (!partner.skids[skid]) return true;
           // Return true if object is below threshold (respects node filters)
-          var count = filter_synapses(partner.skids[skid], thresholds.confidence[skid]) - nFilteredLinks;
+          let ignoredLinksInSkeleton = nFilteredLinksPerSkeletonBuffer.get(skid);
+          var count = filter_synapses(partner.skids[skid], thresholds.confidence[skid]) - ignoredLinksInSkeleton;
           return count < (thresholds.count[skid] || 1);
         });
 
@@ -2227,6 +2232,9 @@
     }
   });
 
+  var add = function(a, b) {
+    return a + b;
+  };
 
   /**
    * Helper to get the number of synapses with confidence greater than or
@@ -2236,7 +2244,7 @@
     if (!synapses) return 0;
     return synapses
             .slice(threshold - 1)
-            .reduce(function (skidSum, c) {return skidSum + c;}, 0);
+            .reduce(add, 0);
   };
 
   /**

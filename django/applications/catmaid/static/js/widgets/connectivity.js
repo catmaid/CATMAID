@@ -2227,6 +2227,9 @@
     }
   });
 
+  var add = function(a, b) {
+    return a + b;
+  };
 
   /**
    * Helper to get the number of synapses with confidence greater than or
@@ -2236,7 +2239,7 @@
     if (!synapses) return 0;
     return synapses
             .slice(threshold - 1)
-            .reduce(function (skidSum, c) {return skidSum + c;}, 0);
+            .reduce(add, 0);
   };
 
   /**

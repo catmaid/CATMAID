@@ -929,7 +929,7 @@ def _compact_arbor(project_id=None, skeleton_id=None, with_nodes=None,
             WHERE tc1.skeleton_id = %(skeleton_id)s
               AND tc1.id != tc2.id
               AND tc1.connector_id = tc2.connector_id
-              AND (tc1.relation_id = %(pre)s OR tc1.relation_id = %(post)s)
+              AND tc1.relation_id IN (%(pre)s, %(post)s)
             {order}
         '''.format(**{
             'order': 'ORDER BY tc1.treenode_id' if ordered else ''

@@ -625,7 +625,7 @@ def compute_nblast_config(config_id, user_id, use_cache=True) -> str:
 
 
 def get_all_object_ids(project_id, user_id, object_type, min_nodes=500,
-        min_soma_nodes=20, soma_tags=('soma'), limit=None) -> List:
+        min_soma_nodes=20, soma_tags=('soma'), limit=None, max_nodes=None) -> List:
     """Return all IDs of objects that fit the query parameters.
     """
     cursor = connection.cursor()
@@ -642,6 +642,12 @@ def get_all_object_ids(project_id, user_id, object_type, min_nodes=500,
                 css.num_nodes >= %(min_nodes)s
             """)
             params['min_nodes'] = min_nodes
+
+        if max_nodes:
+            extra_where.append("""
+                css.num_nodes <= %(max_nodes)s
+            """)
+            params['max_nodes'] = max_nodes
 
         cursor.execute("""
             SELECT skeleton_id

@@ -594,7 +594,7 @@ def get_catmaid_connection(user_id):
 def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
         parallel=True, detail=10, omit_failures=True, min_nodes=500,
         min_soma_nodes=20, soma_tags=('soma'), resample_by=1e3,
-        use_http=False, progress=False) -> None:
+        use_http=False, progress=False, max_nodes=None) -> None:
     """Create a new cache file for a particular project object type and
     detail level. All objects of a type in a project are prepared.
     """
@@ -627,7 +627,7 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
     if object_type == 'skeleton':
         logger.debug('Finding matching skeletons')
         object_ids = get_all_object_ids(project_id, user.id, object_type, min_nodes,
-                min_soma_nodes, soma_tags)
+                min_soma_nodes, soma_tags, max_nodes)
         if not object_ids:
             logger.info("No skeletons found to populate cache from")
             return

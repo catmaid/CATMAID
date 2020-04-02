@@ -164,6 +164,7 @@ def export_skeleton_as_nrrd(project_id, skeleton_id, source_ref, target_ref,
         # Needed for template spaces and bridging registrations
         rflycircuit = importr('flycircuit')
         relmr = importr('elmr')
+        rnatflybrains = importr('nat.flybrains')
 
         if settings.MAX_PARALLEL_ASYNC_WORKERS > 1:
             # Parallelise NBLASTing across 4 cores using doMC package

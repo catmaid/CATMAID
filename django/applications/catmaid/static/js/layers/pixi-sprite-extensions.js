@@ -16,6 +16,13 @@ CATMAID.Pixi.TypedSpriteRenderer = class TypedSpriteRenderer extends PIXI.Sprite
   {
       const gl = this.renderer.gl;
 
+      // CHANGED LINES ////////////////////////////////////////////////////////
+      // Bail out on older WebGL versions.
+      if (gl instanceof WebGLRenderingContext) {
+        return;
+      }
+      /////////////////////////////////////////////////////////////////////////
+
       if (this.renderer.legacy)
       {
           this.MAX_TEXTURES = 1;

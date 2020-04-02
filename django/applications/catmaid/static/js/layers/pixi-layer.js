@@ -17,6 +17,20 @@
    * @param {StackViewer} stackViewer The stack viewer to which this context belongs.
    */
   function PixiContext(stackViewer) {
+    try {
+      this.initRenderer(stackViewer.getView().clientWidth, stackViewer.getView().clientHeight);
+      // Attempt accessing blend modes to make sure we do actually have context.
+      let nBlendModes = this.renderer.state.blendModes.length;
+    } catch (error) {
+      console.log('Caught WebGL2 loading error');
+      console.log(error);
+      CATMAID.warn('Could not init WebGL2, trying WebGL1');
+      if (this.renderer) this.renderer.destroy();
+      this.initRenderer(stackViewer.getView().clientWidth, stackViewer.getView().clientHeight, 1);
+    }
+  }
+
+  PixiContext.prototype.initRenderer = function(width, height, webglVersion=2) {
     let options = {
         transparent: true,
         backgroundColor: 0x000000,
@@ -24,20 +38,27 @@
         stencil: true};
     let view = document.createElement('canvas');
 
-    // Try to get WebGL 2 context, if WebGL 2 is unavailable fall back to WebGl 1.
-    let rawContext = view.getContext('webgl2', options);
-    if (rawContext) {
-      this.webglVersion = 2;
-    } else {
-      this.webglVersion = 1;
-      rawContext = view.getContext('webgl', options);
+    let rawContext;
+    if (webglVersion === 2) {
+      rawContext = view.getContext('webgl2', options);
+      if (rawContext) {
+        this.webglVersion = 2;
+      } else {
+        this.webglVersion = 1;
+        rawContext = view.getContext('webgl', options);
+      }
+    }
+
+    if (!rawContext || webglVersion === 1) {
+        this.webglVersion = 1;
+        rawContext = view.getContext('webgl', options);
     }
 
     options.context = rawContext;
     options.view = view;
     this.renderer = new PIXI.autoDetectRenderer(
-        stackViewer.getView().clientWidth,
-        stackViewer.getView().clientHeight,
+        width,
+        height,
         options);
     this.stage = new PIXI.Container();
     this.layersRegistered = new Set();
@@ -49,7 +70,7 @@
       this.renderer.plugins['accessibility'].destroy();
       delete this.renderer.plugins['accessibility'];
     }
-  }
+  };
 
   /**
    * Release any Pixi resources owned by this context.

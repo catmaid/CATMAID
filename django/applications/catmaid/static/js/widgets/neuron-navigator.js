@@ -1161,6 +1161,12 @@
       });
     }
 
+    let renameReplaceButton = document.createElement('input');
+    renameReplaceButton.setAttribute('type', 'button');
+    renameReplaceButton.setAttribute('value', 'Rename');
+    NeuronNavigator.disable_on_missing_permissions(renameReplaceButton);
+    $container.append(renameReplaceButton);
+
     var content = document.createElement('div');
     content.setAttribute('id', 'navigator_neuronlist_content' +
         this.navigator.widgetID);
@@ -1197,6 +1203,8 @@
     // Add table to DOM
     $container.append(content);
 
+
+    let widget = this.navigator;
     let extraColumns =  [];
     let printCreationTime = a => CATMAID.tools.dateToString(CATMAID.tools.isoStringToDate(a.creation_time));
     let printEditionTime = a => CATMAID.tools.dateToString(CATMAID.tools.isoStringToDate(a.edition_time));
@@ -1308,12 +1316,22 @@
               }
             }
 
-            // Let datatables know about new data
-            dtCallback(result);
+            return CATMAID.NeuronNameService.getInstance()
+              .registerAll(widget,
+                json.entities.reduce(function(m, n) {
+                  n.skeleton_ids.forEach(skid => {
+                    m[skid] = new CATMAID.SkeletonModel(skid, n.name);
+                  });
+                  return m;
+                }, {}))
+              .then(() => {
+                // Let datatables know about new data
+                dtCallback(result);
 
-            if (callback && !json.error ) {
-              callback(json);
-            }
+                if (callback && !json.error ) {
+                  callback(json);
+                }
+              });
           })
           .catch(CATMAID.handleError);
       },
@@ -1427,6 +1445,17 @@
             selected_neurons, [annotation_id]);
       } else {
         CATMAID.warn("Please select at least one neuron to remove the annotation from first!");
+      }
+    });
+
+    $(renameReplaceButton).click(e => {
+      var skeletonIds = this.navigator.getSelectedSkeletons();
+      if (skeletonIds.length > 0) {
+        // Get annotation ID
+        let dialog = new CATMAID.RenameNeuronsDialog(skeletonIds);
+        dialog.show();
+      } else {
+        CATMAID.warn("Please select at least one neuron to rename!");
       }
     });
 

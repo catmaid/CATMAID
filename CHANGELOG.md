@@ -30,6 +30,16 @@
 
 ### Features and enhancements
 
+Neuron renaming:
+
+- There is now a new neuron renaming dialog, which allows a search/replace
+  renaming workflow for many neurons at the same time. This can be launched
+  through the "Rename" button in both the Neuron Search widget and the neuron
+  lists of the Neuron Navigator (e.g. neurons with a particular annotation).
+
+- The dialog supports simple find/replace, but also regular expressions
+  including capture groups and presents live previews.
+
 Volume manager:
 
 - The table of filters applied to input neurons for volume creation has now a

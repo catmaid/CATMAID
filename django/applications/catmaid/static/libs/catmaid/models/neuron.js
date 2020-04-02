@@ -36,6 +36,38 @@
       },
 
       /**
+       * Rename all neurons modeled by a set of skeletons 1
+       *
+       * @param projectId The project to operate in.
+       * @param neuronNameMap A list of two-element lists: neuron ID, new name
+       */
+      renameAll: function(projectId, neuronNameList) {
+        if (neuronNameList.length === 0) {
+          return Promise.reject(new CATMAID.ValueError("Need at least one neuron/name mapping"));
+        }
+
+        let result = CATMAID.fetch(`${projectId}/neurons/rename`, 'POST', {
+          'names': neuronNameList,
+        });
+
+        result.then(r => {
+          CATMAID.Neurons.trigger(CATMAID.Neurons.EVENT_NEURON_RENAMED,
+              null, null);
+        });
+
+        return result;
+      },
+
+      /**
+       * Get a mapping of skeleton IDs to neuron IDs.
+       */
+      idsFromSkeletons: function(projectId, skeletonIds) {
+        return CATMAID.fetch(`${projectId}/neurons/from-models`, 'POST', {
+          'model_ids': skeletonIds,
+        });
+      },
+
+      /**
        * Delete a neuron and the skeleton is is modeled by.
        *
        * @param {number} projectId The ID of the project the neuron is part of

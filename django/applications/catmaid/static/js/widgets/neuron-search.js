@@ -185,6 +185,8 @@
               'class="neuron_annotations_query_footer">' +
             '<input type="button" id="neuron_annotations_annotate{{NA-ID}}" ' +
                 'value="Annotate" />' +
+            '<input type="button" id="neuron_annotations_rename{{NA-ID}}" ' +
+                'value="Rename" />' +
             '<input type="button" id="neuron_annotations_export_csv{{NA-ID}}" ' +
                 'value="Export CSV" title="Export selected neuron IDs and names. ' +
                 'Annotations are exported if displayed."/>' +
@@ -265,6 +267,15 @@
             // Refresh display after annotations have been added
             CATMAID.annotate_entities(selected_entity_ids,
                 this.refresh_annotations.bind(this));
+        }).bind(this);
+        $(`#neuron_annotations_rename${this.widgetID}`)[0].onclick = (function() {
+           let skeletonIds = this.getSelectedSkeletons();
+           if (skeletonIds.length === 0) {
+             CATMAID.warn('Please select one or more skeleton fist');
+             return;
+           }
+           let dialog = new CATMAID.RenameNeuronsDialog(skeletonIds);
+           dialog.show();
         }).bind(this);
         $('#neuron_annotations_export_csv' + this.widgetID)[0].onclick = this.exportCSV.bind(this);
         $('#neuron_search_show_annotations' + this.widgetID)

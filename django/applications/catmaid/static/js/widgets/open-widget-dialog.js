@@ -8,7 +8,7 @@
      */
     var OpenWidgetDialog = function(text, callback) {
       this.dialog = new CATMAID.OptionsDialog("Open widget");
-      this.dialog.dialog.classList.add('widget-list');
+      this.dialog.dialog.classList.add('config-dialog');
       if (text) {
         this.dialog.appendMessage(text);
       }

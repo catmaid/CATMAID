@@ -582,7 +582,7 @@
       // With groups defined, get user confirmation.
       let dialog = new CATMAID.OptionsDialog('Confirm ' + groups.size +
           ' groups');
-      dialog.dialog.classList.add('widget-list');
+      dialog.dialog.classList.add('config-dialog');
       dialog.onOK = () => resolve();
       dialog.onCancel = () => reject(new CATMAID.Warning("Canceld by user"));
 

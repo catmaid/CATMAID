@@ -257,6 +257,86 @@ def rename_neuron(request:HttpRequest, project_id=None, neuron_id=None) -> JsonR
 
 
 @api_view(['POST'])
+@requires_user_role(UserRole.Annotate)
+def rename_neurons(request:HttpRequest, project_id=None) -> JsonResponse:
+    """Rename a neuron.
+
+    If a neuron is not locked by a user on which the current user has no
+    permission, the name of neuron can be changed through this endpoint. Neuron
+    names are currently not allowed to contain pipe characters ("|").
+    ---
+    parameters:
+        - name: neuron_names
+          description: A list of two-element tuples, containing of neuron ID and new name each.
+          required: true
+          type: array
+          paramType: form
+    type:
+      success:
+        description: If renaming was successful
+        type: boolean
+        required: true
+      renamed_neurons:
+        description: IDs of the renamed neurons
+        type: integer
+        required: true
+      old_names:
+        description: Old names of the renamed neurons
+        type: string
+        required: true
+    """
+    neuron_name_pairs = get_request_list(request.POST, 'names')
+    if not neuron_name_pairs:
+        raise ValueError('Need at least one neuron ID / name mapping')
+    neuron_ids = [int(k) for k, _  in neuron_name_pairs]
+    neuron_names = [v for _, v in neuron_name_pairs]
+
+    # Make sure the user can edit the neuron
+    can_edit_all_or_fail(request.user, neuron_ids, 'class_instance')
+    # Do not allow '|' in name because it is used as string separator in NeuroHDF export
+    for new_name in neuron_names:
+        if '|' in new_name:
+            raise ValueError('New name should not contain pipe character')
+
+    cursor = connection.cursor()
+    cursor.execute("""
+        UPDATE class_instance ci
+        SET name = new_data.name
+        FROM UNNEST(
+            %(neuron_ids)s::bigint[],
+            %(neuron_names)s::text[]) new_data(id, name)
+        JOIN class_instance ci_old
+            ON ci_old.id = new_data.id
+        WHERE ci.id = new_data.id
+            AND ci.project_id = %(project_id)s
+        RETURNING ci.id, ci_old.name, ci.name
+    """, {
+        'project_id': project_id,
+        'neuron_ids': neuron_ids,
+        'neuron_names': neuron_names,
+    })
+
+    rows = cursor.fetchall()
+    updated_ids = [r[0] for r in rows]
+    old_names = [r[1] for r in rows]
+    new_names = [r[2] for r in rows]
+
+    # Insert log entry and return successfully
+    if len(updated_ids) == 1:
+        insert_into_log(project_id, request.user.id, "rename_neuron", None,
+                        f"Renamed neuron with ID {neuron_ids[0]} from {old_names[0]} to {neuron_names[0]}")
+    else:
+        insert_into_log(project_id, request.user.id, "rename_neuron", None,
+                f"Renamed {len(neuron_ids)} neurons. IDs: {', '.join(str(uid) for uid in updated_ids)} Old names: {', '.join(old_names)} New names: {', '.join(new_names)}")
+
+    return JsonResponse({
+        'success': True,
+        'renamed_neurons': updated_ids,
+        'old_names': old_names
+    })
+
+
+@api_view(['POST'])
 @requires_user_role(UserRole.Browse)
 def get_neuron_ids_from_models(request:HttpRequest, project_id=None) -> JsonResponse:
     """Retrieve neuron IDs modeled by particular entities, eg skeletons.

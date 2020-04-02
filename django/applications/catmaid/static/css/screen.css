@@ -1592,27 +1592,47 @@ img.missing-image:before {
   white-space: nowrap;
 }
 
-.widget-list label {
+.config-dialog label {
   width: 5em;
 }
 
-.widget-list label input {
+.config-dialog label input {
   width: 10em;
 }
 
-.widget-list table {
+.config-dialog table {
   width:100%;
   cursor: pointer;
 }
-.widget-list table td {
+.config-dialog table td {
   padding: 0.1em 0.3em 0.1em 0.3em;
   white-space: nowrap;
   min-width: 10em;
 }
 
-.widget-list .dataTables_info {
+.config-dialog p {
+  margin: 1em 0 1em 0;
+}
+
+.config-dialog .dataTables_info {
   padding-left: 0.4em;
   padding-top: 0.6em;
+}
+
+.config-dialog .highlight-change {
+  color: darkgreen;
+}
+
+.config-dialog .highlight-default {
+  color: gray;
+}
+
+.config-dialog input.error {
+  background-color: salmon;
+}
+
+.config-dialog .cols3 span {
+  display: flex;
 }
 
 .landmark-group-name {

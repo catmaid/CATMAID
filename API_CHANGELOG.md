@@ -6,7 +6,8 @@ included in this changelog.
 
 ### Additions
 
-None.
+- POST `/{project_id}/neurons/rename`:
+  Rename multiple neurons at the same time.
 
 ### Modifications
 

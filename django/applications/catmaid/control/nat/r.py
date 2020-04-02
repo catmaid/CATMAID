@@ -642,7 +642,7 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
         # Simplify
         if detail > 0:
             logger.debug('Simplifying skeletons')
-            simplified_objects = robjects.r.nlapply(objects, relmr.simplify_neuron, **{
+            simplified_objects = robjects.r.nlapply(objects, rnat.simplify_neuron, **{
                 'n': detail,
                 'OmitFailures': omit_failures,
                 '.parallel': parallel,
@@ -846,7 +846,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                 if simplify:
                     logger.debug(f"Simplifying query neurons, removing parts below branch level {required_branches}")
                     query_objects = robjects.r.nlapply(query_objects,
-                            relmr.simplify_neuron, **{
+                            rnat.simplify_neuron, **{
                                 'n': required_branches,
                                 'OmitFailures': omit_failures,
                                 '.parallel': parallel,
@@ -1011,7 +1011,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                     if simplify:
                         logger.debug(f"Simplifying target neurons, removing parts below branch level {required_branches}")
                         target_objects = robjects.r.nlapply(target_objects,
-                                relmr.simplify_neuron, **{
+                                rnat.simplify_neuron, **{
                                     'n': required_branches,
                                     'OmitFailures': omit_failures,
                                     '.parallel': parallel,

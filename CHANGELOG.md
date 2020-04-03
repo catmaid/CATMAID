@@ -21,6 +21,13 @@
   configuration. It is now also possible to use additional subgraphs (e.g.
   axon/dendrite split) with filters applied.
 
+- Graph widget: fix node width/height setting.
+
+- Tracing tool: centering on the active node reads now the active node only once
+  all present tasks (like node creation) are done, which makes centering on
+  newly created nodes using 'A' center reliably on the new node rather than the
+  parent.
+
 - Connectivity widget: make node filter test consistent with filter application
   in the Graph Widget. A connection is now valid according to the selected
   filters if it uses a connector node that is linked to a node allowed by the

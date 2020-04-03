@@ -83,6 +83,8 @@ Docker:
 - CSVs imported into the skeleton selection widget may contain nonexistent
   skeleton IDs, as intended.
 
+- Neuron navigator: the textual representation of neurons now follows the global
+  settings.
 
 ## Maintenance updates
 

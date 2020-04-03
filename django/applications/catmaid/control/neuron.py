@@ -288,7 +288,7 @@ def rename_neurons(request:HttpRequest, project_id=None) -> JsonResponse:
     neuron_name_pairs = get_request_list(request.POST, 'names')
     if not neuron_name_pairs:
         raise ValueError('Need at least one neuron ID / name mapping')
-    neuron_ids = [int(k) for k, _  in neuron_name_pairs]
+    neuron_ids = [int(k) for k, _ in neuron_name_pairs]
     neuron_names = [v for _, v in neuron_name_pairs]
 
     # Make sure the user can edit the neuron

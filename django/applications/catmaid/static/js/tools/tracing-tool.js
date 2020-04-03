@@ -841,11 +841,18 @@
       run: function (e) {
         if (!CATMAID.mayView())
           return false;
+        let prepare = activeTracingLayer.tracingOverlay.submit.promise();
         if (e.shiftKey) {
-          var skid = SkeletonAnnotations.getActiveSkeletonId();
-          if (Number.isInteger(skid)) CATMAID.WebGLApplication.prototype.staticReloadSkeletons([skid]);
+            prepare.then(() => {
+              var skid = SkeletonAnnotations.getActiveSkeletonId();
+              if (Number.isInteger(skid)) CATMAID.WebGLApplication.prototype.staticReloadSkeletons([skid]);
+            })
+            .catch(CATMAID.handleError);
         } else {
-          activeTracingLayer.tracingOverlay.moveToAndSelectNode(SkeletonAnnotations.getActiveNodeId())
+            prepare.then(() => {
+              return activeTracingLayer.tracingOverlay.moveToAndSelectNode(
+                  SkeletonAnnotations.getActiveNodeId());
+            })
             .catch(CATMAID.handleError);
         }
         return true;

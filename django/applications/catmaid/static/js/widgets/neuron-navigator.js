@@ -347,6 +347,7 @@
     if (this.current_node.updateNeuronNames) {
       this.current_node.updateNeuronNames();
     }
+    this.select_node(this.current_node);
   };
 
 
@@ -1223,6 +1224,8 @@
       });
     }
 
+    let nns = CATMAID.NeuronNameService.getInstance();
+
     // Fill neuron table
     var datatable = $(table).dataTable({
       "destroy": true,
@@ -1361,7 +1364,8 @@
           "searchable": true,
           "orderable": true,
           "render": function(data, type, row, meta) {
-            return row.name;
+            return row.skeleton_ids && row.skeleton_ids.length > 0 ?
+                nns.getName(row.skeleton_ids[0]) : row.name;
           }
         }
       ].concat(extraColumns)

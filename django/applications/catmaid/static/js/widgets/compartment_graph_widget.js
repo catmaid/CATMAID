@@ -836,10 +836,12 @@
             node_border_width.value);
 
       if (newNodewidth != this.node_width) {
-        style["width"] = this.node_width + "px";
+        this.node_width = newNodewidth;
+        this.cy.nodes().data('node_width', this.node_width);
       }
       if (newNodeHeight != this.node_height) {
-        style["height"] = this.node_height + "px";
+        this.node_height = newNodeHeight;
+        this.cy.nodes().data('node_height', this.node_height);
       }
 
       if (newNodeBorderWidth != this.node_border_width) {

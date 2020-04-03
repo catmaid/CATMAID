@@ -26,7 +26,9 @@ Vagrant
 `Vagrant <https://www.vagrantup.com/intro/index.html>`_ is an easy-to-configure abstraction layer over a number of virtual machine providers (e.g. VirtualBox, VMWare, Hyper-V) implemented in ruby 2.6.
 Once installed, you need only ``vagrant up`` inside the repository to create a fully-fledged Ubuntu VM with PostgreSQL running, fully populated Python and Node environments, and a base R environment.
 
-`Install vagrant <https://www.vagrantup.com/docs/installation/>`_ and a VM provider (`VirtualBox <https://www.virtualbox.org/manual/UserManual.html#installation>`_, an open source, cross platform option, is preferred).
+`Install vagrant <https://www.vagrantup.com/docs/installation/>`_ and the `VirtualBox <https://www.virtualbox.org/manual/UserManual.html#installation>`_ VM provider.
+You may need to enable virtualization in the BIOS.
+Note also that VirtualBox `may not be compatible with Docker under windows <https://docs.docker.com/docker-for-windows/install/#system-requirements>`_.
 
 .. glossary::
 
@@ -59,6 +61,42 @@ The hostname of the container will be ``catmaid-vm``.
 
    ``suspend`` or ``halt`` the container before shutting down the host!
 
+Snapshots
+^^^^^^^^^
+
+You can save the state of a running VM and restore it later.
+This is helpful if you install additional tools or data into your VM, and is quicker to load than a full re-provision.
+
+.. glossary::
+
+    ``vagrant snapshot save <name>``
+        Save the VM's current state with the given name.
+
+    ``vagrant snapshot list``
+        Show the available snapshots.
+
+    ``vagrant snapshot restore <name>``
+        Restore the named snapshot.
+
+Note that destroying a VM also destroys all snapshots of it.
+
+More information is available in the `vagrant documentation <https://www.vagrantup.com/docs/cli/snapshot.html>`_.
+
+Setup
+-----
+
+The first time the VM is started, it is "provisioned" - i.e. CATMAID's dependencies are installed.
+Subsequent startups will be much faster.
+
+Some red messages during provisioning are expected: every line prepended with a ``+`` is just showing what command is being run.
+
+This provisioning gets you up to step 3 in the basic installation instructions (setting up the OS-level dependencies and python environment).
+The database and CATMAID configuration are done separately, in case you prefer your own configuration to the recommendations in the installation instructions.
+
+To finish off the installation according to the instructions, SSH into the VM and ``bash /CATMAID/scripts/vagrant/optional.sh``.
+If the ``DB_NAME``, ``DB_USER``, ``DB_PASSWORD``, or ``TIMEZONE`` environment variables are set, they will override the defaults (when the machine is provisioned, the host's timezone will be added to ``~/timezone``, which is used as the default timezone here).
+This creates your local settings, applies database migrations, collects static files as symlinks, creates a CATMAID superuser (you will need to input your the username, email, and password), and inserts example projects (N.B. the data for these projects is probably not accessible).
+
 Virtual machine layout
 ----------------------
 
@@ -76,31 +114,19 @@ Some guest ports are forwarded to the host machine so that you can access the da
 +-------------------+------------+-----------+---------------------------------------------------+
 | Service           | Guest port | Host port | Notes                                             |
 +===================+============+===========+===================================================+
-| PostgreSQL        | 5432       | 5555      |                                                   |
+| PostgreSQL        | 5555       | 5555      | Not the default port 5432                         |
 +-------------------+------------+-----------+---------------------------------------------------+
 | Django dev server | 8888       | 8888      | ``django/projects/manage.py runserver [::]:8888`` |
 +-------------------+------------+-----------+---------------------------------------------------+
 | Docs server       | 8889       | 8889      | ``cd sphinx-doc && make serve``                   |
 +-------------------+------------+-----------+---------------------------------------------------+
 
-Setup
------
+If `optional.sh` was used to configure the VM, and no parameters were given without:
 
-The first time the VM is started, it is "provisioned" - i.e. CATMAID's dependencies are installed.
-Subsequent startups will be much faster.
-
-Some red messages during provisioning are expected: every line prepended with a ``+`` is just showing what command is being run.
-
-This provisioning gets you up to step 3 in the basic installation instructions (setting up the OS-level dependencies and python environment).
-The database and CATMAID configuration are done separately, in case you prefer your own configuration to the recommendations in the installation instructions.
-
-To finish off the installation according to the instructions, SSH into the VM and ``bash /CATMAID/scripts/vagrant/optional.sh``.
-If the ``DB_NAME``, ``DB_USER``, ``DB_PASSWORD``, or ``TIMEZONE`` environment variables are set, they will override the defaults (when the machine is provisioned, the host's timezone will be added to ``~/timezone``, which is used as the default timezone here).
-This creates your local settings, applies database migrations, collects static files as symlinks, creates a CATMAID superuser (you will need to input your the username, email, and password), and inserts example projects (N.B. the data for these projects is probably not accessible).
-
-.. warning::
-
-   If you already have a ``django/projects/mysite/settings.py`` file, this script will not overwrite it, and will probably fail.
+* The CATMAID database is called "catmaid".
+* The database user is called "catmaid_user".
+* The database user passwrod is "p4ssw0rd".
+* The CATMAID time zone is the same as the host machine (but the guest machine is UTC).
 
 Development
 -----------

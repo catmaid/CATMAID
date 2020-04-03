@@ -319,13 +319,16 @@ class Exporter():
                         class_instance__class_column=classes['label'],
                         relation_id=relations['labeled_as'],
                         treenode__skeleton_id__in=skeleton_id_constraints)
-                tags = [t.class_instance for t in tag_links]
-                tag_names = sorted(set([t.name for t in tags]))
+                # Because we retrieve these objects as part of the returned
+                # links to get only the used tags.
+                tags = set(t.class_instance for t in tag_links)
+
+                tag_names = sorted(set(t.name for t in tags))
+                logger.info(f"Exporting {len(tags)} tags, part of {tag_links.count()} links: {', '.join(tag_names)}")
 
                 self.to_serialize.append(tags)
                 self.to_serialize.append(tag_links)
 
-                logger.info(f"Exporting {len(tags)} tags, part of {tag_links.count()} links: {', '.join(tag_names)}")
 
             # TODO: Export reviews
         else:

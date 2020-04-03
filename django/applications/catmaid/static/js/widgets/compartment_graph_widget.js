@@ -31,6 +31,8 @@
 
     this.edge_text_color = '#555';
     this.edge_text_opacity = 1.0;
+    this.edge_text_outline_width = 0.4;
+    this.edge_text_outline_opacity = 1.0;
     // Edge width is computed as edge_min_width + edge_width_function(weight)
     this.edge_min_width = 0;
     this.edge_width_function = "sqrt"; // choices: identity, log, log10, sqrt
@@ -759,7 +761,7 @@
     var grid_snap = dialog.appendCheckbox("Snap node position to grid", "snap", this.grid_snap);
     var grid_side = dialog.appendField("Grid cell side (px):", "side", this.grid_side);
     dialog.appendMessage("Edge properties:");
-    var props = ["opacity", "text opacity", "min width"].map(function(prop) {
+    var props = ["opacity", "text opacity", "text outline width", "text outline opacity", "min width"].map(function(prop) {
       var field = dialog.appendField("Edge " + prop + ":", prop.replace(/ /, '-'), this["edge_" + prop.replace(/ /g, "_")]);
       field.style.width = "40px";
       return field;
@@ -865,7 +867,11 @@
       }
       var edge_text_opacity = Number(props[1].value.trim());
       if (!Number.isNaN(edge_text_opacity) && edge_text_opacity >= 0 && edge_text_opacity <= 1) this.edge_text_opacity = edge_text_opacity;
-      var edge_min_width = Number(props[2].value.trim());
+      var edge_text_outline_width = Number(props[2].value.trim());
+      if (!Number.isNaN(edge_text_outline_width)) this.edge_text_outline_width = edge_text_outline_width;
+      var edge_text_outline_opacity = Number(props[3].value.trim());
+      if (!Number.isNaN(edge_text_outline_opacity)) this.edge_text_outline_opacity = edge_text_outline_opacity;
+      var edge_min_width = Number(props[4].value.trim());
       if (!Number.isNaN(edge_min_width)) this.edge_min_width = edge_min_width;
       this.edge_width_function = edgeFnNames[edgeFnSel.selectedIndex];
 
@@ -911,10 +917,10 @@
               // "source-arrow-shape": "circle",
               "line-color": "data(color)",
               "opacity": 1.0,
-              "text-opacity": 1.0,
+              "text-opacity": this.edge_text_opacity,
               "text-outline-color": "#fff",
-              "text-outline-opacity": 1.0,
-              "text-outline-width": 0.2,
+              "text-outline-opacity": this.edge_text_outline_opacity,
+              "text-outline-width": this.edge_text_outline_width,
               "color": "data(label_color)", // color of the text label
               "curve-style": "bezier"
             })
@@ -2177,11 +2183,11 @@
       linkTypeEdges.css('opacity', this.getLinkTypeOpacity(linkTypeId));
       linkTypeEdges.data('color', linkTypeColor);
     }
-    var directed = this.cy.edges().filter(function(i, edge) {
-      return edge.data('directed');
-    });
-    directed.css('text-opacity', this.edge_text_opacity);
-    directed.css('color', this.edge_text_color);
+    var edges = this.cy.edges();
+    edges.css('text-opacity', this.edge_text_opacity);
+    edges.css('text-outline-width', this.edge_text_outline_width);
+    edges.css('text-outline-opacity', this.edge_text_outline_opacity);
+    edges.css('color', this.edge_text_color);
 
     var min = this.edge_min_width,
         labelColor = this.edge_text_color,
@@ -3897,6 +3903,8 @@
      'edge_opacity',
      'edge_text_color',
      'edge_text_opacity',
+     'edge_text_outline_width',
+     'edge_text_outline_opacity',
      'edge_min_width',
      'edge_width_function',
      'grid_snap',
@@ -4860,6 +4868,8 @@
           node_height: widget.node_height,
           edge_text_color: widget.edge_text_color,
           edge_text_opacity: widget.edge_text_opacity,
+          edge_text_outline_width: widget.edge_text_outline_width,
+          edge_text_outline_opacity: widget.edge_text_outline_opacity,
           edge_min_width: widget.edge_min_width,
           edge_width_function: widget.edge_width_function,
           grid_snap: widget.grid_snap,
@@ -4877,6 +4887,8 @@
         CATMAID.tools.copyIfDefined(state, widget, 'node_height');
         CATMAID.tools.copyIfDefined(state, widget, 'edge_text_color');
         CATMAID.tools.copyIfDefined(state, widget, 'edge_text_opacity');
+        CATMAID.tools.copyIfDefined(state, widget, 'edge_text_outline_width');
+        CATMAID.tools.copyIfDefined(state, widget, 'edge_text_outline_opacity');
         CATMAID.tools.copyIfDefined(state, widget, 'edge_min_width');
         CATMAID.tools.copyIfDefined(state, widget, 'edge_width_function');
         CATMAID.tools.copyIfDefined(state, widget, 'grid_snap');

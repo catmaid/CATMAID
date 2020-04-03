@@ -50,6 +50,11 @@ Volume manager:
 - For new node filters during volume creation, the merge mode can now be
   selected, i.e. whether additional filters will be combined using OR or AND.
 
+Graph widget:
+
+- Add options to configure the edge text outline size and opacity. The options
+  area available from the properties dialog.
+
 Docker:
 
 - Asynchronous tasks can now also be run inside the Docker container. Celery and

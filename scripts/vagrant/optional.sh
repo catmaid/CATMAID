@@ -14,7 +14,9 @@ TIMEZONE=${TIMEZONE:-$DEFAULT_TZ}
 
 mkdir -p ~/data
 
-HBA_PATH="/etc/postgresql/11/main/pg_hba.conf"
+POSTGRES_VERSION=$(psql --version | awk '{print $3}' | awk -F '.' '{print $1}')
+
+HBA_PATH="/etc/postgresql/$POSTGRES_VERSION/main/pg_hba.conf"
 LOCAL_LINE="local $DB_NAME $DB_USER md5"
 HOST_LINE="host $DB_NAME $DB_USER 0.0.0.0/0 md5"
 
@@ -39,11 +41,12 @@ fi
 
 cd /CATMAID
 
-echo "Creating CATMAID user"
+echo "Creating database user"
 scripts/createuser.sh $DB_NAME $DB_USER $DB_PASSWORD | sudo -u postgres psql
 
-cd django
-if [ ! -f projects/mysite/settings.py ]; then
+function create_configuration {
+    cd /CATMAID/django
+
     echo "Configuring CATMAID"
     cp configuration.py.example configuration.py
 
@@ -53,6 +56,7 @@ if [ ! -f projects/mysite/settings.py ]; then
     sed -i -e "s?^\(catmaid_database_name = \).*?\1'$DB_NAME'?g" configuration.py
     sed -i -e "s?^\(catmaid_database_username = \).*?\1'$DB_USER'?g" configuration.py
     sed -i -e "s?^\(catmaid_database_password = \).*?\1'$DB_PASSWORD'?g" configuration.py
+    sed -i -e "s?^\(catmaid_database_port = \).*?\1'5555'?g" configuration.py
 
     sed -i -e "s?^\(catmaid_writable_path = \).*?\1'/home/vagrant/data'?g" configuration.py
 
@@ -62,6 +66,10 @@ if [ ! -f projects/mysite/settings.py ]; then
     TOOLS="[\"tagging\", \"textlabel\", \"tracing\", \"ontology\", \"roi\"]"
 
     sed -i -e "s?^\(catmaid_default_enabled_tools = \).*?\1$TOOLS?g" configuration.py
+}
+
+function create_settings {
+    cd /CATMAID/django
 
     python create_configuration.py
     sed -i -e "s?^\(ALLOWED_HOSTS = \).*?\1['*']?g" projects/mysite/settings.py
@@ -71,13 +79,35 @@ if [ ! -f projects/mysite/settings.py ]; then
     #echo "PIPELINE['PIPELINE_ENABLED'] = False" >> projects/mysite/settings.py
     # Show full front-end errors by default
     echo "EXPAND_FRONTEND_ERRORS = True" >> projects/mysite/settings.py
+}
 
-    # cat projects/mysite/settings.py
-else
-    echo "django/projects/mysite/settings.py exists: skipping configuration"
+cd /CATMAID/django
+
+HAS_SETTINGS=$([[ -f projects/mysite/settings.py ]] && echo true || echo false )
+HAS_CONFIG=$([[ -f configuration.py ]] && echo true || echo false )
+while $HAS_SETTINGS || $HAS_CONFIG; do
+    echo "\n\n"
+    read -p "Settings file(s) already exist. Back up and overwrite? (y/n): " RESPONSE
+    if [[ "$RESPONSE" == "y" ]]; then
+		TIMESTAMP=$(TZ=$TIMEZONE date +"%Y-%m-%d-%H-%M-%S")
+        CREATE_SETTINGS="true"
+        echo "Backing up existing settings"
+        $HAS_SETTINGS && mv projects/mysite/settings.py projects/mysite/settings.py.backup-$TIMESTAMP && HAS_SETTINGS="false"
+        $HAS_CONFIG && mv configuration.py configuration.py.backup-$TIMESTAMP && HAS_CONFIG="false"
+    elif [[ "$RESPONSE" == "n" ]]; then
+        break
+    fi
+done
+
+if [[ "$HAS_SETTINGS" == "false" ]]; then
+    if [[ "$HAS_CONFIG" == "false" ]]; then
+        # don't bother creating a configuration if we're not creating settings
+        create_configuration
+    fi
+    create_settings
 fi
 
-cd projects
+cd /CATMAID/django/projects
 ./manage.py migrate
 ./manage.py collectstatic -l
 

@@ -58,7 +58,11 @@ cd /CATMAID
 sudo xargs apt-get install -y < packagelist-ubuntu-${VERSION}-apt.txt
 apt-get install -y nodejs python3-pip python3.6-venv python3-wheel git r-base
 
-PG_CONF="/etc/postgresql/11/main/postgresql.conf"
+POSTGRES_VERSION=$(psql --version | awk '{print $3}' | awk -F '.' '{print $1}')
+
+PG_CONF="/etc/postgresql/$POSTGRES_VERSION/main/postgresql.conf"
+sed -i "/^port =.*/d" $PG_CONF
+echo "port = 5555" >> $PG_CONF
 sed -i "/^listen_addresses =.*/d" $PG_CONF
 echo "listen_addresses = '*'" >> $PG_CONF
 systemctl restart postgresql

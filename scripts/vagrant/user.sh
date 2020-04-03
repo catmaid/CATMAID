@@ -2,6 +2,9 @@
 set -e
 set -x
 
+# make sure this is created by a user, not root
+mkdir -p ~/.local/share
+
 # set up python environment
 python3.6 -m venv ~/catmaid-env
 source ~/catmaid-env/bin/activate
@@ -63,4 +66,3 @@ node_modules/
 " >> ~/.config/git/ignore
 
 git config --global user.useConfigOnly true
-

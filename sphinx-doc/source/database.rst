@@ -41,7 +41,7 @@ could now do::
     SELECT * FROM remote_catmaid_fdw.auth_user rau
     JOIN auth_user au
       ON au.id = rau.id
-    WHERE au.name <> rau.name;
+    WHERE au.username <> rau.username;
 
     SELECT * FROM remote_catmaid_fdw.auth_group rag
     JOIN auth_group ag

@@ -20,6 +20,7 @@
     // Update caches every 60min
     this.autoCacheUpdateIntervalLength = 60*60*1000;
     this.autoCacheUpdateInterval = null;
+    this.autoCacheUpdate = true;
     this.refreshAutoCacheUpdate();
     // Keep a reference to the current and last selected skeleton.
     this.lastSkeletonId = null;
@@ -484,8 +485,10 @@
       // Forget the active node
       SkeletonAnnotations.atn.set(null);
 
-      if (this.autoCacheUpdateTimeout) {
+      this.autoCacheUpdate = false;
+      if (this.autoCacheUpdateInterval) {
         window.clearInterval(this.autoCacheUpdateInterval);
+        this.autoCacheUpdateInterval = null;
       }
     };
 
@@ -2025,6 +2028,9 @@
    * Refresh various caches, like the annotation cache.
    */
   TracingTool.prototype.refreshCaches = function() {
+    if (!project) {
+      return Promise.resolve([]);
+    }
     return Promise.all([
       CATMAID.annotations.update(true),
       CATMAID.NeuronNameService.getInstance().refresh(),
@@ -2039,11 +2045,12 @@
    * if an update interval is set.
    */
   TracingTool.prototype.refreshAutoCacheUpdate = function() {
-    if (this.autoCacheUpdateTimeout) {
+    if (this.autoCacheUpdateInterval) {
       window.clearInterval(this.autoCacheUpdateInterval);
+      this.autoCacheUpdateInterval = null;
     }
 
-    if (this.autoCacheUpdateIntervalLength) {
+    if (this.autoCacheUpdate && this.autoCacheUpdateIntervalLength) {
       this.autoCacheUpdateInterval= window.setInterval(
           this.refreshCaches.bind(this), this.autoCacheUpdateIntervalLength);
     }

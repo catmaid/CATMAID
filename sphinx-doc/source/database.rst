@@ -41,7 +41,8 @@ could now do::
     SELECT * FROM remote_catmaid_fdw.auth_user rau
     JOIN auth_user au
       ON au.id = rau.id
-    WHERE au.username <> rau.username;
+    WHERE au.username <> rau.username
+      OR au.id IS NULL;
 
     SELECT * FROM remote_catmaid_fdw.auth_group rag
     JOIN auth_group ag
@@ -83,7 +84,7 @@ be to move their IDs into negative number space, e.g::
 To see which users, groups, userprofiles and permissions would be imported,
 use::
 
-    SELECT * FROM remote_catmaid_fdw.auth_user rau
+    SELECT rau.* FROM remote_catmaid_fdw.auth_user rau
     LEFT JOIN auth_user au ON au.id = rau.id
     WHERE au.id IS NULL;
 

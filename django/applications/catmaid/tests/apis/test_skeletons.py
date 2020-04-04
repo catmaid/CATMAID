@@ -972,6 +972,15 @@ class SkeletonsApiTests(CatmaidApiTestCase):
 
         skeleton_id = 235
 
+        def first_element(l):
+            return l[0]
+
+        def sort_json_nodes(node_result):
+            for k,v in expected_result.items():
+                v.sort(key=first_element)
+                node_result[k] = v
+            return node_result
+
         # No reviews
         url = '/%d/skeleton/%d/reviewed-nodes' % (self.test_project_id, skeleton_id)
         response = self.client.get(url)
@@ -992,7 +1001,8 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         expected_result = {
                 '253': [[2, review_time], [3, review_time]],
                 '263': [[3, review_time]]}
-        self.assertJSONEqual(response.content.decode('utf-8'), expected_result)
+        parsed_response = json.dumps(sort_json_nodes(json.loads(response.content.decode('utf-8'))))
+        self.assertJSONEqual(parsed_response, expected_result)
 
 
     def test_reroot_skeleton(self):

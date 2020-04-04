@@ -6,6 +6,7 @@ from django.db import connection
 
 from catmaid.models import Connector, Treenode
 from catmaid.state import make_nocheck_state
+from catmaid.tests.common import round_list
 
 from .common import CatmaidApiTestCase
 
@@ -189,7 +190,7 @@ class NodesApiTests(CatmaidApiTestCase):
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [[387, [9030.0, 1480.0, 0.0], 380.131556174964, ["testlabel"]],
                            [403, [7840.0, 2380.0, 0.0], 1135.3413583588, ["Testlabel"]]]
-        self.assertEqual(expected_result, parsed_response)
+        self.assertEqual(round_list(expected_result), round_list(parsed_response))
 
 
     def test_node_update_single_treenode(self):

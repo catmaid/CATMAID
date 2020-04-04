@@ -72,3 +72,19 @@ class CatmaidTestCase(TestCase, AssertStatusMixin):
 
     def fake_authentication(self):
         self.client.login(username='temporary', password='temporary')
+
+
+def round_list(l, digits=6):
+    """Round floating point values in a list recursively to the specified number
+    of digits.
+    """
+    new_list = []
+    for v in l:
+        v_type = type(v)
+        if v_type == float:
+            new_list.append(round(v, digits))
+        elif v_type in (list, tuple):
+            new_list.append(round_list(v, digits))
+        else:
+            new_list.append(v)
+    return new_list

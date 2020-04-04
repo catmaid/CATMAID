@@ -13,7 +13,7 @@ DB_NAME=$(sanitize "${DB_NAME:-catmaid}")
 DB_USER=$(sanitize "${DB_USER:-catmaid_user}")
 DB_PASS=$(sanitize "${DB_PASS:-catmaid_password}")
 DB_CONNECTIONS=$(sanitize "${DB_CONNECTIONS:-50}")
-DB_CONF_FILE=$(sanitize "${DB_CONF_FILE:-"/etc/postgresql/11/main/postgresql.conf"}")
+DB_CONF_FILE=$(sanitize "${DB_CONF_FILE:-"/etc/postgresql/12/main/postgresql.conf"}")
 DB_FORCE_TUNE=$(sanitize "${DB_FORCE_TUNE:-false}")
 DB_TUNE=$(sanitize "${DB_TUNE:-true}")
 DB_FIXTURE=$(sanitize "${DB_FIXTURE:-false}")
@@ -48,7 +48,7 @@ CM_RUN_CELERY=$(sanitize "${CM_RUN_CELERY:-true}")
 CM_CELERY_TIMEZONE=$(sanitize "${CM_CELERY_TIMEZONE:-""}")
 CM_RUN_ASGI=$(sanitize "${CM_RUN_ASGI:-true}")
 TIMEZONE=`readlink /etc/localtime | sed "s/.*\/\(.*\)$/\1/"`
-PG_VERSION='11'
+PG_VERSION='12'
 
 # Check if the first argument begins with a dash. If so, prepend "platform" to
 # the list of arguments.

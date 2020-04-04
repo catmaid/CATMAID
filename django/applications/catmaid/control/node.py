@@ -1080,8 +1080,10 @@ class Postgis2dNodeProvider(PostgisNodeProvider):
     """
 
     TREENODE_STATEMENT_NAME = PostgisNodeProvider.TREENODE_STATEMENT_NAME + '_2d'
+    # MATERIALIZED seems to be needed at the moment, at least for large queries.
+    # For smaller FOVs, the NOT MATERIALIZED version seems to do better.
     treenode_query = """
-          WITH z_filtered_edge AS (
+          WITH z_filtered_edge AS MATERIALIZED (
             SELECT te.id, te.parent_id, te.edge
             FROM treenode_edge te
             WHERE floatrange(ST_ZMin(te.edge),
@@ -1264,7 +1266,7 @@ class Postgis2dBlurryNodeProvider(PostgisNodeProvider):
 
     TREENODE_STATEMENT_NAME = PostgisNodeProvider.TREENODE_STATEMENT_NAME + '_2d_blurry'
     treenode_query = """
-          WITH z_filtered_edge AS (
+          WITH z_filtered_edge AS MATERIALIZED (
               SELECT te.id, te.parent_id, te.edge
               FROM treenode_edge te
               WHERE floatrange(ST_ZMin(te.edge), ST_ZMax(te.edge), '[]') && floatrange({z1}, {z2}, '[)')

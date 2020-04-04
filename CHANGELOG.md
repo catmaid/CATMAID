@@ -4,13 +4,20 @@
 ### Notes
 
 - The version requires PostgreSQL 12. If you also want to upgrade PostGIS,
-  update PostGIS firstand run ``ALTER EXTENSION postgis UPDATE;`` in every
+  update PostGIS first and run ``ALTER EXTENSION postgis UPDATE;`` in every
   existing database in the cluster that should be upgraded. For docker-compose
   setups this database update is performed automatically if `DB_UPDATE=true` is
   set for the `db` container (watch the Docker output). CATMAID's documentation
   Docker has more information. If a replication setup is in use, the database
   configuration changes for Postgres 12. CATMAID's replication documentation
   explains what needs to be done.
+
+  In Postgres 12, JIT compilation is available to the planner by default. We
+  found that being more conservative with the use of it helped a few common
+  queries (like the tracing data field of view). We set the required minimum
+  cost of JIT use to 1,000,000 in ``postgresql.conf``::
+
+    jit_above_cost = 1000000
 
 - If R extensions are used, make sure to use R 3.6. On Ubuntu this can be made
   available by first installing the official R PPA repository:
@@ -58,7 +65,7 @@ Graph widget:
 Docker:
 
 - Asynchronous tasks can now also be run inside the Docker container. Celery and
-  RabbitMQ are run by default, but can also be run in separte containers (see
+  RabbitMQ are run by default, but can also be run in separate containers (see
   CM_CELERY_BROKER_URL, CM_CELERY_WORKER_CONCURRENCY and CM_RUN_CELERY
   Docker environment variables).
 
@@ -82,6 +89,8 @@ Docker:
 
 - CSVs imported into the skeleton selection widget may contain nonexistent
   skeleton IDs, as intended.
+- Skeleton bulk updates like splits or joins should now be faster on setups with
+  spatial change events disabled (default).
 
 - Neuron navigator: the textual representation of neurons now follows the global
   settings.

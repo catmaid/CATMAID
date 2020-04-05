@@ -343,6 +343,8 @@ ci.org/catmaid/CATMAID/branches>`_, several automated processes are performed
 to help verify the correctness and quality of CATMAID:
 
 * :doc:`Unit and integration tests for Django backend <djangounittest>`
+* Linting (static analysis) of the python code with flake8
+* Type checking of the python code with mypy
 * Linting (static analysis) of the javascript code with JSHint
 * Linting of CSS with csslint
 * Unit tests of javascript code with QUnit
@@ -357,6 +359,12 @@ Django tests are run through Django's admin commands::
 
         cd /<path_to_catmaid_install>/django/projects
         ./manage.py test catmaid.tests
+
+flake8 and mypy are installed along with other python development dependencies.
+Run them with::
+
+    flake8 django
+    mypy django
 
 JSHint can be `installed from NPM or your platform's package manager
 <http://jshint.com/install/>`_ and should use CATMAID's config settings::
@@ -410,12 +418,13 @@ ReStructured Text. Documentation from commits pushed to the official CATMAID
 repository are built by `Read the Docs <https://readthedocs.org/>`_ and hosted
 at `catmaid.org <http://catmaid.org>`_.
 
-To build the general documentation from within your pip virtualenv, run::
+CATMAID's documentation can be built in various formats
+by navigating to the ``sphinx-doc`` directory and using `make <https://www.gnu.org/software/make/>`_.
+The default (i.e. ``make`` with no arguments) is HTML, which builds the documentation at sphinx-doc/build/html/index.html.
 
-    cd sphinx-doc
-    make html
-
-The built documentation is now in ``sphinx-doc/build/html/index.html``.
+Every build target can automatically be built when the source files change,
+by using ``make watch-<target>``.
+Build the HTML docs, watch for changes, and serve the documentation at ``http://localhost:8889`` using ``make serve``.
 
 In-Client Documentation
 #######################

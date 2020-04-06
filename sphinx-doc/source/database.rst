@@ -38,41 +38,40 @@ Example of copying user accounts across instances
 To check if local users have the same ID/name combinations as remote users one
 could now do::
 
-    SELECT * FROM remote_catmaid_fdw.auth_user rau
+    SELECT rau.*, au.* FROM remote_catmaid_fdw.auth_user rau
     JOIN auth_user au
       ON au.id = rau.id
-    WHERE au.username <> rau.username
-      OR au.id IS NULL;
+    WHERE au.username <> rau.username;
 
-    SELECT * FROM remote_catmaid_fdw.auth_group rag
+    SELECT rag.*, ag.* FROM remote_catmaid_fdw.auth_group rag
     JOIN auth_group ag
       ON ag.id = rag.id
     WHERE ag.name <> rag.name;
 
-    SELECT * FROM remote_catmaid_fdw.auth_user_groups raug
+    SELECT raug.*, aug.* FROM remote_catmaid_fdw.auth_user_groups raug
     JOIN auth_user_groups aug
       ON aug.id = raug.id
     WHERE aug.user_id <> raug.user_id OR aug.group_id <> raug.group_id;
 
-    SELECT * FROM remote_catmaid_fdw.catmaid_userprofile rcup
+    SELECT rcup.*, cup.* FROM remote_catmaid_fdw.catmaid_userprofile rcup
     JOIN catmaid_userprofile cup
       ON cup.id = rcup.id
     WHERE cup.user_id <> rcup.user_id;
 
-    SELECT * FROM remote_catmaid_fdw.guardian_userobjectpermission rguop
+    SELECT rguop.*, guop.* FROM remote_catmaid_fdw.guardian_userobjectpermission rguop
     JOIN guardian_userobjectpermission guop
       ON guop.id = rguop.id
     WHERE guop.user_id <> rguop.user_id
       OR guop.object_pk <> rguop.object_pk;
 
-    SELECT * FROM remote_catmaid_fdw.guardian_groupobjectpermission rggop
+    SELECT rggop.*, ggop.* FROM remote_catmaid_fdw.guardian_groupobjectpermission rggop
     JOIN guardian_groupobjectpermission ggop
       ON ggop.id = rggop.id
     WHERE ggop.group_id <> rggop.group_id
       OR ggop.object_pk <> rggop.object_pk;
 
 If these and similar queries return empty, remote data can be imported without
-conflicts. If results are returned, a pragmatic and reasonabl safe option would
+conflicts. If results are returned, a pragmatic and reasonably safe option would
 be to move their IDs into negative number space, e.g::
 
     UPDATE auth_user_groups SET id = -id WHERE id IN (
@@ -95,7 +94,9 @@ use::
     SELECT * FROM remote_catmaid_fdw.auth_user_groups raug
     LEFT JOIN auth_user_groups aug
       ON aug.id = raug.id
-    WHERE aug.id IS NULL;
+    WHERE aug.id IS NULL
+      OR aug.user_id <> raug.user_id
+      or aug.group_id <> raug.group_id;
 
     SELECT * FROM remote_catmaid_fdw.catmaid_userprofile rcup
     LEFT JOIN catmaid_userprofile cup
@@ -115,12 +116,12 @@ use::
 If this matches the expectation, this can now be imported::
 
     INSERT INTO auth_user
-    SELECT * FROM remote_catmaid_fdw.auth_user rau
+    SELECT rau.* FROM remote_catmaid_fdw.auth_user rau
     LEFT JOIN auth_user au ON au.id = rau.id
     WHERE au.id IS NULL;
 
     INSERT INTO auth_group
-    SELECT * FROM remote_catmaid_fdw.auth_group rag
+    SELECT rag.* FROM remote_catmaid_fdw.auth_group rag
     LEFT JOIN auth_group ag ON ag.id = rag.id
     WHERE ag.id IS NULL;
 
@@ -128,7 +129,7 @@ If this matches the expectation, this can now be imported::
     SELECT raug.* FROM remote_catmaid_fdw.auth_user_groups raug
     LEFT JOIN auth_user_groups aug
       ON aug.id = raug.id
-    WHERE aug.id IS NULL
+    WHERE aug.id IS NULL;
 
     INSERT INTO catmaid_userprofile
     SELECT rcup.* FROM remote_catmaid_fdw.catmaid_userprofile rcup
@@ -149,7 +150,8 @@ If this matches the expectation, this can now be imported::
     WHERE ggop.id IS NULL;
 
 In case such imports are performed, it is important to reset the ID sequence
-coutners for all modified tables::
+coutners for all modified tables if they haven't been set manually to something
+else already::
 
     SELECT setval('auth_user_id_seq', coalesce(max("id"), 1), max("id") IS NOT null) FROM auth_user;
     SELECT setval('auth_group_id_seq', coalesce(max("id"), 1), max("id") IS NOT null) FROM auth_group;

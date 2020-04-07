@@ -25,7 +25,7 @@ Vagrant.configure("2") do |config|
   # postgreSQL
   config.vm.network "forwarded_port", guest: 5555, host: 5555, host_ip: "127.0.0.1"
   
-config.vm.network "private_network", type: "dhcp"
+  config.vm.network "private_network", type: "dhcp"
 
   config.vm.provision :shell, path: "scripts/vagrant/root.sh"
   config.vm.provision :shell, privileged: false, path: "scripts/vagrant/user.sh"

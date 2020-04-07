@@ -21,7 +21,7 @@ Introduction
 The most fundamental dependencies of CATMAID are:
 
 1. PostgreSQL >= 11 and PostGIS >= 2.5 (recommended: PostgreSQL 12 + PostGIS 3)
-2. Python 3.5, 3.7 or PyPy3.6
+2. Python 3.6, 3.7, 3.8 or PyPy3.6
 3. Imagemagick (for generating image tiles)
 
 To get the required PostgreSQL version for Debian-based systems, such as

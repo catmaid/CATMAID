@@ -12,8 +12,6 @@ else
 fi
 TIMEZONE=${TIMEZONE:-$DEFAULT_TZ}
 
-mkdir -p ~/data
-
 POSTGRES_VERSION=$(psql --version | awk '{print $3}' | awk -F '.' '{print $1}')
 
 HBA_PATH="/etc/postgresql/$POSTGRES_VERSION/main/pg_hba.conf"
@@ -58,7 +56,9 @@ function create_configuration {
     sed -i -e "s?^\(catmaid_database_password = \).*?\1'$DB_PASSWORD'?g" configuration.py
     sed -i -e "s?^\(catmaid_database_port = \).*?\1'5555'?g" configuration.py
 
-    sed -i -e "s?^\(catmaid_writable_path = \).*?\1'/home/vagrant/data'?g" configuration.py
+    WRITABLE_PATH="/CATMAID/data"
+    mkdir -p $WRITABLE_PATH
+    sed -i -e "s?^\(catmaid_writable_path = \).*?\1'$WRITABLE_PATH'?g" configuration.py
 
     sed -i -e "s?^\(catmaid_timezone = \).*?\1'$TIMEZONE'?g" configuration.py
     sed -i -e "s?^\(catmaid_servername = \).*?\1'localhost'?g" configuration.py

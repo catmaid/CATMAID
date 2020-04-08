@@ -34,3 +34,6 @@ out/
 
 .vagrant/
 *.backup*
+
+data/
+

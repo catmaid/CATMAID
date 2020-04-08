@@ -75,8 +75,8 @@ If this was successful, CATMAID should now able to talk to R.
      $ sudo -i R  # Or just R if R_LIBS_USER is used
      > install.packages(c("doMC", "R6", "rgl", "plyr"))
      > if(!require("devtools")) install.packages("devtools")
-     > devtools::install_github(c("jefferis/nat", "jefferislab/nat.nblast",
-     >        "jefferis/rcatmaid"))
+     > devtools::install_github(c("natverse/nat", "natverse/nat.nblast",
+     >        "natverse/rcatmaid", "natverse/elmr"))
 
    If each command was successful, every user on the system should now be able to
    run CATMAID related R code.

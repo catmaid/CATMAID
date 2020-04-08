@@ -118,6 +118,11 @@ and other administration related changes are listed in order.
   well as if its expected folder layout is present. If expected subfolders are
   missing, they will now be created.
 
+- If R based tools like NBLAST or NRRD export are used, the R environment has to
+  be updated, too. This can be done by calling the following management command:
+
+  manage.py catmaid_setup_nblast_environment
+
 ## 2019.06.20
 
 - A virtualenv update is required.

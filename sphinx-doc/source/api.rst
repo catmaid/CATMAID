@@ -175,7 +175,7 @@ A partial listing of libraries or programs that consume the CATMAID HTTP API:
 `catpy <https://catpy.readthedocs.io>`_
    Official python 2.7 and 3.4+ client by `members of the Cardona lab <https://catpy.readthedocs.io/en/latest/authors.html>`_
 
-`RCATMAID <https://github.com/jefferis/rcatmaid>`_
+`RCATMAID <https://github.com/natverse/rcatmaid>`_
    R bindings for the CATMAID API by
    `Gregory Jefferis <http://www2.mrc-lmb.cam.ac.uk/group-leaders/h-to-m/gregory-jefferis/>`_.
 

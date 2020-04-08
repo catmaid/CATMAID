@@ -244,8 +244,8 @@ def test_environment() -> JsonResponse:
         environment of the user running CATMAID (e.g. www-data):
 
         if(!require("devtools")) install.packages("devtools")
-        devtools::install_github(c("jefferis/nat", "jefferislab/nat.nblast",
-                "jefferis/rcatmaid", "jefferis/elmr"))
+        devtools::install_github(c("natverse/nat", "natverse/nat.nblast",
+                "natverse/rcatmaid", "natverse/elmr"))
 
         This is required to let CATMAID compute NBLAST scores.
         """)
@@ -259,8 +259,8 @@ def setup_environment() -> None:
     """Install all R dependencies that are needed for NBLAST."""
     robjects.r("""
         if(!require("devtools")) install.packages("devtools")
-        devtools::install_github(c("jefferis/nat", "jefferislab/nat.nblast",
-                "jefferis/rcatmaid", "jefferis/elmr"))
+        devtools::install_github(c("natverse/nat", "natverse/nat.nblast",
+                "natverse/rcatmaid", "natverse/elmr"))
         install.packages("doMC")
         install.packages(c("curl", "httr", "R.utils"))
     """)

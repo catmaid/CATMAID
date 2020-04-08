@@ -140,6 +140,11 @@ Contributors: Chris Barnes, Andrew Champion, Stephan Gerhard, Pat Gunn, Tom Kazi
   (see .travis.flake8), but contributions which do not conform with the selected 
   rules will fail CI checks.
 
+- If R based tools like NBLAST or NRRD export are used, the R environment has to
+  be updated, too. This can be done by calling the following management command:
+
+  manage.py catmaid_setup_nblast_environment
+
 ### Features and enhancements
 
 Permissions:

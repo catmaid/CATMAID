@@ -41,11 +41,11 @@ connection pooling and communicates efficiently with Nginx.
       threads = 2
       disable-logging = true
 
-    Important: there should *not* be a trailing slash after the mountpoint
-    ``/<catmaid-relative-url>`` above. Note also that each thread of each worker
-    will typically have one database connection open. This means Postgres will
-    try to allocate a total of about workers * threads * work_mem (see
-    ``postgresql.conf``). Make sure you have enough memory available here.
+   Important: there should *not* be a trailing slash after the mountpoint
+   ``/<catmaid-relative-url>`` above. Note also that each thread of each worker
+   will typically have one database connection open. This means Postgres will
+   try to allocate a total of about workers * threads * work_mem (see
+   ``postgresql.conf``). Make sure you have enough memory available here.
 
 4. Make sure that the ``socket`` directory from your ``.ini`` file
    (``/run/uwsgi/app/catmaid/`` above) exists and is readable and writable by

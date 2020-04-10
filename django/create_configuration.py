@@ -125,6 +125,12 @@ upstream catmaid-wsgi {{
 }}
 
 server {{
+    # Handle error pages
+    location @maintenance {
+      root {cmpath}/docs/html;
+      rewrite ^(.*)$ /maintenance.html break;
+    }
+
     # CATMAID: access to static front-end data
     location /{subdir}/static/ {{
         alias {cmpath}/django/static/;
@@ -142,6 +148,7 @@ server {{
 
     # Route all CATMAID Django WSGI requests to the Gevent WSGI server
     location /{subdir}/ {{
+        error_page 502 503 504 @maintenance;
         proxy_pass http://catmaid-wsgi/;
         proxy_redirect http://catmaid-wsgi/ http://$host/;
         proxy_set_header Host $http_host;

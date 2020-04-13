@@ -135,6 +135,10 @@ label.checkbox-label input {
   vertical-align: middle;
 }
 
+a, a:visited {
+  text-decoration: none;
+}
+
 .fa-disabled {
   opacity: 0.5;
   cursor: not-allowed;

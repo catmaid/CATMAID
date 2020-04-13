@@ -77,8 +77,8 @@ Docker:
 
 Miscellaneous:
 
-- The user registration form includes now first and last name as well as the
-  email address.
+- The user registration form fits now the overal layout better and include first
+  and last name as well as the email address.
 
 ### Bug fixes
 

@@ -1,13 +1,13 @@
 {% load pipeline %}
 
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<!DOCTYPE html">
 <html lang="en">
 <head>
     <title>{% block title %}{% endblock %}</title>
-
-	{% stylesheet 'catmaid' %}
+    {% block head %}{% endblock %}
+	  {% stylesheet 'catmaid' %}
 </head>
-<body>
+<body class="catmaid">
     {% block content %}{% endblock %}
 </body>
 </html>

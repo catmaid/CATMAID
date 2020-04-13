@@ -728,6 +728,8 @@ def register(request:HttpRequest) -> Union[HttpResponseRedirect, JsonResponse]:
         form = RegisterForm()
     return render(request, "catmaid/registration/register.html", {
         'form': form,
+        'CATMAID_URL': settings.CATMAID_URL,
+        'STYLESHEET_IDS': settings.STYLESHEET_IDS,
     })
 
 

@@ -1,15 +1,64 @@
 {% extends "catmaid/base.html" %}
+{% load common %}
 
-{% block title %}Create an account{% endblock %}
+{% block title %}CATMAID - Create an account{% endblock %}
+{% block head %}
+    <link rel="shortcut icon" type="image/ico" href="{{STATIC_URL}}images/favicon.ico"/>
+    <style>
+      form {
+        display: grid;
+        grid-template-columns: 12em 20em;
+        grid-gap: 0.5em;
+        margin: 1.5em 16px 0.5em 20px;
+      }
+      form input {
+        height: 1.5em;
+        width: 15em;
+      }
+      .helptext {
+        color: grey;
+      }
+      #buttons {
+        margin-top: 1.5em;
+      }
+    </style>
+{% endblock %}
 
 {% block content %}
-  <h1>Create an account</h1>
+  <div id="toolbar_container" class="toolbar_container">
+    <div id="toolbar_login" class="toolbar">
+      <div class="menu toolbar_item">
+        <div id="home_box" class="box">
+          <div class="menu_item" style="float:left">
+            <p><a href="{{ CATMAID_URL }}">Home</a></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-  <form action="" method="post">
+  <div id="content" style="top: 3em">
+    <div id="data_view" class="data-view">
+    <div class="header">
+      <h1 title="Version: {% catmaid_version %}">CATMAID</h1>
+      <img src="{{ STATIC_URL }}images/catmaidlogo.svg"
+           onerror="this.onerror=null; this.src='{{ STATIC_URL }}/images/catmaidlogo.png';"
+           title="Skelly, the CATMAID mascot"
+      />
+    </div>
+    <div class="clear"></div>
+    <h2>Create new account</h1>
+
+    <p>You can create a new CATMAID account on this page. Please fill out the
+    form below.</p>
+    <form action="" method="post">
       {% csrf_token %}
-      {{ form.as_p }}
-      <p>
+      {{ form.as_table }}
+      <span id='buttons'>
       <input type="submit" value="Create the account">
-      </p>
-  </form>
+      </span>
+    </form>
+
+  </div>
+
 {% endblock %}

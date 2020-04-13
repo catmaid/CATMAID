@@ -19,7 +19,6 @@ from django.urls import reverse
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth import authenticate, logout, login
 from django.contrib.auth.models import User, Group
-from django.contrib.auth.forms import UserCreationForm
 from django.db import connection
 from django.http import HttpRequest, HttpResponseRedirect, JsonResponse
 from django.core.exceptions import ObjectDoesNotExist
@@ -29,6 +28,7 @@ from rest_framework.authtoken import views as auth_views
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 
 from catmaid.error import ClientError
+from catmaid.forms import RegisterForm
 from catmaid.models import Project, UserRole, ClassInstance, \
         ClassInstanceClassInstance
 
@@ -720,12 +720,12 @@ def register(request:HttpRequest) -> Union[HttpResponseRedirect, JsonResponse]:
         return HttpResponseRedirect(reverse("catmaid:home"))
 
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+        form = RegisterForm(request.POST)
         if form.is_valid():
             new_user = form.save()
             return HttpResponseRedirect(reverse("catmaid:home"))
     else:
-        form = UserCreationForm()
+        form = RegisterForm()
     return render(request, "catmaid/registration/register.html", {
         'form': form,
     })

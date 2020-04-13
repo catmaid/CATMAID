@@ -75,6 +75,11 @@ Docker:
   For instance, use "America/New_York' for US east coast time. This way,
   maintenance tasks can be moved to whenever local midnight is.
 
+Miscellaneous:
+
+- The user registration form includes now first and last name as well as the
+  email address.
+
 ### Bug fixes
 
 - Volume lists (drop down menus) are now automatically refreshed if a volume is

@@ -113,6 +113,11 @@
             <p>&nbsp;&nbsp;password&nbsp;</p>
             <p><input type="password" id="password" name="password" size="8" /></p>
             <p>&nbsp;&nbsp;<a id="login" name="login" title="Login" href="#" onclick="CATMAID.client.login( document.getElementById( 'account' ).value, document.getElementById( 'password' ).value );">Login</a></p>
+            {% if USER_REGISTRATION_ALLOWED %}
+            <p>&nbsp;&nbsp;<a id="register" name="register" title="Create a new account"
+              href="{% url 'catmaid:register' %}">Register</a>
+            </p>
+            {% endif %}
           </form>
         </div>
         </div>

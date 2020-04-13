@@ -54,7 +54,7 @@ urlpatterns += [
     url(r'^accounts/(?P<project_id>\d+)/all-usernames$', authentication.all_usernames),
     url(r'^permissions$', authentication.user_project_permissions),
     url(r'^classinstance/(?P<ci_id>\d+)/permissions$', authentication.get_object_permissions),
-    url(r'^register$', authentication.register),
+    url(r'^register$', authentication.register, name="register"),
 ]
 
 # Users

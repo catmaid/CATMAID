@@ -22,6 +22,7 @@ class CatmaidView(TemplateView):
         context['STATIC_EXTENSION_URL'] = settings.STATIC_EXTENSION_URL
         context['STATIC_EXTENSION_FILES'] = settings.STATIC_EXTENSION_FILES
         context['HISTORY_TRACKING'] = settings.HISTORY_TRACKING
+        context['USER_REGISTRATION_ALLOWED'] = settings.USER_REGISTRATION_ALLOWED
         context['EXPAND_FRONTEND_ERRORS'] = getattr(settings, 'EXPAND_FRONTEND_ERRORS', False)
 
         profile_context = self.request.user.userprofile.as_dict()

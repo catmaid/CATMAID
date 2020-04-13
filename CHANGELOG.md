@@ -78,7 +78,9 @@ Docker:
 Miscellaneous:
 
 - The user registration form fits now the overal layout better and include first
-  and last name as well as the email address.
+  and last name as well as the email address. Also, a link to the user
+  registration form is now displayed right next to the login link in the top
+  right corner, if user registration is enabled.
 
 ### Bug fixes
 

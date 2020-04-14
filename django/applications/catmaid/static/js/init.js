@@ -1495,7 +1495,7 @@ var project;
             id: null,
             type: 'simple_project_list_data_view',
             config: {
-              header: false,
+              header: true,
               message: false
             }
           };

@@ -126,10 +126,10 @@ upstream catmaid-wsgi {{
 
 server {{
     # Handle error pages
-    location @maintenance {
+    location @maintenance {{
       root {cmpath}/docs/html;
       rewrite ^(.*)$ /maintenance.html break;
-    }
+    }}
 
     # CATMAID: access to static front-end data
     location /{subdir}/static/ {{

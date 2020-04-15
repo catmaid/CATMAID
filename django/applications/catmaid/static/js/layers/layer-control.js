@@ -233,26 +233,31 @@
 
       // Blend mode
       if (layer.getAvailableBlendModes) {
-        var blendModes = layer.getAvailableBlendModes();
-        var activeMode = layer.getBlendMode();
+        try {
+          var blendModes = layer.getAvailableBlendModes();
+          var activeMode = layer.getBlendMode();
 
-        var blendLabel = $('<label/>')
-            .append('Blend mode');
-        var blendSelect = $('<select/>');
-        blendModes.forEach(function (key) {
-          var option = document.createElement("option");
-          option.text = key;
-          option.value = key;
-          if (activeMode === key) option.selected = 'selected';
-          blendSelect.append(option);
-        });
-        blendSelect.change(function () {
-          var key = $(this).parents('.layerControl').data('key');
-          stackViewer.getLayer(key).setBlendMode(this.value);
-          stackViewer.redraw();
-        });
+          var blendLabel = $('<label/>')
+              .append('Blend mode');
+          var blendSelect = $('<select/>');
+          blendModes.forEach(function (key) {
+            var option = document.createElement("option");
+            option.text = key;
+            option.value = key;
+            if (activeMode === key) option.selected = 'selected';
+            blendSelect.append(option);
+          });
+          blendSelect.change(function () {
+            var key = $(this).parents('.layerControl').data('key');
+            stackViewer.getLayer(key).setBlendMode(this.value);
+            stackViewer.redraw();
+          });
 
-        container.append($('<div class="setting"/>').append(blendLabel).append(blendSelect));
+          container.append($('<div class="setting"/>').append(blendLabel).append(blendSelect));
+        } catch (error) {
+          CATMAID.warn('Could not access WebGL blend modes, this indicates problems with graphics card driver.');
+          console.log(error);
+        }
       }
 
       // Filters

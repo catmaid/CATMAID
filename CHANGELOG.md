@@ -34,6 +34,10 @@
   node filters. The node filters are still only applied to the query skeletons.
   This makes the filtering numbers consistent with the Graph Widget.
 
+- Tracing/image layer: fallback to WebGL 1, if WebGL 2 is not available or can't
+  be initialized properly. In these cases image block rendering (e.g. N5) will
+  be unavailable.
+
 ## 2020.02.15
 
 Contributors: Chris Barnes, Andrew Champion, Stephan Gerhard, Pat Gunn, Tom Kazimiers

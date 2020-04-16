@@ -1784,7 +1784,7 @@ var project;
     return request;
   };
 
-  /*
+  /**
    * Open a project and stack in a stack viewer, returning a promise yielding
    * the stack viewer.
    *

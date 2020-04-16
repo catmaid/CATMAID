@@ -39,11 +39,11 @@ class ProjectsApiTests(CatmaidApiTestCase):
 
         # Check stacks:
         stacks = result[0]['stacks']
-        self.assertEqual(len(stacks), 1)
+        self.assertEqual(len(stacks), 2)
 
         # Check stacks groups
         stackgroups = result[0]['stackgroups']
-        self.assertEqual(len(stackgroups), 0)
+        self.assertEqual(len(stackgroups), 1)
 
         # Now log in and check that we see a different set of projects:
         self.fake_authentication()
@@ -73,8 +73,8 @@ class ProjectsApiTests(CatmaidApiTestCase):
 
         # Check the second project
         p3 = get_project(result, 3)
-        self.assertEqual(len(p3['stacks']), 1)
-        self.assertEqual(len(p3['stackgroups']), 0)
+        self.assertEqual(len(p3['stacks']), 2)
+        self.assertEqual(len(p3['stackgroups']), 1)
 
         # Check the third project:
         p5= get_project(result, 5)
@@ -162,11 +162,7 @@ class ProjectsApiTests(CatmaidApiTestCase):
             stacks = p.stacks.all()
             valid_stack_ids = [s.id for s in stacks]
 
-            stackgroup_links = StackStackGroup.objects.filter(stack__in=stacks)
-            valid_stackgroup_ids = [sgl.stack_group_id for sgl in stackgroup_links]
-
             seen_stacks:List = []
-            seen_stackgroups:List = []
             for s in data.get('stacks', []):
                 stack_id = s['id']
                 self.assertIn(stack_id, valid_stack_ids)
@@ -203,6 +199,10 @@ class ProjectsApiTests(CatmaidApiTestCase):
                     self.assertEqual(sm.tile_source_type, sm_export['tile_source_type'])
                     self.assertEqual(sm.file_extension, sm_export['fileextension'])
 
+                stackgroup_links = StackStackGroup.objects.filter(stack_id=stack_id)
+                valid_stackgroup_ids = [sgl.stack_group_id for sgl in stackgroup_links]
+
+                seen_stackgroups:List = []
                 for sge in s.get('stackgroups', []):
                     sg_id = sge['id']
                     self.assertIn(sg_id, valid_stackgroup_ids)

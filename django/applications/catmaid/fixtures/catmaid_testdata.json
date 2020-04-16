@@ -287,6 +287,15 @@
   },
   {
     "pk": 5,
+    "model": "catmaid.projectstack",
+    "fields": {
+        "project": 3,
+        "stack": 5,
+        "translation": "(0.0, 0.0, 0.0)"
+    }
+  },
+  {
+    "pk": 5,
     "model": "catmaid.class",
     "fields": {
       "description": null,

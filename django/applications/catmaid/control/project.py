@@ -215,7 +215,6 @@ def projects(request:HttpRequest) -> JsonResponse:
         return JsonResponse([], safe=False)
 
     cursor = connection.cursor()
-    project_template = ",".join(("(%s)",) * len(projects)) or "()"
     user_project_ids = [p.id for p in projects]
 
     tracing_data_join = ''
@@ -231,14 +230,17 @@ def projects(request:HttpRequest) -> JsonResponse:
             sub.has_tracing_data = True
         ''')
 
-    cursor.execute(f"""
-        SELECT ps.project_id, ps.stack_id, s.title, s.comment FROM project_stack ps
-        INNER JOIN (VALUES {project_template}) user_project(id)
-        ON ps.project_id = user_project.id
-        INNER JOIN stack s
-        ON ps.stack_id = s.id
-    """, user_project_ids)
     project_stack_mapping:Dict = dict()
+    cursor.execute("""
+        SELECT DISTINCT ON (ps.project_id, ps.stack_id) ps.project_id, ps.stack_id, s.title, s.comment
+        FROM project_stack ps
+        JOIN UNNEST(%(user_project_ids)s::integer[]) user_project(id)
+            ON ps.project_id = user_project.id
+        JOIN stack s
+            ON ps.stack_id = s.id
+    """, {
+        'user_project_ids': user_project_ids,
+    })
     for row in cursor.fetchall():
         stacks = project_stack_mapping.get(row[0])
         if not stacks:
@@ -251,17 +253,19 @@ def projects(request:HttpRequest) -> JsonResponse:
         })
 
     # Get all stack groups for this project
-    project_stack_groups:Dict = {}
-    cursor.execute(f"""
+    project_stack_groups:Dict = dict()
+    cursor.execute("""
         SELECT DISTINCT ps.project_id, sg.id, sg.title, sg.comment
         FROM stack_group sg
         JOIN stack_stack_group ssg
           ON ssg.stack_group_id = sg.id
         JOIN project_stack ps
           ON ps.stack_id = ssg.stack_id
-        INNER JOIN (VALUES {project_template}) user_project(id)
+        INNER JOIN UNNEST(%(user_project_ids)s::integer[]) user_project(id)
           ON ps.project_id = user_project.id
-    """, user_project_ids)
+    """, {
+        'user_project_ids': user_project_ids,
+    })
     for row in cursor.fetchall():
         groups = project_stack_groups.get(row[0])
         if not groups:
@@ -318,30 +322,39 @@ def export_project_data(projects) -> List:
         return []
 
     cursor = connection.cursor()
-    project_template = ",".join(("(%s)",) * len(projects)) or "()"
     user_project_ids = [p.id for p in projects]
 
     # Get information on all relevant stack mirrors
     cursor.execute(f"""
         SELECT sm.id, sm.stack_id, sm.title, sm.image_base, sm.file_extension,
                 sm.tile_width, sm.tile_height, sm.tile_source_type, sm.position
-        FROM stack_mirror sm
-        JOIN project_stack ps
-            ON sm.stack_id = ps.stack_id
-        JOIN (VALUES {project_template}) user_project(id)
-            ON ps.project_id = user_project.id
+        FROM project_stack ps
+        JOIN LATERAL (
+          SELECT *
+          FROM stack_mirror sm
+          WHERE sm.stack_id = ps.stack_id
+          LIMIT 1
+        ) sm
+          ON TRUE
+        WHERE ps.project_id = ANY(%(user_project_ids)s::integer[])
         ORDER BY sm.id ASC, sm.position ASC
-    """, user_project_ids)
+    """, {
+        'user_project_ids': user_project_ids,
+    })
 
     # Build a stack mirror index that maps all stack mirrors to their respective
     # stacks.
     stack_mirror_index:Dict = {}
+    seen_mirrors = set()
     for row in cursor.fetchall():
         stack_id = row[1]
         mirrors = stack_mirror_index.get(stack_id)
         if not mirrors:
             mirrors = []
             stack_mirror_index[stack_id] = mirrors
+        if row[0] in seen_mirrors:
+            continue
+        seen_mirrors.add(row[0])
         mirrors.append({
             'title': row[2],
             'url': row[3],
@@ -352,29 +365,30 @@ def export_project_data(projects) -> List:
             'position': row[8]
         })
 
-    # Get all relevant stacks
+    # Get all relevant stacks and map the projects they are used in. These are
+    # projects that the current user can see.
+    project_stack_mapping:Dict = dict()
     cursor.execute(f"""
-        SELECT ps.project_id, ps.stack_id, s.title,
+        SELECT DISTINCT ON (ps.project_id, ps.stack_id) ps.project_id, ps.stack_id, s.title,
             s.dimension, s.resolution, s.downsample_factors, s.metadata, s.comment,
             s.attribution, s.description, s.canary_location,
             s.placeholder_color,
             ARRAY(SELECT index FROM broken_slice WHERE stack_id = s.id ORDER BY index),
             ps.translation, ps.orientation
         FROM project_stack ps
-        INNER JOIN (VALUES {project_template}) user_project(id)
+        JOIN UNNEST(%(user_project_ids)s::integer[]) user_project(id)
             ON ps.project_id = user_project.id
         INNER JOIN stack s
             ON ps.stack_id = s.id
-    """, user_project_ids)
-    visible_stacks = dict()
-    project_stack_mapping:Dict = dict()
-
+    """, {
+        'user_project_ids': user_project_ids,
+    })
     for row in cursor.fetchall():
         stacks = project_stack_mapping.get(row[0])
         if not stacks:
-            stacks = []
+            stacks = dict()
             project_stack_mapping[row[0]] = stacks
-        stack:Dict[str, Any] = {
+        stacks[row[1]]:Dict[int, Dict] = {
             'id': row[1],
             'title': row[2],
             'dimension': str(row[3]),
@@ -392,11 +406,8 @@ def export_project_data(projects) -> List:
             'orientation': row[14]
         }
 
-        stacks.append(stack)
-        visible_stacks[row[1]] = stack
-
     # Add stack group information to stacks
-    project_stack_groups:Dict = {}
+    project_stack_groups:Dict = dict()
     cursor.execute(f"""
         SELECT sg.id, ps.project_id, sg.title, sg.comment,
                array_agg(ssg.stack_id), array_agg(sgr.name)
@@ -405,12 +416,14 @@ def export_project_data(projects) -> List:
           ON ssg.stack_group_id = sg.id
         JOIN project_stack ps
           ON ps.stack_id = ssg.stack_id
-        INNER JOIN (VALUES {project_template}) user_project(id)
+        JOIN UNNEST(%(user_project_ids)s::integer[]) user_project(id)
           ON ps.project_id = user_project.id
         INNER JOIN stack_group_relation sgr
           ON ssg.group_relation_id = sgr.id
         GROUP BY sg.id, ps.project_id, sg.title
-    """, user_project_ids)
+    """, {
+        'user_project_ids': user_project_ids,
+    })
     for row in cursor.fetchall():
         groups = project_stack_groups.get(row[1])
         if not groups:
@@ -421,6 +434,7 @@ def export_project_data(projects) -> List:
             'title': row[2],
             'comment': row[3],
         })
+        visible_stacks = project_stack_mapping.get(row[1])
         # Add to stacks
         for stack_id, relation_name in zip(row[4], row[5]):
             visible_stack = visible_stacks.get(stack_id)
@@ -438,9 +452,9 @@ def export_project_data(projects) -> List:
             })
 
     result = []
-    empty_tuple:Tuple = tuple()
+    empty_tuple:Tuple = dict()
     for p in projects:
-        stacks = project_stack_mapping.get(p.id, empty_tuple)
+        stacks = list(project_stack_mapping.get(p.id, empty_tuple).values())
         result.append({
             'project': {
                 'id': p.id,

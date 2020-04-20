@@ -1586,8 +1586,8 @@ def _export_review_skeleton(project_id=None, skeleton_id=None,
             seen.add(parentID)
             parents = g.predecessors(parentID)
 
-        if len(sequence) > 1:
-            sequences.append(sequence)
+        # Single node sequences are ok
+        sequences.append(sequence)
 
     # Calculate status
 

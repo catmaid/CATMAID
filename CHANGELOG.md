@@ -82,6 +82,10 @@ Miscellaneous:
   registration form is now displayed right next to the login link in the top
   right corner, if user registration is enabled.
 
+- The overview image in the lower right corner of the stack viewer is now
+  displayed by default. This behavior can be adjusted for users, projects and
+  the whole instance in the Settings Widget.
+
 ### Bug fixes
 
 - Volume lists (drop down menus) are now automatically refreshed if a volume is

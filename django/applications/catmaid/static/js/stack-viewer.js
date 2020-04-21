@@ -90,7 +90,8 @@
 
     this._stackWindow.addListener(this._handleWindowSignal.bind(this));
 
-    this.overview = new CATMAID.Overview( this );
+    this.overview = new CATMAID.Overview(this,
+        CATMAID.StackViewer.Settings.session.show_overview_by_default);
     this._view.appendChild( this.overview.getView() );
 
     this.layercontrol = new CATMAID.LayerControl( this );
@@ -1171,6 +1172,9 @@
           },
           respect_broken_sections_new_stacks: {
             default: false
+          },
+          show_overview_by_default: {
+            default: true
           },
         },
         migrations: {}

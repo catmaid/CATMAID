@@ -6,7 +6,7 @@
   /**
    * Overview navigator widget
    */
-  function Overview( stackViewer )
+  function Overview(stackViewer, showByDefault = true)
   {
     /**
      * get the view object
@@ -134,42 +134,42 @@
     rect.onpointerdown = onpointerdown.drag;
     view.appendChild( rect );
 
-      var hide = function() {
-          toggle.title = "show overview";
-          view.className = "smallMapView_hidden";
-      };
+    this.hide = function() {
+      toggle.title = "show overview";
+      view.className = "smallMapView_hidden";
+    };
 
-      var show = function() {
-          toggle.title = "hide overview";
-          view.className = "smallMapView";
-          self.redraw();
-      };
+    this.show = function() {
+      toggle.title = "hide overview";
+      view.className = "smallMapView";
+      self.redraw();
+    };
 
     var toggle = document.createElement( "div" );
     toggle.className = "smallMapToggle";
     toggle.title = "hide general view";
     toggle.onpointerdown = function( e )
     {
-      if ( typeof event != "undefined" && event )
+      if (typeof event != "undefined" && event) {
         event.cancelBubble = true;
-      if ( e && e.stopPropagation )
-        e.stopPropagation();
-
-      if ( view.className == "smallMapView_hidden" )
-      {
-              show();
       }
-      else
-      {
-              hide();
+      if (e && e.stopPropagation) {
+        e.stopPropagation();
+      }
+
+      if ( view.className == "smallMapView_hidden" ) {
+        self.show();
+      } else {
+        self.hide();
       }
       return false;
     };
 
     view.appendChild( toggle );
 
-    // hide small maps by default
-    hide();
+    if (!showByDefault) {
+      self.hide();
+    }
   }
 
   // Make Overview available in CATMAID namespace

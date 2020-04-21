@@ -369,6 +369,32 @@
           'prefer_webgl',
           SETTINGS_SCOPE));
 
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
+              "Display overview by default",
+              CATMAID.StackViewer.Settings[SETTINGS_SCOPE].show_overview_by_default,
+              "Whether or not the small overview image in the lower right corner of a stack viewer should be shown by default.",
+              function() {
+                let showOverview = this.checked;
+                CATMAID.StackViewer.Settings
+                    .set(
+                      'show_overview_by_default',
+                      showOverview,
+                      SETTINGS_SCOPE)
+                    .then(function () {
+                      project.getStackViewers().forEach(function(s) {
+                        if (showOverview) {
+                          s.overview.show();
+                        } else {
+                          s.overview.hide();
+                        }
+                      });
+                    });
+              }),
+          CATMAID.StackViewer.Settings,
+          'show_overview_by_default',
+          SETTINGS_SCOPE));
+
       // Hide layers if nearest section is broken
       ds.append(wrapSettingsControl(
           CATMAID.DOM.createCheckboxSetting(

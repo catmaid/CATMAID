@@ -3,6 +3,7 @@
 import json
 from typing import Any, Dict, List, Optional, Tuple
 import yaml
+from typing import Set
 
 from guardian.shortcuts import get_objects_for_user
 from guardian.shortcuts import assign_perm
@@ -345,7 +346,7 @@ def export_project_data(projects) -> List:
     # Build a stack mirror index that maps all stack mirrors to their respective
     # stacks.
     stack_mirror_index:Dict = {}
-    seen_mirrors = set()
+    seen_mirrors:Set[int] = set()
     for row in cursor.fetchall():
         stack_id = row[1]
         mirrors = stack_mirror_index.get(stack_id)
@@ -388,7 +389,7 @@ def export_project_data(projects) -> List:
         if not stacks:
             stacks = dict()
             project_stack_mapping[row[0]] = stacks
-        stacks[row[1]]:Dict[int, Dict] = {
+        stacks[row[1]] = {
             'id': row[1],
             'title': row[2],
             'dimension': str(row[3]),
@@ -436,23 +437,24 @@ def export_project_data(projects) -> List:
         })
         visible_stacks = project_stack_mapping.get(row[1])
         # Add to stacks
-        for stack_id, relation_name in zip(row[4], row[5]):
-            visible_stack = visible_stacks.get(stack_id)
-            if not visible_stack:
-                # Only add visible stacks
-                continue
-            stack_groups = visible_stack.get('stackgroups')
-            if not stack_groups:
-                stack_groups = []
-                visible_stack['stackgroups'] = stack_groups
-            stack_groups.append({
-                'id': row[0],
-                'title': row[2],
-                'relation': relation_name
-            })
+        if visible_stacks:
+            for stack_id, relation_name in zip(row[4], row[5]):
+                visible_stack = visible_stacks.get(stack_id)
+                if not visible_stack:
+                    # Only add visible stacks
+                    continue
+                stack_groups = visible_stack.get('stackgroups')
+                if not stack_groups:
+                    stack_groups = []
+                    visible_stack['stackgroups'] = stack_groups
+                stack_groups.append({
+                    'id': row[0],
+                    'title': row[2],
+                    'relation': relation_name
+                })
 
     result = []
-    empty_tuple:Tuple = dict()
+    empty_tuple:Dict = dict()
     for p in projects:
         stacks = list(project_stack_mapping.get(p.id, empty_tuple).values())
         result.append({

@@ -222,6 +222,14 @@
     this.append(models);
   };
 
+  MorphologyPlot.prototype.removeSkeletons = function(skeletonIds) {
+    skeletonIds.forEach(skeletonId => {
+      delete this.models[skeletonId];
+      delete this.lines[skeletonId];
+    });
+    this.redraw();
+  };
+
   MorphologyPlot.prototype.hasSkeleton = function(skeleton_id) {
       return skeleton_id in this.models;
   };

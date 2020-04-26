@@ -294,13 +294,14 @@
     return Promise.resolve();
   };
 
-  function createProjectMemberEntry(member, target, type, handler) {
+  function createProjectMemberEntry(member, target, type, pid, sid) {
     var dd = document.createElement("dd");
     var a = document.createElement("a");
     var ddc = document.createElement("dd");
     a.href = "#";
     a.dataset.type = type;
-    a.onclick = handler;
+    a.dataset.pid = pid;
+    a.dataset.sid = sid;
     a.appendChild(document.createTextNode(member.title));
     dd.appendChild(a);
     target.appendChild(dd);
@@ -389,8 +390,7 @@
           if (stackRegEx && !stackRegEx.test(sg.title)) {
             continue;
           }
-          createProjectMemberEntry(sg, span, 'stackgroup',
-              CATMAID.openStackGroup.bind(window, p.id, sg.id, true));
+          createProjectMemberEntry(sg, span, 'stackgroup', p.id, sg.id);
           ++matchingStackGroups;
         }
       }
@@ -403,14 +403,25 @@
           if (stackRegEx && !stackRegEx.test(s.title)) {
             continue;
           }
-          createProjectMemberEntry(s, span, 'stack',
-              CATMAID.openProjectStack.bind(window, p.id, s.id, false, undefined, true, true));
+          createProjectMemberEntry(s, span, 'stack', p.id, s.id);
           ++matchingStacks;
         }
       }
 
       ++matchingProjects;
     }
+
+    $(pp).on('click', 'a[data-type=stack]', e => {
+      let pid = e.target.dataset.pid;
+      let sid = e.target.dataset.sid;
+      CATMAID.openProjectStack(pid, sid, false, undefined, true, true);
+    });
+
+    $(pp).on('click', 'a[data-type=stackgroup]', e => {
+      let pid = e.target.dataset.pid;
+      let sid = e.target.dataset.sid;
+      CATMAID.openStackGroup(pid, sid, true);
+    });
 
     container.appendChild(pp);
 

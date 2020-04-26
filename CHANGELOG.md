@@ -86,6 +86,10 @@ Miscellaneous:
   displayed by default. This behavior can be adjusted for users, projects and
   the whole instance in the Settings Widget.
 
+- Data views; add the options sample_image, sample_mirror and sanmple_slice to
+  the front-end based "Simple project list" data view. These options behave like
+  in the other data views.
+
 ### Bug fixes
 
 - Volume lists (drop down menus) are now automatically refreshed if a volume is

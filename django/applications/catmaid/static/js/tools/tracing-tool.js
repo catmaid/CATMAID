@@ -2195,7 +2195,7 @@
         let api = CATMAID.Remote.getAPI(ri.name);
         if (api.type === 'catmaid') {
           // Get remote projects with tracing data
-          work.push(CATMAID.Project.list(true, true, api)
+          work.push(CATMAID.Project.list(true, true, false, api)
             .then(projects => {
               projects.sort((a,b) => sortProjectsByTitle);
               this.remoteTracingProjcts.set(ri.name, {

@@ -208,6 +208,9 @@
     this.with_stacks = options.config.with_stacks;
     this.with_stackgroups = options.config.with_stackgroups;
     this.show_empty_projects = options.config.show_empty_projects;
+    this.sample_images = CATMAID.tools.getDefined(options.config.sample_images, false);
+    this.sample_mirror_index = CATMAID.tools.getDefined(options.config.sample_mirror_index, 0);
+    this.sample_slice = CATMAID.tools.getDefined(options.config.sample_slice, 0);
     this.cacheLoadingTimeout = null;
   };
 
@@ -221,6 +224,9 @@
     with_stacks: true,
     with_stackgroups: true,
     show_empty_projects: false,
+    sample_images: false,
+    sample_mirror_index: 0,
+    sample_slice: 0,
   };
 
   ProjectListDataView.prototype.createContent = function(content) {
@@ -348,9 +354,32 @@
         continue;
       }
 
-      dt = document.createElement("dt");
+      let rowSpan = pp.appendChild(document.createElement('span'));
+      rowSpan.classList.add('project-member-entry');
+
+      if (this.sample_images) {
+        rowSpan.classList.add('image-entry');
+        let imgSpan = rowSpan.appendChild(document.createElement('span'));
+        if (p.stacks && p.stacks.length > 0) {
+          let mirror = p.stacks[0].mirrors[this.sample_mirror_index];
+          if (mirror) {
+            let tileSource = CATMAID.TileSources.get(mirror.id,
+              mirror.tile_source_type, mirror.image_base, mirror.file_extension,
+              mirror.tile_width, mirror.tile_height);
+            if (tileSource instanceof CATMAID.AbstractTileSourceWithOverview) {
+              // Use overview image
+              let img = imgSpan.appendChild(document.createElement('img'));
+              img.src = tileSource.getOverviewURL(null, [this.sample_slice]);
+            }
+          }
+        }
+      }
+
+      let span = rowSpan.appendChild(document.createElement('span'));
+      span.classList.add('stack-entry');
+
+      dt = span.appendChild(document.createElement("dt"));
       dt.appendChild(document.createTextNode(p.title));
-      pp.appendChild(dt);
 
       // add a link for each stack group
       var matchingStackGroups = 0;
@@ -360,7 +389,7 @@
           if (stackRegEx && !stackRegEx.test(sg.title)) {
             continue;
           }
-          createProjectMemberEntry(sg, pp, 'stackgroup',
+          createProjectMemberEntry(sg, span, 'stackgroup',
               CATMAID.openStackGroup.bind(window, p.id, sg.id, true));
           ++matchingStackGroups;
         }
@@ -374,7 +403,7 @@
           if (stackRegEx && !stackRegEx.test(s.title)) {
             continue;
           }
-          createProjectMemberEntry(s, pp, 'stack',
+          createProjectMemberEntry(s, span, 'stack',
               CATMAID.openProjectStack.bind(window, p.id, s.id, false, undefined, true, true));
           ++matchingStacks;
         }

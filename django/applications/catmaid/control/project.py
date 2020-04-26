@@ -191,7 +191,12 @@ def projects(request:HttpRequest) -> JsonResponse:
     - name: has_tracing_data
       description: Return only projects that have tracing data
       required: false
-      defaultValue: falese
+      defaultValue: false
+      type: boolean
+    - name: with_mirrors
+      description: Whether to include stack mirror data in the response.
+      required: false
+      defaultValue: false
       type: boolean
     type:
       projects:
@@ -204,6 +209,7 @@ def projects(request:HttpRequest) -> JsonResponse:
     # Get all projects that are visisble for the current user
     projects = get_project_qs_for_user(request.user).order_by('title')
     has_tracing_data = get_request_bool(request.GET, 'has_tracing_data', False)
+    with_mirrors = get_request_bool(request.GET, 'with_mirrors', False)
 
     if has_tracing_data:
         projects = projects.annotate(
@@ -231,27 +237,58 @@ def projects(request:HttpRequest) -> JsonResponse:
             sub.has_tracing_data = True
         ''')
 
-    project_stack_mapping:Dict = dict()
-    cursor.execute("""
-        SELECT DISTINCT ON (ps.project_id, ps.stack_id) ps.project_id, ps.stack_id, s.title, s.comment
-        FROM project_stack ps
-        JOIN UNNEST(%(user_project_ids)s::integer[]) user_project(id)
-            ON ps.project_id = user_project.id
-        JOIN stack s
-            ON ps.stack_id = s.id
-    """, {
-        'user_project_ids': user_project_ids,
-    })
-    for row in cursor.fetchall():
-        stacks = project_stack_mapping.get(row[0])
-        if not stacks:
-            stacks = []
-            project_stack_mapping[row[0]] = stacks
-        stacks.append({
-            'id': row[1],
-            'title': row[2],
-            'comment': row[3]
+    if with_mirrors:
+        project_stack_mapping:Dict = dict()
+        cursor.execute("""
+            SELECT DISTINCT ON (ps.project_id, ps.stack_id) ps.project_id,
+                ps.stack_id, s.title, s.comment, sm.mirrors
+            FROM project_stack ps
+            JOIN UNNEST(%(user_project_ids)s::integer[]) user_project(id)
+                ON ps.project_id = user_project.id
+            JOIN stack s
+                ON ps.stack_id = s.id
+            JOIN LATERAL (
+                SELECT COALESCE(json_agg(row_to_json(stack_mirror) ORDER BY position ASC), '[]'::json) AS mirrors
+                FROM stack_mirror
+                WHERE stack_id = s.id
+            ) sm
+              ON TRUE;
+        """, {
+            'user_project_ids': user_project_ids,
         })
+        for row in cursor.fetchall():
+            stacks = project_stack_mapping.get(row[0])
+            if not stacks:
+                stacks = []
+                project_stack_mapping[row[0]] = stacks
+            stacks.append({
+                'id': row[1],
+                'title': row[2],
+                'comment': row[3],
+                'mirrors': row[4],
+            })
+    else:
+        project_stack_mapping:Dict = dict()
+        cursor.execute("""
+            SELECT DISTINCT ON (ps.project_id, ps.stack_id) ps.project_id, ps.stack_id, s.title, s.comment
+            FROM project_stack ps
+            JOIN UNNEST(%(user_project_ids)s::integer[]) user_project(id)
+                ON ps.project_id = user_project.id
+            JOIN stack s
+                ON ps.stack_id = s.id
+        """, {
+            'user_project_ids': user_project_ids,
+        })
+        for row in cursor.fetchall():
+            stacks = project_stack_mapping.get(row[0])
+            if not stacks:
+                stacks = []
+                project_stack_mapping[row[0]] = stacks
+            stacks.append({
+                'id': row[1],
+                'title': row[2],
+                'comment': row[3]
+            })
 
     # Get all stack groups for this project
     project_stack_groups:Dict = dict()

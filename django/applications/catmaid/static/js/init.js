@@ -679,7 +679,7 @@ var project;
     }));
 
     var self = this;
-    return CATMAID.Project.list(true)
+    return CATMAID.Project.list(true, false, true)
       .then(function(json) {
         self.projects = json;
 

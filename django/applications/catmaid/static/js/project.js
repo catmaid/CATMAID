@@ -599,13 +599,16 @@
    *
    * @param {Boolean} hasTracingData (optional) If true, only projects with
    *                                 tracing data are return. False by default.
+   * @param {Boolean} with_mirrors   (optional) If true, mirror data will be
+   *                                 returned, too. False by default.
    * @param {API}     api            (optional) An API instance to use.
    */
-  Project.list = function(sort, hasTracingData = false, api = undefined) {
+  Project.list = function(sort, hasTracingData = false, with_mirrors = false, api = undefined) {
     var projects = CATMAID.fetch({
       url: 'projects/',
       data: {
         has_tracing_data: hasTracingData,
+        with_mirrors: with_mirrors,
       },
       parallel: true,
       api: api,

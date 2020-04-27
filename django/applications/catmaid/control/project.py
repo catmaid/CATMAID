@@ -237,8 +237,8 @@ def projects(request:HttpRequest) -> JsonResponse:
             sub.has_tracing_data = True
         ''')
 
+    project_stack_mapping:Dict = dict()
     if with_mirrors:
-        project_stack_mapping:Dict = dict()
         cursor.execute("""
             SELECT DISTINCT ON (ps.project_id, ps.stack_id) ps.project_id,
                 ps.stack_id, s.title, s.comment, sm.mirrors
@@ -256,19 +256,7 @@ def projects(request:HttpRequest) -> JsonResponse:
         """, {
             'user_project_ids': user_project_ids,
         })
-        for row in cursor.fetchall():
-            stacks = project_stack_mapping.get(row[0])
-            if not stacks:
-                stacks = []
-                project_stack_mapping[row[0]] = stacks
-            stacks.append({
-                'id': row[1],
-                'title': row[2],
-                'comment': row[3],
-                'mirrors': row[4],
-            })
     else:
-        project_stack_mapping:Dict = dict()
         cursor.execute("""
             SELECT DISTINCT ON (ps.project_id, ps.stack_id) ps.project_id, ps.stack_id, s.title, s.comment
             FROM project_stack ps
@@ -279,16 +267,20 @@ def projects(request:HttpRequest) -> JsonResponse:
         """, {
             'user_project_ids': user_project_ids,
         })
-        for row in cursor.fetchall():
-            stacks = project_stack_mapping.get(row[0])
-            if not stacks:
-                stacks = []
-                project_stack_mapping[row[0]] = stacks
-            stacks.append({
-                'id': row[1],
-                'title': row[2],
-                'comment': row[3]
-            })
+
+    for row in cursor.fetchall():
+        stacks = project_stack_mapping.get(row[0])
+        if not stacks:
+            stacks = []
+            project_stack_mapping[row[0]] = stacks
+        stack_data = {
+            'id': row[1],
+            'title': row[2],
+            'comment': row[3],
+        }
+        if with_mirrors:
+            stack_data['mirrors'] = row[4]
+        stacks.append(stack_data)
 
     # Get all stack groups for this project
     project_stack_groups:Dict = dict()

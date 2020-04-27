@@ -1755,6 +1755,7 @@ var project;
                     // invisible.
                     for (var i=0; i<loadedStackViewers.length; ++i) {
                       var sv = loadedStackViewers[i];
+                      if (!sv) continue;
                       var stackLayers = sv.getLayersOfType(CATMAID.StackLayer);
                       for (var j=0; j<stackLayers.length; ++j) {
                         var tl = stackLayers[j];

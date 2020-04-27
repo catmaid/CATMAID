@@ -1115,7 +1115,8 @@ div.review-block::after {
   margin-bottom: 0.3em;
 }
 
-.setting {
+.setting,
+.buttonpanel.vertical-settings .setting {
   float: left;
   clear: left;
   padding: 0.1em 0 0.1em 0;
@@ -1124,9 +1125,15 @@ div.review-block::after {
   max-width: 90%;
 }
 
-.setting .description {
+.setting .description,
+.buttonpanel.vertical-settings .setting .description {
   width: 15em;
   display: inline-block;
+}
+
+.buttonpanel.vertical-settings .setting {
+  overflow-y: auto;
+  height: 100%;
 }
 
 .setting .top {

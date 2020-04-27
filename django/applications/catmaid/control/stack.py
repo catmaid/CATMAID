@@ -25,12 +25,12 @@ def get_stack_info(project_id=None, stack_id=None) -> Dict[str, Any]:
     ps_all = ProjectStack.objects.filter(project=project_id, stack=stack_id)
     num_stacks = len(ps_all)
     if num_stacks == 0:
-        return {'error': 'There is no stack with ID %s linked to the ' \
-                         'project with ID %s.' % (stack_id, project_id)}
+        raise ValueError(f'There is no stack with ID {stack_id} linked to the '
+                         f'project with ID {project_id}.')
     elif num_stacks > 1:
-        return {'error': 'The stack with ID %s is linked multiple times ' \
-                         'to the project with ID %s, but there should only be ' \
-                         'one link.' % (stack_id, project_id)}
+        raise ValueError(f'The stack with ID {stack_id} is linked multiple times '
+                         f'project with ID {project_id}, but there should only be '
+                         'one link.')
     ps = ps_all[0]
 
     broken_slices = {i:1 for i in BrokenSlice.objects.filter(stack=stack_id) \

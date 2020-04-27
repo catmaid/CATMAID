@@ -214,6 +214,7 @@
     this.initial_tool = CATMAID.tools.getDefined(options.config.initial_tool);
     this.initial_zoom = CATMAID.tools.getDefined(options.config.initial_zoom);
     this.initial_location = CATMAID.tools.getDefined(options.config.initial_location);
+    this.initial_layout = CATMAID.tools.getDefined(options.config.initial_layout);
 
     this.cacheLoadingTimeout = null;
   };
@@ -434,7 +435,15 @@
         })
         .then(() => {
           if (this.initial_tool && tools[this.initial_tool]) {
-            project.setTool(new tools[this.initial_tool]());
+            return project.setTool(new tools[this.initial_tool]());
+          }
+        })
+        .then(() => {
+          if (this.initial_layout) {
+            let layout = new CATMAID.Layout(this.initial_layout);
+            if (!CATMAID.switchToLayout(layout, true)) {
+              CATMAID.warn(`Layout ${this.initial_layout} could not be loaded`);
+            }
           }
         });
     };

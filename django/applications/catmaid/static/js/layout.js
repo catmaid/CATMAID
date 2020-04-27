@@ -604,6 +604,13 @@
     // Run new layout
     newLayout.run(stackViewers, viewIndex, matchResult);
 
+    // Unfocus any active element after 50ms
+    setTimeout(function() {
+      if (document.activeElement) {
+        document.activeElement.blur();
+      }
+    }, 50);
+
     return true;
   };
 

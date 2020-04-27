@@ -373,8 +373,13 @@
               mirror.tile_source_type, mirror.image_base, mirror.file_extension,
               mirror.tile_width, mirror.tile_height);
             if (tileSource instanceof CATMAID.AbstractTileSourceWithOverview) {
+              let link = imgSpan.appendChild(document.createElement('a'));
+              link.href = '#';
+              link.dataset.type = 'stack';
+              link.dataset.pid = p.id;
+              link.dataset.sid = p.stacks[0].id;
               // Use overview image
-              let img = imgSpan.appendChild(document.createElement('img'));
+              let img = link.appendChild(document.createElement('img'));
               img.src = tileSource.getOverviewURL(null, [this.sample_slice]);
             }
           }
@@ -449,16 +454,16 @@
     };
 
     $(pp).on('click', 'a[data-type=stack]', e => {
-      let pid = parseInt(e.target.dataset.pid, 10);
-      let sid = parseInt(e.target.dataset.sid, 10);
+      let pid = parseInt(e.currentTarget.dataset.pid, 10);
+      let sid = parseInt(e.currentTarget.dataset.sid, 10);
       CATMAID.openProjectStack(pid, sid, false, undefined, true, true)
         .then(initView)
         .catch(CATMAID.handleError);
     });
 
     $(pp).on('click', 'a[data-type=stackgroup]', e => {
-      let pid = parseInt(e.target.dataset.pid, 10);
-      let sid = parseInt(e.target.dataset.sid, 10);
+      let pid = parseInt(e.currentTarget.dataset.pid, 10);
+      let sid = parseInt(e.currentTarget.dataset.sid, 10);
       CATMAID.openStackGroup(pid, sid, true)
         .then(initView)
         .catch(CATMAID.handleError);

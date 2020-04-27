@@ -211,6 +211,10 @@
     this.sample_images = CATMAID.tools.getDefined(options.config.sample_images, false);
     this.sample_mirror_index = CATMAID.tools.getDefined(options.config.sample_mirror_index, 0);
     this.sample_slice = CATMAID.tools.getDefined(options.config.sample_slice, 0);
+    this.initial_tool = CATMAID.tools.getDefined(options.config.initial_tool);
+    this.initial_zoom = CATMAID.tools.getDefined(options.config.initial_zoom);
+    this.initial_location = CATMAID.tools.getDefined(options.config.initial_location);
+
     this.cacheLoadingTimeout = null;
   };
 
@@ -411,16 +415,44 @@
       ++matchingProjects;
     }
 
+    let tools = {
+      navigator: CATMAID.Navigator,
+      tracingtool: CATMAID.TracingTool,
+    };
+
+    let initView = () => {
+      return Promise.resolve()
+        .then(() => {
+          if (this.initial_location) {
+            return project.moveTo(this.initial_location[2],
+              this.initial_location[1], this.initial_location[0],
+              this.initial_zoom);
+          } else if (this.initial_zoom !== undefined) {
+            return project.moveTo(project.coordinates.z, project.coordinates.y,
+              project.coordinates.x, this.initial_zoom);
+          }
+        })
+        .then(() => {
+          if (this.initial_tool && tools[this.initial_tool]) {
+            project.setTool(new tools[this.initial_tool]());
+          }
+        });
+    };
+
     $(pp).on('click', 'a[data-type=stack]', e => {
-      let pid = e.target.dataset.pid;
-      let sid = e.target.dataset.sid;
-      CATMAID.openProjectStack(pid, sid, false, undefined, true, true);
+      let pid = parseInt(e.target.dataset.pid, 10);
+      let sid = parseInt(e.target.dataset.sid, 10);
+      CATMAID.openProjectStack(pid, sid, false, undefined, true, true)
+        .then(initView)
+        .catch(CATMAID.handleError);
     });
 
     $(pp).on('click', 'a[data-type=stackgroup]', e => {
-      let pid = e.target.dataset.pid;
-      let sid = e.target.dataset.sid;
-      CATMAID.openStackGroup(pid, sid, true);
+      let pid = parseInt(e.target.dataset.pid, 10);
+      let sid = parseInt(e.target.dataset.sid, 10);
+      CATMAID.openStackGroup(pid, sid, true)
+        .then(initView)
+        .catch(CATMAID.handleError);
     });
 
     container.appendChild(pp);

@@ -169,6 +169,12 @@ Name                    Options                                     Default
 ``with_stacks``         ``true, false``                             ``true``
 ``with_stackgroups``    ``true, false``                             ``true``
 ``show_empty_projects`` ``true, false``                             ``false``
+``sample_images``       ``true, false``                             ``false``
+``sample_mirror_index`` ``position of mirror to use``               ``0``
+``sample_slice``        ``slice index, "first", "center", "last"``  ``"center"``
+``initial_location``    ``3-Element array, e.g. [10, 10, 10]        ``""``
+``initial_zoom``        ``zoom level index``                        ``""``
+``initial_tool``        ``Can be "tracingtool"                      ``""``
 ======================= =========================================== ================
 
 An example:

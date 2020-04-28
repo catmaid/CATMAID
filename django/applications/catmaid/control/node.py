@@ -2935,10 +2935,11 @@ def node_nearest(request:HttpRequest, project_id=None) -> JsonResponse:
 
     skeleton_filter = None
     # Separate access methods are needed to convice the Postgres planner to not
-    # to distance tests to all treenodes if only a skeleton is looked at.
+    # to distance tests to all treenodes if only a skeleton is looked at. Since
+    # Postgres 12, the MATERIALIZE keywordis needed to still get this effect.
     if skeleton_id:
         skeleton_filter = """
-            WITH skeleton_edge AS (
+            WITH skeleton_edge AS MATERIALIZED (
                 SELECT te.id, te.edge
                 FROM treenode_edge te
 

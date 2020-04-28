@@ -487,6 +487,12 @@
 
   NeuronSearch.prototype.highlight = function(skeleton_id)
   {
+    // Remove any highlighting
+    let skeletonRows = document.querySelectorAll(`[class^=neuron_annotation_result_row${this.widgetID}_][class*=highlight]`);
+    if (skeletonRows) {
+      skeletonRows.forEach(r => r.classList.remove('highlight'));
+    }
+
     // Don't try to highlight when no skeleton ID is given
     if (!skeleton_id) return;
 
@@ -505,18 +511,13 @@
       return o;
     }).bind(this), []);
 
-    if (neurons) {
-      // Remove any highlighting
-      $('[class^=neuron_annotation_result_row' + this.widgetID + '_]').css(
-          'background-color', '');
-      // Highlight the neuron, containing the requested skeleton, if available.
-      // Altough the code works for multiple neurons, it should be normally the
-      // case that there is only one neuron, belonging to the skeleton.
-      neurons.forEach($.proxy(function(n) {
-        $('.neuron_annotation_result_row' + this.widgetID + '_' + n.id).css(
-            'background-color', CATMAID.SelectionTable.prototype.highlighting_color);
-      }, this));
-    }
+    // Highlight the neuron containing the requested skeleton, if available.
+    neurons.forEach(n => {
+      let row = document.querySelector(`.neuron_annotation_result_row${this.widgetID}_${n.id}`);
+      if (row) {
+        row.classList.add('highlight');
+      }
+    });
   };
 
   /**

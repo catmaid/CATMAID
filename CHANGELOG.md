@@ -38,6 +38,9 @@
   be initialized properly. In these cases image block rendering (e.g. N5) will
   be unavailable.
 
+- Neuron search: row highlighting for the active skeleton works now again for
+  the whole row and registers deselection properly.
+
 ## 2020.02.15
 
 Contributors: Chris Barnes, Andrew Champion, Stephan Gerhard, Pat Gunn, Tom Kazimiers

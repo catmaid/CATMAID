@@ -588,6 +588,15 @@ def fork(request:HttpRequest, project_id) -> JsonResponse:
     assign_perm('can_annotate', request.user, new_p)
     assign_perm('can_import', request.user, new_p)
 
+    # Creat basic classes and relations
+    validate_project_setup(new_p.id, request.user.id, fix=True)
+
+    # If the source project is a tracing project, make the clone as well one.
+    # A local import is used here to avoid a high potential for circular imports.
+    from catmaid.control.tracing import check_tracing_setup, setup_tracing
+    if check_tracing_setup(project_id):
+        setup_tracing(new_p.id)
+
     return JsonResponse({
         'new_project_id': new_p.id,
         'n_copied_stack_links': len(ps_links),

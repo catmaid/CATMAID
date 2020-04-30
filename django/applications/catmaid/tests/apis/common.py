@@ -75,3 +75,7 @@ class CatmaidApiTransactionTestCase(CatmaidApiTestMixin, TransactionTestCase):
 
     def setUp(cls):
         super().setUpTestData()
+
+def with_dict(d, d2):
+    d.update(d2)
+    return d

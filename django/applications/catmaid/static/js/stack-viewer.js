@@ -16,11 +16,15 @@
    *
    * Properties of the primary stack limit the field of view and the slider
    * ranges.
+   *
+   * @param {bool}  showOverview  (Optional) Override the settings configured default
+   *                              behavior of the initial overview visibility
    */
   function StackViewer(
       project,          //!< {CATMAID.Project} reference to the parent project
       primaryStack,
-      catmaidWindow
+      catmaidWindow,
+      showOverview=undefined
   ) {
     this._project = project;
     this.primaryStack = primaryStack;
@@ -90,8 +94,8 @@
 
     this._stackWindow.addListener(this._handleWindowSignal.bind(this));
 
-    this.overview = new CATMAID.Overview(this,
-        CATMAID.StackViewer.Settings.session.show_overview_by_default);
+    this.overview = new CATMAID.Overview(this, CATMAID.tools.getDefined(showOverview,
+        CATMAID.StackViewer.Settings.session.show_overview_by_default));
     this._view.appendChild( this.overview.getView() );
 
     this.layercontrol = new CATMAID.LayerControl( this );

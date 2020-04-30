@@ -593,7 +593,7 @@
         panel.style.position = 'absolute';
         panel.classList.add('stack-viewer-grid-panel', `i${iIdx}`, `j${jIdx}`);
 
-        var panelStackViewer = new CATMAID.StackViewer(project, stack, panelWindow);
+        var panelStackViewer = new CATMAID.StackViewer(project, stack, panelWindow, false);
 
         var stackLayer = this.sourceStackViewer.getLayer('StackLayer').constructCopy(
           {stackViewer: panelStackViewer, displayName: `Image data (${stack.title})`}

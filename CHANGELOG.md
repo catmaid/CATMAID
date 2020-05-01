@@ -110,6 +110,9 @@ Miscellaneous:
 - Neuron navigator: the textual representation of neurons now follows the global
   settings.
 
+- Connectivity widget: the rendering of large sets of input skeletons is now
+  much faster.
+
 ## Maintenance updates
 
 - Volume widget: don't show removal options by default. It happens generally

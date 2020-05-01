@@ -716,8 +716,8 @@
   SkeletonConnectivity.prototype.redrawSelectionState = function() {
     var self = this;
     this.partnerSets.forEach(function(ps) {
-      var table = $("#" + ps.id + '_connectivity_table' + self.widgetID);
-      table.DataTable().rows().invalidate('data').draw(false);
+      var table = $("#" + ps.id + '_connectivity_table' + self.widgetID).DataTable();
+      table.cells(null, 'select:name').invalidate('data').draw(false);
     }, this);
   };
 
@@ -747,8 +747,8 @@
 
     var widgetID = this.widgetID;
     this.partnerSets.forEach(function(partnerSet) {
-      var table = $("#" + partnerSet.id + '_connectivity_table' + widgetID);
-      table.DataTable().rows().invalidate('data').draw(false);
+      var table = $("#" + partnerSet.id + '_connectivity_table' + widgetID).DataTable();
+      table.cells(null, 'name:name').invalidate('data').draw(false);
     });
   };
 
@@ -790,7 +790,7 @@
           self.updateReviewColors(datatable);
 
           // Inform DataTables that the data has changed.
-          datatable.rows().invalidate('data').draw(false);
+          datatable.cells(null, 'review:name').invalidate('data').draw(false);
         });
       });
 
@@ -1566,6 +1566,8 @@
       .append(paginationControl);
     tableSettings.append(paginationContainer);
 
+    let nns = CATMAID.NeuronNameService.getInstance();
+
     var widget = this;
     var tableContainers = this.partnerSets.map(function(partnerSet) {
       var tableContainer = $('<div />');
@@ -1589,6 +1591,7 @@
         autoWidth: false,
         columnDefs: [
           {
+            name: 'select',
             width: '5em',
             // Checkbox column
             targets: [0],
@@ -1612,12 +1615,13 @@
           },
           {
             // Neuron name column
+            name: 'name',
             targets: [1],
             type: 'html',
             searchable: true,
             render: function(data, type, row, meta) {
               var skeletonId = row[0];
-              var name = CATMAID.NeuronNameService.getInstance().getName(skeletonId);
+              var name = nns.getName(skeletonId);
               if (type === "display") {
                 var nameLink = '<a href="#" id="a-connectivity-table-' +
                     widget.widgetID + '-' + skeletonId + '" data-skeleton-id="' +
@@ -1630,6 +1634,7 @@
           },
           {
             // Review column
+            name: 'review',
             class: 'cm-center',
             targets: [-2],
             render: function(data, type, row, meta) {

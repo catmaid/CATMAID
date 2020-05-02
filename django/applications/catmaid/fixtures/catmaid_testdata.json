@@ -5406,6 +5406,21 @@
     }
   },
   {
+    "pk": 2467,
+    "model": "catmaid.connector",
+    "fields": {
+      "confidence": 5,
+      "creation_time": "2011-12-09T08:01:43.965Z",
+      "edition_time": "2011-12-09T08:01:43.965Z",
+      "project": 3,
+      "location_x": 7400.000,
+      "location_y": 5620.000,
+      "location_z": 40.000,
+      "editor": 3,
+      "user": 3
+    }
+  },
+  {
     "pk": 8,
     "model": "catmaid.treenodeclassinstance",
     "fields": {

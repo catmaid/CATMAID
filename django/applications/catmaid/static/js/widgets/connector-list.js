@@ -269,7 +269,9 @@
                 // Populate result skeleton source
                 var models = connectorData.reduce(function(o, link) {
                   var skid = link[4];
-                  o[skid]  = new CATMAID.SkeletonModel(skid);
+                  if (skid) {
+                    o[skid]  = new CATMAID.SkeletonModel(skid);
+                  }
                   return o;
                 }, {});
                 self.resultSkeletonSource.clear();
@@ -278,7 +280,14 @@
               .catch(CATMAID.handleError);
           },
           columns: [
-            {data: 4, className: "cm-center", title: "Skeleton ID"},
+            {
+              data: 4,
+              className: "cm-center",
+              title: "Skeleton ID",
+              render: function(data, type, row, meta) {
+                return data == undefined ? '-' : data;
+              }
+            },
             {data: 0, className: "cm-center", title: "Connector ID"},
             {
               data: 10,
@@ -286,6 +295,7 @@
               className: "cm-center",
               render: function(data, type, row, meta) {
                 let relationId = data;
+                if (!data) return '-';
                 let relationName = relationNames[relationId];
                 if (type === 'display') {
                   if (relationName === undefined) {
@@ -309,21 +319,37 @@
                 return project.focusedStackViewer.primaryStack.projectToStackZ(row[3], row[2], row[1]);
               },
             }, // section index
-            {data: 5, className: "cm-center", title: "Link confidence"},
+            {
+              data: 5,
+              className: "cm-center",
+              title: "Link confidence",
+              render: function(data, type, row, meta) {
+                return data == undefined ? '-' : data;
+              }
+            },
             {
               data: 6,
               className: "cm-center",
               title: "User",
               render: function(data, type, row, meta) {
+                if (data === undefined || data === null) return '-';
                 return CATMAID.User.safe_get(data).login;
               }
             },
-            {data: 7, className: "cm-center", title: "Treenode ID"},
+            {
+              data: 7,
+              className: "cm-center",
+              title: "Treenode ID",
+              render: function(data, type, row, meta) {
+                return data == undefined ? '-' : data;
+              }
+            },
             {
               data: 8,
               title: "Created on",
               className: "cm-center",
               render: function(data, type, row, meta) {
+                if (!data) return '-';
                 return CATMAID.tools.dateToString(new Date(1000 * data));
               }
             },
@@ -332,6 +358,7 @@
               title: "Last modified",
               className: "cm-center",
               render: function(data, type, row, meta) {
+                if (!data) return '-';
                 return CATMAID.tools.dateToString(new Date(1000 * data));
               }
             },

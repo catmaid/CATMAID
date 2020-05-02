@@ -607,6 +607,7 @@ class ConnectorsApiTests(CatmaidApiTestCase):
             'maxy': 6000,
             'minz': 0,
             'maxz': 100,
+            'only_linked': True,
         }
 
         url = '/%d/connectors/in-bounding-box' % self.test_project_id
@@ -619,6 +620,123 @@ class ConnectorsApiTests(CatmaidApiTestCase):
         expected_result = [
             [2463],
             [2466],
+        ]
+        self.assertEqual(expected_result, parsed_response)
+
+        # Only the ones linked to skeleton 373
+        response = self.client.post(url, with_dict({
+            'skeleton_ids': [2468],
+        }, bb))
+        self.assertStatus(response)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        expected_result = [
+            [2466],
+        ]
+        self.assertEqual(expected_result, parsed_response)
+
+        # Also fetch locations
+        response = self.client.post(url, with_dict({
+            'with_locations': True,
+        }, bb))
+        self.assertStatus(response)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        expected_result = [
+            [2463, 7135.0, 5065.0, 0.0],
+            [2466, 6420.0, 5565.0, 0.0],
+        ]
+        self.assertEqual(expected_result, parsed_response)
+
+        # Locations and skeleton constraint
+        response = self.client.post(url, with_dict({
+            'with_locations': True,
+            'skeleton_ids': [2468],
+        }, bb))
+        self.assertStatus(response)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        expected_result = [
+            [2466, 6420.0, 5565.0, 0.0],
+        ]
+        self.assertEqual(expected_result, parsed_response)
+
+        # Get links
+        response = self.client.post(url, with_dict({
+            'with_links': True,
+        }, bb))
+        self.assertStatus(response)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        expected_result = [
+            [2463, 2462, 5, 3, 2462, '2016-03-09T18:10:29.808Z', '2016-03-09T18:10:29.808Z', 1023],
+            [2463, 2462, 5, 3, 2461, '2016-03-09T18:10:33.668Z', '2016-03-09T18:10:33.669Z', 1024],
+            [2466, 2462, 5, 3, 2462, '2016-03-09T18:10:49.583Z', '2016-03-09T18:10:49.583Z', 1023],
+            [2466, 2468, 5, 3, 2464, '2016-03-09T18:10:50.846Z', '2016-03-09T18:10:50.846Z', 1024],
+        ]
+        self.assertEqual(expected_result, parsed_response)
+
+        # Get links with skeleton constraint
+        response = self.client.post(url, with_dict({
+            'with_links': True,
+            'skeleton_ids': [2468],
+        }, bb))
+        self.assertStatus(response)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        expected_result = [
+            [2466, 2462, 5, 3, 2462, '2016-03-09T18:10:49.583Z', '2016-03-09T18:10:49.583Z', 1023],
+            [2466, 2468, 5, 3, 2464, '2016-03-09T18:10:50.846Z', '2016-03-09T18:10:50.846Z', 1024],
+        ]
+        self.assertEqual(expected_result, parsed_response)
+
+        # With both location and links
+        response = self.client.post(url, with_dict({
+            'with_locations': True,
+            'with_links': True,
+        }, bb))
+        self.assertStatus(response)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        expected_result = [
+            [2463, 7135.0, 5065.0, 0.0, 2462, 5, 3, 2462, '2016-03-09T18:10:29.808Z', '2016-03-09T18:10:29.808Z', 1023],
+            [2463, 7135.0, 5065.0, 0.0, 2462, 5, 3, 2461, '2016-03-09T18:10:33.668Z', '2016-03-09T18:10:33.669Z', 1024],
+            [2466, 6420.0, 5565.0, 0.0, 2462, 5, 3, 2462, '2016-03-09T18:10:49.583Z', '2016-03-09T18:10:49.583Z', 1023],
+            [2466, 6420.0, 5565.0, 0.0, 2468, 5, 3, 2464, '2016-03-09T18:10:50.846Z', '2016-03-09T18:10:50.846Z', 1024],
+        ]
+        self.assertEqual(expected_result, parsed_response)
+
+        # With location, links and skeleton constraint
+        response = self.client.post(url, with_dict({
+            'with_locations': True,
+            'with_links': True,
+            'skeleton_ids': [2468],
+        }, bb))
+        self.assertStatus(response)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        expected_result = [
+            [2466, 6420.0, 5565.0, 0.0, 2462, 5, 3, 2462, '2016-03-09T18:10:49.583Z', '2016-03-09T18:10:49.583Z', 1023],
+            [2466, 6420.0, 5565.0, 0.0, 2468, 5, 3, 2464, '2016-03-09T18:10:50.846Z', '2016-03-09T18:10:50.846Z', 1024],
+        ]
+        self.assertEqual(expected_result, parsed_response)
+
+    def test_connectors_in_bb_all(self):
+        self.fake_authentication()
+
+        bb = {
+            'minx': 6000,
+            'maxx': 8000,
+            'miny': 5000,
+            'maxy': 6000,
+            'minz': 0,
+            'maxz': 100,
+        }
+
+        url = '/%d/connectors/in-bounding-box' % self.test_project_id
+
+        # Fetch most simple result
+        response = self.client.post(url, bb)
+        self.assertStatus(response)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+
+        expected_result = [
+            [2463],
+            [2466],
+            [2467],
         ]
         self.assertEqual(expected_result, parsed_response)
 
@@ -642,6 +760,7 @@ class ConnectorsApiTests(CatmaidApiTestCase):
         expected_result = [
             [2463, 7135.0, 5065.0, 0.0],
             [2466, 6420.0, 5565.0, 0.0],
+            [2467, 7400.0, 5620.0, 40.0],
         ]
         self.assertEqual(expected_result, parsed_response)
 
@@ -664,10 +783,11 @@ class ConnectorsApiTests(CatmaidApiTestCase):
         self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [
-            [2463, 2462, 5, 3, 2462, '2016-03-09T18:10:29.808Z', '2016-03-09T18:10:29.808Z', 1023],
             [2463, 2462, 5, 3, 2461, '2016-03-09T18:10:33.668Z', '2016-03-09T18:10:33.669Z', 1024],
+            [2463, 2462, 5, 3, 2462, '2016-03-09T18:10:29.808Z', '2016-03-09T18:10:29.808Z', 1023],
             [2466, 2462, 5, 3, 2462, '2016-03-09T18:10:49.583Z', '2016-03-09T18:10:49.583Z', 1023],
             [2466, 2468, 5, 3, 2464, '2016-03-09T18:10:50.846Z', '2016-03-09T18:10:50.846Z', 1024],
+            [2467, None, None, None, None, None, None, None],
         ]
         self.assertEqual(expected_result, parsed_response)
 
@@ -692,10 +812,11 @@ class ConnectorsApiTests(CatmaidApiTestCase):
         self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [
-            [2463, 7135.0, 5065.0, 0.0, 2462, 5, 3, 2462, '2016-03-09T18:10:29.808Z', '2016-03-09T18:10:29.808Z', 1023],
             [2463, 7135.0, 5065.0, 0.0, 2462, 5, 3, 2461, '2016-03-09T18:10:33.668Z', '2016-03-09T18:10:33.669Z', 1024],
+            [2463, 7135.0, 5065.0, 0.0, 2462, 5, 3, 2462, '2016-03-09T18:10:29.808Z', '2016-03-09T18:10:29.808Z', 1023],
             [2466, 6420.0, 5565.0, 0.0, 2462, 5, 3, 2462, '2016-03-09T18:10:49.583Z', '2016-03-09T18:10:49.583Z', 1023],
             [2466, 6420.0, 5565.0, 0.0, 2468, 5, 3, 2464, '2016-03-09T18:10:50.846Z', '2016-03-09T18:10:50.846Z', 1024],
+            [2467, 7400.0, 5620.0, 40.0, None, None, None, None, None, None, None],
         ]
         self.assertEqual(expected_result, parsed_response)
 

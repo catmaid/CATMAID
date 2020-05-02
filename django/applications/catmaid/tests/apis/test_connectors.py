@@ -742,8 +742,8 @@ class ConnectorsApiTests(CatmaidApiTestCase):
 
         # Only the ones linked to skeleton 373
         response = self.client.post(url, with_dict({
-                'skeleton_ids': [2468],
-            }, bb))
+            'skeleton_ids': [2468],
+        }, bb))
         self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [
@@ -753,8 +753,8 @@ class ConnectorsApiTests(CatmaidApiTestCase):
 
         # Also fetch locations
         response = self.client.post(url, with_dict({
-                'with_locations': True,
-            }, bb))
+            'with_locations': True,
+        }, bb))
         self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [
@@ -766,9 +766,9 @@ class ConnectorsApiTests(CatmaidApiTestCase):
 
         # Locations and skeleton constraint
         response = self.client.post(url, with_dict({
-                'with_locations': True,
-                'skeleton_ids': [2468],
-            }, bb))
+            'with_locations': True,
+            'skeleton_ids': [2468],
+        }, bb))
         self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [
@@ -778,8 +778,8 @@ class ConnectorsApiTests(CatmaidApiTestCase):
 
         # Get links
         response = self.client.post(url, with_dict({
-                'with_links': True,
-            }, bb))
+            'with_links': True,
+        }, bb))
         self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [
@@ -793,9 +793,9 @@ class ConnectorsApiTests(CatmaidApiTestCase):
 
         # Get links with skeleton constraint
         response = self.client.post(url, with_dict({
-                'with_links': True,
-                'skeleton_ids': [2468],
-            }, bb))
+            'with_links': True,
+            'skeleton_ids': [2468],
+        }, bb))
         self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [
@@ -806,9 +806,9 @@ class ConnectorsApiTests(CatmaidApiTestCase):
 
         # With both location and links
         response = self.client.post(url, with_dict({
-                'with_locations': True,
-                'with_links': True,
-            }, bb))
+            'with_locations': True,
+            'with_links': True,
+        }, bb))
         self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [
@@ -822,10 +822,10 @@ class ConnectorsApiTests(CatmaidApiTestCase):
 
         # With location, links and skeleton constraint
         response = self.client.post(url, with_dict({
-                'with_locations': True,
-                'with_links': True,
-                'skeleton_ids': [2468],
-            }, bb))
+            'with_locations': True,
+            'with_links': True,
+            'skeleton_ids': [2468],
+        }, bb))
         self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = [

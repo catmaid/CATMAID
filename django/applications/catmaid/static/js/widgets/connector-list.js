@@ -350,7 +350,7 @@
               className: "cm-center",
               render: function(data, type, row, meta) {
                 if (!data) return '-';
-                return CATMAID.tools.dateToString(new Date(1000 * data));
+                return CATMAID.tools.dateToString(new Date(typeof(data) === 'string' ? data : (1000 * data)));
               }
             },
             {
@@ -359,7 +359,7 @@
               className: "cm-center",
               render: function(data, type, row, meta) {
                 if (!data) return '-';
-                return CATMAID.tools.dateToString(new Date(1000 * data));
+                return CATMAID.tools.dateToString(new Date(typeof(data) === 'string' ? data : (1000 * data)));
               }
             },
           ]

@@ -679,6 +679,7 @@ class ConnectorsApiTests(CatmaidApiTestCase):
         }, bb))
         self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
+        parsed_response.sort(key=lambda x: (x[0], x[1]))
         expected_result = [
             [2466, 2462, 5, 3, 2462, '2016-03-09T18:10:49.583Z', '2016-03-09T18:10:49.583Z', 1023],
             [2466, 2468, 5, 3, 2464, '2016-03-09T18:10:50.846Z', '2016-03-09T18:10:50.846Z', 1024],
@@ -708,6 +709,7 @@ class ConnectorsApiTests(CatmaidApiTestCase):
         }, bb))
         self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
+        parsed_response.sort(key=lambda x: (x[0], x[10]))
         expected_result = [
             [2466, 6420.0, 5565.0, 0.0, 2462, 5, 3, 2462, '2016-03-09T18:10:49.583Z', '2016-03-09T18:10:49.583Z', 1023],
             [2466, 6420.0, 5565.0, 0.0, 2468, 5, 3, 2464, '2016-03-09T18:10:50.846Z', '2016-03-09T18:10:50.846Z', 1024],
@@ -798,6 +800,7 @@ class ConnectorsApiTests(CatmaidApiTestCase):
         }, bb))
         self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
+        parsed_response.sort(key=lambda x: (x[0], x[1]))
         expected_result = [
             [2466, 2462, 5, 3, 2462, '2016-03-09T18:10:49.583Z', '2016-03-09T18:10:49.583Z', 1023],
             [2466, 2468, 5, 3, 2464, '2016-03-09T18:10:50.846Z', '2016-03-09T18:10:50.846Z', 1024],
@@ -828,6 +831,7 @@ class ConnectorsApiTests(CatmaidApiTestCase):
         }, bb))
         self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
+        parsed_response.sort(key=lambda x: (x[0], x[10]))
         expected_result = [
             [2466, 6420.0, 5565.0, 0.0, 2462, 5, 3, 2462, '2016-03-09T18:10:49.583Z', '2016-03-09T18:10:49.583Z', 1023],
             [2466, 6420.0, 5565.0, 0.0, 2468, 5, 3, 2464, '2016-03-09T18:10:50.846Z', '2016-03-09T18:10:50.846Z', 1024],

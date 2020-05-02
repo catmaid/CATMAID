@@ -113,6 +113,9 @@ Miscellaneous:
 - Connectivity widget: the rendering of large sets of input skeletons is now
   much faster.
 
+- Neuron search: row highlighting for the active skeleton works now again for
+  the whole row and registers deselection properly.
+
 ## Maintenance updates
 
 - Volume widget: don't show removal options by default. It happens generally

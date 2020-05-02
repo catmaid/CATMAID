@@ -1096,7 +1096,14 @@ def get_connectors_in_bb_postgis3d(params) -> List:
     limit = int(params.get('limit', 0))
     with_locations = params.get('with_locations', False)
     with_links = params.get('with_links', False)
+    only_linked = params.get('only_linked', False)
     skeleton_ids = params.get('skeleton_ids', False)
+
+
+    # If a skeleton constraint is passed in, "only_links" is implied, because
+    # only linked connectors can reference a skeleton.id.
+    if skeleton_ids:
+        only_linked = True
 
     extra_joins = []
     if skeleton_ids:
@@ -1111,39 +1118,115 @@ def get_connectors_in_bb_postgis3d(params) -> List:
         """)
 
     cursor = connection.cursor()
-    cursor.execute("""
-        SELECT {distinct} c.id
-            {location_select}
-            {link_select}
-        FROM treenode_connector_edge tce
-        JOIN treenode_connector tc
-            ON tce.id = tc.id
-        JOIN connector c
-            ON c.id = tc.connector_id
-        {extra_joins}
-        WHERE tce.edge &&& ST_MakeLine(ARRAY[
-            ST_MakePoint(%(minx)s, %(maxy)s, %(maxz)s),
-            ST_MakePoint(%(maxx)s, %(miny)s, %(minz)s)] ::geometry[])
-        AND ST_3DDWithin(tce.edge, ST_MakePolygon(ST_MakeLine(ARRAY[
-            ST_MakePoint(%(minx)s, %(miny)s, %(halfz)s),
-            ST_MakePoint(%(maxx)s, %(miny)s, %(halfz)s),
-            ST_MakePoint(%(maxx)s, %(maxy)s, %(halfz)s),
-            ST_MakePoint(%(minx)s, %(maxy)s, %(halfz)s),
-            ST_MakePoint(%(minx)s, %(miny)s, %(halfz)s)]::geometry[])),
-            %(halfzdiff)s)
-        AND tce.project_id = %(project_id)s
-        {limit_clause}
-    """.format(
-        distinct='DISTINCT' if not with_links else '',
-        limit_clause=f'LIMIT {limit}' if limit > 0 else '',
-        location_select=', c.location_x, c.location_y, c.location_z' if with_locations else '',
-        link_select=", " + ", ".join([
-            "tc.skeleton_id", "tc.confidence", "tc.user_id",
-            "tc.treenode_id", "tc.creation_time", "tc.edition_time",
-            "tc.relation_id"
-        ]) if with_links else "",
-        extra_joins='\n'.join(extra_joins),
-    ), params)
+
+    # Knowing that only linked connectors should be returned is a performance
+    # advantage and therefore in this case a different query is executed.
+    if only_linked:
+        cursor.execute("""
+            SELECT {distinct} c.id
+                {location_select}
+                {link_select}
+            FROM treenode_connector_edge tce
+            JOIN treenode_connector tc
+                ON tce.id = tc.id
+            JOIN connector c
+                ON c.id = tc.connector_id
+            {extra_joins}
+            WHERE tce.edge &&& ST_MakeLine(ARRAY[
+                ST_MakePoint(%(minx)s, %(maxy)s, %(maxz)s),
+                ST_MakePoint(%(maxx)s, %(miny)s, %(minz)s)] ::geometry[])
+            AND ST_3DDWithin(tce.edge, ST_MakePolygon(ST_MakeLine(ARRAY[
+                ST_MakePoint(%(minx)s, %(miny)s, %(halfz)s),
+                ST_MakePoint(%(maxx)s, %(miny)s, %(halfz)s),
+                ST_MakePoint(%(maxx)s, %(maxy)s, %(halfz)s),
+                ST_MakePoint(%(minx)s, %(maxy)s, %(halfz)s),
+                ST_MakePoint(%(minx)s, %(miny)s, %(halfz)s)]::geometry[])),
+                %(halfzdiff)s)
+            AND tce.project_id = %(project_id)s
+            {limit_clause}
+        """.format(
+            distinct='DISTINCT' if not with_links else '',
+            # Ordering the limit is import to return consistent results
+            limit_clause=f'ORDER BY id LIMIT {limit}' if limit > 0 else '',
+            location_select=', c.location_x, c.location_y, c.location_z' if with_locations else '',
+            link_select=", " + ", ".join([
+                "tc.skeleton_id", "tc.confidence", "tc.user_id",
+                "tc.treenode_id", "tc.creation_time", "tc.edition_time",
+                "tc.relation_id"
+            ]) if with_links else "",
+            extra_joins='\n'.join(extra_joins),
+        ), params)
+    else:
+        # To apply the limit clause need to sort two times unfortunately. First
+        # to use the limit information in both parts of the query, and then to
+        # limit the combined result.
+        cursor.execute("""
+            SELECT *
+            FROM (
+                WITH connector_edges_in_bb AS MATERIALIZED (
+                    SELECT {distinct} c.id
+                        {location_select}
+                        {link_select}
+                    FROM treenode_connector_edge tce
+                    JOIN treenode_connector tc
+                        ON tce.id = tc.id
+                    JOIN connector c
+                        ON c.id = tc.connector_id
+                    {extra_joins}
+                    WHERE tce.edge &&& ST_MakeLine(ARRAY[
+                        ST_MakePoint(%(minx)s, %(maxy)s, %(maxz)s),
+                        ST_MakePoint(%(maxx)s, %(miny)s, %(minz)s)] ::geometry[])
+                    AND ST_3DDWithin(tce.edge, ST_MakePolygon(ST_MakeLine(ARRAY[
+                        ST_MakePoint(%(minx)s, %(miny)s, %(halfz)s),
+                        ST_MakePoint(%(maxx)s, %(miny)s, %(halfz)s),
+                        ST_MakePoint(%(maxx)s, %(maxy)s, %(halfz)s),
+                        ST_MakePoint(%(minx)s, %(maxy)s, %(halfz)s),
+                        ST_MakePoint(%(minx)s, %(miny)s, %(halfz)s)]::geometry[])),
+                        %(halfzdiff)s)
+                    AND tce.project_id = %(project_id)s
+                ),
+                connectors_in_bb AS (
+                    SELECT c.id
+                        {location_select}
+                        {unlinked_link_select}
+                    FROM connector_geom cg
+                    JOIN connector c
+                        ON c.id = cg.id
+                    WHERE cg.geom &&& ST_MakeLine(ARRAY[
+                        ST_MakePoint(%(minx)s, %(maxy)s, %(maxz)s),
+                        ST_MakePoint(%(maxx)s, %(miny)s, %(minz)s)] ::geometry[])
+                    AND cg.project_id = %(project_id)s
+
+                )
+                SELECT * FROM connector_edges_in_bb
+                {limit_clause}
+
+                -- We don't need to check for duplicates, because below we look for
+                -- unlinked connectors.
+                UNION
+
+                -- We know they are distinct, because of the anti-join.
+                SELECT c.*
+                FROM connectors_in_bb c
+                LEFT JOIN connector_edges_in_bb ce
+                    ON ce.id = c.id
+                WHERE ce.id IS NULL
+                {limit_clause}
+            ) wrapper
+            {limit_clause}
+        """.format(
+            distinct='DISTINCT' if not with_links else '',
+            link_select=", " + ", ".join([
+                "tc.skeleton_id", "tc.confidence", "tc.user_id",
+                "tc.treenode_id", "tc.creation_time", "tc.edition_time",
+                "tc.relation_id"
+            ]) if with_links else "",
+            # Ordering the limit is import to return consistent results
+            limit_clause=f'ORDER BY id LIMIT {limit}' if limit > 0 else '',
+            location_select=', c.location_x, c.location_y, c.location_z' if with_locations else '',
+            unlinked_link_select=", NULL::bigint, NULL::int, NULL::int, NULL::bigint, NULL::timestamptz, NULL::timestamptz, NULL::bigint" if with_links else "",
+            extra_joins='\n'.join(extra_joins),
+        ), params)
 
     return list(cursor.fetchall())
 
@@ -1201,14 +1284,25 @@ def connectors_in_bounding_box(request:HttpRequest, project_id:Union[int,str]) -
     - name: with_locations
       description: |
         Whether to return the location of each connector.
-      required: true
-      type: float
+      required: false
+      type: bool
+      defaultValue: false
       paramType: form
     - name: with_links
       description: |
-        Whether to return every individual link
-      required: true
-      type: float
+        Whether to return every individual link or null for unlinked connectors
+        (if part of response).
+      required: false
+      type: bool
+      defaultValue: false
+      paramType: form
+    - name: only_linked
+      description: |
+        Whether to return only connectors with linked treenodes. By default all
+        connectors are returned and link information is null for unlinked nodes.
+      required: false
+      type: bool
+      defaultValue: false
       paramType: form
     - name: skeleton_ids
       description: Skeletons linked to connectors
@@ -1230,8 +1324,8 @@ def connectors_in_bounding_box(request:HttpRequest, project_id:Union[int,str]) -
     params = {
         'project_id': project_id,
         'limit': data.get('limit', 0),
-        'with_locations': data.get('with_locations', False),
-        'with_links': data.get('with_links', False),
+        'with_locations': get_request_bool(data, 'with_locations', False),
+        'with_links': get_request_bool(data, 'with_links', False),
     }
     for p in ('minx', 'miny', 'minz', 'maxx', 'maxy', 'maxz'):
         params[p] = float(data.get(p, 0))
@@ -1241,6 +1335,8 @@ def connectors_in_bounding_box(request:HttpRequest, project_id:Union[int,str]) -
     skeleton_ids = get_request_list(data, 'skeleton_ids', map_fn=int)
     if skeleton_ids:
         params['skeleton_ids'] = skeleton_ids
+
+    params['only_linked'] = get_request_bool(data, 'only_linked', False)
 
     connector_ids = get_connectors_in_bb_postgis3d(params)
     return JsonResponse(connector_ids, safe=False)

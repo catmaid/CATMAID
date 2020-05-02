@@ -21,6 +21,14 @@ None.
 
 None.
 
+## Maintenance updates
+
+### Modifications
+
+- `POST /{project_ids}/skeletons/in-bounding-box`:
+  Returns now also unlinked connectors by default. To only get linked connectors
+  like before, pass in `only_linked = true`.
+
 
 ## 2020.02.15
 

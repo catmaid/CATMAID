@@ -1163,7 +1163,7 @@ def get_connectors_in_bb_postgis3d(params) -> List:
         cursor.execute("""
             SELECT *
             FROM (
-                WITH connector_edges_in_bb AS MATERIALIZED (
+                WITH connector_edges_in_bb AS (
                     SELECT {distinct} c.id
                         {location_select}
                         {link_select}

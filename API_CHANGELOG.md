@@ -2,6 +2,14 @@ This changelog notes changes to API endpoints that are documented and listed
 through Swagger. Changes to undocumented, internal CATMAID APIs are not
 included in this changelog.
 
+## Maintenance updates
+
+### Modifications
+
+- `POST /{project_ids}/skeletons/in-bounding-box`:
+  Returns now also unlinked connectors by default. To only get linked connectors
+  like before, pass in `only_linked = true`.
+
 ## 2020.02.15
 
 ### Additions

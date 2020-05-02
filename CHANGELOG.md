@@ -41,6 +41,11 @@
 - Neuron search: row highlighting for the active skeleton works now again for
   the whole row and registers deselection properly.
 
+- Connector list: can now display connectors without links.
+
+- Volume manager: the connector listing for a volume will now include unlinked
+  nodes.
+
 ## 2020.02.15
 
 Contributors: Chris Barnes, Andrew Champion, Stephan Gerhard, Pat Gunn, Tom Kazimiers

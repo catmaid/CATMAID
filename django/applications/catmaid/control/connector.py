@@ -1324,8 +1324,8 @@ def connectors_in_bounding_box(request:HttpRequest, project_id:Union[int,str]) -
     params = {
         'project_id': project_id,
         'limit': data.get('limit', 0),
-        'with_locations': data.get('with_locations', False),
-        'with_links': data.get('with_links', False),
+        'with_locations': get_request_bool(data, 'with_locations', False),
+        'with_links': get_request_bool(data, 'with_links', False),
     }
     for p in ('minx', 'miny', 'minz', 'maxx', 'maxy', 'maxz'):
         params[p] = float(data.get(p, 0))
@@ -1336,7 +1336,7 @@ def connectors_in_bounding_box(request:HttpRequest, project_id:Union[int,str]) -
     if skeleton_ids:
         params['skeleton_ids'] = skeleton_ids
 
-    params['only_linked'] = data.get('only_linked', False)
+    params['only_linked'] = get_request_bool(data, 'only_linked', False)
 
     connector_ids = get_connectors_in_bb_postgis3d(params)
     return JsonResponse(connector_ids, safe=False)

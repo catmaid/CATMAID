@@ -164,6 +164,8 @@ Miscellaneous:
 - Volume manager: the connector listing for a volume will now include unlinked
   nodes.
 
+- Selection table: duplicate skeleton IDs are now ignored in a CSV file import.
+
 ## 2020.02.15
 
 Contributors: Chris Barnes, Andrew Champion, Stephan Gerhard, Pat Gunn, Tom Kazimiers

@@ -1734,7 +1734,8 @@
             return;
           }
 
-          // Make sure all skeletons have at least a skeleton ID
+          // Make sure all skeletons have a skeleton ID and remove duplicates.
+          let seenSkeletonIds = new Set();
           var validSkeletons = csvLines.filter(function(row, i) {
             var val = row[skeletonIdColumn];
             if (i < lineSkip || val === undefined) {
@@ -1747,6 +1748,11 @@
             if (Number.isNaN(val)) {
               return false;
             }
+            // Don't allow duplicates
+            if (seenSkeletonIds.has(val)) {
+              return false;
+            }
+            seenSkeletonIds.add(val);
             // Store parsed ID in CSV row
             row[skeletonIdColumn] = val;
             return true;

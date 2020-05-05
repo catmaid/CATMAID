@@ -1734,26 +1734,26 @@
             return;
           }
 
-          // Make sure all skeletons have at least a skeleton ID
-          var validSkeletons = csvLines.filter(function(row, i) {
-            var val = row[skeletonIdColumn];
-            if (i < lineSkip || val === undefined) {
-              return false;
-            }
-            if (val.length) {
-              val = val.replace(/["']/, '');
-            }
-            val = parseInt(val, 10);
-            if (Number.isNaN(val)) {
-              return false;
-            }
-            // Store parsed ID in CSV row
-            row[skeletonIdColumn] = val;
-            return true;
-          });
-          var skeletonIds = validSkeletons.map(function(row) {
-            return row[skeletonIdColumn];
-          });
+          // use a set to remove duplicates
+          // insertion order is retained
+          const skeletonSet = csvLines.reduce(
+            (set, row, i) => {
+              var val = row[skeletonIdColumn];
+              if (i < lineSkip || val === undefined) {
+                return set;
+              }
+              if (val.length) {
+                val = val.replace(/["']/, '');
+              }
+              val = parseInt(val, 10);
+              if (!Number.isNaN(val)) {
+                set.add(val);
+              }
+              return set;
+            },
+            new Set()
+          );
+          const skeletonIds = Array.from(skeletonSet);
 
           if (skeletonIds.length === 0) {
             CATMAID.warn('CSV file does not contain any usable lines');

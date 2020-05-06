@@ -53,6 +53,10 @@
 
 - Neuron navigator: sorting annotation lists works again for all columns.
 
+- Neuron navigator: the annotation filter/search term survives now refreshes of
+  the currently displayed data (e.g. by clicking on the name in the navigator
+  path).
+
 ## 2020.02.15
 
 Contributors: Chris Barnes, Andrew Champion, Stephan Gerhard, Pat Gunn, Tom Kazimiers

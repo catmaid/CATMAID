@@ -900,6 +900,8 @@
       });
     }
 
+    let widget = this;
+
     // Fill annotation table
     var datatable = $(table).dataTable({
       // http://www.datatables.net/usage/options
@@ -908,6 +910,9 @@
       "bProcessing": true,
       "bServerSide": true,
       "bAutoWidth": false,
+      "oSearch": {
+        "sSearch": this.filterTerm,
+      },
       "iDisplayLength": Number.isInteger(displayLength) ? displayLength : -1,
       "sAjaxSource": CATMAID.makeURL(project.id + '/annotations/table-list'),
       "fnServerData": function (sSource, aoData, fnCallback) {
@@ -968,9 +973,8 @@
 
           // Validate regular expression and only send if it is valid
           var searchInput = this.parent().find('div.dataTables_filter input[type=search]');
-          var searchField = aoData.filter(function(e) { return 'sSearch' === e.name; })[0];
           try {
-            new RegExp(searchField.value);
+            new RegExp(widget.filterTerm);
             searchInput.css('background-color', '');
           } catch (e) {
             // If the search field does not contain a valid regular expression,
@@ -1027,6 +1031,11 @@
       "bJQueryUI": true,
       "aaSorting": [[ 1, "asc" ]],
       "aoColumns": column_params
+    });
+
+    // Store the filter term for the current node
+    $(content).on('keyup', '.dataTables_filter', e => {
+      this.filterTerm = e.target.value;
     });
 
     return datatable;
@@ -1655,6 +1664,8 @@
 
     // Number of displayed annotations per page
     this.annotationListLength = 25;
+    // An optional filter term that can be set in the UI.
+    this.filterTerm = '';
   };
 
   NeuronNavigator.AnnotationListNode.prototype = Object.create(

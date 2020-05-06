@@ -2366,6 +2366,25 @@ var WindowMaker = new function()
     }
   };
 
+  /**
+   * Get a map of windows to widgets containing only open widgets of the passed
+   * in type. Expected is a constructor that can be used with `instanceof`.
+   *
+   * @param  {Function} widgetType Constructor of type to find.
+   * @return {Map}                 Map of window objects to widget instance.
+   */
+  this.getOpenWidgetsOfType = function(widgetType) {
+    let wMap = new Map();
+    for (let [handle, map] of windows.entries()) {
+      for (let [win, widget] of map.entries()) {
+        if (widget instanceof widgetType) {
+          wMap.set(win, widget);
+        }
+      }
+    }
+    return wMap;
+  };
+
   /** Always create a new instance of the widget. The caller is allowed to hand
    * in extra parameters that will be passed on to the actual creator method. */
   this.create = function(name, options, isInstance) {

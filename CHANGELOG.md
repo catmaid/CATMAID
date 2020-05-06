@@ -57,6 +57,9 @@
   the currently displayed data (e.g. by clicking on the name in the navigator
   path).
 
+- Name search: escape underscore and percent sign properly. They were treated as
+  wildcards before.
+
 ## 2020.02.15
 
 Contributors: Chris Barnes, Andrew Champion, Stephan Gerhard, Pat Gunn, Tom Kazimiers

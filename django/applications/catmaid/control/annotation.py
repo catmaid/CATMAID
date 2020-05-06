@@ -153,6 +153,10 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
         else:
             op = '~~' if name_case_sensitive else '~~*'
             upper_name_op = '~~'
+            # LIKE (~~) an ILIKE (~~*) treat _ and % as wildcards, therefore
+            # they need to be escaped in the input.
+            name = name.replace('_', '\\_').replace('%', '\\%')
+
             params["name"] = name if name_exact else ('%' + name + '%')
 
         if name_not:

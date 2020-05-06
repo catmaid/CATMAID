@@ -1531,7 +1531,7 @@
       case 'color-button':
         return CATMAID.DOM.appendColorButton(target, e.label, e.title, e.attr, e.onchange, e.color);
       case 'checkbox':
-        return CATMAID.DOM.appendCheckbox(target, e.label, e.title, e.value, e.onclick, e.left, e.id);
+        return CATMAID.DOM.appendCheckbox(target, e.label, e.title, e.value, e.onclick, e.left, e.id, e.classes);
       case 'radio':
         return CATMAID.DOM.appendRadioButton(target, e.label, e.title, e.name,
             e.value, e.checked, e.onclick, e.left, e.id);
@@ -1637,12 +1637,15 @@
   /**
    * Append a new checkbox to another element.
    */
-  DOM.appendCheckbox = function(div, label, title, value, onclickFn, left, id) {
+  DOM.appendCheckbox = function(div, label, title, value, onclickFn, left, id, classes) {
     var labelEl = document.createElement('label');
     if (title) {
       labelEl.setAttribute('title', title);
     }
-    var elems = DOM.createCheckbox(label, value, onclickFn, id);
+    if (classes) {
+      labelEl.setAttribute('class', classes);
+    }
+    var elems = DOM.createCheckbox(label, value, onclickFn, id, classes);
     if (left) elems.reverse();
     elems.forEach(function(elem) { labelEl.appendChild(elem); });
     div.appendChild(labelEl);

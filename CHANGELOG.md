@@ -46,6 +46,9 @@
 - Volume manager: the connector listing for a volume will now include unlinked
   nodes.
 
+- Volume manager: the checkbox to show the removal tools is now colored red, to
+  make it easier to see how to remove volumes.
+
 - Selection table: duplicate skeleton IDs are now ignored in a CSV file import.
 
 - Neuron navigator: sorting annotation lists works again for all columns.

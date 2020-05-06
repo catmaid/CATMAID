@@ -1832,3 +1832,7 @@ button.files-loaded {
 .hover-highlight:hover {
   color: #ff8e43;
 }
+
+.removal-highlight {
+  color: #d70000;
+}

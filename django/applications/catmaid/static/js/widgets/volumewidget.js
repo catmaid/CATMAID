@@ -861,6 +861,7 @@
           label: 'Show removal tools',
           title: 'If enabled, each volume table row will also provide a removal option. This is typically not frequently needed.',
           value: widget.showRemovalTools,
+          classes: 'removal-highlight',
           onclick: e => {
             widget.showRemovalTools = e.target.checked;
             widget.refresh();

@@ -164,7 +164,19 @@ Miscellaneous:
 - Volume manager: the connector listing for a volume will now include unlinked
   nodes.
 
+- Volume manager: the checkbox to show the removal tools is now colored red, to
+  make it easier to see how to remove volumes.
+
 - Selection table: duplicate skeleton IDs are now ignored in a CSV file import.
+
+- Neuron navigator: sorting annotation lists works again for all columns.
+
+- Neuron navigator: the annotation filter/search term survives now refreshes of
+  the currently displayed data (e.g. by clicking on the name in the navigator
+  path).
+
+- Name search: escape underscore and percent sign properly. They were treated as
+  wildcards before.
 
 ## 2020.02.15
 

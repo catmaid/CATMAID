@@ -325,44 +325,44 @@ def _analyze_skeleton(project_id:int, skeleton_id:int, adjacents:int, min_positi
             if props[0]:
                 # Nodes are added automatically
                 graph.add_edge(props[0], node_id)
+
+        Connector = namedtuple("Connector", ['id', 'treenode_id', 'treenodes', 'skeletons'])
+
+        # Check if there are any duplicated presynaptic connectors
+        pre_connectors = []
+        for connector_id in pre_connector_ids:
+            c = connectors[connector_id]
+            treenode_id = next(iter(c[PRE])).id
+            shortest_path = single_source_shortest_path(graph, treenode_id, adjacents)
+            pre_treenodes = set(chain.from_iterable(shortest_path.values()))
+            post_skeletons = set(t.skeleton_id for t in c[POST])
+            pre_connectors.append(Connector(connector_id, treenode_id, pre_treenodes, post_skeletons))
+
+        def issue4s(cs):
+            for i, c1 in enumerate(cs):
+                for c2 in islice(cs, i+1, None):
+                    if (c1.treenodes & c2.treenodes) and (c1.skeletons & c2.skeletons):
+                        # Type 4: potentially duplicated connector
+                        issues.append((4, c1.treenode_id))
+                        if c1.treenode_id != c2.treenode_id:
+                            issues.append((4, c2.treenode_id))
+
+        issue4s(pre_connectors)
+
+        # Check if there are any duplicated postsynaptic connectors
+        post_connectors = []
+        for connector_id, c in connectors.items():
+            if connector_id in pre_connector_ids:
+                continue
+            treenode_id = next(t.id for t in c[POST] if t.skeleton_id == skeleton_id)
+            pre_skeletons = set(t.skeleton_id for t in c[PRE])
+            shortest_path = single_source_shortest_path(graph, treenode_id, adjacents)
+            post_treenodes = set(chain.from_iterable(shortest_path.values()))
+            post_connectors.append(Connector(connector_id, treenode_id, post_treenodes, pre_skeletons))
+
+        issue4s(post_connectors)
     else:
         graph = None
-
-    Connector = namedtuple("Connector", ['id', 'treenode_id', 'treenodes', 'skeletons'])
-
-    # Check if there are any duplicated presynaptic connectors
-    pre_connectors = []
-    for connector_id in pre_connector_ids:
-        c = connectors[connector_id]
-        treenode_id = next(iter(c[PRE])).id
-        shortest_path = single_source_shortest_path(graph, treenode_id, adjacents)
-        pre_treenodes = set(chain.from_iterable(shortest_path.values()))
-        post_skeletons = set(t.skeleton_id for t in c[POST])
-        pre_connectors.append(Connector(connector_id, treenode_id, pre_treenodes, post_skeletons))
-
-    def issue4s(cs):
-        for i, c1 in enumerate(cs):
-            for c2 in islice(cs, i+1, None):
-                if (c1.treenodes & c2.treenodes) and (c1.skeletons & c2.skeletons):
-                    # Type 4: potentially duplicated connector
-                    issues.append((4, c1.treenode_id))
-                    if c1.treenode_id != c2.treenode_id:
-                        issues.append((4, c2.treenode_id))
-
-    issue4s(pre_connectors)
-
-    # Check if there are any duplicated postsynaptic connectors
-    post_connectors = []
-    for connector_id, c in connectors.items():
-        if connector_id in pre_connector_ids:
-            continue
-        treenode_id = next(t.id for t in c[POST] if t.skeleton_id == skeleton_id)
-        pre_skeletons = set(t.skeleton_id for t in c[PRE])
-        shortest_path = single_source_shortest_path(graph, treenode_id, adjacents)
-        post_treenodes = set(chain.from_iterable(shortest_path.values()))
-        post_connectors.append(Connector(connector_id, treenode_id, post_treenodes, pre_skeletons))
-
-    issue4s(post_connectors)
 
 
     # Type 5: end node without a tag

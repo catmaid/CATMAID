@@ -1589,7 +1589,7 @@ def list_annotations_datatable(request:HttpRequest, project_id=None) -> JsonResp
         sorting_directions = list(map(lambda d: '-' if d.upper() == 'DESC' else '',
                 sorting_directions))
 
-        fields = ['name', 'annotated_on', 'num_usage', 'last_user']
+        fields = ['name', 'id', 'annotated_on', 'num_usage', 'last_user']
         sorting_index = [int(request.POST.get('iSortCol_%d' % d))
                 for d in range(column_count)]
         sorting_cols = list(map(lambda i: fields[i], sorting_index))

@@ -48,6 +48,8 @@
 
 - Selection table: duplicate skeleton IDs are now ignored in a CSV file import.
 
+- Neuron navigator: sorting annotation lists works again for all columns.
+
 ## 2020.02.15
 
 Contributors: Chris Barnes, Andrew Champion, Stephan Gerhard, Pat Gunn, Tom Kazimiers

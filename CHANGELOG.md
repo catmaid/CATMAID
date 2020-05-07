@@ -90,6 +90,9 @@ Miscellaneous:
   the front-end based "Simple project list" data view. These options behave like
   in the other data views.
 
+- Open window: a new button "Open with active skeleton" makes it quicker to open
+  a new widget with the active skeleton loaded.
+
 ### Bug fixes
 
 - Volume lists (drop down menus) are now automatically refreshed if a volume is

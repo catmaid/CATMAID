@@ -7,7 +7,11 @@
      * Creates a simple widget open dialog.
      */
     var OpenWidgetDialog = function(text, callback) {
-      this.dialog = new CATMAID.OptionsDialog("Open widget");
+      this.dialog = new CATMAID.OptionsDialog("Open widget", {
+        "Cancel": CATMAID.noop,
+        "Open with active skeleton": () => this.openWithActive(),
+        "Open": () => this.openWidget(),
+      });
       this.dialog.dialog.classList.add('config-dialog');
       if (text) {
         this.dialog.appendMessage(text);
@@ -102,7 +106,7 @@
       };
 
       var self = this;
-      this.dialog.onOK = function() {
+      this.openWidget = function() {
         var widgetName = self.widgetField.value;
         // If there is no valid widget with this key, take the first entry from
         // the table.
@@ -115,7 +119,23 @@
             return;
           }
         }
-        WindowMaker.create(widgetName);
+        return WindowMaker.create(widgetName);
+      };
+
+      this.openWithActive = function() {
+        let handles = this.openWidget();
+        if (handles) {
+          if (CATMAID.tools.isFn(handles.widget.append)) {
+            let activeSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
+            if (activeSkeletonId) {
+              let models = {};
+              models[activeSkeletonId] = new CATMAID.SkeletonModel(activeSkeletonId);
+              handles.widget.append(models);
+            } else {
+              CATMAID.warn('No active skeleton selected');
+            }
+          }
+        }
       };
 
       // Resizing a select element is apparently only manually possible.

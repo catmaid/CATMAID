@@ -280,6 +280,7 @@ urlpatterns += [
 urlpatterns += [
     url(r'^(?P<project_id>\d+)/skeletons/$', skeleton.list_skeletons),
     url(r'^(?P<project_id>\d+)/skeletons/cable-length$', skeleton.cable_lengths),
+    url(r'^(?P<project_id>\d+)/skeletons/summary$', skeleton.summary),
     url(r'^(?P<project_id>\d+)/skeletons/connectivity-counts$', skeleton.connectivity_counts),
     url(r'^(?P<project_id>\d+)/skeletons/completeness$', skeleton.completeness),
     url(r'^(?P<project_id>\d+)/skeletons/validity$', skeleton.validity),

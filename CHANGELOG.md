@@ -96,6 +96,9 @@ Miscellaneous:
 - Log/history tables: the relevant data is now fetched in parallel and doesn't
   block the rest of CATMAID anymore.
 
+- Neuron search: add option to show meta data columns (cable length, number of
+  nodes, creation time and last edition time) for neurons.
+
 ### Bug fixes
 
 - Volume lists (drop down menus) are now automatically refreshed if a volume is

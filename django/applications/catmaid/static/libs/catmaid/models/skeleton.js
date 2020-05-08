@@ -25,6 +25,20 @@
       });
     },
 
+    /**
+     * Get summary information for skeletons.
+     */
+    getSummary: function(projectId, skeletonIds, api = undefined) {
+      return CATMAID.fetch({
+        url: projectId + '/skeletons/summary',
+        method: 'POST',
+        data: {
+          skeleton_ids: skeletonIds,
+        },
+        api: api,
+      });
+    },
+
     getNodeCount: function(projectId, skeletonId, api = undefined) {
       return CATMAID.fetch({
         url: `${projectId}/skeleton/${skeletonId}/node_count`,

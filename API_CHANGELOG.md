@@ -9,6 +9,9 @@ included in this changelog.
 - POST `/{project_id}/neurons/rename`:
   Rename multiple neurons at the same time.
 
+- GET|POST `/{project_id}/skeletons/summary`:
+  Retrieve meta information like cable length or number of nodes for skeletons.
+
 ### Modifications
 
 None.

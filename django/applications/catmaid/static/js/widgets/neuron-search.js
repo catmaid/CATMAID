@@ -41,6 +41,8 @@
     this.displayAnnotations = false;
     // Set a user ID to show only annotations of specific users
     this.annotationUserFilter = null;
+    // Whether metadata like cable length should be displayed
+    this.displayMetadata = false;
 
     // A set of filter rules to apply to the handled skeletons
     this.filterRules = [];
@@ -194,6 +196,10 @@
               '<input type="checkbox" id="neuron_search_show_annotations{{NA-ID}}" />' +
               'Show annotations' +
             '</label>' +
+            '<label class="checkbox-label">' +
+              '<input type="checkbox" id="neuron_search_show_metadata{{NA-ID}}" />' +
+              'Show metadata' +
+            '</label>' +
           '</div>' +
           '<table cellpadding="0" cellspacing="0" border="0" ' +
                 'class="neuron_annotations_query_results_table display" ' +
@@ -207,10 +213,9 @@
                 '</th>' +
                 '<th>Type</th>' +
                 '<th>' +
-                  '<div class="result_annotations_column">Annotations</div>' +
+                  '<div class="result_annotations_column">Annotations by</div>' +
                   '<div>' +
                     '<label for="neuron_annotations_user_filter{{NA-ID}}">' +
-                        'By ' +
                     '</label>' +
                     '<select name="annotator_filter" class="" ' +
                         'id="neuron_annotations_user_filter{{NA-ID}}">' +
@@ -218,10 +223,22 @@
                     '</select>' +
                   '</div>' +
                 '</th>' +
+                '<th>' +
+                  '<div>Cable length (nm)</div>' +
+                '</th>' +
+                '<th>' +
+                  '<div title="Imported nodes in parentheses"># Nodes</div>' +
+                '</th>' +
+                '<th>' +
+                  '<div>Created (UTC)</div>' +
+                '</th>' +
+                '<th>' +
+                  '<div>Last edit (UTC)</div>' +
+                '</th>' +
               '</tr>' +
             '</thead>' +
             '<tbody>' +
-              '<tr><td colspan="3"></td></tr>' +
+              '<tr><td colspan="7"></td></tr>' +
             '</tbody>' +
           '</table>';
         // Replace {{NA-ID}} with the actual widget ID
@@ -283,7 +300,14 @@
           .on('change', this, function(e) {
             var widget = e.data;
             widget.displayAnnotations = this.checked;
-            widget.updateAnnotations();
+            widget.updateAnnotations().then(() => widget.refresh());
+          });
+        $(`#neuron_search_show_metadata${this.widgetID}`)
+          .prop('checked', this.displayMetadata)
+          .on('change', this, function(e) {
+            var widget = e.data;
+            widget.displayMetadata = this.checked;
+            widget.updateMetadata().then(() => widget.refresh());
           });
         $('#neuron_search_apply_filters' + this.widgetID)
           .prop('checked', this.applyFilterRules)
@@ -580,6 +604,7 @@
     // Indicate if a redraw operation should be followd by updating the
     // annotation display.
     var requestAnnotationUpdate = false;
+    let requestMetadataUpdate = false;
 
     return function() {
       let widget = this;
@@ -651,7 +676,11 @@
               }
             },
           },
-          { "orderable": false, "visible": this.displayAnnotations }
+          { "orderable": false, "visible": this.displayAnnotations },
+          { "orderable": true, class: "cm-center", "visible": this.displayMetadata },
+          { "orderable": true, class: "cm-center", "visible": this.displayMetadata },
+          { "orderable": true, class: "cm-center", "visible": this.displayMetadata },
+          { "orderable": true, class: "cm-center", "visible": this.displayMetadata },
         ],
         language: {
           "emptyTable": "No search results found"
@@ -659,14 +688,25 @@
       }).off('.dt').on('draw.dt', this, function(e) {
         e.data.updateSelectionUI();
         e.data.updateAnnotationFiltering();
+        let promises = [];
         if (requestAnnotationUpdate) {
           requestAnnotationUpdate = false;
-          e.data.updateAnnotations();
+          promises.push(e.data.updateAnnotations());
+        }
+        if (requestMetadataUpdate) {
+          requestMetadataUpdate = false;
+          promises.push(e.data.updateMetadata());
+        }
+
+        // Only refresh if there is work to be done.
+        if (promises.length > 0) {
+          Promise.all(promises).then(() => e.data.refresh());
         }
       }).on('page.dt', this, function(e) {
         // After every page chage, annotations should be updated. This can't be
         // done directly, because this event happens before redrawing.
         requestAnnotationUpdate = true;
+        requestMetadataUpdate = true;
       }).on('order.dt', this, function(e) {
         this.order = datatable.order();
         // Update header sort icon. For some reason this doesn't change
@@ -808,6 +848,45 @@
     ul.setAttribute('class', 'resultTags');
     td_ann.appendChild(ul);
     tr.appendChild(td_ann);
+
+    let emptyMeta = entity.type === 'neuron' ? '…' : '';
+
+    // Cable length
+    let td_cable = document.createElement('td');
+    let span_cable = document.createElement('span');
+    span_cable.dataset.key = [...path, entity.id].join('-');
+    span_cable.appendChild(document.createTextNode(Math.round(entity.cable_length) || emptyMeta));
+    td_cable.appendChild(span_cable);
+    tr.appendChild(td_cable);
+
+    // # Nodes
+    let td_n_nodes = document.createElement('td');
+    let span_n_nodes = document.createElement('span');
+    span_n_nodes.dataset.key = [...path, entity.id].join('-');
+    span_n_nodes.appendChild(document.createTextNode(entity.n_nodes || emptyMeta));
+    td_n_nodes.appendChild(span_n_nodes);
+    tr.appendChild(td_n_nodes);
+
+    // Created
+    let td_created = document.createElement('td');
+    let span_created = document.createElement('span');
+    span_created.dataset.key = [...path, entity.id].join('-');
+    span_created.appendChild(document.createTextNode(entity.creation_time ?
+        CATMAID.tools.dateToString(CATMAID.tools.isoStringToDate(entity.creation_time)) : emptyMeta));
+    td_created.appendChild(span_created);
+    tr.appendChild(td_created);
+
+    // Last edit
+    let td_edited = document.createElement('td');
+    let span_edited = document.createElement('span');
+    span_edited.dataset.key = [...path, entity.id].join('-');
+    span_edited.appendChild(document.createTextNode(entity.last_edition_time ?
+        CATMAID.tools.dateToString(CATMAID.tools.isoStringToDate(entity.last_edition_time)) : emptyMeta));
+    if (entity.last_editor_id !== undefined) {
+      span_edited.setAttribute('title', `Edited by ${CATMAID.User.safe_get(entity.last_editor_id).login}`);
+    }
+    td_edited.appendChild(span_edited);
+    tr.appendChild(td_edited);
 
     // Add row to table
     add_row_fn(tr);
@@ -1014,6 +1093,7 @@
 
     // Augment form data with offset and limit information
     params.with_annotations = this.displayAnnotations;
+    params.with_metadata = this.displayMetadata;
 
     CATMAID.fetch(this.pid + '/annotations/query-targets', 'POST', params)
       .then((function(e) {
@@ -1603,13 +1683,57 @@
   };
 
   /**
+   * Query metadata for results on the current page that no annotations have
+   * been queried for before.
+   */
+  NeuronSearch.prototype.updateMetadata = function() {
+    if (!this.displayMetadata) {
+      return Promise.resolve();
+    }
+
+    // Query metadata for all results that we don't have metadata for yet
+    var visibleEntityIds = this.getEntitiesOnPage();
+    var skeletonIdMap = this.queryResults.reduce(function(l, entities) {
+      return entities.filter(function(e) {
+        var onPage = (-1 !== visibleEntityIds.indexOf(e.id));
+        // Use only n_nodes as proxy test
+        return onPage && e.type === 'neuron' && (!e.hasOwnProperty('n_nodes'));
+      });
+    }, []).reduce((m, e) => {
+      for (let i=0; i<e.skeleton_ids.length; ++i) {
+        m.set(e.skeleton_ids[i], e);
+      }
+      return m;
+    }, new Map());
+
+    if (skeletonIdMap.size > 0) {
+      return CATMAID.Skeletons.getSummary(project.id, [...skeletonIdMap.keys()])
+        .then(json => {
+          // Add annotation id, name and annotator to result set
+          Object.keys(json).forEach(function(skeletonId) {
+            let summary = json[skeletonId];
+            var result = skeletonIdMap.get(summary.skeleton_id);
+            result.n_nodes = summary.num_nodes;
+            result.n_imported_nodes = summary.n_imported_nodes;
+            result.cable_length = summary.cable_length;
+            result.last_edition_time = summary.last_edition_time;
+            result.last_editor_id = summary.last_editor_id;
+            result.last_summary_update = summary.last_summary_update;
+            result.creation_time = summary.original_creation_time;
+          });
+        })
+        .catch(CATMAID.handleError);
+    }
+    return Promise.resolve();
+  };
+
+  /**
    * Query annotations for results on the current page that no annotations have
    * been queried for before.
    */
   NeuronSearch.prototype.updateAnnotations = function() {
     if (!this.displayAnnotations) {
-      this.refresh();
-      return;
+      return Promise.resolve();
     }
 
     // Query annotations for all results that we don't have annotations for yet
@@ -1625,7 +1749,7 @@
 
     if (entitiesToQuery.length > 0) {
       var self = this;
-      CATMAID.Annotations.forTarget(project.id, entityIdsToQuery)
+      return CATMAID.Annotations.forTarget(project.id, entityIdsToQuery)
         .then(function(json) {
           // Create mapping from skeleton ID to result object
           var results = entitiesToQuery.reduce(function(o, r, i) {
@@ -1648,13 +1772,10 @@
               });
             });
           });
-
-          self.refresh();
         })
         .catch(CATMAID.handleError);
-    } else {
-      this.refresh();
     }
+    return Promise.resolve();
   };
 
   /**

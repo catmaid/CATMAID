@@ -747,6 +747,64 @@ def cable_lengths(request:HttpRequest, project_id=None) -> HttpResponse:
 
     return HttpResponse(cursor.fetchone()[0], content_type='application/json')
 
+@api_view(['GET', 'POST'])
+@requires_user_role(UserRole.Browse)
+def summary(request:HttpRequest, project_id=None) -> HttpResponse:
+    """Get the original creation time, last edit time, number of nodes, number
+    of imported nodes, cable length and last editor information for a list
+    skeleton IDs.
+
+    Returns a mapping from skeleton ID to summary info
+    ---
+    parameters:
+      - name: project_id
+        description: Project to operate in
+        type: integer
+        paramType: path
+        required: true
+      - name: skeleton_ids[]
+        description: IDs of the skeletons to query summary for.
+        required: true
+        type: array
+        items:
+          type: integer
+        paramType: form
+    """
+
+    if request.method == 'GET':
+        data = request.GET
+    elif request.method == 'POST':
+        data = request.POST
+    else:
+        raise ValueError("Invalid HTTP method: " + request.method)
+
+    skeleton_ids = get_request_list(data, 'skeleton_ids', map_fn=int)
+    if not skeleton_ids:
+        raise ValueError('Need at least one skeleton ID')
+
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT COALESCE(json_object_agg(css.skeleton_id, json_build_object(
+            'skeleton_id', skeleton_id,
+            'last_summary_update', last_summary_update,
+            'original_creation_time', original_creation_time,
+            'last_edition_time', last_edition_time,
+            'num_nodes', num_nodes,
+            'cable_length', cable_length,
+            'last_editor_id', last_editor_id,
+            'num_imported_nodes', num_imported_nodes
+        )), '{}'::json)::text
+        FROM catmaid_skeleton_summary css
+        JOIN UNNEST(%(query_skeleton_ids)s::bigint[]) query_skeleton(id)
+            ON query_skeleton.id = css.skeleton_id
+        WHERE project_id = %(project_id)s
+    """, {
+        'query_skeleton_ids': skeleton_ids,
+        'project_id': project_id,
+    })
+
+    return HttpResponse(cursor.fetchone()[0], content_type='application/json')
+
 
 @api_view(['GET', 'POST'])
 @requires_user_role(UserRole.Browse)

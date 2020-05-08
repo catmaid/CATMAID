@@ -341,7 +341,12 @@
               'transaction_id': data.transaction_id,
               'execution_time': data.execution_time
             };
-            CATMAID.fetch(project.id + '/transactions/location', 'GET', params)
+            CATMAID.fetch({
+                url: project.id + '/transactions/location',
+                method: 'GET',
+                data: params,
+                parallel: true,
+              })
               .then(function(result) {
                   var x = parseFloat(result.x);
                   var y = parseFloat(result.y);

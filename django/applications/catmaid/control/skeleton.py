@@ -678,9 +678,25 @@ def _neuronnames(skeleton_ids, project_id) -> dict:
             class_instance_a__in=skeleton_ids).select_related("class_instance_b").values_list("class_instance_a", "class_instance_b__name")
     return dict(qs)
 
+@api_view(['POST'])
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def neuronnames(request:HttpRequest, project_id=None) -> JsonResponse:
-    """ Returns a JSON object with skeleton IDs as keys and neuron names as values. """
+    """Map skeleton IDs to neuron base names.
+    ---
+    parameters:
+      - name: project_id
+        description: Project to operate in
+        type: integer
+        paramType: path
+        required: true
+      - name: skids[]
+        description: IDs of the skeletons to query name for
+        required: true
+        type: array
+        items:
+          type: integer
+        paramType: form
+    """
     skeleton_ids = tuple(get_request_list(request.POST, 'skids', map_fn=int))
     return JsonResponse(_neuronnames(skeleton_ids, project_id))
 

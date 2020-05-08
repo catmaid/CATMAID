@@ -93,6 +93,9 @@ Miscellaneous:
 - Open window: a new button "Open with active skeleton" makes it quicker to open
   a new widget with the active skeleton loaded.
 
+- Log/history tables: the relevant data is now fetched in parallel and doesn't
+  block the rest of CATMAID anymore.
+
 ### Bug fixes
 
 - Volume lists (drop down menus) are now automatically refreshed if a volume is

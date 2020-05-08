@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 
+import json
+
 from django.urls import reverse
 from django.conf import settings
 from django.http import HttpResponseRedirect
 from django.views.generic import TemplateView
 from django.contrib import messages
 from django.contrib.auth.models import User, Group
+from django.apps import apps
 
 class CatmaidView(TemplateView):
     """ This view adds extra context to its template. This extra context is
@@ -24,6 +27,16 @@ class CatmaidView(TemplateView):
         context['HISTORY_TRACKING'] = settings.HISTORY_TRACKING
         context['USER_REGISTRATION_ALLOWED'] = settings.USER_REGISTRATION_ALLOWED
         context['EXPAND_FRONTEND_ERRORS'] = getattr(settings, 'EXPAND_FRONTEND_ERRORS', False)
+
+        extension_config = {}
+        for ie in settings.INSTALLED_EXTENSIONS:
+            try:
+                app = apps.get_app_config(ie)
+                if hasattr(app, 'get_config'):
+                    extension_config[ie] = app.get_config()
+            except:
+                pass
+        context['EXTENSION_CONFIG'] = json.dumps(extension_config)
 
         profile_context = self.request.user.userprofile.as_dict()
         context.update(profile_context)

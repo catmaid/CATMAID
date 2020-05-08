@@ -37,7 +37,8 @@
                 "{% csrf_cookie_name %}",
                 "{{ COOKIE_SUFFIX }}",
                 null,
-                {{ HISTORY_TRACKING|make_js_bool }});
+                {{ HISTORY_TRACKING|make_js_bool }},
+                {{ EXTENSION_CONFIG|safe }});
       CATMAID.CLIENT_VERSION = "{% catmaid_version %}";
       CATMAID.expandErrors = {{ EXPAND_FRONTEND_ERRORS|make_js_bool }};
     </script>

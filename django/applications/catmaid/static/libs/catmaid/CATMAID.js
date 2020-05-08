@@ -49,9 +49,11 @@ var requestQueue = new CATMAID.RequestQueue();
    *                                initial permissions (=null), use these instead.
    * @param {bool}   history        (Optional) Indicate if history tracking is
    *                                enabled in the back-end, default is true.
+   * @param {Object} extConfig      (Optional) Maps installed extension names to
+   *                                their configuration.
    */
   CATMAID.configure = function(backendURL, staticURL, staticExtURL,
-      csrfCookieName, cookieSuffix, permissions, history) {
+      csrfCookieName, cookieSuffix, permissions, history, extConfig) {
     validateString(backendURL, "back-end URL");
     validateString(staticURL, "static URL");
     if (typeof staticExtURL === 'undefined') staticExtURL = '';
@@ -96,6 +98,13 @@ var requestQueue = new CATMAID.RequestQueue();
       configurable: true,
       writable: false,
       value: history === 'undefined' ? true : !!history
+    });
+
+    Object.defineProperty(CATMAID, "extensionConfig", {
+      enumerable: false,
+      configurable: true,
+      writable: false,
+      value: extConfig === 'undefined' ? {} : extConfig,
     });
 
     CATMAID.setupCsrfProtection();

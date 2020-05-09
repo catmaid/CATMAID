@@ -2666,7 +2666,10 @@
           },
           import_default_annotations_skeleton: {
             default: ['Import', '{source} upload {group}'],
-          }
+          },
+          import_default_tags: {
+            default: ['Import', '{source} upload {group}'],
+          },
         },
         migrations: {}
       });

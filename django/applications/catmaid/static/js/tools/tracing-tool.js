@@ -2425,6 +2425,17 @@
   };
 
   /**
+   * Get a list of default import tags.
+   */
+  TracingTool.getDefaultImportTags = function(variableSubstitutions = {}) {
+    let tags = TracingTool.Settings.session.import_default_tags;
+    if (!tags) {
+      return [];
+    }
+    return TracingTool.substituteVariables(tags, variableSubstitutions);
+  };
+
+  /**
    * Get a list of default import annotation names.
    */
   TracingTool.getDefaultImportAnnotations = function(variableSubstitutions = {}) {
@@ -2441,6 +2452,36 @@
         a = a.replace(`\{${s}\}`, variableSubstitutions[s]);
       }
       return a;
+    });
+  };
+
+  /**
+   * Create a set of annotations based on a tample that can contain the terms
+   * {group} and {source}.
+   */
+  TracingTool.getEffectiveImportAnnotations = function(annotations, sourceRemote) {
+    if (!annotations) {
+      annotations = CATMAID.TracingTool.getDefaultImportAnnotations();
+    }
+    return CATMAID.TracingTool.substituteVariables(annotations, {
+      'group': CATMAID.userprofile.primary_group_id !== undefined && CATMAID.userprofile.primary_group_id !== null ?
+          CATMAID.groups.get(CATMAID.userprofile.primary_group_id) : CATMAID.session.username,
+      'source': sourceRemote ? sourceRemote : 'local',
+    });
+  };
+
+  /**
+   * Create a set of tags based on a template that can contain the terms
+   * {group} and {source}.
+   */
+  TracingTool.getEffectiveImportTags = function(tags, sourceRemote) {
+    if (!tags) {
+      tags = CATMAID.TracingTool.getDefaultImportTags();
+    }
+    return CATMAID.TracingTool.substituteVariables(tags, {
+      'group': CATMAID.userprofile.primary_group_id !== undefined && CATMAID.userprofile.primary_group_id !== null ?
+          CATMAID.groups.get(CATMAID.userprofile.primary_group_id) : CATMAID.session.username,
+      'source': sourceRemote ? sourceRemote : 'local',
     });
   };
 

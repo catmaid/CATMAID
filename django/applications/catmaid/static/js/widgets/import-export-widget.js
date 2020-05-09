@@ -186,11 +186,7 @@ annotations, neuron name, connectors or partner neurons.
   };
 
   ImportExportWidget.prototype.getEffectiveAnnotations = function() {
-    return CATMAID.TracingTool.substituteVariables(this.importAnnotations, {
-      'group': CATMAID.userprofile.primary_group_id !== undefined && CATMAID.userprofile.primary_group_id !== null ?
-          CATMAID.groups.get(CATMAID.userprofile.primary_group_id) : CATMAID.session.username,
-      'source': this.sourceRemote ? this.sourceRemote : 'local',
-    });
+    return TracingTool.getEffectiveImportAnnotations(this.importAnnotations, this.sourceRemote);
   };
 
   /**

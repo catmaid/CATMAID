@@ -2400,6 +2400,26 @@
   };
 
   /**
+   * Return a list of all tracing layers, optionally excluding the active one.
+   */
+  TracingTool.getTracingLayers = function() {
+    var viewers = project.getStackViewers();
+    return viewers.map(function(sv) {
+      // Get tracing layer for this stack view, or undefined
+      return sv.getLayersOfType(CATMAID.TracingLayer);
+    }).reduce(function(o, layers) {
+      // Ignore falsy layers (which come from stacks
+      // that don't have tracing layers.
+      if (layers && layers.length > 0) {
+          for (let i=0; i<layers.length; ++i) {
+              o.push(layers[i]);
+          }
+      }
+      return o;
+    }, []);
+  };
+
+  /**
    * Move to and select a node in the specified neuron or skeleton nearest
    * the current project position.
    *

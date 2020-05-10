@@ -60,6 +60,13 @@
 - Name search: escape underscore and percent sign properly. They were treated as
   wildcards before.
 
+- 3D viewer: history animations can be created again.
+
+- Measurements table: "N presynaptic sites" column includes now by default also
+  presynaptic connectors that don't have any postsynaptic link. To restore the
+  previous behavior, the "Include half links/synapses" checkbox can be
+  unchecked.
+
 ## 2020.02.15
 
 Contributors: Chris Barnes, Andrew Champion, Stephan Gerhard, Pat Gunn, Tom Kazimiers

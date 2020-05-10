@@ -174,7 +174,7 @@
       workingUp.applyMatrix4(m);
       camera.up.copy(workingUp);
 
-      return promiseNotify;
+      return Promise.resolve(promiseNotify);
     };
   };
 
@@ -246,7 +246,8 @@
       }
 
       currentDate.setTime(startEpoch + t * msTickLength);
-      CATMAID.tools.callIfFn(notify, currentDate, startDate, endDate);
+      return Promise.resolve(CATMAID.tools.callIfFn(notify, currentDate,
+          startDate, endDate));
     };
   };
 

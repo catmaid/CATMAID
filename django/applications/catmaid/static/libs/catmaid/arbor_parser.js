@@ -116,7 +116,10 @@
       if (count) t[node] = count + 1;
       else t[node] = 1;
       t.count += 1;
-      t.partners[row[5]] = true;
+      // This can happen if with_halflinks is used with the compact-arbor query.
+      if (row[5] !== undefined) {
+        t.partners[row[5]] = true;
+      }
       t.connectors[row[2]] = true; // 2: connector ID
     }
     this.n_outputs = io[0].count;

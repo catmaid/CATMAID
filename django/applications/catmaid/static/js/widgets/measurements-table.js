@@ -29,6 +29,9 @@
     // Whether or not fragments of each skeleton should be aggregated into a
     // single row.
     this.aggregateFragments = false;
+    // Whether only connector nodes should be respected that hald a full
+    // pre/post connection
+    this.withHalfLinks = true;
   };
 
   SkeletonMeasurementsTable.prototype = Object.create(CATMAID.SkeletonSource.prototype);
@@ -135,6 +138,15 @@
         aggFragmentsLabel.appendChild(document.createTextNode('Sum fragments'));
         aggFragmentsLabel.setAttribute('title', 'If a skeleton is split into disconnected fragments (e.g. due to a node filter), all fragments of a skeleton can be displayed as aggregated values (sums) or as individual rows.');
         controls.appendChild(aggFragmentsLabel);
+
+        CATMAID.DOM.appendCheckbox(controls, 'Include half links/synapses',
+            'If unchecked, only connectors will be respected that are part of a complete ' +
+            'link (e.g. pre + post part for synapses). Otherwise, connectors without ' +
+            'partners will be respected as well. This affects only the "N presynaptic ' +
+            'sites" column.', this.withHalfLinks, e => {
+              this.withHalfLinks = e.target.checked;
+              this.update();
+            });
       },
       createContent: function(content) {
         var headings = '<tr>' + this.getLabels(true).map(function(label) {
@@ -201,7 +213,11 @@
         function(skid) {
           return `${project.id}/${skid}/1/1/0/compact-arbor`;
         },
-        function(skid) { return {}; },
+        skid => {
+          return {
+            'with_halflinks': this.withHalfLinks,
+          };
+        },
         function(skid, json) {
           let ap = new CATMAID.ArborParser().init('compact-arbor', json),
               arbor = ap.arbor,

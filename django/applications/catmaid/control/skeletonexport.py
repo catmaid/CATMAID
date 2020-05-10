@@ -844,7 +844,8 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
 
 
 def _compact_arbor(project_id=None, skeleton_id=None, with_nodes=None,
-        with_connectors=None, with_tags=None, with_time=None, ordered=False) -> Tuple[Tuple, List, DefaultDict[Any, List]]:
+        with_connectors=None, with_tags=None, with_time=None, ordered=False,
+        with_halflinks=False) -> Tuple[Tuple, List, DefaultDict[Any, List]]:
     """
     Performance-critical function. Do not edit unless to improve performance.
     Returns, in JSON, [[nodes], [connections], {nodeID: [tags]}],
@@ -914,37 +915,65 @@ def _compact_arbor(project_id=None, skeleton_id=None, with_nodes=None,
         relations = dict(cursor.fetchall())
 
     if 0 != with_connectors:
-        # Fetch all inputs and outputs
-
+        # Fetch all inputs and outputs, optionally also those connectors that
+        # have only one treenode linked.
         pre = relations['presynaptic_to']
         post = relations['postsynaptic_to']
 
-        cursor.execute('''
-            SELECT tc1.treenode_id, tc1.confidence,
-                   tc1.connector_id,
-                   tc2.confidence, tc2.treenode_id, tc2.skeleton_id,
-                   tc1.relation_id, tc2.relation_id
-            FROM treenode_connector tc1,
-                 treenode_connector tc2
-            WHERE tc1.skeleton_id = %(skeleton_id)s
-              AND tc1.id != tc2.id
-              AND tc1.connector_id = tc2.connector_id
-              AND (tc1.relation_id = %(pre)s OR tc1.relation_id = %(post)s)
-            {order}
-        '''.format(**{
-            'order': 'ORDER BY tc1.treenode_id' if ordered else ''
-        }), {
-            'skeleton_id': skeleton_id,
-            'pre': pre,
-            'post': post,
-        })
+        if with_halflinks:
+            cursor.execute('''
+                SELECT tc1.treenode_id, tc1.confidence,
+                       tc1.connector_id,
+                       tc2.confidence, tc2.treenode_id, tc2.skeleton_id,
+                       tc1.relation_id, tc2.relation_id
+                FROM treenode_connector tc1
+                LEFT JOIN treenode_connector tc2
+                    ON tc2.connector_id = tc1.connector_id
+                    AND tc1.id != tc2.id
+                WHERE tc1.skeleton_id = %(skeleton_id)s
+                  AND tc1.relation_id IN (%(pre)s, %(post)s)
+                {order}
+            '''.format(**{
+                'order': 'ORDER BY tc1.treenode_id' if ordered else ''
+            }), {
+                'skeleton_id': skeleton_id,
+                'pre': pre,
+                'post': post,
+            })
 
-        for row in cursor.fetchall():
-            # Ignore all other kinds of relation pairs (there shouldn't be any)
-            if row[6] == pre and row[7] == post:
-                connectors.append((row[0], row[1], row[2], row[3], row[4], row[5], 0, 1))
-            elif row[6] == post and row[7] == pre:
-                connectors.append((row[0], row[1], row[2], row[3], row[4], row[5], 1, 0))
+            for row in cursor.fetchall():
+                # Ignore all other kinds of relation pairs (there shouldn't be any)
+                if row[6] == pre and row[7] in (post, None):
+                    connectors.append((row[0], row[1], row[2], row[3], row[4], row[5], 0, 1))
+                elif row[6] == post and row[7] in (pre, None):
+                    connectors.append((row[0], row[1], row[2], row[3], row[4], row[5], 1, 0))
+        else:
+            cursor.execute('''
+                SELECT tc1.treenode_id, tc1.confidence,
+                       tc1.connector_id,
+                       tc2.confidence, tc2.treenode_id, tc2.skeleton_id,
+                       tc1.relation_id, tc2.relation_id
+                FROM treenode_connector tc1,
+                     treenode_connector tc2
+                WHERE tc1.skeleton_id = %(skeleton_id)s
+                  AND tc1.id != tc2.id
+                  AND tc1.connector_id = tc2.connector_id
+                  AND (tc1.relation_id = %(pre)s OR tc1.relation_id = %(post)s)
+                {order}
+            '''.format(**{
+                'order': 'ORDER BY tc1.treenode_id' if ordered else ''
+            }), {
+                'skeleton_id': skeleton_id,
+                'pre': pre,
+                'post': post,
+            })
+
+            for row in cursor.fetchall():
+                # Ignore all other kinds of relation pairs (there shouldn't be any)
+                if row[6] == pre and row[7] == post:
+                    connectors.append((row[0], row[1], row[2], row[3], row[4], row[5], 0, 1))
+                elif row[6] == post and row[7] == pre:
+                    connectors.append((row[0], row[1], row[2], row[3], row[4], row[5], 1, 0))
 
     if 0 != with_tags:
         # Fetch all node tags
@@ -973,10 +1002,13 @@ def _compact_arbor(project_id=None, skeleton_id=None, with_nodes=None,
 
 @requires_user_role(UserRole.Browse)
 def compact_arbor(request:HttpRequest, project_id=None, skeleton_id=None, with_nodes=None, with_connectors=None, with_tags=None) -> JsonResponse:
-    with_time = get_request_bool(request.GET, "with_time", False)
-    ordered = get_request_bool(request.GET, "ordered", False)
+    data = request.POST if request.method == 'POST' else request.GET
+    with_time = get_request_bool(data, "with_time", False)
+    with_halflinks = get_request_bool(data, "with_halflinks", False)
+    ordered = get_request_bool(data, "ordered", False)
     nodes, connectors, tags = _compact_arbor(project_id, skeleton_id,
-            with_nodes, with_connectors, with_tags, with_time, ordered)
+            with_nodes, with_connectors, with_tags, with_time, ordered,
+            with_halflinks)
     return JsonResponse((nodes, connectors, tags), safe=False,
             json_dumps_params={
                 'separators': (',', ':')

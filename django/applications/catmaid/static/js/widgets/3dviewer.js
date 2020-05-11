@@ -8831,7 +8831,7 @@
           }
 
           // Update animation and then render
-          animation.update(t, options)
+          Promise.resolve(animation.update(t, options))
             .then(() => {
               this.space.render();
               this.animationRequestId = window.requestAnimationFrame(

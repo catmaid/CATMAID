@@ -1687,6 +1687,41 @@ var WindowMaker = new function()
               this.value = value;
             },
           },
+          {
+            type: 'checkbox',
+            label: 'Total duration',
+            value: o.animation_limit_duration,
+            onclick: function() {
+              WA.options.animation_limit_duration = this.checked;
+              let durationField = document.getElementById(
+                  `3dviewer-animation-duration-${WA.widgetID}`);
+              if (durationField) {
+                if (this.checked) {
+                  durationField.removeAttribute('disabled');
+                } else {
+                  durationField.setAttribute('disabled', 'disabled');
+                }
+              }
+            },
+            title: 'If checked, the animation is stopped after the specified amount of time.',
+          },
+          {
+            type: 'numeric',
+            // It's the input for the field before
+            label: '',
+            id: '3dviewer-animation-duration-' + WA.widgetID,
+            value: o.animation_duration,
+            length: 4,
+            postlabel: 'sec',
+            disabled: !o.animation_limit_duration,
+            onchange: function() {
+              let value = Number(this.value);
+              if (!Number.isNaN(value)) {
+                o.animation_duration = value;
+              }
+              this.value = value;
+            },
+          },
         ]);
 
     var historyTimeDisplay = document.createElement('span');

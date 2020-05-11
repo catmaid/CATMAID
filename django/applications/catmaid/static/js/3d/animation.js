@@ -38,7 +38,9 @@
     createAnimation: function(options) {
       options = options || {};
 
-      var animation = {};
+      var animation = {
+        options: options,
+      };
 
       var notify = options.notify || false;
 

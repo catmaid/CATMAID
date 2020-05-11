@@ -1326,6 +1326,8 @@
     this.animation_history_include_merges = true;
     this.animation_history_empy_bout_length = 10;
     this.animation_history_reset_after_stop = false;
+    this.animation_limit_duration = false;
+    this.animation_duration = 60; // sec
     this.strahler_cut = 2;
     this.use_native_resolution = true;
     this.interpolate_sections = true;
@@ -8785,9 +8787,13 @@
    * Render loop for the given animation.
    */
   WebGLApplication.prototype.renderAnimation = (function() {
-    let delta, now, then = Date.now();
-    return function(animation, t, singleFrame, options) {
+    let delta, now, start, then = Date.now();
+    return function(animation, t, singleFrame, options, state={}) {
       let interval = 1000 / this.options.animation_fps;
+
+      if (!state.start) {
+        state.start = Date.now();
+      }
 
       // Make sure we know this animation
       this.animation = animation;
@@ -8805,17 +8811,25 @@
         if (delta > interval) {
           then = now - (delta % interval);
 
+          // If ther is a maximum duration limit active, stop the animation if
+          // it is reached.
+          if (options.duration && (now - state.start) / 1000 > options.duration)  {
+            CATMAID.msg('Animation ended', `It ran for a duration of ${options.duration} seconds.`);
+            this.stopAnimation();
+            return;
+          }
+
           // Update animation and then render
           animation.update(t, options)
             .then(() => {
               this.space.render();
               this.animationRequestId = window.requestAnimationFrame(
-                  this.renderAnimation.bind(this, animation, t + 1, false, options));
+                  this.renderAnimation.bind(this, animation, t + 1, false, options, state));
             })
             .catch(CATMAID.handleError);
         } else {
           this.animationRequestId = window.requestAnimationFrame(
-              this.renderAnimation.bind(this, animation, t, false, options));
+              this.renderAnimation.bind(this, animation, t, false, options, state));
         }
       }
     };
@@ -8837,7 +8851,7 @@
     }
 
     // Start animation at time point 0
-    this.renderAnimation(animation, time ? time : 0);
+    this.renderAnimation(animation, time ? time : 0, undefined, animation.options);
   };
 
   /**
@@ -8933,6 +8947,7 @@
         target: this.space.view.controls.target,
         speed: 2 * Math.PI / (this.options.animation_rotation_time * this.options.animation_fps),
         backandforth: this.options.animation_back_forth,
+        duration: this.options.animation_limit_duration ? this.options.animation_duration : null,
       };
 
       let notifyListeners = [];

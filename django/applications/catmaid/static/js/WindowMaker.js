@@ -1531,9 +1531,6 @@ var WindowMaker = new function()
     axisOptions.onchange = function() {
       WA.options.animation_axis = this.value;
     };
-    var axisOptionsLabel = document.createElement('label');
-    axisOptionsLabel.appendChild(document.createTextNode('Rotation axis:'));
-    axisOptionsLabel.appendChild(axisOptions);
 
     DOM.appendToTab(tabs['Animation'],
         [
@@ -1551,7 +1548,15 @@ var WindowMaker = new function()
             }
           }],
           ['Stop', WA.stopAnimation.bind(WA)],
-          [axisOptionsLabel],
+          {
+            type: 'checkbox',
+            label: 'Rotation axis: ',
+            value: o.animation_rotation,
+            onclick: function() {
+              WA.options.animation_rotation = this.checked;
+            },
+          },
+          [axisOptions],
           {
             type: 'numeric',
             label: 'Rotation time (sec)',

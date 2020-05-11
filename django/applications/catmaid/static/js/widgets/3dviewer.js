@@ -1311,6 +1311,7 @@
     this.min_synapse_free_cable = 5000; // nm
     this.lock_view = false;
     this.animation_fps = 25;
+    this.animation_rotation = true;
     this.animation_rotation_axis = "up";
     this.animation_rotation_time = 15;
     this.animation_back_forth = false;
@@ -8945,7 +8946,8 @@
         axis: this.options.animation_axis,
         camera: this.space.view.camera,
         target: this.space.view.controls.target,
-        speed: 2 * Math.PI / (this.options.animation_rotation_time * this.options.animation_fps),
+        speed: this.options.animation_rotation ?
+            (2 * Math.PI / (this.options.animation_rotation_time * this.options.animation_fps)) : 0,
         backandforth: this.options.animation_back_forth,
         duration: this.options.animation_limit_duration ? this.options.animation_duration : null,
       };
@@ -9242,8 +9244,10 @@
         'animation-export-duration', 'animation-export-limit-duration',
         this.options.animation_limit_duration, this.options.animation_duration, true,
         'If enabled, the exported video will have the defined length, regardless of other parameters.');
-    var rotationsField = dialog.appendField("# Rotations: ",
-        "animation-export-num-rotations", '1');
+    var rotationsField = dialog.appendCheckboxField("Rotations: ",
+        'animation-export-rotate', 'animation-export-num-rotations',
+        true, '1', true,
+        'If enabled the specified number of rotations is performed, based on the speed defined below. If a duration is enabled, the duration will determine the total length.');
     var rotationtimeField = dialog.appendField("Rotation time (s): ",
         "animation-export-rotation-time", '15');
     var backforthField = dialog.appendCheckbox('Back and forth',
@@ -9283,7 +9287,7 @@
     historyField.onchange = function() {
       let rotationVisibility = this.checked ? 'none' : 'block';
       let historyVisibility = this.checked ? 'block' : 'none';
-      rotationsField.parentNode.style.display = rotationVisibility;
+      rotationsField.field.parentNode.style.display = rotationVisibility;
       rotationtimeField.parentNode.style.display = rotationVisibility;
       backforthField.parentNode.style.display = rotationVisibility;
     };
@@ -9347,13 +9351,14 @@
             nframes = duration * framerate;
             options.completeHistory = !durationField.checkbox.checked;
           } else {
-            var rotations = parseFloat(rotationsField.value);
+            var rotations = parseFloat(rotationsField.field.value);
             var rotationtime = parseFloat(rotationtimeField.value);
             nframes = durationField.checkbox.checked ? (duration * framerate) :
                 Math.ceil(rotations * rotationtime * framerate);
             options.type = 'rotation';
             options.axis = rotationAxis;
-            options.speed = 2 * Math.PI / (rotationtime * framerate);
+            options.speed = rotationsField.checkbox.checked ?
+                (2 * Math.PI / (rotationtime * framerate)) : 0;
             options.backandforth = backforthField.checked;
             options.restoreView = restoreViewField.checked;
           }

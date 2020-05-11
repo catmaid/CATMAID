@@ -10,7 +10,7 @@
   "use strict";
 
   function getOption(options, key) {
-    if (options[key]) {
+    if (options.hasOwnProperty(key)) {
       return options[key];
     } else {
       throw new CATMAID.Error("Option not found: " + key);
@@ -131,8 +131,8 @@
     var numRotations = null;
 
     var targetDistance = camera.position.distanceTo(targetPosition);
-    rSpeed = rSpeed || 0.01;
-    backAndForth = backAndForth || false;
+    rSpeed = CATMAID.tools.getDefined(rSpeed, 0.01);
+    backAndForth = CATMAID.tools.getDefined(backAndForth, false);
 
     // Start position for the rotation, relative to the target
     var startPosition = camera.position.clone().sub(targetPosition);

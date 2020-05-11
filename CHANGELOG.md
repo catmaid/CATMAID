@@ -75,6 +75,10 @@ Graph widget:
   Instead, the duration input can be used. If the duration input isn't enabled,
   the complete history is exported.
 
+- Both in-widget and exported animations don't need to have rotation anymore. A
+  new checkbox can be used to disabled rotation. Without rotation the camera
+  will just keep its position at the moment.
+
 Docker:
 
 - Asynchronous tasks can now also be run inside the Docker container. Celery and

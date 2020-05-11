@@ -201,6 +201,39 @@
     return checkbox;
   };
 
+  OptionsDialog.prototype.appendCheckboxField = function(title, checkboxID,
+      fieldID, selected, fieldValue, autoDisable, helptext) {
+    var p = document.createElement('p');
+    var label = document.createElement('label');
+    var checkbox = document.createElement('input');
+    checkbox.setAttribute('type', 'checkbox');
+    checkbox.setAttribute('id', checkboxID);
+    if (selected) checkbox.setAttribute('checked', 'true');
+    label.appendChild(checkbox);
+    label.appendChild(document.createTextNode(title));
+    let field = document.createElement('input');
+    field.setAttribute('id', fieldID);
+    field.value = fieldValue;
+    label.appendChild(field);
+    p.appendChild(label);
+    if (helptext) {
+      label.setAttribute('title', helptext);
+    }
+    this.dialog.appendChild(p);
+
+    if (autoDisable) {
+      if (!selected) field.disabled = true;
+      checkbox.addEventListener('change', e => {
+        field.disabled = !e.target.checked;
+      });
+    }
+
+    return {
+      checkbox: checkbox,
+      field: field,
+    };
+  };
+
   /**
    * Add a table to the options dialog that includes sorting controls for each
    * row. This table has two columns: row order controls and title. If the row

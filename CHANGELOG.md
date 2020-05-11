@@ -62,6 +62,19 @@ Graph widget:
 - Add options to configure the edge text outline size and opacity. The options
   area available from the properties dialog.
 
+3D viewer:
+
+- For both in-widget and exported animations a duration time in seconds can now
+  be specified. When enabled and an animation is played in the 3D Viewer, the
+  duration will just stop rotation and any other ongoing animation after the
+  specified time in seconds. If enabled for an animation export, it determines
+  the total length of the video, regardless of history or rotation settings.
+
+- The history export in the animation export doesn't use a frame number input
+  field anymore and the "Complete history" checkbox has been removed, too.
+  Instead, the duration input can be used. If the duration input isn't enabled,
+  the complete history is exported.
+
 Docker:
 
 - Asynchronous tasks can now also be run inside the Docker container. Celery and

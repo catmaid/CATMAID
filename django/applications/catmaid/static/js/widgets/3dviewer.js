@@ -9229,23 +9229,25 @@
   {
     var dialog = new CATMAID.OptionsDialog("Animation export options");
     dialog.appendMessage('Adjust the animation export settings to your liking. ' +
+       'The current widget animation settings are used as starting point. ' +
        'The resulting file will be in WebM format and might take some seconds ' +
        'to be generated. The default frame size matches the current size of ' +
-       'the 3D viewer.');
+       'the 3D viewer. The duration of the export can be defined either in ' +
+       'terms of a total length or the number of rotations.');
 
     // Add options to dialog
     var historyField = dialog.appendCheckbox('Reconstruction history',
         'animation-export-history', false);
+    var durationField = dialog.appendCheckboxField("Duration (sec): ",
+        'animation-export-duration', 'animation-export-limit-duration',
+        this.options.animation_limit_duration, this.options.animation_duration, true,
+        'If enabled, the exported video will have the defined length, regardless of other parameters.');
     var rotationsField = dialog.appendField("# Rotations: ",
         "animation-export-num-rotations", '1');
     var rotationtimeField = dialog.appendField("Rotation time (s): ",
         "animation-export-rotation-time", '15');
     var backforthField = dialog.appendCheckbox('Back and forth',
         'animation-export-backforth', this.options.animation_back_forth);
-    var completeHistoryCheckbox = dialog.appendCheckbox('Complete history',
-        'animation-complete-history', true);
-    var nframesField = dialog.appendField("# Frames: ",
-        "animation-export-nframes", '100');
     var framerateField = dialog.appendField("Frames per second: ",
         "animation-export-frame-rate", '25');
     var frameWidthField = dialog.appendField("Frame width (px): ",
@@ -9272,13 +9274,6 @@
     var target = this.space.view.controls.target;
     var rotationAxis = this.options.animation_axis;
 
-    nframesField.parentNode.style.display = 'none';
-    nframesField.disabled = true;
-    completeHistoryCheckbox.parentNode.style.display = 'none';
-    completeHistoryCheckbox.onchange = function() {
-      nframesField.disabled = this.checked;
-    };
-
     zSectionField.onchange = function() {
       let newDisplayVal = this.checked ? 'block' : 'none';
       zSectionChangeRate.parentNode.style.display = newDisplayVal;
@@ -9291,8 +9286,6 @@
       rotationsField.parentNode.style.display = rotationVisibility;
       rotationtimeField.parentNode.style.display = rotationVisibility;
       backforthField.parentNode.style.display = rotationVisibility;
-      nframesField.parentNode.style.display = historyVisibility;
-      completeHistoryCheckbox.parentNode.style.display = historyVisibility;
     };
 
     var docURL = CATMAID.makeDocURL('user_faq.html#faq-3dviewer-webm');
@@ -9347,14 +9340,17 @@
           var options = {
             camera: camera,
             target: target,
+            duration: durationField.checkbox.checked ? durationField.field.value : null,
           };
+          let duration = parseFloat(durationField.field.value);
           if (historyField.checked) {
-            nframes = parseInt(nframesField.value);
-            options.completeHistory = completeHistoryCheckbox.checked;
+            nframes = duration * framerate;
+            options.completeHistory = !durationField.checkbox.checked;
           } else {
             var rotations = parseFloat(rotationsField.value);
             var rotationtime = parseFloat(rotationtimeField.value);
-            nframes = Math.ceil(rotations * rotationtime * framerate);
+            nframes = durationField.checkbox.checked ? (duration * framerate) :
+                Math.ceil(rotations * rotationtime * framerate);
             options.type = 'rotation';
             options.axis = rotationAxis;
             options.speed = 2 * Math.PI / (rotationtime * framerate);

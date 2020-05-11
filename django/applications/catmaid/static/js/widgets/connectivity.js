@@ -790,7 +790,7 @@
           self.updateReviewColors(datatable);
 
           // Inform DataTables that the data has changed.
-          datatable.cells(null, 'review:name').invalidate('data').draw(false);
+          datatable.cells(null, ['review:name', 'nodecount:name']).invalidate('data').draw(false);
         });
       });
 
@@ -1640,6 +1640,13 @@
             render: function(data, type, row, meta) {
               return type === "display" ? (data + "%") : data;
             }
+          },
+          {
+            name: 'nodecount',
+            class: 'cm-center',
+            type: 'html-num-fmt',
+            searchable: false,
+            targets: [-1],
           },
           { targets: ['_all'], type: 'html-num-fmt', searchable: false } // All other columns
         ]

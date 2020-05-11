@@ -1727,6 +1727,41 @@ var WindowMaker = new function()
               this.value = value;
             },
           },
+          {
+            type: 'checkbox',
+            label: 'Animate zoom',
+            value: o.animation_animate_zoom,
+            onclick: function() {
+              WA.options.animation_animate_zoom = this.checked;
+              let zoomField = document.getElementById(
+                  `3dviewer-animation-zoom-${WA.widgetID}`);
+              if (zoomField) {
+                if (this.checked) {
+                  zoomField.removeAttribute('disabled');
+                } else {
+                  zoomField.setAttribute('disabled', 'disabled');
+                }
+              }
+            },
+            title: 'If checked, the animation will zoom according to the defined factor.',
+          },
+          {
+            type: 'numeric',
+            // It's the input for the zoom field before
+            label: '',
+            id: '3dviewer-animation-zoom-' + WA.widgetID,
+            value: o.animation_zoom_per_sec,
+            length: 4,
+            postlabel: 'nm per sec',
+            disabled: !o.animation_zoom_per_sec,
+            onchange: function() {
+              let value = Number(this.value);
+              if (!Number.isNaN(value)) {
+                o.animation_zoom_per_sec = value;
+              }
+              this.value = value;
+            },
+          },
         ]);
 
     var historyTimeDisplay = document.createElement('span');

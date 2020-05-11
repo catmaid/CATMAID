@@ -139,6 +139,7 @@
 
     let originalUp = camera.up.clone();
     let workingUp = new THREE.Vector3();
+    let cameraTmpPos = new THREE.Vector3();
 
     var m = new THREE.Matrix4();
 
@@ -152,11 +153,7 @@
       if (currentRotation !== numRotations) {
         numRotations = currentRotation;
       }
-      // Call notification function, if any
-      let promiseNotify;
-      if (notify) {
-        promiseNotify = notify(currentRotation, t);
-      }
+
 
       // In back and forth mode, movement direction is reversed once a full circle
       // is reached.
@@ -167,6 +164,19 @@
       // Set matrix to a rotation around a certain axis
       m.makeRotationAxis(axis, rad);
 
+      // Store the current camera position to be able to find a difference to
+      // after notifications are called.
+      cameraTmpPos.copy(camera.position);
+
+      // Call notification function, if any
+      let promiseNotify;
+      if (notify) {
+        promiseNotify = notify(currentRotation, t, camera);
+      }
+
+      // Find difference
+      cameraTmpPos.sub(camera.position);
+
       // Rotate the camera around this axis by using a copy of the start position
       // (relative to target), rotating it and make it a world position by adding
       // it to the target.
@@ -175,6 +185,9 @@
       workingUp.copy(originalUp);
       workingUp.applyMatrix4(m);
       camera.up.copy(workingUp);
+
+      // Apply a potental camera difference caused by notify handlers
+      camera.position.add(cameraTmpPos);
 
       return Promise.resolve(promiseNotify);
     };

@@ -79,6 +79,11 @@ Graph widget:
   new checkbox can be used to disabled rotation. Without rotation the camera
   will just keep its position at the moment.
 
+- Zoom behavior of the camera can be animated both for in-widget and export
+  animations. When enabled, a speed of nm/sec can be defined for the camera with
+  which it will move towards its target. This setting is both available in the
+  animation tab and the export dialog.
+
 Docker:
 
 - Asynchronous tasks can now also be run inside the Docker container. Celery and

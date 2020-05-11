@@ -1315,6 +1315,8 @@
     this.animation_rotation_axis = "up";
     this.animation_rotation_time = 15;
     this.animation_back_forth = false;
+    this.animation_animate_zoom = false;
+    this.animation_zoom_per_sec = 100;
     this.animation_animate_z_plane = false;
     this.animation_zplane_changes_per_sec = 10;
     this.animation_zplane_change_step = 2;
@@ -5452,6 +5454,32 @@
     };
   })();
 
+  WebGLApplication.prototype.Space.prototype.View.prototype.moveToAim = function(distance, controls = undefined, camera = undefined) {
+    controls = controls || this.controls;
+    camera = camera || this.camera;
+    var change = new THREE.Vector3().copy(camera.position)
+      .sub(controls.target);
+
+    // If the distance to the target is smaller than the distance the camera
+    // should move toward the target and we are moving forward, update the
+    // moving distance to be half the target distance.
+    var camTargetDistance = change.length();
+    let absUpdateDistance = Math.abs(distance);
+    if (camTargetDistance < absUpdateDistance && distance < 0) {
+      absUpdateDistance = camTargetDistance * 0.5;
+      distance = absUpdateDistance * dirFactor;
+      // And cancel the location update if we are closer than ten units
+      // (arbitary close distance).
+      if (camTargetDistance - absUpdateDistance < 10) {
+        return;
+      }
+    }
+
+    // Scale change vector into usable range
+    change.normalize().multiplyScalar(distance);
+    camera.position.add(change);
+  };
+
   /** Construct mouse controls as objects, so that no context is retained. */
   WebGLApplication.prototype.Space.prototype.View.prototype.MouseControls = function() {
 
@@ -5492,26 +5520,8 @@
         var dirFactor = movingForward ? -1 : 1;
         var distance = absUpdateDistance * dirFactor;
         var controls = this.CATMAID_view.controls;
-        var change = new THREE.Vector3().copy(camera.position)
-          .sub(controls.target);
 
-        // If the distance to the target is smaller than the distance the camera
-        // should move toward the target and we are moving forward, update the
-        // moving distance to be half the target distance.
-        var camTargetDistance = change.length();
-        if (camTargetDistance < absUpdateDistance && movingForward) {
-          absUpdateDistance = camTargetDistance * 0.5;
-          distance = absUpdateDistance * dirFactor;
-          // And cancel the location update if we are closer than ten units
-          // (arbitary close distance).
-          if (camTargetDistance - absUpdateDistance < 10) {
-            return;
-          }
-        }
-
-        // Scale change vector into usable range
-        change.normalize().multiplyScalar(distance);
-        camera.position.add(change);
+        this.CATMAID_view.moveToAim(distance, controls);
 
         // Move the target only if Alt was pressed
         if (ev.altKey) {
@@ -8978,6 +8988,15 @@
         stopListeners.push(this.createZPlaneResetHandler());
       }
 
+      if (this.options.animation_animate_zoom) {
+        notifyListeners.push(this.createZoomChangeHandler(
+            this.options.animation_fps / Number(this.options.animation_zoom_per_sec),
+            Number(this.options.animation_zoom_per_sec)));
+        // Create a stop handler that resets visibility to the state we found before
+        // the animation.
+        stopListeners.push(this.createZoomResetHandler());
+      }
+
       options['notify'] = function() {
         return Promise.all(notifyListeners.map(l => l(...arguments)));
       };
@@ -9223,6 +9242,25 @@
     };
   };
 
+  WebGLApplication.prototype.createZoomChangeHandler = function(frameChangeRate, changeStep) {
+    let steps = 0, lastOffset = 0;
+    return (rotation, frame, camera) => {
+      steps = Math.floor(frame / frameChangeRate);
+      let offset = steps * changeStep - lastOffset;
+      lastOffset = offset;
+      this.space.view.moveToAim(offset, undefined, camera);
+      this.space.render();
+      return Promise.resolve();
+    };
+  };
+
+  WebGLApplication.prototype.createZoomResetHandler = function(zoom) {
+    let cameraPosition = this.space.view.camera.position.clone();
+    return () => {
+      this.space.view.camera.position.copy(cameraPosition);
+    };
+  };
+
   /**
    * Export an animation as WebM video (if the browser supports it). First, a
    * dialog is shown to adjust export preferences.
@@ -9266,6 +9304,10 @@
         "animation-export-z-change-rate", this.options.animation_zplane_changes_per_sec);
     var zSectionStep = dialog.appendField("Z plane Change step (n): ",
         "animation-export-z-step", this.options.animation_zplane_change_step);
+    var zoomField = dialog.appendCheckboxField("Zoom: ",
+        'animation-export-zoom', 'animation-export-zoom-step',
+        this.options.animation_animate_zoom, this.options.animation_zoom_per_sec, true,
+        'If enabled the specified speed will be tracel by the camera in the direction of the current target.');
 
     if (!this.options.show_zplane) {
       zSectionChangeRate.parentNode.style.display = 'none';
@@ -9384,6 +9426,15 @@
             // Create a stop handler that resets visibility to the state we found before
             // the animation.
             stopListeners.push(this.createZPlaneResetHandler());
+          }
+
+          if (zoomField.checkbox.checked) {
+            notifyListeners.push(this.createZoomChangeHandler(
+                framerate / Number(zoomField.field.value),
+                Number(this.options.animation_zoom_per_sec)));
+            // Create a stop handler that resets visibility to the state we found before
+            // the animation.
+            stopListeners.push(this.createZoomResetHandler());
           }
 
           options['notify'] = function() {

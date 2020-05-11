@@ -732,7 +732,7 @@
    */
   SkeletonConnectivity.prototype.updateNeuronNames = function() {
     $("#connectivity_widget" + this.widgetID)
-        .find('a[data-skeleton-id]')
+        .find('a[data-role=name]')
         .each(function (index, element) {
           this.textContent = CATMAID.NeuronNameService.getInstance().getName(this.getAttribute('data-skeleton-id'));
     });
@@ -1624,7 +1624,7 @@
               var name = nns.getName(skeletonId);
               if (type === "display") {
                 var nameLink = '<a href="#" id="a-connectivity-table-' +
-                    widget.widgetID + '-' + skeletonId + '" data-skeleton-id="' +
+                    widget.widgetID + '-' + skeletonId + '" data-role="name" data-skeleton-id="' +
                     skeletonId + '">' + name + '</a>';
                 return nameLink;
               } else {

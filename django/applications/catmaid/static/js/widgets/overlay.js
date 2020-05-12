@@ -4915,10 +4915,7 @@ var SkeletonAnnotations = {};
         if ('Escape' === event.key) {
           // Unbind key handler and remove circle
           $('body').off('keydown.catmaidRadiusSelect');
-          fakeNode.removeSurroundingCircle();
-          if (fakeNode.id === id) {
-            fakeNode.disable();
-          }
+          hideCircleAndCallback();
           return true;
         }
         return false;
@@ -4929,7 +4926,9 @@ var SkeletonAnnotations = {};
         $('body').off('keydown.catmaidRadiusSelect');
         // Remove circle and call callback
         fakeNode.removeSurroundingCircle(displayRadius);
-        fakeNode.disable();
+        if (fakeNode.id === id) {
+          fakeNode.disable();
+        }
         self.redraw();
       }
     }

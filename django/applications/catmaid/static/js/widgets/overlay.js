@@ -4734,8 +4734,13 @@ var SkeletonAnnotations = {};
         // Block location changes while selecting a radius
         self.pixiLayer.blockLocationChange = true;
 
+        let initialPos = {
+          x: self.coords.lastX,
+          y: self.coords.lastY,
+          z: originalStackZ,
+        };
         originalNode.drawSurroundingCircle(false, toStack, stackToProject,
-            hideCircleAndCallback);
+            hideCircleAndCallback, initialPos);
         // Attach a handler for the ESC key to cancel selection
         $('body').on('keydown.catmaidRadiusSelect', function(event) {
           if ('Escape'  === event.key) {
@@ -4901,9 +4906,10 @@ var SkeletonAnnotations = {};
     }
 
     function toggleMeasurementTool() {
+      let initialPos = {x: spos[0], y: spos[1], z: spos[2]};
       fakeNode.createGraphics();
       fakeNode.drawSurroundingCircle(true, toStack, stackToProject,
-          hideCircleAndCallback);
+          hideCircleAndCallback, initialPos);
       // Attach a handler for the ESC key to cancel selection
       $('body').on('keydown.catmaidRadiusSelect', function(event) {
         if ('Escape' === event.key) {

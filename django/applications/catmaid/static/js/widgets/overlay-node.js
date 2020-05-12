@@ -1038,7 +1038,7 @@
        * Draws a circle around the treenode and control its radius with the help of
        * the pointer (and a pointer-to-stack transform function).
        */
-      this.drawSurroundingCircle = function(drawLine, toStack, stackToProject, onclickHandler) {
+      this.drawSurroundingCircle = function(drawLine, toStack, stackToProject, onclickHandler, initialStackPos) {
         var self = this;
         // Create a circle object that represents the surrounding circle
         var color = 0xFFFF00;
@@ -1104,7 +1104,11 @@
         c.on('pointermove', function (event) {
           var e = event.data.originalEvent;
           var rS = toStack({x: e.offsetX, y: e.offsetY});
-          var rP = stackToProject(rS);
+          updateRadius(rS);
+        });
+
+        function updateRadius(mouseStackCoords) {
+          var rP = stackToProject(mouseStackCoords);
           var r = {
             x: rP.x - nodeP.x,
             y: rP.y - nodeP.y,
@@ -1143,7 +1147,11 @@
           }
 
           self.overlayGlobals.tracingOverlay.redraw();
-        });
+        }
+
+        if (initialStackPos) {
+          updateRadius(initialStackPos);
+        }
 
         // Don't let pointer down events bubble up
         c.on('pointerdown', function (event) {

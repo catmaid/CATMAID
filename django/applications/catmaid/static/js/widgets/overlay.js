@@ -4935,13 +4935,13 @@ var SkeletonAnnotations = {};
      * Transform a layer coordinate into stack space.
      */
     function toStack(r) {
-        var scaleX = 1 / (self.stackViewer.scale * self.stackViewer.primaryStack.anisotropy(0).x);
-        var scaleY = 1 / (self.stackViewer.scale * self.stackViewer.primaryStack.anisotropy(0).y);
-        var offsetX = self.stackViewer.x - self.stackViewer.viewWidth * scaleX / 2;
-        var offsetY = self.stackViewer.y - self.stackViewer.viewHeight * scaleY / 2;
-        return {
-          x: r.x * scaleX + offsetX,
-          y: r.y * scaleY + offsetY,
+      var scaleX = 1 / (self.stackViewer.scale * self.stackViewer.primaryStack.anisotropy(0).x);
+      var scaleY = 1 / (self.stackViewer.scale * self.stackViewer.primaryStack.anisotropy(0).y);
+      var offsetX = self.stackViewer.x - self.stackViewer.viewWidth * scaleX / 2;
+      var offsetY = self.stackViewer.y - self.stackViewer.viewHeight * scaleY / 2;
+      return {
+        x: r.x * scaleX + offsetX,
+        y: r.y * scaleY + offsetY,
         z: self.stackViewer.z
       };
     }

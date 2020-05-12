@@ -27,6 +27,7 @@ KNOWN_EXTENSIONS = (
     'synapsesuggestor',
     'autoproofreader',
     'circuitmap',
+    'catmaidsynister',
 )
 
 

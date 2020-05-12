@@ -4913,8 +4913,6 @@ var SkeletonAnnotations = {};
       // Attach a handler for the ESC key to cancel selection
       $('body').on('keydown.catmaidRadiusSelect', function(event) {
         if ('Escape' === event.key) {
-          // Unbind key handler and remove circle
-          $('body').off('keydown.catmaidRadiusSelect');
           hideCircleAndCallback();
           return true;
         }

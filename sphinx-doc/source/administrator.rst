@@ -21,5 +21,6 @@ Administrator Documentation
    additional_backends
    r_setup
    nblast
+   External sign-in using OAuth2 <oauth2>
    admin_faq
    catmaid_and_rds

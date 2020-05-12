@@ -80,6 +80,11 @@ var project;
    * @type {Menu}
    */
   var user_menu;
+  /**
+   * A menu for login options.
+   * @type {Menu}
+   */
+  var login_menu;
 
   // Timeout reference for user edit domain updates.
   var edit_domain_timeout;
@@ -276,6 +281,7 @@ var project;
           CATMAID.client.contextHelpVisibilityEnforced = false;
 
           CATMAID._updateUserMenu();
+          CATMAID._updateLoginMenu();
         });
   });
 
@@ -478,6 +484,10 @@ var project;
 
     user_menu = new Menu();
     document.getElementById( "user_menu" ).appendChild( user_menu.getView() );
+
+    login_menu = new Menu();
+    document.getElementById( "login_menu" ).appendChild( login_menu.getView() );
+    CATMAID._updateLoginMenu();
 
     var self = this;
 
@@ -941,6 +951,8 @@ var project;
 
       // Update user menu
       CATMAID._updateUserMenu();
+      // Update login menu
+      CATMAID._updateLoginMenu();
     } else {
       if (this._container) {
         this._container.classList.remove('authenticated');
@@ -950,6 +962,21 @@ var project;
 
   // Publicly accessible session
   CATMAID.session = null;
+
+  /**
+   * If there OAuth2 login providers enabled, they are dispalyed in a login
+   * menu.
+   */
+  CATMAID._updateLoginMenu = function() {
+    login_menu.update(Object.keys(CATMAID.extraAuthConfig).sort().map(cId => {
+      let c = CATMAID.extraAuthConfig[cId];
+      return {
+          action: CATMAID.makeURL(c.login_url),
+          title: `Login with ${c.name}`,
+          note: "",
+      };
+    }));
+  };
 
   CATMAID._updateUserMenu = function() {
       let userMenuItems = [{

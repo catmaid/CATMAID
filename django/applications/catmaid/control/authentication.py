@@ -17,12 +17,13 @@ from django import forms
 from django.conf import settings
 from django.urls import reverse
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.auth import authenticate, logout, login
 from django.contrib.auth.models import User, Group
 from django.db import connection
 from django.http import HttpRequest, HttpResponseRedirect, JsonResponse
 from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import _get_queryset, render
+
+from allauth.account.adapter import get_adapter
 
 from rest_framework.authtoken import views as auth_views
 from rest_framework.authtoken.serializers import AuthTokenSerializer
@@ -79,12 +80,13 @@ def login_user(request:HttpRequest) -> JsonResponse:
         # Try to authenticate user with credentials. A user object is only
         # returned if the user could be authenticated (i.e. correct password and
         # active user).
-        user = authenticate(username=username, password=password)
+        adapter = get_adapter()
+        user = adapter.authenticate(request, username=username, password=password)
 
         if user is not None:
             # Redirect to a success page.
             request.session['user_id'] = user.id
-            login(request, user)
+            adapter.login(request, user)
             return user_context_response(user, profile_context)
         else:
             try:
@@ -110,7 +112,8 @@ def login_user(request:HttpRequest) -> JsonResponse:
 
 
 def logout_user(request:HttpRequest) -> JsonResponse:
-    logout(request)
+    adapter = get_adapter()
+    adapter.logout(request)
     # Return profile context of anonymous user
     anon_user = get_anonymous_user()
     return user_context_response(anon_user)

@@ -1,0 +1,20 @@
+<html>
+  <head>
+    <title>Social account login error: {{ auth_error.code }}</title>
+    <style>
+    h1 {
+      font-size: 2em;
+    }
+    h2 {
+      font-size: 1.5em;
+    }
+    </style>
+  </head>
+  <body>
+    <h1>Login error</h1>
+    <p>There was an error while trying to log in through a social
+    account. Error code: {{ auth_error.code }}.</p>
+    <h2>Details</h2>
+    <p class="details">{{ auth_error.exception }}</p>
+  </body>
+</html>

@@ -87,6 +87,9 @@ INSTALLED_APPS = (
     'rest_framework.authtoken',
     'rest_framework_swagger',
     'channels',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
 )
 
 LOGGING = {
@@ -145,11 +148,14 @@ TEMPLATES = [
                 'django.template.context_processors.media',
                 'django.template.context_processors.static',
                 'django.template.context_processors.tz',
+                'django.template.context_processors.request', # Needed for allauth
                 'django.contrib.messages.context_processors.messages'
             ],
         }
     },
 ]
+
+ACCOUNT_EMAIL_VERIFICATION = 'none'
 
 # The URL requests are redirected after login
 LOGIN_REDIRECT_URL = '/'
@@ -158,10 +164,14 @@ LOGIN_REDIRECT_URL = '/'
 LOGIN_URL = '/accounts/login'
 
 AUTHENTICATION_BACKENDS = (
-    'django.contrib.auth.backends.ModelBackend', # default
+    # Default: allow login through regular Django users
+    'django.contrib.auth.backends.ModelBackend',
+    # Needed for object level permissions.
     'guardian.backends.ObjectPermissionBackend',
     # For API tokens. Disable if not using HTTPS:
     'rest_framework.authentication.TokenAuthentication',
+    # `allauth` specific authentication methods, such as login by e-mail
+    'allauth.account.auth_backends.AuthenticationBackend',
 )
 
 # If a request is authenticated through an API token permissions are

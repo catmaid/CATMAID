@@ -34,6 +34,8 @@ class CatmaidView(TemplateView):
                 app = apps.get_app_config(ie)
                 if hasattr(app, 'get_config'):
                     extension_config[ie] = app.get_config()
+                else:
+                    extension_config[ie] = {}
             except:
                 pass
         context['EXTENSION_CONFIG'] = json.dumps(extension_config)

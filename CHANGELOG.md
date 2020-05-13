@@ -121,6 +121,10 @@ Miscellaneous:
 - Neuron search: add option to show meta data columns (cable length, number of
   nodes, creation time and last edition time) for neurons.
 
+- Cropping: the ARTIST TIFF tag is now used to store meta information about the
+  cropping task: the min and max coordinates of the bounding box as well as the
+  resolution. ImageJ/Fiji read this particular tag.
+
 ### Bug fixes
 
 - Volume lists (drop down menus) are now automatically refreshed if a volume is

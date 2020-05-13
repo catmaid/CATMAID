@@ -114,6 +114,28 @@ class CropJob(object):
                     "modulo the channel count is not zero" )
         n_slices = n_images / n_channels
 
+        # Add bounding box information both to the image description tag
+        # (displayable in debug mode in ImageJ). And also misuse the ARTIST tag
+        # (code 315) to store this information.
+        bb = {
+            "minx": self.x_min,
+            "miny": self.y_min,
+            "minz": self.z_min,
+            "maxx": self.x_max,
+            "maxy": self.y_max,
+            "maxz": self.z_max,
+        }
+        artist_meta = {
+            'resx': res_x_nm_px,
+            'resy': res_y_nm_px,
+            'resz': res_z_nm_px,
+            'zoomlevel': self.zoom_level,
+            'rotation_cw': self.rotation_cw,
+            'ref_stack_id': self.ref_stack.id,
+        }
+        artist_meta.update(bb)
+        ifd[TiffImagePlugin.ARTIST] = json.dumps(artist_meta)
+
         # sample with (the actual is a line break instead of a .):
         # ImageJ=1.45p.images={0}.channels=1.slices=2.hyperstack=true.mode=color.unit=micron.finterval=1.spacing=1.5.loop=false.min=0.0.max=4095.0.
         ij_data = [
@@ -128,6 +150,14 @@ class CropJob(object):
             ij_data.append(f"channels={n_channels}")
             ij_data.append("hyperstack=true")
             ij_data.append("mode=composite")
+
+        for k,v in bb.items():
+            ij_data.append(f'{k}={v}')
+
+        # Add information on the exported view
+        ij_data.append(f"zoomlevel={self.zoom_level}")
+        ij_data.append(f"rotation_cw={self.rotation_cw}")
+        ij_data.append(f"ref_stack_id={self.ref_stack.id}")
 
         # We want to end with a final newline
         ij_data.append("")

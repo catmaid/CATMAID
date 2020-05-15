@@ -239,11 +239,19 @@ instances might run into an error similar to this::
 To fix this, the allowed shared memory (which is what Postgres makes heavy use
 of) can be increased. When running ``docker`` directly, add the ``--shm-size=2g``
 option. If ``docker-compose`` is in use, add ``shm_size: '2gb'`` to the build
-context::
+context of the database (db container). It requires at least v3.5 of the
+docker-compose file format::
 
-  build:
-    context:
-       shm_size: '2gb'
+  version: '3.5'
+
+  services:
+    build:
+      context: db
+         shm_size: '2gb' # build
+      shm_size: '2gb' # run-time
+
+Note that the ``db`` identifier moves from the ``build:`` line to the new
+``context:`` line.
 
 For more available shared memory, increase the example of ``2gb``.
 

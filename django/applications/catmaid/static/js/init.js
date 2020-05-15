@@ -971,7 +971,7 @@ var project;
     login_menu.update(Object.keys(CATMAID.extraAuthConfig).sort().map(cId => {
       let c = CATMAID.extraAuthConfig[cId];
       return {
-          action: CATMAID.makeURL(c.login_url),
+          action: c.login_url,
           title: `Login with ${c.name}`,
           note: "",
       };

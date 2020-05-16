@@ -157,8 +157,8 @@ TEMPLATES = [
 
 ACCOUNT_EMAIL_VERIFICATION = 'none'
 
-# The URL requests are redirected after login
-LOGIN_REDIRECT_URL = '/'
+# Redirect to start page after a login
+LOGIN_REDIRECT_URL = 'catmaid:home'
 
 # The URL where requests are redirected after login
 LOGIN_URL = '/accounts/login'

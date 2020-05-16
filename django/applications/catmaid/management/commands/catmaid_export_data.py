@@ -309,7 +309,7 @@ class Exporter():
                 logger.info(f"Exporting {len(all_annotations)} annotations " + \
                             f"and {len(all_annotation_links)} annotation links: {', '.join([a.name for a in all_annotations])}")
                 if self.annotation_annotations:
-                    logger.info(f"Only annotations in hierarchy of the following " + \
+                    logger.info("Only annotations in hierarchy of the following " + \
                                 f"annotations are exported: {', '.join(self.annotation_annotations)}")
 
             # Export tags

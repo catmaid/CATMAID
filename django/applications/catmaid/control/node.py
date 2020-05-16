@@ -2011,7 +2011,7 @@ def update_grid_cache(project_id, data_type, orientations,
                 full_local_n_cells = n_cells_w * n_cells_h * full_local_n_cells_d
                 n_ignored_global_cells = full_local_n_cells - local_n_cells
 
-                log(f' -> Local grid dimension (cells per dimension X, Y and Z): ' + \
+                log(' -> Local grid dimension (cells per dimension X, Y and Z): ' + \
                     f'{local_n_cells_w}, {local_n_cells_h}, {local_n_cells_d} ' + \
                     f'Total cells: {local_n_cells} Ignored: {n_ignored_global_cells} ' + \
                     f'Min XYZ idx: {local_min_w_i}, {local_min_h_i}, {local_min_d_i} ' + \

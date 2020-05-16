@@ -40,5 +40,5 @@ class Command(BaseCommand):
                 validate_project_setup(p.id, user.id, True)
                 logger.info(f"Validated project {p} (ID: {p.id})")
             except Exception as e:
-                logger.error(f"Could not validate project setup of project " + \
+                logger.error("Could not validate project setup of project " + \
                              f"{p} (ID: {p.id}): {e}")

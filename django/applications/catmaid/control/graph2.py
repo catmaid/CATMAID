@@ -463,7 +463,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
         if with_overall_counts:
             source_rel_id = relation_map[source_rel]
             target_rel_id = relation_map[target_rel]
-            cursor.execute(f'''
+            cursor.execute('''
                 SELECT tc1.skeleton_id, tc2.skeleton_id,
                     tc1.relation_id, tc2.relation_id,
                     LEAST(tc1.confidence, tc2.confidence)

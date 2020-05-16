@@ -257,7 +257,7 @@ def requires_user_role_for_any_project(roles):
                 return f(request, *args, **kwargs)
             else:
                 msg = f"User '{u.username}' with ID {u.id} does not have the required permissions " + \
-                      f"in any project"
+                      "in any project"
                 raise PermissionError(msg)
 
         return wraps(f)(inner_decorator)

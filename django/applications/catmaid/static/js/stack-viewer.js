@@ -122,6 +122,9 @@
     this.controlToggle = document.createElement( "div" );
     this.controlToggle.className = "stackControlToggle_hidden";
     this.controlToggle.title = "show/hide layer controls";
+    let toggleIcon = document.createElement("i");
+    toggleIcon.className = "fa fa-bars";
+    this.controlToggle.appendChild(toggleIcon);
     this.controlToggle.onpointerdown = e => {
       if ( typeof event != "undefined" && event )
         event.cancelBubble = true;

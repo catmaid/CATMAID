@@ -1280,7 +1280,7 @@ def find_next_branchnode_or_end(request:HttpRequest, project_id=None, treenode_i
 
 def _importing_user(project_id, treenode_id):
     cursor = connection.cursor()
-    cursor.execute(f"""
+    cursor.execute("""
         SELECT t_origin_tx.user_id
         FROM (
             SELECT txid, edition_time

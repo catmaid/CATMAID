@@ -178,8 +178,8 @@ def get_location(request:Request, project_id) -> Response:
                     location = (loc[0], loc[1], loc[2])
                     query = None
                 else:
-                    raise ValueError(f"Could not read location information, "
-                        "expected 3 columns, got {len(loc)}")
+                    raise ValueError("Could not read location information, "
+                        f"expected 3 columns, got {len(loc)}")
 
         if not location or len(location) != 3:
             raise ValueError(f"Could not find location for transaction {transaction_id}")

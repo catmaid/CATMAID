@@ -292,7 +292,7 @@ def list_connectors(request:HttpRequest, project_id=None) -> JsonResponse:
             raise ValueError("Unknown relation: " + relation_type)
 
     if skeleton_ids:
-        constraints.append(f'''
+        constraints.append('''
             JOIN treenode_connector tc
                 ON tc.connector_id = c.id
             JOIN UNNEST(%(skeleton_ids)s::bigint[]) q_skeleton(id)
@@ -318,7 +318,7 @@ def list_connectors(request:HttpRequest, project_id=None) -> JsonResponse:
         except KeyError:
             missing_relations = ", ".join(filter(lambda x: x not in relation_map, without_relation_types))
             raise ValueError(f'Unknown relation: {missing_relations}')
-        constraints.append(f'''
+        constraints.append('''
             LEFT JOIN treenode_connector tc_wo
                 ON tc_wo.connector_id = c.id
                 AND tc_wo.relation_id  = ANY (%(wo_rel_ids)s::bigint[])
@@ -330,7 +330,7 @@ def list_connectors(request:HttpRequest, project_id=None) -> JsonResponse:
         params['wo_rel_ids'] = wo_rel_ids
 
     if tags:
-        constraints.append(f'''
+        constraints.append('''
             JOIN connector_class_instance cci
                 ON cci.connector_id = c.id
             JOIN class_instance label

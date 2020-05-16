@@ -13,10 +13,10 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         if hasattr(settings, 'R_LIBS_USER'):
             if not os.path.exists(settings.R_LIBS_USER):
-                raise CommandError(f'The path defined by R_LIBS_USER in ' + \
+                raise CommandError('The path defined by R_LIBS_USER in ' + \
                         'settings.py ({settings.R_LIBS_USER}) does not exist.')
             if not os.access(settings.R_LIBS_USER, os.W_OK):
-                raise CommandError(f'The path defined by R_LIBS_USER in ' + \
+                raise CommandError('The path defined by R_LIBS_USER in ' + \
                         f'settings.py ({settings.R_LIBS_USER}) is not writable.')
             install_dependencies()
         else:

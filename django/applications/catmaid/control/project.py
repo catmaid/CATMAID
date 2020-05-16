@@ -355,7 +355,7 @@ def export_project_data(projects) -> List:
     user_project_ids = [p.id for p in projects]
 
     # Get information on all relevant stack mirrors
-    cursor.execute(f"""
+    cursor.execute("""
         SELECT sm.id, sm.stack_id, sm.title, sm.image_base, sm.file_extension,
                 sm.tile_width, sm.tile_height, sm.tile_source_type, sm.position
         FROM project_stack ps
@@ -398,7 +398,7 @@ def export_project_data(projects) -> List:
     # Get all relevant stacks and map the projects they are used in. These are
     # projects that the current user can see.
     project_stack_mapping:Dict = dict()
-    cursor.execute(f"""
+    cursor.execute("""
         SELECT DISTINCT ON (ps.project_id, ps.stack_id) ps.project_id, ps.stack_id, s.title,
             s.dimension, s.resolution, s.downsample_factors, s.metadata, s.comment,
             s.attribution, s.description, s.canary_location,
@@ -438,7 +438,7 @@ def export_project_data(projects) -> List:
 
     # Add stack group information to stacks
     project_stack_groups:Dict = dict()
-    cursor.execute(f"""
+    cursor.execute("""
         SELECT sg.id, ps.project_id, sg.title, sg.comment,
                array_agg(ssg.stack_id), array_agg(sgr.name)
         FROM stack_group sg

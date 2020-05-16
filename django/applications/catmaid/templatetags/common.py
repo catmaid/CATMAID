@@ -50,20 +50,20 @@ def is_string_type(val):
     return val == str or val == SafeText
 
 @register.filter
-def sort(l):
+def sort(input_list):
     """ In-place sorting of a list.
     """
-    l.sort()
-    return l
+    input_list.sort()
+    return input_list
 
 @register.filter
-def natural_sort(l, field):
+def natural_sort(input_list, field):
     """ Natural sorting of a list wrt. to a given attribute.
     Based on: http://stackoverflow.com/questions/4836710
     """
     convert = lambda text: int(text) if text.isdigit() else text.lower()
     alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', getattr(key, field))]
-    return sorted(l, key=alphanum_key)
+    return sorted(input_list, key=alphanum_key)
 
 @register.filter
 def intersect(set1, set2):

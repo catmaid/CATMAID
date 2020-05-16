@@ -142,8 +142,8 @@ class LandmarkList(APIView):
         """
         keep_points = get_request_bool(request.query_params, 'keep_points', False)
         landmark_ids = get_request_list(request.query_params, 'landmark_ids', map_fn=int)
-        for l in landmark_ids:
-            can_edit_or_fail(request.user, l, 'class_instance')
+        for landmark_id in landmark_ids:
+            can_edit_or_fail(request.user, landmark_id, 'class_instance')
 
         annotated_with_relation = Relation.objects.get(project_id=project_id,
                 relation_name='annotated_with')

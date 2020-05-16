@@ -1181,7 +1181,7 @@ def check_new_annotations(project_id, user, entity_id, annotation_set) -> bool:
                     'class_instance_b__name', 'id', 'user')
 
     # Build annotation name indexed dict to the link's id and user
-    annotations = {l[0]:(l[1], l[2]) for l in annotation_links}
+    annotations = {link[0]:(link[1], link[2]) for link in annotation_links}
     current_annotation_set = frozenset(annotations.keys())
 
     # If the current annotation set is not included completely in the new

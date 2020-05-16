@@ -124,13 +124,13 @@ def get_default_data_view(request:HttpRequest) -> HttpResponse:
 
     return get_data_view(request, default.id)
 
-def natural_sort(l:List, field) -> List:
+def natural_sort(input_list:List, field) -> List:
     """ Natural sorting of a list wrt. to its 'title' attribute.
     Based on: http://stackoverflow.com/questions/4836710
     """
     convert = lambda text: int(text) if text.isdigit() else text.lower()
     alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', getattr(key, field)) ]
-    return sorted(l, key = alphanum_key)
+    return sorted(input_list, key = alphanum_key)
 
 def get_data_view(request:HttpRequest, data_view_id) -> HttpResponse:
     """ Returns a rendered template for the given view.

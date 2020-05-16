@@ -1126,9 +1126,9 @@ def import_projects(user, pre_projects, tags, permissions,
                 # Check if all imported stacks are already linked to the
                 # exisiting project. For now onlt consider a stack linked if the
                 # existing project is the only link.
-                links = {ss:[l for l in currently_linked_stacks if ss.equals(l)] \
+                links = {ss:[stack for stack in currently_linked_stacks if ss.equals(stack)] \
                         for ss in pp.stacks}
-                all_stacks_linked = all(len(l) == 1 for l in links.values())
+                all_stacks_linked = all(len(link) == 1 for link in links.values())
 
                 if 'ignore' == pp.action:
                     # Ignore all projects that are marked to be ignored

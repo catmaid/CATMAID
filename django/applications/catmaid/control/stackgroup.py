@@ -23,10 +23,10 @@ def get_stackgroup_info(request:HttpRequest, project_id, stackgroup_id) -> JsonR
         'project_id': project_id,
         'title': stackgroup.title,
         'stacks': [{
-            'id': l.stack_id,
-            'relation': l.group_relation.name,
-            'position': l.position
-        } for l in stackgroup_links]
+            'id': link.stack_id,
+            'relation': link.group_relation.name,
+            'position': link.position
+        } for link in stackgroup_links]
     }
 
     return JsonResponse(result)

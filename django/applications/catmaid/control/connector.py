@@ -147,7 +147,7 @@ def _many_to_many_synapses(skids1, skids2, relation_name, project_id) -> Tuple:
 
     relations = get_relation_to_id_map(project_id, cursor=cursor)
     relation_id = relations[relation_name]
-    undirected_link_ids = [relations[l] for l in UNDIRECTED_LINK_TYPES]
+    undirected_link_ids = [relations[link_type] for link_type in UNDIRECTED_LINK_TYPES]
 
     cursor.execute('''
     SELECT tc1.connector_id, c.location_x, c.location_y, c.location_z,

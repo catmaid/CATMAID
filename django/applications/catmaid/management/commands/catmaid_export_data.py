@@ -235,7 +235,7 @@ class Exporter():
 
                 # Add matching connector links
                 self.to_serialize.append(TreenodeConnector.objects.filter(
-                        id__in=[l for l,_,_ in connector_links]))
+                        id__in=[link_id for link_id,_,_ in connector_links]))
 
             # Export annotations and annotation-neuron links. Include meta
             # annotations.
@@ -373,7 +373,7 @@ class Exporter():
                     .filter(project=self.project, class_instance_a__in=treenode_skeleton_ids, \
                            relation=relations.get('model_of'))
             n_neuron_links = len(neuron_links)
-            neurons = set([l.class_instance_b_id for l in neuron_links])
+            neurons = set([link.class_instance_b_id for link in neuron_links])
 
             exported_tids = set(treenodes.values_list('id', flat=True))
             logger.info(f"Exporting {len(exported_tids)} treenodes in {n_skeletons} skeletons and {len(neurons)} neurons")

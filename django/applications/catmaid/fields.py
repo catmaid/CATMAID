@@ -295,9 +295,9 @@ class DownsampleFactorsField(ArrayField):
     @staticmethod
     def is_default_scale_pyramid(value):
         axes = [True, True, True]
-        for l, val in enumerate(value):
-            val = value[l].to_dict()
-            axes = [axes[i] and val[a] == 2**l for i, a in enumerate(('x', 'y', 'z'))]
+        for zoom_level, val in enumerate(value):
+            val = value[zoom_level].to_dict()
+            axes = [axes[i] and val[a] == 2**zoom_level for i, a in enumerate(('x', 'y', 'z'))]
             if any(not axes[i] and not val[a] == 1 for i, a in enumerate(('x', 'y', 'z'))):
                 return [False, False, False]
         return axes
@@ -307,11 +307,11 @@ class DownsampleFactorsField(ArrayField):
         if num_zoom_levels is None:
             return None
         base_factors = [2 if d else 1 for d in axes]
-        return [Integer3D(*[d**l for d in base_factors]) for l in range(num_zoom_levels + 1)]
+        return [Integer3D(*[d**level for d in base_factors]) for level in range(num_zoom_levels + 1)]
 
     @staticmethod
     def is_value(value):
-        return isinstance(value, list) and all([isinstance(l, Integer3D) for l in value])
+        return isinstance(value, list) and all([isinstance(level, Integer3D) for level in value])
 
 # ------------------------------------------------------------------------
 

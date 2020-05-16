@@ -132,7 +132,7 @@ UNDIRECTED_BINARY_LINK_TYPES =[p['relation'] for p in LINK_TYPES
             if p['isreciprocal'] and p.get('cardinality', None) == 2]
 
 
-LINKS_BY_RELATION:Dict = {l['relation']:l for l in LINK_TYPES}
+LINKS_BY_RELATION:Dict = {link_type['relation']:link_type for link_type in LINK_TYPES}
 
 
 @requires_user_role(UserRole.Annotate)
@@ -269,16 +269,16 @@ def create_connector_link(project_id, user_id, treenode_id, skeleton_id,
     paremteter. A list of three-element lists, following the following format:
     [<connector-id>, <relation-id>, <confidence>]
     """
-    def make_row(l):
+    def make_row(link):
         # Passed in links are expected to follow this format:
         # [<connector-id>, <relation-id>, <confidence>]
-        if 3 != len(l):
+        if 3 != len(link):
             raise ValueError("Invalid link information provided")
-        connector_id, relation_id, confidence = l[0], l[1], l[2]
+        connector_id, relation_id, confidence = link[0], link[1], link[2]
         return (user_id, project_id, relation_id, treenode_id, connector_id,
                 skeleton_id, confidence)
 
-    new_link_rows = [make_row(l) for l in links]
+    new_link_rows = [make_row(link) for link in links]
     new_link_data = [x for e in new_link_rows for x in e]
     cursor = cursor or connection.cursor()
     link_template = ",".join(("({})".format(",".join(("%s",) * 7)),) * len(links))
@@ -298,15 +298,15 @@ def create_treenode_links(project_id, user_id, connector_id, links, cursor=None)
     paremteter. A list of three-element lists, following the following format:
     [<treenode-id>, <relation-id>, <confidence>]
     """
-    def make_row(l) -> Tuple:
+    def make_row(link) -> Tuple:
         # Passed in links are expected to follow this format:
         # [<connector-id>, <relation-id>, <confidence>]
-        if 3 != len(l):
+        if 3 != len(link):
             raise ValueError("Invalid link information provided")
-        treenode_id, relation_id, confidence = l[0], l[1], l[2]
+        treenode_id, relation_id, confidence = link[0], link[1], link[2]
         return (user_id, project_id, relation_id, treenode_id, connector_id, confidence)
 
-    new_link_rows = [make_row(l) for l in links]
+    new_link_rows = [make_row(link) for link in links]
     new_link_data = [x for e in new_link_rows for x in e]
     cursor = cursor or connection.cursor()
     link_template = ",".join(("({})".format(",".join(("%s",) * 6)),) * len(links))

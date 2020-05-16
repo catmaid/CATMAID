@@ -43,7 +43,7 @@ class Feature:
         self.links = class_class_links
         if self.links:
             self.short_name = ",".join(
-                [l.class_a.class_name for l in self.links] )
+                [link.class_a.class_name for link in self.links] )
             self.name = "%s: %s" % (self.links[0].class_b.class_name, self.short_name)
         else:
             raise ValueError("A feature needs at least one element")
@@ -80,9 +80,9 @@ def get_existing_roots(request:HttpRequest, project_id) -> JsonResponse:
 
     return JsonResponse({
         'root_classes': [{
-            'id': l.class_a.id,
-            'name': l.class_a.class_name
-        } for l in links]
+            'id': link.class_a.id,
+            'name': link.class_a.class_name
+        } for link in links]
     })
 
 def get_children(parent_id, max_nodes:int = 5000):
@@ -298,7 +298,7 @@ def list_ontology(request:HttpRequest, project_id=None) -> JsonResponse:
                     # Add this class-class link to the list
                     links.append(data)
 
-                return JsonResponse(tuple(l for l in links), safe=False)
+                return JsonResponse(tuple(link for link in links), safe=False)
         elif parent_type in ("class", "root"):
             # A relation is wanted
             cc_q = ClassClass.objects.filter(

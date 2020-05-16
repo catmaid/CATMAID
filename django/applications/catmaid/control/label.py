@@ -202,7 +202,7 @@ def labels_for_node(request:HttpRequest, project_id=None, node_type:Optional[str
     else:
         raise Http404(f'Unknown node type: "{node_type}"')
 
-    return JsonResponse([l.class_instance.name for l in qs], safe=False)
+    return JsonResponse([link.class_instance.name for link in qs], safe=False)
 
 @requires_user_role(UserRole.Browse)
 def labels_for_nodes(request:HttpRequest, project_id=None) -> JsonResponse:
@@ -280,15 +280,15 @@ def label_update(request:HttpRequest, project_id, location_id, ntype:str) -> Jso
         # Iterate over all labels that should get deleted to check permission
         # on each one. Remember each label that couldn't be deleted in the
         # other_labels array.
-        for l in duplicate_labels:
+        for label in duplicate_labels:
             try:
-                can_edit_or_fail(request.user, l.id, table._meta.db_table)
-                if remove_label(l.id, ntype):
-                    deleted_labels.append(l)
+                can_edit_or_fail(request.user, label.id, table._meta.db_table)
+                if remove_label(label.id, ntype):
+                    deleted_labels.append(label)
                 else:
-                    other_labels.append(l)
+                    other_labels.append(label)
             except:
-                other_labels.append(l)
+                other_labels.append(label)
 
         # Create change requests for labels associated to the treenode by other users
         for label in other_labels:
@@ -358,15 +358,16 @@ def label_update(request:HttpRequest, project_id, location_id, ntype:str) -> Jso
     response = {
         'message': 'success',
         'new_labels': new_labels,
-        'duplicate_labels': [l.class_instance.name for l in duplicate_labels
-                             if l not in deleted_labels],
-        'deleted_labels': [l.class_instance.name for l in deleted_labels],
+        'duplicate_labels': [label.class_instance.name for label in duplicate_labels
+                             if label not in deleted_labels],
+        'deleted_labels': [label.class_instance.name for label in deleted_labels],
     }
 
     # Check if any labels on this node violate cardinality restrictions on
     # its skeleton.
     if 'treenode' == ntype:
-        limited_labels = {l: SKELETON_LABEL_CARDINALITY[l] for l in new_tags if l in SKELETON_LABEL_CARDINALITY}
+        limited_labels = {label: SKELETON_LABEL_CARDINALITY[label] \
+                for label in new_tags if label in SKELETON_LABEL_CARDINALITY}
 
         if limited_labels:
             ll_names, ll_maxes = zip(*limited_labels.items())

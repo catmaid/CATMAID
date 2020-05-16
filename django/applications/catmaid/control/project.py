@@ -543,9 +543,9 @@ def interpolatable_sections(request:HttpRequest, project_id) -> JsonResponse:
         required: true
     """
     coords:List[List] = [[], [], []]
-    for l in InterpolatableSection.objects.filter(
+    for section_data in InterpolatableSection.objects.filter(
             project_id=project_id).values_list('orientation', 'location_coordinate'):
-        coords[l[0]].append(l[1])
+        coords[section_data[0]].append(section_data[1])
 
     return JsonResponse({
         'x': coords[2],

@@ -126,7 +126,7 @@ def get_classification_roots(request:HttpRequest, project_id, workspace_pid) -> 
     links_q = get_classification_links_qs(workspace_pid, project_id,
             inverse=inverse, cursor=cursor)
     links_q = links_q.select_related('class_instance_b')
-    root_instances = [make_ci_entry(l) for l in links_q]
+    root_instances = [make_ci_entry(link) for link in links_q]
     # Retrieve IDs
     return JsonResponse({
         'root_instances': root_instances
@@ -520,7 +520,7 @@ def get_child_classes(workspace_pid, parent_ci, relation_map=None, cursor=None):
 
     # Get sub classes for all available links
     if available_links:
-        class_a_ids_sql = ','.join(f"({l.class_a_id})" for l in available_links)
+        class_a_ids_sql = ','.join(f"({link.class_a_id})" for link in available_links)
         cursor.execute(f"""
             SELECT cc.id, cc.class_b, cc.class_a, ca.class_name
               FROM class cb
@@ -557,7 +557,7 @@ def get_child_classes(workspace_pid, parent_ci, relation_map=None, cursor=None):
     # Get all required link data in one go
     link_restriction_map:DefaultDict[Any, List] = defaultdict(list)
     if relevant_link_ids:
-        link_ids_sql = ','.join(f"({l})" for l in relevant_link_ids)
+        link_ids_sql = ','.join(f"({link})" for link in relevant_link_ids)
         cursor.execute(f"""
             SELECT r.restricted_link_id, r.id
               FROM restriction r
@@ -1013,14 +1013,14 @@ def autofill(workspace_pid, user, parent_ci, excluded_links=[]) -> List:
     print("Parent: %d Class: %d" % (parent_ci.id, parent_ci.class_column.id))
     print("Excluded links: %s" % str(excluded_links))
 
-    links = [l for l in direct_links] + [stl for stl in supertype_links]
+    links = [link for link in direct_links] + [stl for stl in supertype_links]
 
-    for l in links:
-        print("Link: %d" % l.id)
+    for link in links:
+        print("Link: %d" % link.id)
         # Add to excluded links:
-        excluded_links.append(l.id)
+        excluded_links.append(link.id)
         # Get new instances and add them
-        instances_to_add = infer_new_instances(workspace_pid, l, parent_ci)
+        instances_to_add = infer_new_instances(workspace_pid, link, parent_ci)
         for node_class, node_rel, node_parent in instances_to_add:
             node = ClassInstance.objects.create(
                 user=user,
@@ -1240,7 +1240,7 @@ def graph_instantiates_feature_simple(graph, feature, idx=0) -> bool:
     elif num_links > 1:
         # More than one?
         raise Exception('Found more than one ontology node link of one class instance: ' +
-                ", ".join([str(l.id) for l in link_q ]))
+                ", ".join([str(link.id) for link in link_q]))
 
     # Continue with checking children, if any
     return graph_instantiates_feature_simple(link_q[0].class_instance_a, feature, idx+1)

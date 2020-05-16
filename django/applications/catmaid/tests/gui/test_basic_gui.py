@@ -215,8 +215,8 @@ class BasicUITest(StaticLiveServerTestCase):
                         lines = self.selenium.page_source.splitlines()
                         print("Relevant source code:")
                         c = 2
-                        for l in range(max(0, line - c - 1), min(len(lines) - 1, line + c)):
-                            print(f"{l+1}: {lines[l]}")
+                        for line_idx in range(max(0, line - c - 1), min(len(lines) - 1, line + c)):
+                            print(f"{line_idx+1}: {lines[line_idx]}")
 
                 # Let test fail
                 self.assertNotIn('SyntaxError', log_entry['message'])

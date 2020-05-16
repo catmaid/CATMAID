@@ -101,14 +101,14 @@ def make_all_links_query(link_ids, node_id, is_connector=False) -> StateCheck:
     else:
         return StateCheck(template % ("", "%s", ""), [node_id])
 
-def list_to_table(l, n=1) -> Tuple[str, Any]:
+def list_to_table(input_list, n=1) -> Tuple[str, Any]:
     if n == 1:
-        args:List[Tuple] = [(e,) for e in l]
+        args:List[Tuple] = [(e,) for e in input_list]
     elif n == 2:
-        args = [(e[0], e[1]) for e in l]
+        args = [(e[0], e[1]) for e in input_list]
     else:
         raise ValueError("Invalid n parameter for list_to_table")
-    if not args: # empty l or invalid n
+    if not args: # empty input_list or invalid n
         raise ValueError("Could't parse list argument in state check")
 
     records_list_template = ','.join(['%s'] * len(args))
@@ -155,9 +155,9 @@ def parse_state(state):
         if links:
             if type(links) not in (list, tuple):
                 raise ValueError("Invald state provided, 'links' is not a list")
-            for l in links:
-                check_ref("link", l)
-                l[0] = parse_id("link", l[0])
+            for link in links:
+                check_ref("link", link)
+                link[0] = parse_id("link", link[0])
     elif parsed_state_type == list:
         for n in state:
             check_ref('node', n)
@@ -230,9 +230,9 @@ def collect_state_checks(node_id, state, cursor, node=False,
             raise ValueError("No valid state provided, invalid links")
 
         state_checks.append(make_all_links_query(
-            [int(l[0]) for l in links], node_id))
+            [int(link[0]) for link in links], node_id))
         state_checks.extend(StateCheck(SQL.edited('treenode_connector'),
-            (l[0], l[1], l[1])) for l in links)
+            (link[0], link[1], link[1])) for link in links)
 
     if c_links:
         c_links = state.get('c_links')
@@ -242,9 +242,9 @@ def collect_state_checks(node_id, state, cursor, node=False,
             raise ValueError("No valid state provided, invalid links")
 
         state_checks.append(make_all_links_query(
-            [int(l[0]) for l in c_links], node_id, True))
+            [int(link[0]) for link in c_links], node_id, True))
         state_checks.extend(StateCheck(SQL.edited('treenode_connector'),
-            (l[0], l[1], l[1])) for l in c_links)
+            (link[0], link[1], link[1])) for link in c_links)
 
 
     return state_checks

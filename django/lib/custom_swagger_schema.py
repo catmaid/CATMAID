@@ -48,7 +48,7 @@ class CustomSchema(AutoSchema):
 
         # Remove any leading or trailing whitespace, otherwise everthing becomes
         # a block quote (due to Python comments being indented).
-        _method_desc = '\n'.join(l.strip() for l in _method_desc.splitlines())
+        _method_desc = '\n'.join(line.strip() for line in _method_desc.splitlines())
 
         if yaml_doc and type(yaml_doc) != str:
             params = yaml_doc.get('parameters', [])

@@ -13,6 +13,7 @@ from django.contrib import admin, messages
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.admin import UserAdmin, GroupAdmin
 from django.contrib.auth.models import User, Group
+from django.contrib.sites.models import Site
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy
 from django.urls import reverse
@@ -531,6 +532,8 @@ admin.site.register(PointCloud, PointCloudAdmin)
 admin.site.register(User, CustomUserAdmin)
 admin.site.register(Group, CustomGroupAdmin)
 admin.site.register(GroupInactivityPeriod, GroupInactivityPeriodAdmin)
+admin.site.register(Site)
+
 # Register additional views
 admin.site.register_view('annotationimporter', 'Import annotations and tracing data',
                          view=ImportingWizard.as_view())

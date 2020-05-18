@@ -8,7 +8,11 @@ from django.http import HttpResponseRedirect
 from django.views.generic import TemplateView
 from django.contrib import messages
 from django.contrib.auth.models import User, Group
+from django.contrib.sites.shortcuts import get_current_site
 from django.apps import apps
+
+from allauth.socialaccount import providers
+from allauth.utils import get_request_param
 
 class CatmaidView(TemplateView):
     """ This view adds extra context to its template. This extra context is
@@ -39,6 +43,22 @@ class CatmaidView(TemplateView):
             except:
                 pass
         context['EXTENSION_CONFIG'] = json.dumps(extension_config)
+
+        # Extra authentication provided through allauth. The login URL is
+        # basically constructed like in the allauth templatetags.
+        extra_auth_config = {}
+        site = get_current_site(self.request)
+        query = {}
+        next = get_request_param(self.request, 'next')
+        if next:
+            query['next'] = next
+        for sapp in site.socialapp_set.all():
+            provider = providers.registry.by_id(sapp.provider, self.request)
+            extra_auth_config[sapp.provider] = {
+                'name': provider.name,
+                'login_url': provider.get_login_url(self.request, **query),
+            }
+        context['EXTRA_AUTH_CONFIG'] = json.dumps(extra_auth_config)
 
         profile_context = self.request.user.userprofile.as_dict()
         context.update(profile_context)

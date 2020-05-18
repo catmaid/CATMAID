@@ -97,6 +97,18 @@ Docker:
   For instance, use "America/New_York' for US east coast time. This way,
   maintenance tasks can be moved to whenever local midnight is.
 
+Administration:
+
+- External accounts can now be used to sign-in to a CATMAID instance (if
+  enabled) using OAuth2. The documentation has details on how to configure this.
+  This can allow users with e.g. an existing Orcid ID or GitHub account to
+  sign-in to a CATMAID instance. If enabled, there is now a menu displayed when
+  hovering the mouse over the "Login" button in the upper right corner.
+
+- Like every other new user, users created this way can be in default user
+  groups (`NEW_USER_DEFAULT_GROUPS` setting) and the default tool visibility
+  settings apply as well.
+
 Miscellaneous:
 
 - The user registration form fits now the overal layout better and include first

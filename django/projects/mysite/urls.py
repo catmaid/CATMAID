@@ -28,6 +28,7 @@ admin.site.index_title = "CATMAID instance"
 # CATMAID
 urlpatterns = [
     url(r'^', include('catmaid.urls')),
+    url(r'^accounts/', include('allauth.urls')),
 ]
 
 # CATMAID extensions

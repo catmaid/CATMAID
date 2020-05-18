@@ -292,6 +292,12 @@ class HistoryTableTests(TransactionTestCase):
         'pointcloud_group_object_permission',
         'pointcloud_user_object_permission',
         'spatial_ref_sys',
+        'socialaccount_socialapp',
+        'socialaccount_socialaccount',
+        'socialaccount_socialapp_sites',
+        'account_emailaddress',
+        'account_emailconfirmation',
+        'socialaccount_socialtoken',
     )
 
     def test_name_length_limits(self):

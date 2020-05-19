@@ -111,6 +111,11 @@
    */
   CATMAID.CORSError = class CORSError extends CATMAID.Error {};
 
+  /**
+   * Indicate a 404 error, a resource hasn't been found.
+   */
+  CATMAID.ResourceUnavailableError = class ResourceUnavailableError extends CATMAID.Error {};
+
   /*
    * An error type to indicate a pre-condition for some action is not met.
    */

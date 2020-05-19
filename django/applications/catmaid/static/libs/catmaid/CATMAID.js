@@ -469,7 +469,7 @@ var requestQueue = new CATMAID.RequestQueue();
     return new Promise(function(resolve, reject) {
       let queue = parallel ? requestQueue.clone() : requestQueue;
       var fn = replace ? queue.replace : queue.register;
-      fn.call(requestQueue, url, method, data, function(status, text, xml, dataSize) {
+      fn.call(requestQueue, url, method, data, function(status, text, xml, dataSize, contentType) {
         // Validation throws an error for bad requests and wrong JSON data,
         // which would causes the promise to become rejected automatically if
         // this wasn't an asynchronously called function. But since this is the
@@ -484,6 +484,9 @@ var requestQueue = new CATMAID.RequestQueue();
             } else if (status === 503) {
               throw new CATMAID.CORSError(`Can't access ${url} (${method}) due to CORS restrictions`,
                   {detail: `URL: ${url}`});
+            } else if (status === 404) {
+              let msg = contentType === 'text/html' ? `The requested resource wasn't found: ${url}` : text;
+              throw new CATMAID.ResourceUnavailableError(msg, `Method: ${method}\nURL: ${url}\nData: ${data ? data : '-'}`);
             }
             let errorDetails;
             try {

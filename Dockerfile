@@ -26,9 +26,9 @@ RUN apt-get update -y \
     && apt-get install -y nginx supervisor \
     && apt-get install -y rabbitmq-server \
     && rm -rf /var/lib/apt/lists/*
-COPY packagelist-ubuntu-16.04-apt.txt /home/
+COPY packagelist-ubuntu-apt.txt /home/
 RUN apt-get update -y  \
-    && xargs apt-get install -y < /home/packagelist-ubuntu-16.04-apt.txt \
+    && xargs apt-get install -y < /home/packagelist-ubuntu-apt.txt \
     && rm -rf /var/lib/apt/lists/*
 COPY django/requirements.txt django/requirements-async.txt /home/django/
 ENV WORKON_HOME /opt/virtualenvs

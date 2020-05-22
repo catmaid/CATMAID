@@ -84,21 +84,11 @@ clustering).
 We strongly recommend that you install all Python package dependencies into a
 virtualenv, so that they are isolated from the system-wide installed packages
 and can be upgraded easily. Some of these Python packages depend on system-wide
-libraries that you will need to install in advance, however. You can do this
-with one of the following commands (the one suiting best your OS):
+libraries that you will need to install in advance, however.
+You can do this with the following command on Ubuntu
+(you may need additional PPAs, such as ubuntugis and postgresql):
 
-Ubuntu 18.04:
-
-    .. fileinclude:: ../../packagelist-ubuntu-18.04-apt.txt
-       :removelinebreaks:
-       :indent:
-       :prepend: sudo apt-get install
-       :split: 75
-       :splitend:  \
-
-Ubuntu 16.04:
-
-    .. fileinclude:: ../../packagelist-ubuntu-16.04-apt.txt
+    .. fileinclude:: ../../packagelist-ubuntu-apt.txt
        :removelinebreaks:
        :indent:
        :prepend: sudo apt-get install

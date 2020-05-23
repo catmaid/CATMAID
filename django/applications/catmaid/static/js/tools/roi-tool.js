@@ -105,7 +105,7 @@
     {
       var screen = this.stackViewer.screenPosition();
       var screen_left = this.stackViewer.primaryStack.stackToProjectX(
-        this.stackViewer.z, scrren.top, screen.left);
+        this.stackViewer.z, screen.top, screen.left);
       var width_world = cropBox.right - cropBox.left;
       cropBox.left = this.toWorld( val, this.stackViewer.primaryStack.resolution.x ) + screen_left;
       cropBox.right = cropBox.left + width_world;

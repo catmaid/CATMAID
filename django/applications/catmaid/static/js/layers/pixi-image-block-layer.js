@@ -37,6 +37,9 @@
         this.blockSizeZ = blockSize[2];
         if (this._tiles.length) {
           // If tiles have been initialized, reinitialize.
+          // Forcibly clear tiles, so that even if width and height are
+          // unchanged reinit happens to account for other changes like dtype.
+          this._tiles = [];
           this.resize(this.stackViewer.viewWidth, this.stackViewer.viewHeight);
         }
 

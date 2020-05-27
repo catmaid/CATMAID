@@ -162,6 +162,18 @@
       }
       container.append($('<h4/>').append(layer_name));
 
+      if (CATMAID.tools.isFn(layer.getLayerDisplayInfo)) {
+        let info = layer.getLayerDisplayInfo();
+
+        let infoDom = $('<dl>');
+        for (const [key, value] of info.entries()) {
+          infoDom.append($('<dt>').append(key));
+          infoDom.append($('<dd>').append(value));
+        }
+
+        container.append(infoDom);
+      }
+
       // Opacity slider
       var opacitySelect = $('<div class="setting"/>');
       opacitySelect.append('<span>Opacity</span>');

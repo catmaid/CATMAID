@@ -350,6 +350,15 @@
   };
 
   /**
+   * Update controls in response to external changes, such as layer not being
+   * added or removed but changing their available settings due to async
+   * effects.
+   */
+  StackViewer.prototype.refreshControls = function () {
+    this.layercontrol.refresh();
+  };
+
+  /**
    * update all state informations and the screen content
    */
   StackViewer.prototype.update = function (completionCallback, errorCallback) {

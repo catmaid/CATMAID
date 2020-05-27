@@ -183,13 +183,21 @@ div.LayerControl h5 {
   color: #bbb;
 }
 
+.layerControl dt, .layerControl dd {
+  display: inline-block;
+}
+
+.layerControl dt {
+  margin-left: 2.5em;
+}
+
 div.LayerControl .layerClose {
   float: right;
   margin: 0.3em;
   cursor: pointer;
 }
 
-.layerControl .setting {
+.layerControl .setting, .layerControl dl {
   float: none;
   margin: 0.2em 0;
 }

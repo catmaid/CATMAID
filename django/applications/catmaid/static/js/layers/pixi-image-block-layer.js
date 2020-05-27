@@ -54,6 +54,9 @@
           // warning the user since it won't break any interactions.
           CATMAID.info(`Stack mirror has ${numSourceLevels} scale levels but stack specifies ${numStackLevels}`);
         }
+
+        // Async effects from the tile source may affect controls.
+        this.stackViewer.refreshControls();
       });
 
       this.prefetchOrder = [
@@ -64,6 +67,19 @@
       this.prefetch = new Set(this.prefetchOrder);
       this._prefetchTimeout = null;
       this.prefetchDelay = 500;
+    }
+
+    /**
+     * Get a map of information to display in layer controls.
+     *
+     * This should be used sparingly for information that is not associated
+     * with the stack itself, such as dynamic and volatile properties of the
+     * layer, mirror, or loaded data.
+     */
+    getLayerDisplayInfo() {
+      let info = new Map();
+      info.set("Data type", this.tileSource.dataType() || "unknown");
+      return info;
     }
 
     getLayerSettings() {

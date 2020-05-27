@@ -32,12 +32,17 @@
         options.name, options.handle, options.passive));
   };
 
-  // A command parser that can read simple X, Y, Z and X, Y coordinates.
+  // A command parser that can read simple X, Y, Z and X, Y coordinates. It also
+  // accepts spaces and tabs as delimiter.
   CATMAID.registerCommandParser({
     name: 'location',
     handle: (command) => {
-      // Remove all brackets and parentheses.
-      let cleaned = command.replace(/[\[\]\|\(\){}]/g, '');
+      // Remove all brackets and parentheses and removeall spapces arround
+      // commas and at the beginning and the end. Replace all remaining spaces
+      // with commas for easier splitting.
+      let cleaned = command.replace(/[\[\]\|\(\){}]/g, '')
+          .replace(/\s*,\s*/g, ',').replace(/^\s\+/, '')
+          .replace(/\s\+$/, '').replace(/\s/g, ',');
       let parts = cleaned.split(',').map(c => c.trim());
       if (parts.length > 2) {
         let coords = parts.map(Number);

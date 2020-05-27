@@ -137,6 +137,9 @@ Miscellaneous:
   cropping task: the min and max coordinates of the bounding box as well as the
   resolution. ImageJ/Fiji read this particular tag.
 
+- The position and ID input box on the right side of the second tool bar accepts
+  now also location triplets that are delimited by space or tabs.
+
 ### Bug fixes
 
 - Volume lists (drop down menus) are now automatically refreshed if a volume is

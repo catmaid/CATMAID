@@ -186,7 +186,7 @@ annotations, neuron name, connectors or partner neurons.
   };
 
   ImportExportWidget.prototype.getEffectiveAnnotations = function() {
-    return TracingTool.getEffectiveImportAnnotations(this.importAnnotations, this.sourceRemote);
+    return CATMAID.TracingTool.getEffectiveImportAnnotations(this.importAnnotations, this.sourceRemote);
   };
 
   /**

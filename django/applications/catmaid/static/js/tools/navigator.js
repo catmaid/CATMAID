@@ -624,7 +624,7 @@
       }),
 
       new CATMAID.Action({
-        helpText: "Toggle layer controls for the focused stack viewer",
+        helpText: "(With <kbd>Alt</kbd>) Toggle layer controls for the focused stack viewer",
         keyShortcuts: {
           'SPACE': [ 'Alt +  ' ]
         },

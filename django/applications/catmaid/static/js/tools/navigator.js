@@ -287,10 +287,12 @@
       };
 
       var target = e.target;
+      var key = e.key;
       var oldListener = target.onkeyup;
       var oldBlocking = self.stackViewer.blockingRedraws;
       self.stackViewer.blockingRedraws = true;
       target.onkeyup = function (e) {
+        if (e.key !== key) return;
         window.clearTimeout(frameTimeout);
         target.onkeyup = oldListener;
         self['animate' + name] = false;

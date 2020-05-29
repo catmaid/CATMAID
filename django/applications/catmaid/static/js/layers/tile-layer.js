@@ -715,6 +715,8 @@
     let xd = this.colTransform(pixelTileInfo.firstCol - this._tileFirstC);
     let yd = this.rowTransform(pixelTileInfo.firstRow - this._tileFirstR);
 
+    if (yd > this._tiles.length || xd > this._tiles[yd].length) return Promise.resolve();
+
     return this._tilePixel(
         this._tiles[yd][xd],
         -pixelTileInfo.left / (pixelTileInfo.mag * pixelTileInfo.anisotropy.x),
@@ -725,6 +727,8 @@
    * Get a pixel value from a tile.
    */
   TileLayer.prototype._tilePixel = function (tile, x, y) {
+    if (tile.style.visibility !== 'visible') return Promise.resolve();
+
     var img = tile;
     var canvas = document.createElement('canvas');
     var context = canvas.getContext('2d');

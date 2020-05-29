@@ -362,6 +362,8 @@
 
   /** @inheritdoc */
   PixiTileLayer.prototype._tilePixel = function (tile, x, y) {
+    if (!tile.visible) return Promise.resolve();
+
     var img = tile.texture.baseTexture.source;
     var canvas = document.createElement('canvas');
     var context = canvas.getContext('2d');

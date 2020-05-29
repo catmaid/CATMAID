@@ -604,6 +604,8 @@
     }
 
     _tilePixel(tile, x, y) {
+      if (!tile.visible) return Promise.resolve();
+
       let blockZ = tile.coord[4] % this.blockSizeZ;
       return this._readBlock(...tile.coord.slice(0, 4))
           .then(block => this._sliceBlock(block, blockZ).get(Math.round(x), Math.round(y)));

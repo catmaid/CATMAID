@@ -63,7 +63,7 @@
     slider_z_box.className = "box toolbar_slider_item";
     slider_z_box.id = "slider_z_box";
     var slider_z_box_label = document.createElement( "p" );
-    slider_z_box_label.appendChild( document.createTextNode( "z-index" ) );
+    slider_z_box_label.appendChild( document.createTextNode( "z" ) );
       slider_z_box.appendChild( slider_z_box_label );
     slider_z_box.appendChild( self.slider_z.getView() );
     slider_z_box.appendChild( self.slider_z.getInputView() );

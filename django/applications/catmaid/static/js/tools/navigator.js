@@ -659,6 +659,36 @@
           return true;
         }
       }),
+
+      new CATMAID.Action({
+        helpText: "(With <kbd>Shift</kbd>) Show information about stack pixels at cursor",
+        keyShortcuts: {
+          'I': [ 'Shift + i' ]
+        },
+        run: function (e) {
+          if (!e.shiftKey) return false;
+          if (!self.stackViewer) return;
+
+          let sv = self.stackViewer;
+          let m = CATMAID.UI.getLastMouse();
+          let offset = $(sv.getView()).offset();
+
+          let infos = sv.getOrderedLayersOfType(CATMAID.StackLayer).map(layer => {
+
+            let screenPosition = sv.screenPosition();
+            let unscaledPos = {};
+            unscaledPos.xc = screenPosition.left + (m.x - offset.left) / sv.scale / sv.primaryStack.anisotropy(0).x;
+            unscaledPos.yc = screenPosition.top  + (m.y - offset.top) / sv.scale / sv.primaryStack.anisotropy(0).y;
+            unscaledPos.z = sv.z;
+            return layer.pixelValueInScaleLevel(unscaledPos.xc, unscaledPos.yc, unscaledPos.z)
+              .then(pix => `S${layer.stack.id}: ${pix} [${unscaledPos.xc.toFixed(1)}, ${unscaledPos.yc.toFixed(1)}, ${unscaledPos.z.toFixed(1)}] px`);
+          });
+
+          Promise.all(infos).then(infos => CATMAID.statusBar.printCoords(infos.join('; ')));
+
+          return true;
+        }
+      }),
     ];
 
     var keyToAction = CATMAID.getKeyToActionMap(actions);

@@ -527,8 +527,8 @@
 
           return arborParser;
         })
-        .then(arborParser => CATMAID.Skeletons.distanceBetweenNodes(
-            arborParser.arbor, arborParser.positions));
+        .then(arborParser => CATMAID.Skeletons.distanceBetweenNodesInArbor(
+            arborParser.arbor, arborParser.positions, nodeA, nodeB));
     },
 
     distanceBetweenNodesInArbor: function(arbor, positions, nodeA, nodeB) {

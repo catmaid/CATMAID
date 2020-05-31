@@ -683,12 +683,6 @@
     if (null !== this._swapBuffersTimeout) return Promise.resolve();
 
     var scaledStackPosition = this.stackViewer.scaledPositionInStack(this.stack);
-    var tileInfo = this.tilesForLocation(
-        scaledStackPosition.xc,
-        scaledStackPosition.yc,
-        scaledStackPosition.z,
-        scaledStackPosition.s,
-        this.efficiencyThreshold);
     var stackViewBox = this.stackViewer.createStackViewBox();
 
     var relX = (stackX - stackViewBox.min.x) / (stackViewBox.max.x - stackViewBox.min.x),
@@ -708,7 +702,7 @@
         scaledY,
         scaledStackPosition.z,
         scaledStackPosition.s,
-        0.0);
+        this.efficiencyThreshold);
 
     if (pixelTileInfo.top > 0 || pixelTileInfo.left > 0) return Promise.resolve();
 

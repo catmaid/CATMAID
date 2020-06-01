@@ -9,6 +9,7 @@
     "newcap"        : false,    // true: Require capitalization of all constructor functions e.g. `new F()`
     "plusplus"      : false,    // true: Prohibit use of `++` & `--`
     "strict"        : false,    // true: Requires all functions run in ES5 Strict Mode
+    "unused"        : "vars",   // "vars": Check for unused variables but not function parameters
 
     // Relaxing
     "evil"          : true,     // true: Tolerate use of `eval` and `new Function()`

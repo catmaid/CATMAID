@@ -142,26 +142,37 @@ in vec2 vTextureCoord;
 in vec4 vColor;
 in float vTextureId;
 uniform %sampler_type% uSamplers[%count%];
+%steps_uniforms%
 out vec4 myOutputColor;
 
 void main(void){
 %color_type% color;
 %forloop%
-myOutputColor = %color_conversion%;
+%color_type% step0 = color;
+%steps%
+myOutputColor = %steps_output%;
 }`;
 
-function generateMultiTextureShader(gl, maxTextures, dataType)
-{
-  const vertexSrc = vertTemplate;
-  let fragmentSrc = fragTemplate;
+function generateMultiTextureShader(gl, maxTextures, dataType) {
+  let steps = [new CATMAID.Pixi.SimpleMinMaxShaderStep()];
+  return generateMultiTextureShaderFromSteps(gl, maxTextures, dataType, vertTemplate, fragTemplate, steps);
+}
 
+function generateMultiTextureShaderFromSteps(gl, maxTextures, dataType, vertexSrc, fragmentSrc, fragSteps)
+{
   fragmentSrc = fragmentSrc.replace(/%count%/gi, maxTextures);
   fragmentSrc = fragmentSrc.replace(/%forloop%/gi, generateSampleSrc(maxTextures));
 
-  const params = dataTypeParameters(dataType);
-  fragmentSrc = fragmentSrc.replace(/%sampler_type%/gi, params.samplerType);
-  fragmentSrc = fragmentSrc.replace(/%color_type%/gi, params.colorType);
-  fragmentSrc = fragmentSrc.replace(/%color_conversion%/gi, params.colorConversion);
+  const baseDataType = new CATMAID.Pixi.SimpleShaderStep.BaseType(dataType);
+  fragmentSrc = fragmentSrc.replace(/%sampler_type%/gi, baseDataType.glslSamplerType());
+  fragmentSrc = fragmentSrc.replace(/%color_type%/gi, baseDataType.glslColorType());
+
+  const stepUniforms = fragSteps.map(step => step.glslHeaders(baseDataType)).join('\n');
+  fragmentSrc = fragmentSrc.replace(/%steps_uniforms%/gi, stepUniforms);
+
+  const steps = fragSteps.map((step, i) => step.glsl(baseDataType, i)).join('\n');
+  fragmentSrc = fragmentSrc.replace(/%steps%/gi, steps);
+  fragmentSrc = fragmentSrc.replace(/%steps_output%/gi, 'step' + fragSteps.length);
 
   const shader = new NonMutatingShader(gl, vertexSrc, fragmentSrc);
 
@@ -174,35 +185,9 @@ function generateMultiTextureShader(gl, maxTextures, dataType)
 
   shader.bind();
   shader.uniforms.uSamplers = sampleValues;
+  fragSteps.forEach(step => step.setAttrs(shader.uniforms, baseDataType));
 
   return shader;
-}
-
-function dataTypeParameters(dataType) {
-  let prefix;
-  if (dataType.startsWith('int')) {
-    prefix = 'i';
-  } else if (dataType.startsWith('uint')) {
-    prefix = 'u';
-  }
-
-  let depth = dataType.substr(-2);
-  if (depth.endsWith("8")) depth = "8";
-  depth = parseInt(depth, 10);
-
-  // TODO: Since this is not channel/mode aware yet, manually set that 64-bit
-  // data is RGBA16 so should be normalized by 16 bits instead.
-  if (depth === 64) {
-    depth = 16;
-  }
-
-  let typeMax = Math.pow(2, depth);
-
-  return {
-    colorType: prefix + 'vec4',
-    colorConversion: 'float(color) * vColor / ' + typeMax.toFixed(1),
-    samplerType: prefix + 'sampler2D',
-  };
 }
 
 function generateSampleSrc(maxTextures)
@@ -342,6 +327,157 @@ PIXI.SpriteRenderer.prototype.flush = function () {
     }
   }
   return oldFlush.call(this);
+};
+
+CATMAID.Pixi.SimpleShaderStep = class SimpleShaderStep {
+  constructor(uniforms, inputType, srcTemplate, outputType) {
+    this.uniforms = uniforms;
+    this.inputType = inputType;
+    this.srcTemplate = srcTemplate;
+    this.outputType = outputType;
+  }
+
+  setAttrs(attrs, baseDataType) {
+    this.uniforms.forEach(u => u.setAttr(attrs, baseDataType));
+  }
+
+  glslHeaders(baseDataType) {
+    return this.uniforms.map(u => u.glsl(baseDataType)).join('\n');
+  }
+
+  glsl(baseDataType, stepN) {
+    let src = this.srcTemplate.replace(/%output_type%/gi, this.outputType.glsl(baseDataType));
+    src = src.replace(/%input%/gi, 'step' + stepN);
+    src = src.replace(/%output%/gi, 'step' + (stepN + 1));
+    return src;
+  }
+};
+
+CATMAID.Pixi.SimpleShaderStep.BaseType = class BaseType {
+  constructor(dataType) {
+    let prefix;
+    if (dataType.startsWith('int')) {
+      prefix = 'i';
+    } else if (dataType.startsWith('uint')) {
+      prefix = 'u';
+    }
+
+    let depth = dataType.substr(-2);
+    if (depth.endsWith("8")) depth = "8";
+    depth = parseInt(depth, 10);
+
+    // TODO: Since this is not channel/mode aware yet, manually set that 64-bit
+    // data is RGBA16 so should be normalized by 16 bits instead.
+    if (depth === 64) {
+      depth = 16;
+    }
+
+    this.prefix = prefix;
+    this.depth = depth;
+    this.dataType = dataType;
+  }
+
+  glslColorType() {
+    return (new CATMAID.Pixi.SimpleShaderStep.Type.Dependent('vec4')).glsl(this);
+  }
+
+  glslSamplerType() {
+    return (new CATMAID.Pixi.SimpleShaderStep.Type.Dependent('sampler2D')).glsl(this);
+  }
+
+  glslScalar() {
+    if (this.dataType.startsWith('int')) {
+      return 'int';
+    } else if (this.dataType.startsWith('uint')) {
+      return 'uint';
+    } else if (this.dataType.startsWith('float')) {
+      return 'float';
+    }
+  }
+
+  minValue() {
+    // TODO: should handle type and sign.
+    return 0;
+  }
+
+  maxValue() {
+    // TODO: should handle type and sign.
+    return Math.pow(2, this.depth);
+  }
+};
+
+CATMAID.Pixi.SimpleShaderStep.Type = class Type {
+  constructor() {
+  }
+
+  glsl(baseDataType) {
+    throw new CATMAID.NotImplementedError();
+  }
+};
+
+CATMAID.Pixi.SimpleShaderStep.Type.Independent = class Independent extends CATMAID.Pixi.SimpleShaderStep.Type {
+  constructor(concrete) {
+    super();
+    this.concrete = concrete;
+  }
+
+  glsl(baseDataType) {
+    return this.concrete;
+  }
+};
+
+CATMAID.Pixi.SimpleShaderStep.Type.Dependent = class Dependent extends CATMAID.Pixi.SimpleShaderStep.Type {
+  constructor(suffix) {
+    super();
+    this.suffix = suffix;
+  }
+
+  glsl(baseDataType) {
+    return baseDataType.prefix + this.suffix;
+  }
+};
+
+CATMAID.Pixi.SimpleShaderStep.Type.DependentScalar = class DependentScalar extends CATMAID.Pixi.SimpleShaderStep.Type {
+  constructor() {
+    super();
+  }
+
+  glsl(baseDataType) {
+    return baseDataType.glslScalar();
+  }
+};
+
+CATMAID.Pixi.SimpleShaderStep.Uniform = class Uniform {
+  constructor(name, type, defaultGen, value) {
+    this.name = name;
+    this.type = type;
+    this.defaultGen = defaultGen;
+    this.value = value;
+  }
+
+  setAttr(attr, baseDataType) {
+    this.value = this.value || CATMAID.tools.callIfFn(this.defaultGen, baseDataType);
+    attr[name] = this.value;
+  }
+
+  glsl(baseDataType) {
+    return `uniform ${this.type.glsl(baseDataType)} ${this.name};`;
+  }
+};
+
+CATMAID.Pixi.SimpleMinMaxShaderStep = class SimpleMinMaxShaderStep extends CATMAID.Pixi.SimpleShaderStep {
+  constructor() {
+    super(
+      [
+        new CATMAID.Pixi.SimpleShaderStep.Uniform('minValue', new CATMAID.Pixi.SimpleShaderStep.Type.DependentScalar(), b => b.minValue()),
+        new CATMAID.Pixi.SimpleShaderStep.Uniform('maxValue', new CATMAID.Pixi.SimpleShaderStep.Type.DependentScalar(), b => b.maxValue()),
+      ],
+      new CATMAID.Pixi.SimpleShaderStep.Type.Dependent('vec4'),
+      // TODO: This is `vec4(float())` to implicitly assign a single channel value to all channels for grayscale.
+      // Otherwise the result is a red channel image. This is correct, but should be more explicit or controllable.
+`%output_type% %output% = vec4(float(clamp(%input%, minValue, maxValue) - minValue) / float(maxValue - minValue));`,
+      new CATMAID.Pixi.SimpleShaderStep.Type.Independent('vec4'));
+  }
 };
 
 })(CATMAID);

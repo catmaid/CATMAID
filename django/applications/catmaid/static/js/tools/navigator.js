@@ -199,9 +199,6 @@
     this.lastPointerCoordsP = {'x': 0, 'y': 0, 'z': 0};
     this.lastPointerCoordsS = {'x': 0, 'y': 0, 'z': 0};
     this._mousePosStatusUpdate = function(e) {
-      let m = CATMAID.ui.getMouse(e, self.mouseCatcher, true);
-      CATMAID.statusBar.printCoords('ui');
-
       let stackViewer = self.stackViewer;
       if (!stackViewer) return;
 

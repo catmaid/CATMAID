@@ -279,7 +279,7 @@
           customMirrorData.tile_height);
       var url = tileSource.getCanaryUrl(project, stack);
       // Open a new browser window with a canary tile
-      var win = window.open(url);
+      window.open(url);
     };
 
     var self = this;

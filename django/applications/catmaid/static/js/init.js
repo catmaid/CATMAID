@@ -1821,7 +1821,7 @@ var project;
    * @param  {number|string} reorientedStackID ID of the stack to open.
    * @param  {boolean} useExistingViewer True to add the stack to the existing,
    *                                     focused stack viewer.
-   * @param  {number}  mirrorInde        An optional mirror index, defaults to
+   * @param  {number}  mirrorIndex       An optional mirror index, defaults to
    *                                     the first available.
    * @param  {boolean} noLayout          Falsy to layout all available stack
    *                                     viewers (default).

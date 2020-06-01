@@ -118,11 +118,15 @@
 
       for (var i = 0; i < rows; ++i) {
         for (var j = 0; j < cols; ++j) {
-          this._tiles[i][j].texture = new PIXI.Texture(new PIXI.BaseTexture(new ImageData(1, 1)));
+          let tex = new PIXI.Texture(new PIXI.BaseTexture(new ImageData(1, 1)));
+          tex.baseTexture.dataType = dataType;
+          this._tiles[i][j].texture = tex;
+          tex = new PIXI.Texture(new PIXI.BaseTexture(new ImageData(1, 1)));
+          tex.baseTexture.dataType = dataType;
           this._tilesBuffer[i][j] = {
             coord: false,
             loaded: false,
-            texture: new PIXI.Texture(new PIXI.BaseTexture(new ImageData(1, 1)))
+            texture: tex
           };
         }
       }

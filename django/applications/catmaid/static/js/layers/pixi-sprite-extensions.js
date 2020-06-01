@@ -11,6 +11,22 @@ CATMAID.Pixi.TypedSpriteRenderer = class TypedSpriteRenderer extends PIXI.Sprite
     this.dataType = dataType;
   }
 
+  flush() {
+    // Because all SpriteRenderers and their shaders use the same bound texture
+    // units, it is necessary to unbind any textures of different formats or
+    // the entire object will fail to render due to bound textures being
+    // incompatible with shaders' sampler types.
+    let btex = this.renderer.boundTextures;
+    for (let i = 0; i < btex.length; ++i) {
+      // TODO: this could be done more efficiently than a string property and
+      // comparison by checking properties of the GL texture.
+      if (btex[i].dataType !== this.dataType) {
+        this.renderer.unbindTexture(btex[i]);
+      }
+    }
+    super.flush();
+  }
+
   // This is mostly a direct copy of PIXI.SpriteRenderer
   onContextChange()
   {
@@ -315,5 +331,17 @@ for (let dataType of supportedDataTypes) {
 
   PIXI.WebGLRenderer.registerPlugin('typedSprite_' + dataType, renderer);
 }
+
+// See the comment on TypedSpriteRenderer.flush above.
+let oldFlush = PIXI.SpriteRenderer.prototype.flush;
+PIXI.SpriteRenderer.prototype.flush = function () {
+  let btex = this.renderer.boundTextures;
+  for (let i = 0; i < btex.length; ++i) {
+    if (btex[i].dataType) {
+      this.renderer.unbindTexture(btex[i]);
+    }
+  }
+  return oldFlush.call(this);
+};
 
 })(CATMAID);

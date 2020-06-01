@@ -9,8 +9,6 @@
      * Creates a simple login dialog.
      */
     var LoginDialog = function(text, callback, force) {
-      var id = "login-dialog";
-
       // If there is already a login dialog, don't create a new one, return
       // existing one.
       if (singleton && !force) {

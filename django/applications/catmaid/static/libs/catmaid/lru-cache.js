@@ -206,7 +206,6 @@
    */
   CATMAID.CacheBuilder = {
     makeMemoryAwareLRUCache: function(capacity, lifetime, maxMemoryFillRate, fallback) {
-      let cache;
       try {
         return new MemoryAwareLRUCache(capacity, lifetime, maxMemoryFillRate);
       } catch(error) {

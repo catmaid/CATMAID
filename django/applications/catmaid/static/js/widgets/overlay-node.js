@@ -773,7 +773,6 @@
       };
 
       // Looked up to prevent frequent namespace lookups.
-      let intersectLineWithPlane = CATMAID.tools.intersectLineWithPlane;
       let intersectionTarget = new THREE.Vector3();
       let intersectionWorkingLine = new THREE.Line3(new THREE.Vector3(),
           new THREE.Vector3());
@@ -1098,7 +1097,6 @@
         var nodeP = {x: this.x, y: this.y, z: this.z};
         var planeX = this.planeX;
         var planeY = this.planeY;
-        var planeZ = this.planeZ;
 
         // Update radius on pointer move
         c.on('pointermove', function (event) {
@@ -1712,7 +1710,6 @@
               // Remote skeletons can be involved, pass along a possible remote API. It is currently not
               // allowed to have both skeletons of the merge being remote.
               let fromApi = SkeletonAnnotations.getActiveSkeletonAPI();
-              let fromStackViewer = SkeletonAnnotations.getActiveStackViewerId();
               let fromProjectId = SkeletonAnnotations.getActiveProjectId();
               if (fromApi && catmaidTracingOverlay.api) {
                 CATMAID.warn("At least one skeleton has to be local");
@@ -2362,7 +2359,8 @@
               baseline: 'middle'});
           cachedText.alpha = 1.0;
           cachedText.resolution = this.textResolution;
-          var texture = this.overlayGlobals.tracingOverlay.pixiLayer._context.renderer.generateTexture(
+          // This forces update of the PIXI.Text texture. The returned render texture is unused.
+          this.overlayGlobals.tracingOverlay.pixiLayer._context.renderer.generateTexture(
               cachedText, PIXI.settings.SCALE_MODE, 1);
           confidenceTextCache[confidence] = cachedText;
         } else if (cachedText.style.fontSize !== this.confidenceFontSize) {
@@ -2372,7 +2370,8 @@
               fill: 0xFFFFFF,
               baseline: 'middle'};
           cachedText.resolution = this.textResolution;
-          var texture = this.overlayGlobals.tracingOverlay.pixiLayer._context.renderer.generateTexture(
+          // This forces update of the PIXI.Text texture. The returned render texture is unused.
+          this.overlayGlobals.tracingOverlay.pixiLayer._context.renderer.generateTexture(
               cachedText, PIXI.settings.SCALE_MODE, 1);
         }
 

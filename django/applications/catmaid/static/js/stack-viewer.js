@@ -965,7 +965,6 @@
       this._layerOrder.splice(this._layerOrder.indexOf(key), 1);
 
       if (layer instanceof CATMAID.StackLayer) {
-        var self = this;
         var otherStackLayers = this._layers.forEach(function (otherLayer) {
           return otherLayer instanceof CATMAID.StackLayer && otherLayer.stack.id === layer.stack.id;
         });

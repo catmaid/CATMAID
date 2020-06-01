@@ -1975,9 +1975,8 @@ var project;
         CATMAID.Stack.list(project.id, true)
           .then(function(stacks) {
             if (stacks.length > 1) {
-              var stack_menu_content = [];
-              stacks.forEach(function(s) {
-                stack_menu_content.push({
+              let stackMenuContent = stacks.map(s => {
+                return {
                     id: s.id,
                     title: s.title,
                     note: '',
@@ -1991,11 +1990,10 @@ var project;
                         action: CATMAID.openProjectStack.bind(window, s.pid, s.id, true, undefined, true, true)
                       }
                     ]
-                  }
-                );
-              });
+                  };
+                });
 
-              stack_menu.update( stack_menu_content );
+              stack_menu.update(stackMenuContent);
               var stackMenuBox = document.getElementById( "stackmenu_box" );
               stackMenuBox.firstElementChild.lastElementChild.style.display = "none";
               stackMenuBox.style.display = "block";

@@ -653,7 +653,7 @@ CATMAID.tools = CATMAID.tools || {};
     }
     var clone = CATMAID.tools.cloneNode(element, true);
     var printHTML = "<html><body></body></html>";
-    printWindow.document.write("<html><body></body></html>");
+    printWindow.document.write(printHTML);
     printWindow.document.body.appendChild(clone);
 
     printWindow.print();

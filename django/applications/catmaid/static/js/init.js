@@ -1968,36 +1968,33 @@ var project;
         layoutMenuBox.firstElementChild.lastElementChild.style.display = "none";
         layoutMenuBox.style.display = "block";
 
-        // Update the projects stack menu. If there is more than one stack
-        // linked to the current project, a submenu for easy access is
-        // generated. This need to be done only once on project creation.
+        // Update the projects stack menu. A submenu for easy access is
+        // generated. This needs to be done only once on project creation.
         stack_menu.update();
         CATMAID.Stack.list(project.id, true)
           .then(function(stacks) {
-            if (stacks.length > 1) {
-              let stackMenuContent = stacks.map(s => {
-                return {
-                    id: s.id,
-                    title: s.title,
-                    note: '',
-                    action: [{
-                        title: 'Open in new viewer',
-                        note: '',
-                        action: CATMAID.openProjectStack.bind(window, s.pid, s.id, false, undefined, true, true)
-                      },{
-                        title: 'Add to focused viewer',
-                        note: '',
-                        action: CATMAID.openProjectStack.bind(window, s.pid, s.id, true, undefined, true, true)
-                      }
-                    ]
-                  };
-                });
+            let stackMenuContent = stacks.map(s => {
+              return {
+                  id: s.id,
+                  title: s.title,
+                  note: '',
+                  action: [{
+                      title: 'Open in new viewer',
+                      note: '',
+                      action: CATMAID.openProjectStack.bind(window, s.pid, s.id, false, undefined, true, true)
+                    },{
+                      title: 'Add to focused viewer',
+                      note: '',
+                      action: CATMAID.openProjectStack.bind(window, s.pid, s.id, true, undefined, true, true)
+                    }
+                  ]
+                };
+              });
 
-              stack_menu.update(stackMenuContent);
-              var stackMenuBox = document.getElementById( "stackmenu_box" );
-              stackMenuBox.firstElementChild.lastElementChild.style.display = "none";
-              stackMenuBox.style.display = "block";
-            }
+            stack_menu.update(stackMenuContent);
+            var stackMenuBox = document.getElementById( "stackmenu_box" );
+            stackMenuBox.firstElementChild.lastElementChild.style.display = "none";
+            stackMenuBox.style.display = "block";
           }).catch(CATMAID.handleError);
 
         return loadStack(e, undefined, hide, reorient);

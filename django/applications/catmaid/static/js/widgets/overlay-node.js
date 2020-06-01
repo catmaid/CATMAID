@@ -10,10 +10,6 @@
 
   "use strict";
 
-  var lineNormal = function (x1, y1, x2, y2) {
-    return setLineNormal(x1, y1, x2, y2, [null, null]);
-  };
-
   let setLineNormal = function(x1, y1, x2, y2, target) {
     var xdiff = x2 - x1,
         ydiff = y2 - y1,

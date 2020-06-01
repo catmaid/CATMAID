@@ -51,40 +51,10 @@ var project;
   CATMAID.Init.EVENT_KNOWN_REMOTES_CHANGED = "init_remotes_changed";
 
   /**
-   * A menu showing available data views.
-   * @type {Menu}
+   * UI menus for top-level navigation and user actions.
+   * @type {Object.<string, Menu>}
    */
-  var dataview_menu;
-  /**
-   * A menu for all visible projets.
-   * @type {Menu}
-   */
-  var project_menu;
-  /**
-   * A menu showing available layouts.
-   * @type {Menu}
-   */
-  var layout_menu;
-  /**
-   * A menu for all stacks in the current project.
-   * @type {Menu}
-   */
-  var stack_menu;
-  /**
-   * A menu for message related links.
-   * @type {Menu}
-   */
-  var message_menu;
-  /**
-   * A menu for user related links.
-   * @type {Menu}
-   */
-  var user_menu;
-  /**
-   * A menu for login options.
-   * @type {Menu}
-   */
-  var login_menu;
+  var menus = {};
 
   // Timeout reference for user edit domain updates.
   var edit_domain_timeout;
@@ -466,27 +436,11 @@ var project;
     document.getElementById( "account" ).onkeydown = login_oninputreturn;
     document.getElementById( "password" ).onkeydown = login_oninputreturn;
 
-    dataview_menu = new Menu();
-    document.getElementById( "dataview_menu" ).appendChild( dataview_menu.getView() );
+    ['dataview', 'project', 'layout', 'stack', 'message', 'user', 'login'].forEach(name => {
+      menus[name] = new Menu();
+      document.getElementById(name + '_menu').appendChild(menus[name].getView());
+    });
     CATMAID.DataViews.list().then(handle_dataviews);
-
-    project_menu = new Menu();
-    document.getElementById( "project_menu" ).appendChild( project_menu.getView() );
-
-    layout_menu = new Menu();
-    document.getElementById( "layout_menu" ).appendChild( layout_menu.getView() );
-
-    stack_menu = new Menu();
-    document.getElementById( "stack_menu" ).appendChild( stack_menu.getView() );
-
-    message_menu = new Menu();
-    document.getElementById( "message_menu" ).appendChild( message_menu.getView() );
-
-    user_menu = new Menu();
-    document.getElementById( "user_menu" ).appendChild( user_menu.getView() );
-
-    login_menu = new Menu();
-    document.getElementById( "login_menu" ).appendChild( login_menu.getView() );
     CATMAID._updateLoginMenu();
 
     var self = this;
@@ -676,7 +630,7 @@ var project;
    * @returns {Promise} Resolved once the update is complete.
    */
   Client.prototype.updateProjects = function() {
-    project_menu.update(null);
+    menus.project.update(null);
 
     // Set a temporary loading data view
     this.switch_dataview(new CATMAID.DataView({
@@ -790,7 +744,7 @@ var project;
           menuData.push(tagToMenuData[sortedTagList[i]]);
         }
 
-        project_menu.update(menuData);
+        menus.project.update(menuData);
 
         return self.projects;
       })
@@ -968,7 +922,7 @@ var project;
    * menu.
    */
   CATMAID._updateLoginMenu = function() {
-    login_menu.update(Object.keys(CATMAID.extraAuthConfig).sort().map(cId => {
+    menus.login.update(Object.keys(CATMAID.extraAuthConfig).sort().map(cId => {
       let c = CATMAID.extraAuthConfig[cId];
       return {
           action: c.login_url,
@@ -1009,7 +963,7 @@ var project;
           action: () => CATMAID.forkCurrentProject(),
         });
       }
-      user_menu.update(userMenuItems);
+      menus.user.update(userMenuItems);
   };
 
   /**
@@ -1318,9 +1272,9 @@ var project;
           message_container.appendChild( dd2 );
         }
       }
-      message_menu.update( e );
+      menus.message.update( e );
       // Make all message links open in a new page
-      var links = message_menu.getView().querySelectorAll('a');
+      var links = menus.message.getView().querySelectorAll('a');
       for (var j=0; j<links.length; ++j) {
         links[j].target = '_blank';
       }
@@ -1473,7 +1427,7 @@ var project;
       };
     }
 
-    dataview_menu.update(menuItems);
+    menus.dataview.update(menuItems);
   }
 
   /**
@@ -1927,7 +1881,7 @@ var project;
       });
     }
 
-    layout_menu.update(layoutMenuContent);
+    menus.layout.update(layoutMenuContent);
   }
 
   /**
@@ -1970,7 +1924,7 @@ var project;
 
         // Update the projects stack menu. A submenu for easy access is
         // generated. This needs to be done only once on project creation.
-        stack_menu.update();
+        menus.stack.update();
         CATMAID.Stack.list(project.id, true)
           .then(function(stacks) {
             let stackMenuContent = stacks.map(s => {
@@ -1991,7 +1945,7 @@ var project;
                 };
               });
 
-            stack_menu.update(stackMenuContent);
+            menus.stack.update(stackMenuContent);
             var stackMenuBox = document.getElementById( "stackmenu_box" );
             stackMenuBox.firstElementChild.lastElementChild.style.display = "none";
             stackMenuBox.style.display = "block";

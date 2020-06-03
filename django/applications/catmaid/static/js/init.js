@@ -3,7 +3,7 @@
 
 // These globals are currently used in many places and have yet to be moved into
 // the CATMAID namespace.
-var requestQueue;
+var requestQueue; // jshint ignore:line
 var project;
 
 (function(CATMAID) {

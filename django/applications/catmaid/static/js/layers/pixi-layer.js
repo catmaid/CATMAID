@@ -20,7 +20,7 @@
     try {
       this.initRenderer(stackViewer.getView().clientWidth, stackViewer.getView().clientHeight);
       // Attempt accessing blend modes to make sure we do actually have context.
-      let nBlendModes = this.renderer.state.blendModes.length;
+      let nBlendModes = this.renderer.state.blendModes.length; // jshint ignore:line
     } catch (error) {
       console.log('Caught WebGL2 loading error');
       console.log(error);

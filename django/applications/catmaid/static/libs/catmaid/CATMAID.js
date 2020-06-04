@@ -32,6 +32,23 @@ var requestQueue = new CATMAID.RequestQueue();
     return str.indexOf(suffix, str.length - suffix.length) !== -1;
   };
 
+
+  //  Both setReady and setCanceledLoading are set by the ready-promise and map
+  //  to its resolve and reject functions. This is done in order to resolve and
+  //  reject the ready-promise once everything is loaded.
+  let [setReady, setCanceledLoading] = [null, null];
+  let _ready = new Promise((resolve, reject) => {
+    [setReady, setCanceledLoading] = [resolve, reject];
+  });
+
+  /**
+   * Promise that CATMAID is fully initialized. Will not reject if CATMAID's
+   * initialization fails for some reason (e.g. wrong back-end URL).
+   */
+  CATMAID.ready = function() {
+    return _ready;
+  };
+
   /**
    * Set up the front-end environment. Both URLs are stored so that they contain
    * a trailing slash.
@@ -52,6 +69,8 @@ var requestQueue = new CATMAID.RequestQueue();
    */
   CATMAID.configure = function(backendURL, staticURL, staticExtURL,
       csrfCookieName, cookieSuffix, permissions, history) {
+    var initTimestamp = Date.now();
+
     validateString(backendURL, "back-end URL");
     validateString(staticURL, "static URL");
     if (typeof staticExtURL === 'undefined') staticExtURL = '';
@@ -107,6 +126,27 @@ var requestQueue = new CATMAID.RequestQueue();
       permissions = {};
     }
     CATMAID.updatePermissions(permissions);
+
+    CATMAID._checkIfReady(initTimestamp);
+  };
+
+  CATMAID._checkIfReady = function(initTimestamp) {
+    // Test back-end URL and only mark as ready if it is available.
+    CATMAID.fetch('/', 'HEAD')
+      .then(() => {
+        setReady({
+          'init': initTimestamp,
+          'ready': Date.now(),
+        });
+      })
+      .catch(e => {
+        CATMAID.warn(`Back-end not correctly configured: ${e}`);
+        setCanceledLoading({
+          'error': e,
+          'init': initTimestamp,
+          'ready': Date.now(),
+        });
+      });
   };
 
   /**
@@ -357,7 +397,7 @@ var requestQueue = new CATMAID.RequestQueue();
     } else if ('ReplacedRequestError' === error.type) {
       return new CATMAID.ReplacedRequestError(error.error, error.detail);
     } else if (statusCode === 404) {
-      return new CATMAID.MissingResourceError(error.error, error.detail);
+      return new CATMAID.ResourceUnavailableError(error.error, error.detail);
     } else if (statusCode === 403) {
       return new CATMAID.PermissionError("Insufficient permissions", error);
     } else {

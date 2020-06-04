@@ -107,7 +107,7 @@
     this._storeThrottleTimeout = null;
     this.settingsStore.on(CATMAID.DataStore.EVENT_LOADED, this._boundLoad);
     if (load) {
-      this.load();
+      CATMAID.ready().then(() => this.load());
     }
   }
 
@@ -215,7 +215,9 @@
           self.rendered[scope] = $.extend(true, {}, rendered);
         });
 
-        return Promise.all(work);
+        // Make sure CATMAID is fully initialized before the settings are
+        // loaded.
+        return CATMAID.ready().then(() => Promise.all(work));
     });
   };
 

@@ -89,7 +89,7 @@
         this.trigger(DataStore.EVENT_LOADED, this);
       })
       .catch(error => {
-        if (error instanceof CATMAID.MissingResourceError ||
+        if (error instanceof CATMAID.ResourceUnavailableError ||
             error instanceof CATMAID.PermissionError) {
           this.entries = new Map();
           this.trigger(DataStore.EVENT_LOADED, this);

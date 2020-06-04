@@ -38,7 +38,7 @@ before_script:
 script:
   - flake8 --statistics --count django
     # see "scripts" in package.json
-  - npm run lint:js
+  - npm run lint:js-diff
   - npm run jsdoc
   - cd $TRAVIS_BUILD_DIR
   # Static type checking for Python when mypy is available (which it isn't in

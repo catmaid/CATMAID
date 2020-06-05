@@ -143,7 +143,8 @@
     this._vert.style.opacity = this._horr.style.opacity = "0.5";
     this._view.appendChild( this._vert );
     this._view.appendChild( this._horr );
-    this.showReferenceLines(StackViewer.Settings.session.display_stack_reference_lines);
+    this.showReferenceLines(StackViewer.Settings.session ?
+        StackViewer.Settings.session.display_stack_reference_lines : false);
 
     if (primaryStack.description.length > 0) {
       this.addLayer('Stack description', new CATMAID.MetadataLayer(this, primaryStack.description));

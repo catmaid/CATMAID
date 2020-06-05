@@ -83,7 +83,8 @@
      * non-broken section.
      * @type {Boolean}
      */
-    this.hideIfNearestSliceBroken = CATMAID.StackLayer.Settings.session.hide_if_nearest_section_broken;
+    this.hideIfNearestSliceBroken = CATMAID.StackLayer.Settings.session ?
+        CATMAID.StackLayer.Settings.session.hide_if_nearest_section_broken : false;
 
 
     /**

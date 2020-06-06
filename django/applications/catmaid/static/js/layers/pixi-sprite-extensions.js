@@ -9,6 +9,26 @@ CATMAID.Pixi.TypedSpriteRenderer = class TypedSpriteRenderer extends PIXI.Sprite
     super(renderer);
 
     this.dataType = dataType;
+    // Array of empty textures for texture units. This is necessary because
+    // SpriteRenderer may otherwise bind renderer's emptyTextures, which may
+    // be of imcompatible format to these.
+    this.emptyTextures = [];
+  }
+
+  createEmptyTextures() {
+    const gl = this.renderer.gl;
+    const params = CATMAID.PixiImageBlockLayer.dataTypeWebGLParams(gl, this.dataType);
+    const glTex = new PIXI.glCore.GLTexture(gl, 1, 1, params.internalFormat, params.type);
+    glTex.bind();
+    gl.texImage2D(gl.TEXTURE_2D, 0, glTex.format, 1, 1, 0, params.format, glTex.type, null);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    // glTex.uploadData(null, 1, 1);
+    this.emptyTextures = this.renderer.emptyTextures.map(_i => {
+      const baseTex = new PIXI.BaseTexture();
+      baseTex._glTextures[this.renderer.CONTEXT_UID] = glTex;
+      return baseTex;
+    });
   }
 
   flush() {
@@ -17,14 +37,14 @@ CATMAID.Pixi.TypedSpriteRenderer = class TypedSpriteRenderer extends PIXI.Sprite
     // the entire object will fail to render due to bound textures being
     // incompatible with shaders' sampler types.
     let btex = this.renderer.boundTextures;
+    const params = CATMAID.PixiImageBlockLayer.dataTypeWebGLParams(this.renderer.gl, this.dataType);
     for (let i = 0; i < btex.length; ++i) {
-      // TODO: this could be done more efficiently than a string property and
-      // comparison by checking properties of the GL texture.
-      if (btex[i].dataType !== this.dataType) {
-        this.renderer.unbindTexture(btex[i]);
+      let glTex = btex[i]._glTextures[this.renderer.CONTEXT_UID];
+      if (glTex && (glTex.format != params.format || glTex.type != params.type)) {
+        this.renderer.bindTexture(this.emptyTextures[i], i, true);
       }
     }
-    super.flush();
+    return oldFlush.call(this);
   }
 
   // This is mostly a direct copy of PIXI.SpriteRenderer
@@ -37,6 +57,7 @@ CATMAID.Pixi.TypedSpriteRenderer = class TypedSpriteRenderer extends PIXI.Sprite
       if (gl instanceof WebGLRenderingContext) {
         return;
       }
+      this.createEmptyTextures();
       /////////////////////////////////////////////////////////////////////////
 
       if (this.renderer.legacy)
@@ -320,9 +341,11 @@ for (let dataType of supportedDataTypes) {
 // See the comment on TypedSpriteRenderer.flush above.
 let oldFlush = PIXI.SpriteRenderer.prototype.flush;
 PIXI.SpriteRenderer.prototype.flush = function () {
+  const gl = this.renderer.gl;
   let btex = this.renderer.boundTextures;
   for (let i = 0; i < btex.length; ++i) {
-    if (btex[i].dataType) {
+    let glTex = btex[i]._glTextures[this.renderer.CONTEXT_UID];
+    if (glTex && (glTex.format != gl.RGBA || glTex.type != gl.UNSIGNED_BYTE)) {
       this.renderer.unbindTexture(btex[i]);
     }
   }

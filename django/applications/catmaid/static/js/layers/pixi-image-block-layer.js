@@ -119,10 +119,8 @@
       for (var i = 0; i < rows; ++i) {
         for (var j = 0; j < cols; ++j) {
           let tex = new PIXI.Texture(new PIXI.BaseTexture(new ImageData(1, 1)));
-          tex.baseTexture.dataType = dataType;
           this._tiles[i][j].texture = tex;
           tex = new PIXI.Texture(new PIXI.BaseTexture(new ImageData(1, 1)));
-          tex.baseTexture.dataType = dataType;
           this._tilesBuffer[i][j] = {
             coord: false,
             loaded: false,
@@ -339,10 +337,11 @@
     _makeEmptySlice(stride) {
       if (!(this._emptySlice
         && this._emptySlice.shape[0] === this.tileWidth
-        && this._emptySlice.shape[1] === this.tileHeight)) {
+        && this._emptySlice.shape[1] === this.tileHeight
+        && this._emptySlice.dtype === this.tileSource.dataType())) {
         let empty = nj.zeros(
             [this.tileWidth, this.tileHeight],
-            this.tileSource.dataType());
+            this.tileSource.dataType() || 'uint8');
         empty.selection.data.fill(this.fillValue);
         this._emptySlice = empty;
       }
@@ -392,97 +391,13 @@
       }
     }
 
-    _dtypeWebGLParams(dtype) {
-      // See table 2: https://www.khronos.org/registry/OpenGL-Refpages/es3.0/html/glTexImage2D.xhtml
-      // WebGL2 documentation is often misleading because it only lists the
-      // subset of this table that is supported for conversion from JS canvases,
-      // etc., but WebGL2 itself supports all OpenGL ES 3.0 combinations.
-
-      const gl = this._context.renderer.gl;
-      var format, type, internalFormat, jsArrayType;
-
-      // TODO: float64 is not supported. This may be the one current datatype
-      // that should be cast (to float32) before uploading.
-
-      switch (dtype) {
-        case 'int8':
-          format = gl.RED_INTEGER;
-          type = gl.BYTE;
-          internalFormat = gl.R8I;
-          jsArrayType = Int8Array;
-          break;
-        case 'int16':
-          format = gl.RED_INTEGER;
-          type = gl.SHORT;
-          internalFormat = gl.R16I;
-          jsArrayType = Int16Array;
-          break;
-        case 'int32':
-          format = gl.RED_INTEGER;
-          type = gl.INT;
-          internalFormat = gl.R32I;
-          jsArrayType = Int32Array;
-          break;
-        case 'int64':
-          // TODO: Once render modes per-datatype are available, this could also
-          // be a `RG32I`.
-          format = gl.RGBA_INTEGER;
-          type = gl.SHORT;
-          internalFormat = gl.RGBA16I;
-          jsArrayType = Int16Array;
-          break;
-        case 'uint8':
-          format = gl.LUMINANCE;
-          type = gl.UNSIGNED_BYTE;
-          internalFormat = gl.LUMINANCE;
-          jsArrayType = Uint8Array;
-          break;
-        case 'uint16':
-          format = gl.RED_INTEGER;
-          type = gl.UNSIGNED_SHORT;
-          internalFormat = gl.R16UI;
-          jsArrayType = Uint16Array;
-          break;
-        case 'uint64':
-          // TODO: Once render modes per-datatype are available, this could also
-          // be a `RG32UI`.
-          format = gl.RGBA_INTEGER;
-          type = gl.UNSIGNED_SHORT;
-          internalFormat = gl.RGBA16UI;
-          jsArrayType = Uint16Array;
-          break;
-        // The default case can be hit when the layer is drawn before the
-        // image block source has fully loaded.
-        default:
-          // This default should only catch float64 at time of writing, but
-          // is a default since sources may generalize beyond N5 to backends
-          // with other data types.
-          CATMAID.warn(`Unsupported data type for stack layer: ${dtype}, using uint32`);
-          /* falls through */
-        // TODO: See note about 32-bit types in `_dtypeTileConstructor`.
-        case 'uint32':
-          format = gl.RGBA;
-          type = gl.UNSIGNED_BYTE;
-          internalFormat = gl.RGBA;
-          jsArrayType = Uint8Array;
-          break;
-        case 'float32':
-          format = gl.RED;
-          type = gl.FLOAT;
-          internalFormat = gl.R32F;
-          jsArrayType = Float32Array;
-          break;
-      }
-
-      return {format, type, internalFormat, jsArrayType};
-    }
-
     _sliceToTexture(slice, pixiTex) {
       let renderer = this._context.renderer;
       let gl = renderer.gl;
 
       let dtype = sliceDtypeToBlockDtype(slice.dtype);
-      let {format, type, internalFormat, jsArrayType} = this._dtypeWebGLParams(dtype);
+      let {format, type, internalFormat, jsArrayType} =
+        CATMAID.PixiImageBlockLayer.dataTypeWebGLParams(this._context.renderer.gl, dtype);
       const glScaleMode = this._pixiInterpolationMode === PIXI.SCALE_MODES.LINEAR ?
         gl.LINEAR : gl.NEAREST;
 
@@ -698,5 +613,89 @@
       // return typedArr;
     }
   }
+
+  CATMAID.PixiImageBlockLayer.dataTypeWebGLParams = function (gl, dtype) {
+    // See table 2: https://www.khronos.org/registry/OpenGL-Refpages/es3.0/html/glTexImage2D.xhtml
+    // WebGL2 documentation is often misleading because it only lists the
+    // subset of this table that is supported for conversion from JS canvases,
+    // etc., but WebGL2 itself supports all OpenGL ES 3.0 combinations.
+
+    var format, type, internalFormat, jsArrayType;
+
+    // TODO: float64 is not supported. This may be the one current datatype
+    // that should be cast (to float32) before uploading.
+
+    switch (dtype) {
+      case 'int8':
+        format = gl.RED_INTEGER;
+        type = gl.BYTE;
+        internalFormat = gl.R8I;
+        jsArrayType = Int8Array;
+        break;
+      case 'int16':
+        format = gl.RED_INTEGER;
+        type = gl.SHORT;
+        internalFormat = gl.R16I;
+        jsArrayType = Int16Array;
+        break;
+      case 'int32':
+        format = gl.RED_INTEGER;
+        type = gl.INT;
+        internalFormat = gl.R32I;
+        jsArrayType = Int32Array;
+        break;
+      case 'int64':
+        // TODO: Once render modes per-datatype are available, this could also
+        // be a `RG32I`.
+        format = gl.RGBA_INTEGER;
+        type = gl.SHORT;
+        internalFormat = gl.RGBA16I;
+        jsArrayType = Int16Array;
+        break;
+      case 'uint8':
+        format = gl.LUMINANCE;
+        type = gl.UNSIGNED_BYTE;
+        internalFormat = gl.LUMINANCE;
+        jsArrayType = Uint8Array;
+        break;
+      case 'uint16':
+        format = gl.RED_INTEGER;
+        type = gl.UNSIGNED_SHORT;
+        internalFormat = gl.R16UI;
+        jsArrayType = Uint16Array;
+        break;
+      case 'uint64':
+        // TODO: Once render modes per-datatype are available, this could also
+        // be a `RG32UI`.
+        format = gl.RGBA_INTEGER;
+        type = gl.UNSIGNED_SHORT;
+        internalFormat = gl.RGBA16UI;
+        jsArrayType = Uint16Array;
+        break;
+      // The default case can be hit when the layer is drawn before the
+      // image block source has fully loaded.
+      default:
+        // This default should only catch float64 at time of writing, but
+        // is a default since sources may generalize beyond N5 to backends
+        // with other data types.
+        CATMAID.warn(`Unsupported data type for stack layer: ${dtype}, using uint32`);
+        /* falls through */
+      // TODO: See note about 32-bit types in `_dtypeTileConstructor`.
+      case 'uint32':
+        format = gl.RGBA;
+        type = gl.UNSIGNED_BYTE;
+        internalFormat = gl.RGBA;
+        jsArrayType = Uint8Array;
+        break;
+      case 'float32':
+        format = gl.RED;
+        type = gl.FLOAT;
+        internalFormat = gl.R32F;
+        jsArrayType = Float32Array;
+        break;
+    }
+
+    return {format, type, internalFormat, jsArrayType};
+  };
 
 })(CATMAID);

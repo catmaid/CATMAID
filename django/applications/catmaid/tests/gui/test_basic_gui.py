@@ -246,7 +246,7 @@ class BasicUITest(StaticLiveServerTestCase):
         password.send_keys("test")
         login.send_keys(Keys.RETURN)
 
-        logout = WebDriverWait(self.selenium, 10).until(
+        logout = WebDriverWait(self.selenium, 100).until(
                 EC.visibility_of_element_located((By.CSS_SELECTOR, 'a#logout')))
         self.assertTrue(logout.is_displayed(), "Logout button is displayed")
         login = WebDriverWait(self.selenium, 10).until(

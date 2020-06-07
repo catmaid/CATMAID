@@ -333,6 +333,7 @@ function generateIfTestSrc(maxIfs)
 }
 
 
+
 CATMAID.Pixi.TypedSprite = class TypedSprite extends PIXI.Sprite {
   constructor(dataType, ...args) {
     super(...args);
@@ -350,6 +351,45 @@ for (let dataType of supportedDataTypes) {
 
   PIXI.WebGLRenderer.registerPlugin('typedSprite_' + dataType, renderer);
 }
+
+
+let OWNED_RENDER_NEXT_ID_SUFFIX = 0;
+CATMAID.Pixi.OwnedRendererTypedSprite = class OwnedRendererTypedSprite extends CATMAID.Pixi.TypedSprite {
+  constructor(datatype, idSuffix, ...args) {
+    super(datatype, ...args);
+
+    this.pluginName += '_' + idSuffix;
+  }
+};
+
+CATMAID.Pixi.OwnedRendererTypedSprites = class OwnedRendererTypedSprites {
+  constructor(dataType, pixiRenderer) {
+    this.dataType = dataType;
+    this.renderer = CATMAID.Pixi.TypedSpriteRenderer.bind({}, dataType);
+    this.idSuffix = OWNED_RENDER_NEXT_ID_SUFFIX;
+    OWNED_RENDER_NEXT_ID_SUFFIX += 1;
+    PIXI.WebGLRenderer.registerPlugin(this.pluginName(), this.renderer);
+    // If the Pixi renderer has already initialized plugins, we must manually
+    // do so.
+    if (pixiRenderer.plugins) {
+      let plugin = new this.renderer(pixiRenderer);
+      pixiRenderer.plugins[this.pluginName()] = plugin;
+      plugin.onContextChange();
+    }
+    this.spriteConstructor = CATMAID.Pixi.OwnedRendererTypedSprite.bind({}, dataType, this.idSuffix);
+  }
+
+  pluginName() {
+    return 'typedSprite_' + this.dataType + '_' + this.idSuffix;
+  }
+
+  destroy(pixiRenderer) {
+    const name = this.pluginName();
+    pixiRenderer.plugins[name].destroy();
+    delete pixiRenderer.plugins[name];
+    delete PIXI.WebGLRenderer.__plugins[name];
+  }
+};
 
 CATMAID.Pixi.SimpleShaderStep = class SimpleShaderStep {
   constructor(uniforms, inputType, srcTemplate, outputType) {

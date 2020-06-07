@@ -93,6 +93,23 @@
           value: this.prefetch.has(p),
         })));
 
+      if (this.ownedRenderer) {
+        settings.set('Preprocessing',
+          [{
+            name: 'preprocessing_min',
+            displayName: 'Min',
+            type: 'number',
+            value: this._context.renderer.plugins[this.ownedRenderer.pluginName()].shader.uniforms.minValue,
+          },
+          {
+            name: 'preprocessing_max',
+            displayName: 'Max',
+            type: 'number',
+            value: this._context.renderer.plugins[this.ownedRenderer.pluginName()].shader.uniforms.maxValue,
+          }]
+        );
+      }
+
       return settings;
     }
 
@@ -104,6 +121,14 @@
           this.prefetch.add(prefetcher);
         } else {
           this.prefetch.delete(prefetcher);
+        }
+      } else if (name === 'preprocessing_min') {
+        if (this.ownedRenderer) {
+          this._context.renderer.plugins[this.ownedRenderer.pluginName()].shader.uniforms.minValue = value;
+        }
+      } else if (name === 'preprocessing_max') {
+        if (this.ownedRenderer) {
+          this._context.renderer.plugins[this.ownedRenderer.pluginName()].shader.uniforms.maxValue = value;
         }
       } else {
         super.setLayerSetting(name, value);
@@ -361,6 +386,11 @@
     }
 
     _dtypeTileConstructor(dtype) {
+      if (this.ownedRenderer && this.ownedRenderer.dataType !== dtype) {
+        this.ownedRenderer.destroy(this._context.renderer);
+        this.ownedRenderer = null;
+      }
+
       switch (dtype) {
         case undefined:
         // These types use WebGL1-style implicit conversion:
@@ -375,7 +405,10 @@
         case 'float64':
           return PIXI.Sprite;
         default:
-          return CATMAID.Pixi.TypedSprite.bind({}, dtype);
+          if (!this.ownedRenderer) {
+            this.ownedRenderer = new CATMAID.Pixi.OwnedRendererTypedSprites(dtype, this._context.renderer);
+          }
+          return this.ownedRenderer.spriteConstructor;
       }
     }
 

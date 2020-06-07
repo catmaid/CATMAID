@@ -60,5 +60,6 @@ script:
   - cd ../..
   # Run QUnit through karma in headless Chrome
   - npm run karma
+  - cat /home/travis/sauce-connect.log | grep -C 10 HEAD
 after_success:
   - cd django/projects && coveralls

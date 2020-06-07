@@ -23,7 +23,6 @@ CATMAID.Pixi.TypedSpriteRenderer = class TypedSpriteRenderer extends PIXI.Sprite
     gl.texImage2D(gl.TEXTURE_2D, 0, glTex.format, 1, 1, 0, params.format, glTex.type, null);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    // glTex.uploadData(null, 1, 1);
     this.emptyTextures = this.renderer.emptyTextures.map(_i => {
       const baseTex = new PIXI.BaseTexture();
       baseTex._glTextures[this.renderer.CONTEXT_UID] = glTex;

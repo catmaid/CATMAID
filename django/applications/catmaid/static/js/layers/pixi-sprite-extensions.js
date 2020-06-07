@@ -4,6 +4,20 @@
 
 CATMAID.Pixi = CATMAID.Pixi || {};
 
+// See the comment on TypedSpriteRenderer.flush.
+let oldFlush = PIXI.SpriteRenderer.prototype.flush;
+PIXI.SpriteRenderer.prototype.flush = function () {
+  const gl = this.renderer.gl;
+  let btex = this.renderer.boundTextures;
+  for (let i = 0; i < btex.length; ++i) {
+    let glTex = btex[i]._glTextures[this.renderer.CONTEXT_UID];
+    if (glTex && (glTex.format != gl.RGBA || glTex.type != gl.UNSIGNED_BYTE)) {
+      this.renderer.unbindTexture(btex[i]);
+    }
+  }
+  return oldFlush.call(this);
+};
+
 CATMAID.Pixi.TypedSpriteRenderer = class TypedSpriteRenderer extends PIXI.SpriteRenderer {
   constructor(dataType, renderer) {
     super(renderer);
@@ -336,20 +350,6 @@ for (let dataType of supportedDataTypes) {
 
   PIXI.WebGLRenderer.registerPlugin('typedSprite_' + dataType, renderer);
 }
-
-// See the comment on TypedSpriteRenderer.flush above.
-let oldFlush = PIXI.SpriteRenderer.prototype.flush;
-PIXI.SpriteRenderer.prototype.flush = function () {
-  const gl = this.renderer.gl;
-  let btex = this.renderer.boundTextures;
-  for (let i = 0; i < btex.length; ++i) {
-    let glTex = btex[i]._glTextures[this.renderer.CONTEXT_UID];
-    if (glTex && (glTex.format != gl.RGBA || glTex.type != gl.UNSIGNED_BYTE)) {
-      this.renderer.unbindTexture(btex[i]);
-    }
-  }
-  return oldFlush.call(this);
-};
 
 CATMAID.Pixi.SimpleShaderStep = class SimpleShaderStep {
   constructor(uniforms, inputType, srcTemplate, outputType) {

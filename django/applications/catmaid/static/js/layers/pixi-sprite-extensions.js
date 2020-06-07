@@ -479,7 +479,7 @@ CATMAID.Pixi.SimpleShaderStep.Uniform = class Uniform {
 
   setAttr(attr, baseDataType) {
     this.value = this.value || CATMAID.tools.callIfFn(this.defaultGen, baseDataType);
-    attr[name] = this.value;
+    attr[this.name] = this.value;
   }
 
   glsl(baseDataType) {

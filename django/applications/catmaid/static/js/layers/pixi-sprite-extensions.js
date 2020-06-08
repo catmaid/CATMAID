@@ -379,6 +379,10 @@ CATMAID.Pixi.OwnedRendererTypedSprites = class OwnedRendererTypedSprites {
     this.spriteConstructor = CATMAID.Pixi.OwnedRendererTypedSprite.bind({}, dataType, this.idSuffix);
   }
 
+  plugin(pixiRenderer) {
+    return pixiRenderer.plugins[this.pluginName()];
+  }
+
   pluginName() {
     return 'typedSprite_' + this.dataType + '_' + this.idSuffix;
   }

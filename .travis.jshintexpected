@@ -264,25 +264,6 @@ django/applications/catmaid/static/js/widgets/ontology_editor.js: line 433, col 
 django/applications/catmaid/static/js/widgets/options-dialog.js: line 310, col 13, 'originalIndex' is defined but never used.
 django/applications/catmaid/static/js/widgets/options-dialog.js: line 263, col 9, 'header1' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/overlay.js: line 1814, col 9, 'last_skeleton_id' is defined but never used.
-django/applications/catmaid/static/js/widgets/overlay.js: line 1884, col 9, 'nodeid' is defined but never used.
-django/applications/catmaid/static/js/widgets/overlay.js: line 1924, col 72, 'nodeid' is defined but never used.
-django/applications/catmaid/static/js/widgets/overlay.js: line 2031, col 17, 'stack' is defined but never used.
-django/applications/catmaid/static/js/widgets/overlay.js: line 3474, col 9, 'm' is defined but never used.
-django/applications/catmaid/static/js/widgets/overlay.js: line 3621, col 9, 'targetTreenodeID' is defined but never used.
-django/applications/catmaid/static/js/widgets/overlay.js: line 3886, col 13, 'nearestnode_id' is defined but never used.
-django/applications/catmaid/static/js/widgets/overlay.js: line 3887, col 13, 'nearestnode_skid' is defined but never used.
-django/applications/catmaid/static/js/widgets/overlay.js: line 3888, col 13, 'atn_skid' is defined but never used.
-django/applications/catmaid/static/js/widgets/overlay.js: line 4613, col 15, 'stack' is defined but never used.
-django/applications/catmaid/static/js/widgets/overlay.js: line 5823, col 9, 'self' is defined but never used.
-django/applications/catmaid/static/js/widgets/overlay.js: line 6131, col 9, 'nid' is defined but never used.
-django/applications/catmaid/static/js/widgets/overlay.js: line 6132, col 9, 'skid' is defined but never used.
-django/applications/catmaid/static/js/widgets/overlay.js: line 6306, col 9, 'lineWidth' is defined but never used.
-django/applications/catmaid/static/js/widgets/overlay.js: line 6307, col 9, 'lineColor' is defined but never used.
-django/applications/catmaid/static/js/widgets/overlay.js: line 6422, col 11, 'self' is defined but never used.
-django/applications/catmaid/static/js/widgets/overlay.js: line 6423, col 11, 'result' is defined but never used.
-django/applications/catmaid/static/js/widgets/overlay.js: line 6453, col 11, 'self' is defined but never used.
-
 django/applications/catmaid/static/js/widgets/pair-statistics-widget.js: line 386, col 13, 'groupDataTable' is defined but never used.
 django/applications/catmaid/static/js/widgets/pair-statistics-widget.js: line 440, col 13, 'extraGroupDataTable' is defined but never used.
 django/applications/catmaid/static/js/widgets/pair-statistics-widget.js: line 705, col 19, 'sg' is defined but never used.
@@ -429,4 +410,4 @@ django/applications/catmaid/static/libs/catmaid/utils.js: line 79, col 5, 'fetch
 django/applications/catmaid/static/libs/catmaid/volumes.js: line 613, col 9, 'abs' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/volumes.js: line 805, col 15, 'dSimplicesT' is defined but never used.
 
-345 errors
+327 errors

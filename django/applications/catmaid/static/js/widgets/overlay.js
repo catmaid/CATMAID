@@ -1810,8 +1810,8 @@ var SkeletonAnnotations = {};
    * handle virtual nodes.
    */
   CATMAID.TracingOverlay.prototype.activateNode = function(node) {
-    var atn = SkeletonAnnotations.atn,
-        last_skeleton_id = atn.skeleton_id;
+    var atn = SkeletonAnnotations.atn;
+
     if (node) {
       this.printTreenodeInfo(node.id);
       // Select (doesn't matter if re-select same node)
@@ -1880,8 +1880,7 @@ var SkeletonAnnotations = {};
         zdiff,
         distsq,
         nearestnode = null,
-        node,
-        nodeid;
+        node;
 
     var x = this.stackViewer.primaryStack.stackToProjectX(zs, ys, xs),
         y = this.stackViewer.primaryStack.stackToProjectY(zs, ys, xs),
@@ -1921,7 +1920,7 @@ var SkeletonAnnotations = {};
   CATMAID.TracingOverlay.prototype.findAllNodesWithinRadius = function (
       x, y, z, radius, respectVirtualNodes, respectHiddenNodes)
   {
-    var xdiff, ydiff, zdiff, distsq, radiussq = radius * radius, node, nodeid;
+    var xdiff, ydiff, zdiff, distsq, radiussq = radius * radius, node;
 
     // respect virual nodes, if wanted
     var nodeIsValid = SkeletonAnnotations.validNodeTest(respectVirtualNodes);
@@ -2028,7 +2027,6 @@ var SkeletonAnnotations = {};
         // Make sure both the insertion node and its parent exist
         this.promiseNodes(insertion.node, insertion.node.parent)
           .then((function(nids) {
-            var stack = this.stackViewer.primaryStack;
             this.createNode(nids[1], nids[0], phys_x, phys_y, phys_z, -1, 5);
             }).bind(this));
       }
@@ -3471,8 +3469,6 @@ var SkeletonAnnotations = {};
     // tracking.
     this.setLocationFromEvent(e);
 
-    var m = CATMAID.ui.getMouse(e, this.view, true);
-
     // Construct an event mocking the actual click that can be passed to the
     // tracing overlay. If it is handled there, do nothing here.
     var mockClick = new PointerEvent('pointerdown', e);
@@ -3618,8 +3614,7 @@ var SkeletonAnnotations = {};
     var phys_y = this.stackViewer.primaryStack.stackToProjectY(pos_z, pos_y, pos_x);
     var phys_z = this.stackViewer.primaryStack.stackToProjectZ(pos_z, pos_y, pos_x);
 
-    var targetTreenodeID,
-        atn = SkeletonAnnotations.atn;
+    var atn = SkeletonAnnotations.atn;
 
     // If activated, edit the node radius right after it was created.
     var postCreateFn;
@@ -3883,9 +3878,6 @@ var SkeletonAnnotations = {};
           this.activateNode(nearestnode.node);
           return;
         }
-        var nearestnode_id = nearestnode.id;
-        var nearestnode_skid = nearestnode.skeleton_id;
-        var atn_skid = atn.skeleton_id;
 
         // Join both skeletons
         this.createTreenodeLink(atn.id, nearestnode.id);
@@ -4610,7 +4602,6 @@ var SkeletonAnnotations = {};
       if (knownNode && knownNode.zdiff === 0) {
         return new Promise(function(resolve, reject) {
           // Fill branch cache
-          var stack = self.stackViewer.primaryStack;
           var branchData = Array.from(knownNode.children.keys()).map(function(childId) {
             var child = knownNode.children.get(childId);
             return [[parseInt(childId), child.x, child.y, child.z]];
@@ -5820,7 +5811,6 @@ var SkeletonAnnotations = {};
    */
   CATMAID.TracingOverlay.prototype.deleteNode = function(nodeId) {
     var node = this.nodes.get(nodeId);
-    var self = this;
 
     if (!node) {
       CATMAID.error("Could not find a node with id " + nodeId);
@@ -6128,8 +6118,6 @@ var SkeletonAnnotations = {};
 
     // Otherwise, add the new node to the local node store and display. This is
     // done explicitely to avoid a full node update.
-    var nid = parseInt(node.id);
-    var skid = parseInt(node.skeletonId);
 
     // The parent will be null if there isn't one or if the parent Node
     // object is not within the set of retrieved nodes, but the parentID
@@ -6303,9 +6291,6 @@ var SkeletonAnnotations = {};
    * the current settings.
    */
   CATMAID.TracingOverlay.prototype.updateTracingWindow = function() {
-    var lineWidth = 2;
-    var lineColor = 0x00FF00;
-
     if (this.applyTracingWindow) {
       var screenCenterX = this.stackViewer.viewWidth / 2;
       var screenCenterY = this.stackViewer.viewHeight / 2;
@@ -6419,8 +6404,7 @@ var SkeletonAnnotations = {};
         return tracingOverlay.submit();
       });
 
-      var self = this;
-      var result = prepare.then(function() {
+      return prepare.then(function() {
         // If preparation went well, nodeId will be set
         var command = new CATMAID.AddTagsToNodeCommand(tracingOverlay.projectId,
             nodeId, nodeType, labels, deleteExisting, tracingOverlay.api);
@@ -6450,7 +6434,6 @@ var SkeletonAnnotations = {};
         tracingOverlay.submit();
       });
 
-      let self = this;
       return prepare.then(function() {
         var command = new
           CATMAID.RemoveTagFromNodeCommand(tracingOverlay.projectId, nodeId,

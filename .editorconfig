@@ -26,6 +26,11 @@ indent_size = 2
 indent_style = space
 indent_size = 2
 
+# HTML
+[*.html]
+indent_style = space
+indent_size = 2
+
 # YAML
 [*.{yaml,yml}]
 indent_style = space

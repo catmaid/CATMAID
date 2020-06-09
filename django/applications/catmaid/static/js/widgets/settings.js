@@ -2208,7 +2208,7 @@
               function () {
                 try {
                   let value = $(this).val();
-                  let test = new RegExp(value);
+                  new RegExp(value); // Compile the regex to test that it parses.
                   SkeletonAnnotations.Settings
                       .set(
                         'fast_merge_application_pattern',

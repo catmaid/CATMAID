@@ -1,32 +1,32 @@
-django/applications/catmaid/static/js/3d/animation.js: line 133, col 9, 'targetDistance' is defined but never used.
+django/applications/catmaid/static/js/3d/animation.js: line 131, col 9, 'targetDistance' is defined but never used.
 
-django/applications/catmaid/static/js/3d/buffer-object-factory.js: line 288, col 9, 'normal' is defined but never used.
+django/applications/catmaid/static/js/3d/buffer-object-factory.js: line 286, col 9, 'normal' is defined but never used.
 
-django/applications/catmaid/static/js/3d/skeleton-shading.js: line 279, col 15, 'lastReviewerColor' is defined but never used.
-django/applications/catmaid/static/js/3d/skeleton-shading.js: line 549, col 13, 'arbor' is defined but never used.
-django/applications/catmaid/static/js/3d/skeleton-shading.js: line 574, col 9, 'nAddedDomains' is defined but never used.
-django/applications/catmaid/static/js/3d/skeleton-shading.js: line 1035, col 13, 'arbor' is defined but never used.
+django/applications/catmaid/static/js/3d/skeleton-shading.js: line 276, col 15, 'lastReviewerColor' is defined but never used.
+django/applications/catmaid/static/js/3d/skeleton-shading.js: line 546, col 13, 'arbor' is defined but never used.
+django/applications/catmaid/static/js/3d/skeleton-shading.js: line 571, col 9, 'nAddedDomains' is defined but never used.
+django/applications/catmaid/static/js/3d/skeleton-shading.js: line 1032, col 13, 'arbor' is defined but never used.
 
-django/applications/catmaid/static/js/WindowMaker.js: line 2082, col 17, 'frame' is defined but never used.
-django/applications/catmaid/static/js/WindowMaker.js: line 1160, col 9, 'textScalingInput' is defined but never used.
-django/applications/catmaid/static/js/WindowMaker.js: line 2195, col 18, 'action' is defined but never used.
-django/applications/catmaid/static/js/WindowMaker.js: line 2195, col 26, 'i' is defined but never used.
-django/applications/catmaid/static/js/WindowMaker.js: line 2453, col 15, 'handle' is defined but never used.
+django/applications/catmaid/static/js/WindowMaker.js: line 2079, col 17, 'frame' is defined but never used.
+django/applications/catmaid/static/js/WindowMaker.js: line 1157, col 9, 'textScalingInput' is defined but never used.
+django/applications/catmaid/static/js/WindowMaker.js: line 2192, col 18, 'action' is defined but never used.
+django/applications/catmaid/static/js/WindowMaker.js: line 2192, col 26, 'i' is defined but never used.
+django/applications/catmaid/static/js/WindowMaker.js: line 2450, col 15, 'handle' is defined but never used.
 
-django/applications/catmaid/static/js/dom.js: line 655, col 13, 'self' is defined but never used.
-django/applications/catmaid/static/js/dom.js: line 830, col 15, 'opened' is defined but never used.
-django/applications/catmaid/static/js/dom.js: line 825, col 9, 'update' is defined but never used.
+django/applications/catmaid/static/js/dom.js: line 652, col 13, 'self' is defined but never used.
+django/applications/catmaid/static/js/dom.js: line 827, col 15, 'opened' is defined but never used.
+django/applications/catmaid/static/js/dom.js: line 822, col 9, 'update' is defined but never used.
 
-django/applications/catmaid/static/js/extensions.js: line 111, col 7, 'samePath' is defined but never used.
-django/applications/catmaid/static/js/extensions.js: line 150, col 7, 'samePath' is defined but never used.
+django/applications/catmaid/static/js/extensions.js: line 108, col 7, 'samePath' is defined but never used.
+django/applications/catmaid/static/js/extensions.js: line 147, col 7, 'samePath' is defined but never used.
 
 django/applications/catmaid/static/js/label-annotations.js: line 17, col 19, '_stack' is defined but never used.
 
-django/applications/catmaid/static/js/layers/landmark-layer.js: line 161, col 11, 'nextZ' is defined but never used.
-django/applications/catmaid/static/js/layers/landmark-layer.js: line 294, col 9, 'nodeid' is defined but never used.
+django/applications/catmaid/static/js/layers/landmark-layer.js: line 158, col 11, 'nextZ' is defined but never used.
+django/applications/catmaid/static/js/layers/landmark-layer.js: line 291, col 9, 'nodeid' is defined but never used.
 
-django/applications/catmaid/static/js/layers/skeleton-projection-layer.js: line 341, col 9, 'self' is defined but never used.
-django/applications/catmaid/static/js/layers/skeleton-projection-layer.js: line 118, col 7, 'hasSource' is defined but never used.
+django/applications/catmaid/static/js/layers/skeleton-projection-layer.js: line 338, col 9, 'self' is defined but never used.
+django/applications/catmaid/static/js/layers/skeleton-projection-layer.js: line 115, col 7, 'hasSource' is defined but never used.
 
 django/applications/catmaid/static/js/layout.js: line 522, col 12, 'v' is defined but never used.
 django/applications/catmaid/static/js/layout.js: line 526, col 12, 'h' is defined but never used.
@@ -37,333 +37,333 @@ django/applications/catmaid/static/js/layout.js: line 542, col 12, 'layout' is d
 django/applications/catmaid/static/js/network-api.js: line 395, col 9, 'q' is defined but never used.
 django/applications/catmaid/static/js/network-api.js: line 49, col 5, 'CM' is defined but never used.
 
-django/applications/catmaid/static/js/project.js: line 501, col 9, 'template' is defined but never used.
-django/applications/catmaid/static/js/project.js: line 502, col 9, 'data' is defined but never used.
-django/applications/catmaid/static/js/project.js: line 513, col 9, 'icon_text_apply' is defined but never used.
+django/applications/catmaid/static/js/project.js: line 498, col 9, 'template' is defined but never used.
+django/applications/catmaid/static/js/project.js: line 499, col 9, 'data' is defined but never used.
+django/applications/catmaid/static/js/project.js: line 510, col 9, 'icon_text_apply' is defined but never used.
 
 django/applications/catmaid/static/js/remote.js: line 325, col 9, 'self' is defined but never used.
 django/applications/catmaid/static/js/remote.js: line 367, col 9, 'self' is defined but never used.
 django/applications/catmaid/static/js/remote.js: line 500, col 13, 'newLosingSkeletonId' is defined but never used.
 
-django/applications/catmaid/static/js/tests/test-command-history.js: line 68, col 9, 'resultDo' is defined but never used.
-django/applications/catmaid/static/js/tests/test-command-history.js: line 26, col 7, 'noop1' is defined but never used.
+django/applications/catmaid/static/js/tests/test-command-history.js: line 65, col 9, 'resultDo' is defined but never used.
+django/applications/catmaid/static/js/tests/test-command-history.js: line 23, col 7, 'noop1' is defined but never used.
 
-django/applications/catmaid/static/js/tests/test_connectivity_matrix.js: line 47, col 9, 'cm2' is defined but never used.
-django/applications/catmaid/static/js/tests/test_connectivity_matrix.js: line 62, col 9, 'm1' is defined but never used.
+django/applications/catmaid/static/js/tests/test_connectivity_matrix.js: line 44, col 9, 'cm2' is defined but never used.
+django/applications/catmaid/static/js/tests/test_connectivity_matrix.js: line 59, col 9, 'm1' is defined but never used.
 
 django/applications/catmaid/static/js/tests/test_events.js: line 127, col 9, 'handler' is defined but never used.
 
-django/applications/catmaid/static/js/tests/test_overlay.js: line 10, col 7, 'sandbox' is defined but never used.
+django/applications/catmaid/static/js/tests/test_overlay.js: line 7, col 7, 'sandbox' is defined but never used.
 
-django/applications/catmaid/static/js/tests/test_tilesources.js: line 7, col 9, 'bn' is defined but never used.
+django/applications/catmaid/static/js/tests/test_tilesources.js: line 4, col 9, 'bn' is defined but never used.
 
-django/applications/catmaid/static/js/tools/box-selection-tool.js: line 154, col 11, 'view' is defined but never used.
+django/applications/catmaid/static/js/tools/box-selection-tool.js: line 151, col 11, 'view' is defined but never used.
 
-django/applications/catmaid/static/js/tools/ontology-tool.js: line 20, col 11, 'workspace_mode' is defined but never used.
+django/applications/catmaid/static/js/tools/ontology-tool.js: line 17, col 11, 'workspace_mode' is defined but never used.
 
-django/applications/catmaid/static/js/tools/roi-tool.js: line 256, col 11, 'xp' is defined but never used.
-django/applications/catmaid/static/js/tools/roi-tool.js: line 257, col 11, 'yp' is defined but never used.
-django/applications/catmaid/static/js/tools/roi-tool.js: line 347, col 9, 'project' is defined but never used.
-django/applications/catmaid/static/js/tools/roi-tool.js: line 360, col 9, 'cropBoxMouseWheel' is defined but never used.
+django/applications/catmaid/static/js/tools/roi-tool.js: line 253, col 11, 'xp' is defined but never used.
+django/applications/catmaid/static/js/tools/roi-tool.js: line 254, col 11, 'yp' is defined but never used.
+django/applications/catmaid/static/js/tools/roi-tool.js: line 344, col 9, 'project' is defined but never used.
+django/applications/catmaid/static/js/tools/roi-tool.js: line 357, col 9, 'cropBoxMouseWheel' is defined but never used.
 
-django/applications/catmaid/static/js/tools/selector.js: line 50, col 13, 'xp' is defined but never used.
-django/applications/catmaid/static/js/tools/selector.js: line 51, col 13, 'yp' is defined but never used.
+django/applications/catmaid/static/js/tools/selector.js: line 47, col 13, 'xp' is defined but never used.
+django/applications/catmaid/static/js/tools/selector.js: line 48, col 13, 'yp' is defined but never used.
 
 django/applications/catmaid/static/js/tools/tagging-tool.js: line 1, col 10, 'TaggingTool' is defined but never used.
 
-django/applications/catmaid/static/js/tools/tracing-tool.js: line 403, col 13, 'activeLayer' is defined but never used.
-django/applications/catmaid/static/js/tools/tracing-tool.js: line 1942, col 17, 'layer' is defined but never used.
-django/applications/catmaid/static/js/tools/tracing-tool.js: line 67, col 9, 'withPostUpdate' is defined but never used.
+django/applications/catmaid/static/js/tools/tracing-tool.js: line 400, col 13, 'activeLayer' is defined but never used.
+django/applications/catmaid/static/js/tools/tracing-tool.js: line 1939, col 17, 'layer' is defined but never used.
+django/applications/catmaid/static/js/tools/tracing-tool.js: line 64, col 9, 'withPostUpdate' is defined but never used.
 
-django/applications/catmaid/static/js/ui.js: line 83, col 11, 'projectKeyPress' is defined but never used.
-django/applications/catmaid/static/js/ui.js: line 84, col 11, 'key' is defined but never used.
-django/applications/catmaid/static/js/ui.js: line 85, col 11, 'keyAction' is defined but never used.
-django/applications/catmaid/static/js/ui.js: line 99, col 11, 'shift' is defined but never used.
-django/applications/catmaid/static/js/ui.js: line 100, col 11, 'alt' is defined but never used.
-django/applications/catmaid/static/js/ui.js: line 101, col 11, 'ctrl' is defined but never used.
-django/applications/catmaid/static/js/ui.js: line 396, col 11, 'target' is defined but never used.
-django/applications/catmaid/static/js/ui.js: line 20, col 9, 'shiftKeyDown' is defined but never used.
-django/applications/catmaid/static/js/ui.js: line 21, col 9, 'ctrlKeyDown' is defined but never used.
-django/applications/catmaid/static/js/ui.js: line 22, col 9, 'altKeyDown' is defined but never used.
-django/applications/catmaid/static/js/ui.js: line 27, col 9, 'x' is defined but never used.
-django/applications/catmaid/static/js/ui.js: line 28, col 9, 'y' is defined but never used.
+django/applications/catmaid/static/js/ui.js: line 80, col 11, 'projectKeyPress' is defined but never used.
+django/applications/catmaid/static/js/ui.js: line 81, col 11, 'key' is defined but never used.
+django/applications/catmaid/static/js/ui.js: line 82, col 11, 'keyAction' is defined but never used.
+django/applications/catmaid/static/js/ui.js: line 96, col 11, 'shift' is defined but never used.
+django/applications/catmaid/static/js/ui.js: line 97, col 11, 'alt' is defined but never used.
+django/applications/catmaid/static/js/ui.js: line 98, col 11, 'ctrl' is defined but never used.
+django/applications/catmaid/static/js/ui.js: line 393, col 11, 'target' is defined but never used.
+django/applications/catmaid/static/js/ui.js: line 17, col 9, 'shiftKeyDown' is defined but never used.
+django/applications/catmaid/static/js/ui.js: line 18, col 9, 'ctrlKeyDown' is defined but never used.
+django/applications/catmaid/static/js/ui.js: line 19, col 9, 'altKeyDown' is defined but never used.
+django/applications/catmaid/static/js/ui.js: line 24, col 9, 'x' is defined but never used.
+django/applications/catmaid/static/js/ui.js: line 25, col 9, 'y' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 746, col 11, 'name' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 879, col 13, 'skeletonData' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 1064, col 21, 'names' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 1730, col 9, 'source1' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 1730, col 18, 'source2' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 2621, col 13, 'initPromise' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 2877, col 11, 'color' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 3947, col 11, 'tileVertices' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 3962, col 15, 'ul' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 3965, col 15, 'll' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 3968, col 15, 'lr' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 3971, col 15, 'ur' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 4150, col 15, 'name' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 5586, col 11, 'projector' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 6086, col 9, 'intersectionFound' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 7380, col 13, 'fnMakeColorFromRange' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 7802, col 9, 'history' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 8801, col 21, 'start' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 9025, col 13, 'visType' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 9028, col 13, 'visOpts' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 9076, col 13, 'now' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 9331, col 11, 'historyVisibility' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 9373, col 11, 'visMap' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 9748, col 11, 'rows' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 13, col 1, 'SkeletonRegistry' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 744, col 11, 'name' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 877, col 13, 'skeletonData' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 1062, col 21, 'names' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 1728, col 9, 'source1' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 1728, col 18, 'source2' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 2619, col 13, 'initPromise' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 2875, col 11, 'color' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 3945, col 11, 'tileVertices' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 3960, col 15, 'ul' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 3963, col 15, 'll' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 3966, col 15, 'lr' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 3969, col 15, 'ur' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 4148, col 15, 'name' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 5584, col 11, 'projector' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 6084, col 9, 'intersectionFound' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 7378, col 13, 'fnMakeColorFromRange' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 7800, col 9, 'history' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 8799, col 21, 'start' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 9023, col 13, 'visType' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 9026, col 13, 'visOpts' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 9074, col 13, 'now' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 9329, col 11, 'historyVisibility' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 9371, col 11, 'visMap' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 9746, col 11, 'rows' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 11, col 1, 'SkeletonRegistry' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/analyze_arbor.js: line 588, col 9, 'pie_cable' is defined but never used.
-django/applications/catmaid/static/js/widgets/analyze_arbor.js: line 589, col 9, 'pie_inputs' is defined but never used.
-django/applications/catmaid/static/js/widgets/analyze_arbor.js: line 590, col 9, 'pie_outputs' is defined but never used.
-django/applications/catmaid/static/js/widgets/analyze_arbor.js: line 591, col 9, 'pie_mitochondria' is defined but never used.
-django/applications/catmaid/static/js/widgets/analyze_arbor.js: line 604, col 9, 'pie_n_subarbors' is defined but never used.
+django/applications/catmaid/static/js/widgets/analyze_arbor.js: line 586, col 9, 'pie_cable' is defined but never used.
+django/applications/catmaid/static/js/widgets/analyze_arbor.js: line 587, col 9, 'pie_inputs' is defined but never used.
+django/applications/catmaid/static/js/widgets/analyze_arbor.js: line 588, col 9, 'pie_outputs' is defined but never used.
+django/applications/catmaid/static/js/widgets/analyze_arbor.js: line 589, col 9, 'pie_mitochondria' is defined but never used.
+django/applications/catmaid/static/js/widgets/analyze_arbor.js: line 602, col 9, 'pie_n_subarbors' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/annotation-graph.js: line 189, col 11, 'created' is defined but never used.
-django/applications/catmaid/static/js/widgets/annotation-graph.js: line 252, col 9, 'self' is defined but never used.
+django/applications/catmaid/static/js/widgets/annotation-graph.js: line 186, col 11, 'created' is defined but never used.
+django/applications/catmaid/static/js/widgets/annotation-graph.js: line 249, col 9, 'self' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/bookmark.js: line 178, col 13, 'dialogInstance' is defined but never used.
+django/applications/catmaid/static/js/widgets/bookmark.js: line 175, col 13, 'dialogInstance' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/circuit-graph-plot.js: line 678, col 15, 'n_inputs' is defined but never used.
-django/applications/catmaid/static/js/widgets/circuit-graph-plot.js: line 679, col 15, 'n_outputs' is defined but never used.
+django/applications/catmaid/static/js/widgets/circuit-graph-plot.js: line 676, col 15, 'n_inputs' is defined but never used.
+django/applications/catmaid/static/js/widgets/circuit-graph-plot.js: line 677, col 15, 'n_outputs' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/classification_editor.js: line 537, col 17, 'node_id' is defined but never used.
-django/applications/catmaid/static/js/widgets/classification_editor.js: line 738, col 13, 'mynode' is defined but never used.
-django/applications/catmaid/static/js/widgets/classification_editor.js: line 780, col 13, 'friendly_name' is defined but never used.
-django/applications/catmaid/static/js/widgets/classification_editor.js: line 831, col 15, 'jqMenu' is defined but never used.
+django/applications/catmaid/static/js/widgets/classification_editor.js: line 534, col 17, 'node_id' is defined but never used.
+django/applications/catmaid/static/js/widgets/classification_editor.js: line 735, col 13, 'mynode' is defined but never used.
+django/applications/catmaid/static/js/widgets/classification_editor.js: line 777, col 13, 'friendly_name' is defined but never used.
+django/applications/catmaid/static/js/widgets/classification_editor.js: line 828, col 15, 'jqMenu' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/clustering_widget.js: line 96, col 11, 'datatable' is defined but never used.
-django/applications/catmaid/static/js/widgets/clustering_widget.js: line 133, col 11, 'datatable' is defined but never used.
-django/applications/catmaid/static/js/widgets/clustering_widget.js: line 392, col 15, 'expandRequest' is defined but never used.
-django/applications/catmaid/static/js/widgets/clustering_widget.js: line 392, col 30, 'parentName' is defined but never used.
-django/applications/catmaid/static/js/widgets/clustering_widget.js: line 431, col 15, 'id_of_node' is defined but never used.
-django/applications/catmaid/static/js/widgets/clustering_widget.js: line 798, col 19, 'graph_name' is defined but never used.
-django/applications/catmaid/static/js/widgets/clustering_widget.js: line 637, col 13, 'max_x' is defined but never used.
-django/applications/catmaid/static/js/widgets/clustering_widget.js: line 694, col 13, 'x' is defined but never used.
-django/applications/catmaid/static/js/widgets/clustering_widget.js: line 694, col 25, 'h' is defined but never used.
+django/applications/catmaid/static/js/widgets/clustering_widget.js: line 93, col 11, 'datatable' is defined but never used.
+django/applications/catmaid/static/js/widgets/clustering_widget.js: line 130, col 11, 'datatable' is defined but never used.
+django/applications/catmaid/static/js/widgets/clustering_widget.js: line 389, col 15, 'expandRequest' is defined but never used.
+django/applications/catmaid/static/js/widgets/clustering_widget.js: line 389, col 30, 'parentName' is defined but never used.
+django/applications/catmaid/static/js/widgets/clustering_widget.js: line 428, col 15, 'id_of_node' is defined but never used.
+django/applications/catmaid/static/js/widgets/clustering_widget.js: line 795, col 19, 'graph_name' is defined but never used.
+django/applications/catmaid/static/js/widgets/clustering_widget.js: line 634, col 13, 'max_x' is defined but never used.
+django/applications/catmaid/static/js/widgets/clustering_widget.js: line 691, col 13, 'x' is defined but never used.
+django/applications/catmaid/static/js/widgets/clustering_widget.js: line 691, col 25, 'h' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 1350, col 13, 'orders' is defined but never used.
-django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 1872, col 11, 'one' is defined but never used.
-django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 2340, col 9, 'accum' is defined but never used.
-django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 3035, col 11, 'startId' is defined but never used.
-django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 3381, col 13, 'intragroup' is defined but never used.
-django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 3761, col 11, 'sorted' is defined but never used.
-django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 4100, col 9, 'edgeData' is defined but never used.
+django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 1348, col 13, 'orders' is defined but never used.
+django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 1870, col 11, 'one' is defined but never used.
+django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 2338, col 9, 'accum' is defined but never used.
+django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 3033, col 11, 'startId' is defined but never used.
+django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 3379, col 13, 'intragroup' is defined but never used.
+django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 3759, col 11, 'sorted' is defined but never used.
+django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 4098, col 9, 'edgeData' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/connectivity-matrix.js: line 753, col 11, 'rowSkeletonIDs' is defined but never used.
-django/applications/catmaid/static/js/widgets/connectivity-matrix.js: line 754, col 11, 'colSkeletonIDs' is defined but never used.
-django/applications/catmaid/static/js/widgets/connectivity-matrix.js: line 1375, col 9, 'colTotalSum' is defined but never used.
+django/applications/catmaid/static/js/widgets/connectivity-matrix.js: line 750, col 11, 'rowSkeletonIDs' is defined but never used.
+django/applications/catmaid/static/js/widgets/connectivity-matrix.js: line 751, col 11, 'colSkeletonIDs' is defined but never used.
+django/applications/catmaid/static/js/widgets/connectivity-matrix.js: line 1372, col 9, 'colTotalSum' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/connectivity.js: line 467, col 9, 'widgetID' is defined but never used.
-django/applications/catmaid/static/js/widgets/connectivity.js: line 468, col 9, 'skeletons' is defined but never used.
-django/applications/catmaid/static/js/widgets/connectivity.js: line 645, col 11, 'selected' is defined but never used.
-django/applications/catmaid/static/js/widgets/connectivity.js: line 873, col 11, 'title' is defined but never used.
-django/applications/catmaid/static/js/widgets/connectivity.js: line 874, col 11, 'relation' is defined but never used.
-django/applications/catmaid/static/js/widgets/connectivity.js: line 1671, col 23, 're' is defined but never used.
-django/applications/catmaid/static/js/widgets/connectivity.js: line 1581, col 11, 'dataTable' is defined but never used.
-django/applications/catmaid/static/js/widgets/connectivity.js: line 849, col 9, 'getSkeletonModel' is defined but never used.
-django/applications/catmaid/static/js/widgets/connectivity.js: line 1439, col 11, 'id' is defined but never used.
-django/applications/catmaid/static/js/widgets/connectivity.js: line 1847, col 9, 'self' is defined but never used.
-django/applications/catmaid/static/js/widgets/connectivity.js: line 1911, col 9, 'SF' is defined but never used.
-django/applications/catmaid/static/js/widgets/connectivity.js: line 1916, col 9, 'connectorListHandles' is defined but never used.
+django/applications/catmaid/static/js/widgets/connectivity.js: line 465, col 9, 'widgetID' is defined but never used.
+django/applications/catmaid/static/js/widgets/connectivity.js: line 466, col 9, 'skeletons' is defined but never used.
+django/applications/catmaid/static/js/widgets/connectivity.js: line 643, col 11, 'selected' is defined but never used.
+django/applications/catmaid/static/js/widgets/connectivity.js: line 871, col 11, 'title' is defined but never used.
+django/applications/catmaid/static/js/widgets/connectivity.js: line 872, col 11, 'relation' is defined but never used.
+django/applications/catmaid/static/js/widgets/connectivity.js: line 1669, col 23, 're' is defined but never used.
+django/applications/catmaid/static/js/widgets/connectivity.js: line 1579, col 11, 'dataTable' is defined but never used.
+django/applications/catmaid/static/js/widgets/connectivity.js: line 847, col 9, 'getSkeletonModel' is defined but never used.
+django/applications/catmaid/static/js/widgets/connectivity.js: line 1437, col 11, 'id' is defined but never used.
+django/applications/catmaid/static/js/widgets/connectivity.js: line 1845, col 9, 'self' is defined but never used.
+django/applications/catmaid/static/js/widgets/connectivity.js: line 1909, col 9, 'SF' is defined but never used.
+django/applications/catmaid/static/js/widgets/connectivity.js: line 1914, col 9, 'connectorListHandles' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/connector-list.js: line 123, col 13, 'relationMap' is defined but never used.
-django/applications/catmaid/static/js/widgets/connector-list.js: line 126, col 13, 'connectorList' is defined but never used.
-django/applications/catmaid/static/js/widgets/connector-list.js: line 505, col 13, 'seenLinkTypes' is defined but never used.
+django/applications/catmaid/static/js/widgets/connector-list.js: line 120, col 13, 'relationMap' is defined but never used.
+django/applications/catmaid/static/js/widgets/connector-list.js: line 123, col 13, 'connectorList' is defined but never used.
+django/applications/catmaid/static/js/widgets/connector-list.js: line 502, col 13, 'seenLinkTypes' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/data-view.js: line 94, col 9, 'projects' is defined but never used.
-django/applications/catmaid/static/js/widgets/data-view.js: line 336, col 13, 'dd' is defined but never used.
-django/applications/catmaid/static/js/widgets/data-view.js: line 336, col 17, 'a' is defined but never used.
-django/applications/catmaid/static/js/widgets/data-view.js: line 336, col 20, 'ddc' is defined but never used.
-django/applications/catmaid/static/js/widgets/data-view.js: line 338, col 9, 'catalogueElement' is defined but never used.
-django/applications/catmaid/static/js/widgets/data-view.js: line 338, col 27, 'catalogueElementLink' is defined but never used.
+django/applications/catmaid/static/js/widgets/data-view.js: line 91, col 9, 'projects' is defined but never used.
+django/applications/catmaid/static/js/widgets/data-view.js: line 333, col 13, 'dd' is defined but never used.
+django/applications/catmaid/static/js/widgets/data-view.js: line 333, col 17, 'a' is defined but never used.
+django/applications/catmaid/static/js/widgets/data-view.js: line 333, col 20, 'ddc' is defined but never used.
+django/applications/catmaid/static/js/widgets/data-view.js: line 335, col 9, 'catalogueElement' is defined but never used.
+django/applications/catmaid/static/js/widgets/data-view.js: line 335, col 27, 'catalogueElementLink' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/import-export-widget.js: line 141, col 13, 'tabControls' is defined but never used.
-django/applications/catmaid/static/js/widgets/import-export-widget.js: line 154, col 13, '$container' is defined but never used.
-django/applications/catmaid/static/js/widgets/import-export-widget.js: line 204, col 9, 'sourceProjectId' is defined but never used.
-django/applications/catmaid/static/js/widgets/import-export-widget.js: line 365, col 21, 'currentProjectMode' is defined but never used.
-django/applications/catmaid/static/js/widgets/import-export-widget.js: line 332, col 13, 'sourceNeuronAnnotation' is defined but never used.
-django/applications/catmaid/static/js/widgets/import-export-widget.js: line 388, col 13, 'user' is defined but never used.
-django/applications/catmaid/static/js/widgets/import-export-widget.js: line 858, col 11, 'result' is defined but never used.
-django/applications/catmaid/static/js/widgets/import-export-widget.js: line 960, col 11, 'result' is defined but never used.
+django/applications/catmaid/static/js/widgets/import-export-widget.js: line 138, col 13, 'tabControls' is defined but never used.
+django/applications/catmaid/static/js/widgets/import-export-widget.js: line 151, col 13, '$container' is defined but never used.
+django/applications/catmaid/static/js/widgets/import-export-widget.js: line 201, col 9, 'sourceProjectId' is defined but never used.
+django/applications/catmaid/static/js/widgets/import-export-widget.js: line 362, col 21, 'currentProjectMode' is defined but never used.
+django/applications/catmaid/static/js/widgets/import-export-widget.js: line 329, col 13, 'sourceNeuronAnnotation' is defined but never used.
+django/applications/catmaid/static/js/widgets/import-export-widget.js: line 385, col 13, 'user' is defined but never used.
+django/applications/catmaid/static/js/widgets/import-export-widget.js: line 855, col 11, 'result' is defined but never used.
+django/applications/catmaid/static/js/widgets/import-export-widget.js: line 957, col 11, 'result' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/input.js: line 107, col 7, 'self' is defined but never used.
-django/applications/catmaid/static/js/widgets/input.js: line 8, col 10, 'Input' is defined but never used.
+django/applications/catmaid/static/js/widgets/input.js: line 104, col 7, 'self' is defined but never used.
+django/applications/catmaid/static/js/widgets/input.js: line 5, col 10, 'Input' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/landmark-widget.js: line 839, col 13, 'selected' is defined but never used.
-django/applications/catmaid/static/js/widgets/landmark-widget.js: line 1475, col 17, 'id' is defined but never used.
-django/applications/catmaid/static/js/widgets/landmark-widget.js: line 1924, col 19, 'landmarkNewInGroup' is defined but never used.
-django/applications/catmaid/static/js/widgets/landmark-widget.js: line 2280, col 15, 'edtitedGroupIsSubject' is defined but never used.
-django/applications/catmaid/static/js/widgets/landmark-widget.js: line 2010, col 13, 'landmarkDataTable' is defined but never used.
-django/applications/catmaid/static/js/widgets/landmark-widget.js: line 2310, col 13, 'relationDataTable' is defined but never used.
-django/applications/catmaid/static/js/widgets/landmark-widget.js: line 2529, col 15, 'importList' is defined but never used.
-django/applications/catmaid/static/js/widgets/landmark-widget.js: line 2768, col 23, 'currentProjectMode' is defined but never used.
-django/applications/catmaid/static/js/widgets/landmark-widget.js: line 3333, col 23, 'invRelationMap' is defined but never used.
-django/applications/catmaid/static/js/widgets/landmark-widget.js: line 2730, col 34, 'sourceGroup' is defined but never used.
-django/applications/catmaid/static/js/widgets/landmark-widget.js: line 3641, col 17, 'invRelationMap' is defined but never used.
-django/applications/catmaid/static/js/widgets/landmark-widget.js: line 3553, col 13, 'volumeASelectionSetting' is defined but never used.
-django/applications/catmaid/static/js/widgets/landmark-widget.js: line 3582, col 13, 'volumeBSelectionSetting' is defined but never used.
-django/applications/catmaid/static/js/widgets/landmark-widget.js: line 3620, col 13, 'mirrorAxisSetting' is defined but never used.
-django/applications/catmaid/static/js/widgets/landmark-widget.js: line 993, col 12, 'getId' is defined but never used.
+django/applications/catmaid/static/js/widgets/landmark-widget.js: line 836, col 13, 'selected' is defined but never used.
+django/applications/catmaid/static/js/widgets/landmark-widget.js: line 1472, col 17, 'id' is defined but never used.
+django/applications/catmaid/static/js/widgets/landmark-widget.js: line 1921, col 19, 'landmarkNewInGroup' is defined but never used.
+django/applications/catmaid/static/js/widgets/landmark-widget.js: line 2277, col 15, 'edtitedGroupIsSubject' is defined but never used.
+django/applications/catmaid/static/js/widgets/landmark-widget.js: line 2007, col 13, 'landmarkDataTable' is defined but never used.
+django/applications/catmaid/static/js/widgets/landmark-widget.js: line 2307, col 13, 'relationDataTable' is defined but never used.
+django/applications/catmaid/static/js/widgets/landmark-widget.js: line 2526, col 15, 'importList' is defined but never used.
+django/applications/catmaid/static/js/widgets/landmark-widget.js: line 2765, col 23, 'currentProjectMode' is defined but never used.
+django/applications/catmaid/static/js/widgets/landmark-widget.js: line 3330, col 23, 'invRelationMap' is defined but never used.
+django/applications/catmaid/static/js/widgets/landmark-widget.js: line 2727, col 34, 'sourceGroup' is defined but never used.
+django/applications/catmaid/static/js/widgets/landmark-widget.js: line 3638, col 17, 'invRelationMap' is defined but never used.
+django/applications/catmaid/static/js/widgets/landmark-widget.js: line 3550, col 13, 'volumeASelectionSetting' is defined but never used.
+django/applications/catmaid/static/js/widgets/landmark-widget.js: line 3579, col 13, 'volumeBSelectionSetting' is defined but never used.
+django/applications/catmaid/static/js/widgets/landmark-widget.js: line 3617, col 13, 'mirrorAxisSetting' is defined but never used.
+django/applications/catmaid/static/js/widgets/landmark-widget.js: line 990, col 12, 'getId' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/measurements-table.js: line 426, col 9, 'n_labels' is defined but never used.
-django/applications/catmaid/static/js/widgets/measurements-table.js: line 515, col 9, 'nns' is defined but never used.
-django/applications/catmaid/static/js/widgets/measurements-table.js: line 539, col 9, 'nns' is defined but never used.
+django/applications/catmaid/static/js/widgets/measurements-table.js: line 424, col 9, 'n_labels' is defined but never used.
+django/applications/catmaid/static/js/widgets/measurements-table.js: line 513, col 9, 'nns' is defined but never used.
+django/applications/catmaid/static/js/widgets/measurements-table.js: line 537, col 9, 'nns' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/menu.js: line 133, col 7, 'self' is defined but never used.
+django/applications/catmaid/static/js/widgets/menu.js: line 130, col 7, 'self' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/morphology-plot.js: line 561, col 15, 'centerNodeId' is defined but never used.
-django/applications/catmaid/static/js/widgets/morphology-plot.js: line 550, col 13, 'result' is defined but never used.
-django/applications/catmaid/static/js/widgets/morphology-plot.js: line 599, col 15, 'centerNodeId' is defined but never used.
-django/applications/catmaid/static/js/widgets/morphology-plot.js: line 588, col 13, 'result' is defined but never used.
+django/applications/catmaid/static/js/widgets/morphology-plot.js: line 559, col 15, 'centerNodeId' is defined but never used.
+django/applications/catmaid/static/js/widgets/morphology-plot.js: line 548, col 13, 'result' is defined but never used.
+django/applications/catmaid/static/js/widgets/morphology-plot.js: line 597, col 15, 'centerNodeId' is defined but never used.
+django/applications/catmaid/static/js/widgets/morphology-plot.js: line 586, col 13, 'result' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/neuron-dendrogram.js: line 971, col 9, 'rect' is defined but never used.
+django/applications/catmaid/static/js/widgets/neuron-dendrogram.js: line 969, col 9, 'rect' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/neuron-history.js: line 244, col 17, 'tds' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-history.js: line 322, col 12, 'compareCompactTreenodes' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-history.js: line 326, col 12, 'compareCompactConnectors' is defined but never used.
+django/applications/catmaid/static/js/widgets/neuron-history.js: line 241, col 17, 'tds' is defined but never used.
+django/applications/catmaid/static/js/widgets/neuron-history.js: line 319, col 12, 'compareCompactTreenodes' is defined but never used.
+django/applications/catmaid/static/js/widgets/neuron-history.js: line 323, col 12, 'compareCompactConnectors' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/neuron-navigator.js: line 1678, col 9, 'datatable' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-navigator.js: line 2411, col 9, 'num_loaded' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-navigator.js: line 10, col 1, 'CATMAID   Arbor' is defined but never used.
+django/applications/catmaid/static/js/widgets/neuron-navigator.js: line 1676, col 9, 'datatable' is defined but never used.
+django/applications/catmaid/static/js/widgets/neuron-navigator.js: line 2409, col 9, 'num_loaded' is defined but never used.
+django/applications/catmaid/static/js/widgets/neuron-navigator.js: line 8, col 1, 'CATMAID   Arbor' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/neuron-search.js: line 649, col 21, 'entity' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-search.js: line 1405, col 13, 'path' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-search.js: line 1324, col 11, 'key' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-search.js: line 1751, col 11, 'self' is defined but never used.
+django/applications/catmaid/static/js/widgets/neuron-search.js: line 647, col 21, 'entity' is defined but never used.
+django/applications/catmaid/static/js/widgets/neuron-search.js: line 1403, col 13, 'path' is defined but never used.
+django/applications/catmaid/static/js/widgets/neuron-search.js: line 1322, col 11, 'key' is defined but never used.
+django/applications/catmaid/static/js/widgets/neuron-search.js: line 1749, col 11, 'self' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/neuron-similarity-detail-widget.js: line 116, col 13, 'refreshSimilarityList' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-similarity-detail-widget.js: line 335, col 9, 'tbody' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-similarity-detail-widget.js: line 566, col 11, 'data' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-similarity-detail-widget.js: line 717, col 11, 'nAddedPointClouds' is defined but never used.
+django/applications/catmaid/static/js/widgets/neuron-similarity-detail-widget.js: line 113, col 13, 'refreshSimilarityList' is defined but never used.
+django/applications/catmaid/static/js/widgets/neuron-similarity-detail-widget.js: line 332, col 9, 'tbody' is defined but never used.
+django/applications/catmaid/static/js/widgets/neuron-similarity-detail-widget.js: line 563, col 11, 'data' is defined but never used.
+django/applications/catmaid/static/js/widgets/neuron-similarity-detail-widget.js: line 714, col 11, 'nAddedPointClouds' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 621, col 11, 'datatable' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 990, col 19, 'targetProjectId' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 995, col 19, 'toLandmarkApi' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 1306, col 23, 'length' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 1332, col 23, 'length' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 1660, col 19, 'regex' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 1942, col 21, 'nColumns' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 3105, col 13, 'datatable' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 3186, col 11, 'csvFileWorkingSet' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 3520, col 11, 'tbody' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 421, col 12, 'invertYInPlace' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 3438, col 12, 'largerEqualZero' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 4034, col 12, 'concatLine' is defined but never used.
+django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 618, col 11, 'datatable' is defined but never used.
+django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 987, col 19, 'targetProjectId' is defined but never used.
+django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 992, col 19, 'toLandmarkApi' is defined but never used.
+django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 1303, col 23, 'length' is defined but never used.
+django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 1329, col 23, 'length' is defined but never used.
+django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 1657, col 19, 'regex' is defined but never used.
+django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 1939, col 21, 'nColumns' is defined but never used.
+django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 3102, col 13, 'datatable' is defined but never used.
+django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 3183, col 11, 'csvFileWorkingSet' is defined but never used.
+django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 3517, col 11, 'tbody' is defined but never used.
+django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 418, col 12, 'invertYInPlace' is defined but never used.
+django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 3435, col 12, 'largerEqualZero' is defined but never used.
+django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 4031, col 12, 'concatLine' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/notification-table.js: line 164, col 20, 'id' is defined but never used.
-django/applications/catmaid/static/js/widgets/notification-table.js: line 214, col 9, 'self' is defined but never used.
-django/applications/catmaid/static/js/widgets/notification-table.js: line 223, col 9, 'self' is defined but never used.
+django/applications/catmaid/static/js/widgets/notification-table.js: line 161, col 20, 'id' is defined but never used.
+django/applications/catmaid/static/js/widgets/notification-table.js: line 211, col 9, 'self' is defined but never used.
+django/applications/catmaid/static/js/widgets/notification-table.js: line 220, col 9, 'self' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/ontology_editor.js: line 292, col 13, 'mynode' is defined but never used.
-django/applications/catmaid/static/js/widgets/ontology_editor.js: line 293, col 13, 'myparent' is defined but never used.
-django/applications/catmaid/static/js/widgets/ontology_editor.js: line 435, col 13, 'mynode' is defined but never used.
-django/applications/catmaid/static/js/widgets/ontology_editor.js: line 436, col 13, 'myparent' is defined but never used.
+django/applications/catmaid/static/js/widgets/ontology_editor.js: line 289, col 13, 'mynode' is defined but never used.
+django/applications/catmaid/static/js/widgets/ontology_editor.js: line 290, col 13, 'myparent' is defined but never used.
+django/applications/catmaid/static/js/widgets/ontology_editor.js: line 432, col 13, 'mynode' is defined but never used.
+django/applications/catmaid/static/js/widgets/ontology_editor.js: line 433, col 13, 'myparent' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/options-dialog.js: line 312, col 13, 'originalIndex' is defined but never used.
-django/applications/catmaid/static/js/widgets/options-dialog.js: line 265, col 9, 'header1' is defined but never used.
+django/applications/catmaid/static/js/widgets/options-dialog.js: line 310, col 13, 'originalIndex' is defined but never used.
+django/applications/catmaid/static/js/widgets/options-dialog.js: line 263, col 9, 'header1' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/overlay.js: line 1816, col 9, 'last_skeleton_id' is defined but never used.
-django/applications/catmaid/static/js/widgets/overlay.js: line 1886, col 9, 'nodeid' is defined but never used.
-django/applications/catmaid/static/js/widgets/overlay.js: line 1926, col 72, 'nodeid' is defined but never used.
-django/applications/catmaid/static/js/widgets/overlay.js: line 2033, col 17, 'stack' is defined but never used.
-django/applications/catmaid/static/js/widgets/overlay.js: line 3476, col 9, 'm' is defined but never used.
-django/applications/catmaid/static/js/widgets/overlay.js: line 3623, col 9, 'targetTreenodeID' is defined but never used.
-django/applications/catmaid/static/js/widgets/overlay.js: line 3888, col 13, 'nearestnode_id' is defined but never used.
-django/applications/catmaid/static/js/widgets/overlay.js: line 3889, col 13, 'nearestnode_skid' is defined but never used.
-django/applications/catmaid/static/js/widgets/overlay.js: line 3890, col 13, 'atn_skid' is defined but never used.
-django/applications/catmaid/static/js/widgets/overlay.js: line 4615, col 15, 'stack' is defined but never used.
-django/applications/catmaid/static/js/widgets/overlay.js: line 5825, col 9, 'self' is defined but never used.
-django/applications/catmaid/static/js/widgets/overlay.js: line 6133, col 9, 'nid' is defined but never used.
-django/applications/catmaid/static/js/widgets/overlay.js: line 6134, col 9, 'skid' is defined but never used.
-django/applications/catmaid/static/js/widgets/overlay.js: line 6308, col 9, 'lineWidth' is defined but never used.
-django/applications/catmaid/static/js/widgets/overlay.js: line 6309, col 9, 'lineColor' is defined but never used.
-django/applications/catmaid/static/js/widgets/overlay.js: line 6424, col 11, 'self' is defined but never used.
-django/applications/catmaid/static/js/widgets/overlay.js: line 6425, col 11, 'result' is defined but never used.
-django/applications/catmaid/static/js/widgets/overlay.js: line 6455, col 11, 'self' is defined but never used.
+django/applications/catmaid/static/js/widgets/overlay.js: line 1814, col 9, 'last_skeleton_id' is defined but never used.
+django/applications/catmaid/static/js/widgets/overlay.js: line 1884, col 9, 'nodeid' is defined but never used.
+django/applications/catmaid/static/js/widgets/overlay.js: line 1924, col 72, 'nodeid' is defined but never used.
+django/applications/catmaid/static/js/widgets/overlay.js: line 2031, col 17, 'stack' is defined but never used.
+django/applications/catmaid/static/js/widgets/overlay.js: line 3474, col 9, 'm' is defined but never used.
+django/applications/catmaid/static/js/widgets/overlay.js: line 3621, col 9, 'targetTreenodeID' is defined but never used.
+django/applications/catmaid/static/js/widgets/overlay.js: line 3886, col 13, 'nearestnode_id' is defined but never used.
+django/applications/catmaid/static/js/widgets/overlay.js: line 3887, col 13, 'nearestnode_skid' is defined but never used.
+django/applications/catmaid/static/js/widgets/overlay.js: line 3888, col 13, 'atn_skid' is defined but never used.
+django/applications/catmaid/static/js/widgets/overlay.js: line 4613, col 15, 'stack' is defined but never used.
+django/applications/catmaid/static/js/widgets/overlay.js: line 5823, col 9, 'self' is defined but never used.
+django/applications/catmaid/static/js/widgets/overlay.js: line 6131, col 9, 'nid' is defined but never used.
+django/applications/catmaid/static/js/widgets/overlay.js: line 6132, col 9, 'skid' is defined but never used.
+django/applications/catmaid/static/js/widgets/overlay.js: line 6306, col 9, 'lineWidth' is defined but never used.
+django/applications/catmaid/static/js/widgets/overlay.js: line 6307, col 9, 'lineColor' is defined but never used.
+django/applications/catmaid/static/js/widgets/overlay.js: line 6422, col 11, 'self' is defined but never used.
+django/applications/catmaid/static/js/widgets/overlay.js: line 6423, col 11, 'result' is defined but never used.
+django/applications/catmaid/static/js/widgets/overlay.js: line 6453, col 11, 'self' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/pair-statistics-widget.js: line 389, col 13, 'groupDataTable' is defined but never used.
-django/applications/catmaid/static/js/widgets/pair-statistics-widget.js: line 443, col 13, 'extraGroupDataTable' is defined but never used.
-django/applications/catmaid/static/js/widgets/pair-statistics-widget.js: line 708, col 19, 'sg' is defined but never used.
-django/applications/catmaid/static/js/widgets/pair-statistics-widget.js: line 806, col 19, 'batches' is defined but never used.
-django/applications/catmaid/static/js/widgets/pair-statistics-widget.js: line 817, col 19, 'batches' is defined but never used.
-django/applications/catmaid/static/js/widgets/pair-statistics-widget.js: line 851, col 25, 'k' is defined but never used.
+django/applications/catmaid/static/js/widgets/pair-statistics-widget.js: line 386, col 13, 'groupDataTable' is defined but never used.
+django/applications/catmaid/static/js/widgets/pair-statistics-widget.js: line 440, col 13, 'extraGroupDataTable' is defined but never used.
+django/applications/catmaid/static/js/widgets/pair-statistics-widget.js: line 705, col 19, 'sg' is defined but never used.
+django/applications/catmaid/static/js/widgets/pair-statistics-widget.js: line 803, col 19, 'batches' is defined but never used.
+django/applications/catmaid/static/js/widgets/pair-statistics-widget.js: line 814, col 19, 'batches' is defined but never used.
+django/applications/catmaid/static/js/widgets/pair-statistics-widget.js: line 848, col 25, 'k' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/project-statistics-widget.js: line 485, col 11, 'current_label' is defined but never used.
-django/applications/catmaid/static/js/widgets/project-statistics-widget.js: line 526, col 11, 'legendW' is defined but never used.
-django/applications/catmaid/static/js/widgets/project-statistics-widget.js: line 522, col 9, 'update_linegraph' is defined but never used.
-django/applications/catmaid/static/js/widgets/project-statistics-widget.js: line 727, col 9, 'refresh_editors' is defined but never used.
-django/applications/catmaid/static/js/widgets/project-statistics-widget.js: line 736, col 9, 'refresh_summary' is defined but never used.
-django/applications/catmaid/static/js/widgets/project-statistics-widget.js: line 921, col 7, 'openUserProficiency' is defined but never used.
+django/applications/catmaid/static/js/widgets/project-statistics-widget.js: line 483, col 11, 'current_label' is defined but never used.
+django/applications/catmaid/static/js/widgets/project-statistics-widget.js: line 524, col 11, 'legendW' is defined but never used.
+django/applications/catmaid/static/js/widgets/project-statistics-widget.js: line 520, col 9, 'update_linegraph' is defined but never used.
+django/applications/catmaid/static/js/widgets/project-statistics-widget.js: line 725, col 9, 'refresh_editors' is defined but never used.
+django/applications/catmaid/static/js/widgets/project-statistics-widget.js: line 734, col 9, 'refresh_summary' is defined but never used.
+django/applications/catmaid/static/js/widgets/project-statistics-widget.js: line 919, col 7, 'openUserProficiency' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 155, col 13, 'state' is defined but never used.
-django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 201, col 9, 'month' is defined but never used.
-django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 202, col 9, 'day' is defined but never used.
-django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 1541, col 9, 'completedIntervalCable' is defined but never used.
-django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 1877, col 9, 'maxDiff' is defined but never used.
-django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 1879, col 9, 'self' is defined but never used.
-django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 1881, col 9, 'domainEnds' is defined but never used.
-django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 2191, col 13, 'a' is defined but never used.
-django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 2188, col 11, 'pts' is defined but never used.
-django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 2278, col 13, 'connectorList' is defined but never used.
-django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 2719, col 9, 'self' is defined but never used.
-django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 3129, col 9, 'connectorId' is defined but never used.
-django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 3130, col 9, 'connectorPartners' is defined but never used.
-django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 3253, col 9, 'promises' is defined but never used.
+django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 152, col 13, 'state' is defined but never used.
+django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 198, col 9, 'month' is defined but never used.
+django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 199, col 9, 'day' is defined but never used.
+django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 1538, col 9, 'completedIntervalCable' is defined but never used.
+django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 1874, col 9, 'maxDiff' is defined but never used.
+django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 1876, col 9, 'self' is defined but never used.
+django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 1878, col 9, 'domainEnds' is defined but never used.
+django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 2188, col 13, 'a' is defined but never used.
+django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 2185, col 11, 'pts' is defined but never used.
+django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 2275, col 13, 'connectorList' is defined but never used.
+django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 2716, col 9, 'self' is defined but never used.
+django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 3126, col 9, 'connectorId' is defined but never used.
+django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 3127, col 9, 'connectorPartners' is defined but never used.
+django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 3250, col 9, 'promises' is defined but never used.
 
 django/applications/catmaid/static/js/widgets/rename-neurons-dialog.js: line 94, col 9, 'self' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/review.js: line 817, col 15, 'sortedSegments' is defined but never used.
-django/applications/catmaid/static/js/widgets/review.js: line 1337, col 13, 'self' is defined but never used.
+django/applications/catmaid/static/js/widgets/review.js: line 815, col 15, 'sortedSegments' is defined but never used.
+django/applications/catmaid/static/js/widgets/review.js: line 1335, col 13, 'self' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/search-widget.js: line 116, col 13, 'tbody' is defined but never used.
-django/applications/catmaid/static/js/widgets/search-widget.js: line 118, col 13, 'datatable' is defined but never used.
+django/applications/catmaid/static/js/widgets/search-widget.js: line 113, col 13, 'tbody' is defined but never used.
+django/applications/catmaid/static/js/widgets/search-widget.js: line 115, col 13, 'datatable' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/selection-table.js: line 807, col 15, 'missing' is defined but never used.
+django/applications/catmaid/static/js/widgets/selection-table.js: line 805, col 15, 'missing' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/settings.js: line 2213, col 23, 'test' is defined but never used.
+django/applications/catmaid/static/js/widgets/settings.js: line 2211, col 23, 'test' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/skeleton-history-graph.js: line 196, col 9, 'self' is defined but never used.
-django/applications/catmaid/static/js/widgets/skeleton-history-graph.js: line 221, col 11, 'created' is defined but never used.
-django/applications/catmaid/static/js/widgets/skeleton-history-graph.js: line 239, col 12, 'getComponents' is defined but never used.
+django/applications/catmaid/static/js/widgets/skeleton-history-graph.js: line 193, col 9, 'self' is defined but never used.
+django/applications/catmaid/static/js/widgets/skeleton-history-graph.js: line 218, col 11, 'created' is defined but never used.
+django/applications/catmaid/static/js/widgets/skeleton-history-graph.js: line 236, col 12, 'getComponents' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/split_merge_dialog.js: line 341, col 15, 'parentId' is defined but never used.
-django/applications/catmaid/static/js/widgets/split_merge_dialog.js: line 373, col 13, '$dialog' is defined but never used.
-django/applications/catmaid/static/js/widgets/split_merge_dialog.js: line 519, col 9, 'self' is defined but never used.
+django/applications/catmaid/static/js/widgets/split_merge_dialog.js: line 338, col 15, 'parentId' is defined but never used.
+django/applications/catmaid/static/js/widgets/split_merge_dialog.js: line 370, col 13, '$dialog' is defined but never used.
+django/applications/catmaid/static/js/widgets/split_merge_dialog.js: line 516, col 9, 'self' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/stats_user_analytics.js: line 153, col 11, 'project_id' is defined but never used.
+django/applications/catmaid/static/js/widgets/stats_user_analytics.js: line 151, col 11, 'project_id' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/synapse_fractions.js: line 1786, col 9, 'other' is defined but never used.
-django/applications/catmaid/static/js/widgets/synapse_fractions.js: line 12, col 1, 'SkeletonAnnotations' is defined but never used.
-django/applications/catmaid/static/js/widgets/synapse_fractions.js: line 12, col 1, 'SynapseClustering' is defined but never used.
+django/applications/catmaid/static/js/widgets/synapse_fractions.js: line 1783, col 9, 'other' is defined but never used.
+django/applications/catmaid/static/js/widgets/synapse_fractions.js: line 9, col 1, 'SkeletonAnnotations' is defined but never used.
+django/applications/catmaid/static/js/widgets/synapse_fractions.js: line 9, col 1, 'SynapseClustering' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/synapse_plot.js: line 767, col 16, 'transform' is defined but never used.
+django/applications/catmaid/static/js/widgets/synapse_plot.js: line 764, col 16, 'transform' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/system-check.js: line 211, col 9, 'datatable' is defined but never used.
-django/applications/catmaid/static/js/widgets/system-check.js: line 364, col 9, 'datatable' is defined but never used.
+django/applications/catmaid/static/js/widgets/system-check.js: line 208, col 9, 'datatable' is defined but never used.
+django/applications/catmaid/static/js/widgets/system-check.js: line 361, col 9, 'datatable' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/textlabel.js: line 746, col 7, 'checkbox_editable' is defined but never used.
-django/applications/catmaid/static/js/widgets/textlabel.js: line 882, col 13, 'check' is defined but never used.
-django/applications/catmaid/static/js/widgets/textlabel.js: line 757, col 7, 'self' is defined but never used.
-django/applications/catmaid/static/js/widgets/textlabel.js: line 4, col 10, 'TextlabelTool' is defined but never used.
+django/applications/catmaid/static/js/widgets/textlabel.js: line 743, col 7, 'checkbox_editable' is defined but never used.
+django/applications/catmaid/static/js/widgets/textlabel.js: line 879, col 13, 'check' is defined but never used.
+django/applications/catmaid/static/js/widgets/textlabel.js: line 754, col 7, 'self' is defined but never used.
+django/applications/catmaid/static/js/widgets/textlabel.js: line 1, col 10, 'TextlabelTool' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/treenode-table.js: line 174, col 22, 'tags' is defined but never used.
-django/applications/catmaid/static/js/widgets/treenode-table.js: line 174, col 28, 'c' is defined but never used.
-django/applications/catmaid/static/js/widgets/treenode-table.js: line 174, col 40, 's' is defined but never used.
-django/applications/catmaid/static/js/widgets/treenode-table.js: line 174, col 43, 'r' is defined but never used.
-django/applications/catmaid/static/js/widgets/treenode-table.js: line 174, col 46, 'user' is defined but never used.
-django/applications/catmaid/static/js/widgets/treenode-table.js: line 174, col 52, 'lastModified' is defined but never used.
-django/applications/catmaid/static/js/widgets/treenode-table.js: line 174, col 66, 'reviewer' is defined but never used.
+django/applications/catmaid/static/js/widgets/treenode-table.js: line 171, col 22, 'tags' is defined but never used.
+django/applications/catmaid/static/js/widgets/treenode-table.js: line 171, col 28, 'c' is defined but never used.
+django/applications/catmaid/static/js/widgets/treenode-table.js: line 171, col 40, 's' is defined but never used.
+django/applications/catmaid/static/js/widgets/treenode-table.js: line 171, col 43, 'r' is defined but never used.
+django/applications/catmaid/static/js/widgets/treenode-table.js: line 171, col 46, 'user' is defined but never used.
+django/applications/catmaid/static/js/widgets/treenode-table.js: line 171, col 52, 'lastModified' is defined but never used.
+django/applications/catmaid/static/js/widgets/treenode-table.js: line 171, col 66, 'reviewer' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/volumewidget.js: line 307, col 9, 'vid' is defined but never used.
-django/applications/catmaid/static/js/widgets/volumewidget.js: line 449, col 17, 'invalidVolumes' is defined but never used.
-django/applications/catmaid/static/js/widgets/volumewidget.js: line 444, col 13, 'self' is defined but never used.
-django/applications/catmaid/static/js/widgets/volumewidget.js: line 540, col 15, 'rules' is defined but never used.
-django/applications/catmaid/static/js/widgets/volumewidget.js: line 523, col 9, 'clientSideFiltering' is defined but never used.
-django/applications/catmaid/static/js/widgets/volumewidget.js: line 1691, col 13, 'source' is defined but never used.
-django/applications/catmaid/static/js/widgets/volumewidget.js: line 1696, col 13, 'ruleType' is defined but never used.
-django/applications/catmaid/static/js/widgets/volumewidget.js: line 1779, col 13, 'self' is defined but never used.
+django/applications/catmaid/static/js/widgets/volumewidget.js: line 304, col 9, 'vid' is defined but never used.
+django/applications/catmaid/static/js/widgets/volumewidget.js: line 446, col 17, 'invalidVolumes' is defined but never used.
+django/applications/catmaid/static/js/widgets/volumewidget.js: line 441, col 13, 'self' is defined but never used.
+django/applications/catmaid/static/js/widgets/volumewidget.js: line 537, col 15, 'rules' is defined but never used.
+django/applications/catmaid/static/js/widgets/volumewidget.js: line 520, col 9, 'clientSideFiltering' is defined but never used.
+django/applications/catmaid/static/js/widgets/volumewidget.js: line 1688, col 13, 'source' is defined but never used.
+django/applications/catmaid/static/js/widgets/volumewidget.js: line 1693, col 13, 'ruleType' is defined but never used.
+django/applications/catmaid/static/js/widgets/volumewidget.js: line 1776, col 13, 'self' is defined but never used.
 
 django/applications/catmaid/static/js/widgets/window-manager.js: line 345, col 7, 'f1' is defined but never used.
 django/applications/catmaid/static/js/widgets/window-manager.js: line 346, col 7, 'f2' is defined but never used.
@@ -372,11 +372,11 @@ django/applications/catmaid/static/js/widgets/window-manager.js: line 559, col 7
 django/applications/catmaid/static/js/widgets/window-manager.js: line 1037, col 7, 'frame' is defined but never used.
 django/applications/catmaid/static/js/widgets/window-manager.js: line 1313, col 7, 'self' is defined but never used.
 
-django/applications/catmaid/static/libs/catmaid/Arbor.js: line 1315, col 13, 'pivot' is defined but never used.
-django/applications/catmaid/static/libs/catmaid/Arbor.js: line 1899, col 7, 'root' is defined but never used.
+django/applications/catmaid/static/libs/catmaid/Arbor.js: line 1312, col 13, 'pivot' is defined but never used.
+django/applications/catmaid/static/libs/catmaid/Arbor.js: line 1896, col 7, 'root' is defined but never used.
 
-django/applications/catmaid/static/libs/catmaid/CATMAID.js: line 355, col 9, 'response' is defined but never used.
-django/applications/catmaid/static/libs/catmaid/CATMAID.js: line 505, col 17, 'response' is defined but never used.
+django/applications/catmaid/static/libs/catmaid/CATMAID.js: line 352, col 9, 'response' is defined but never used.
+django/applications/catmaid/static/libs/catmaid/CATMAID.js: line 502, col 17, 'response' is defined but never used.
 
 django/applications/catmaid/static/libs/catmaid/color-source.js: line 92, col 17, 'lowerStop' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/color-source.js: line 92, col 28, 'upperStop' is defined but never used.
@@ -385,20 +385,20 @@ django/applications/catmaid/static/libs/catmaid/color-source.js: line 37, col 12
 
 django/applications/catmaid/static/libs/catmaid/command.js: line 423, col 9, 'mappedValue' is defined but never used.
 
-django/applications/catmaid/static/libs/catmaid/models/landmarks.js: line 528, col 13, 'isMember' is defined but never used.
-django/applications/catmaid/static/libs/catmaid/models/landmarks.js: line 576, col 11, 'skeletonModels' is defined but never used.
-django/applications/catmaid/static/libs/catmaid/models/landmarks.js: line 613, col 11, 'prepare' is defined but never used.
-django/applications/catmaid/static/libs/catmaid/models/landmarks.js: line 11, col 7, 'distanceSq' is defined but never used.
+django/applications/catmaid/static/libs/catmaid/models/landmarks.js: line 525, col 13, 'isMember' is defined but never used.
+django/applications/catmaid/static/libs/catmaid/models/landmarks.js: line 573, col 11, 'skeletonModels' is defined but never used.
+django/applications/catmaid/static/libs/catmaid/models/landmarks.js: line 610, col 11, 'prepare' is defined but never used.
+django/applications/catmaid/static/libs/catmaid/models/landmarks.js: line 8, col 7, 'distanceSq' is defined but never used.
 
-django/applications/catmaid/static/libs/catmaid/models/nodes.js: line 357, col 15, 'neuron_id' is defined but never used.
-django/applications/catmaid/static/libs/catmaid/models/nodes.js: line 869, col 13, 'parentEditionTime' is defined but never used.
+django/applications/catmaid/static/libs/catmaid/models/nodes.js: line 354, col 15, 'neuron_id' is defined but never used.
+django/applications/catmaid/static/libs/catmaid/models/nodes.js: line 866, col 13, 'parentEditionTime' is defined but never used.
 
-django/applications/catmaid/static/libs/catmaid/models/sampler.js: line 248, col 15, 'thisIsLast' is defined but never used.
-django/applications/catmaid/static/libs/catmaid/models/sampler.js: line 159, col 11, 'intervalStartPos' is defined but never used.
-django/applications/catmaid/static/libs/catmaid/models/sampler.js: line 482, col 11, 'arbor' is defined but never used.
-django/applications/catmaid/static/libs/catmaid/models/sampler.js: line 577, col 17, 'seen' is defined but never used.
-django/applications/catmaid/static/libs/catmaid/models/sampler.js: line 665, col 9, 'edges' is defined but never used.
-django/applications/catmaid/static/libs/catmaid/models/sampler.js: line 989, col 9, 'currentFragment' is defined but never used.
+django/applications/catmaid/static/libs/catmaid/models/sampler.js: line 245, col 15, 'thisIsLast' is defined but never used.
+django/applications/catmaid/static/libs/catmaid/models/sampler.js: line 156, col 11, 'intervalStartPos' is defined but never used.
+django/applications/catmaid/static/libs/catmaid/models/sampler.js: line 479, col 11, 'arbor' is defined but never used.
+django/applications/catmaid/static/libs/catmaid/models/sampler.js: line 574, col 17, 'seen' is defined but never used.
+django/applications/catmaid/static/libs/catmaid/models/sampler.js: line 662, col 9, 'edges' is defined but never used.
+django/applications/catmaid/static/libs/catmaid/models/sampler.js: line 986, col 9, 'currentFragment' is defined but never used.
 
 django/applications/catmaid/static/libs/catmaid/neuron_name_service.js: line 490, col 19, 'skeleton' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/neuron_name_service.js: line 693, col 19, 'queryModels' is defined but never used.
@@ -412,23 +412,23 @@ django/applications/catmaid/static/libs/catmaid/skeleton-matching.js: line 137, 
 django/applications/catmaid/static/libs/catmaid/skeleton-matching.js: line 166, col 11, 'interSGs' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/skeleton-matching.js: line 163, col 15, 'g' is defined but never used.
 
-django/applications/catmaid/static/libs/catmaid/skeleton_source_manager.js: line 396, col 9, 'sources' is defined but never used.
+django/applications/catmaid/static/libs/catmaid/skeleton_source_manager.js: line 393, col 9, 'sources' is defined but never used.
 
-django/applications/catmaid/static/libs/catmaid/state.js: line 367, col 12, 'returnUndefined' is defined but never used.
+django/applications/catmaid/static/libs/catmaid/state.js: line 364, col 12, 'returnUndefined' is defined but never used.
 
-django/applications/catmaid/static/libs/catmaid/svgutil.js: line 243, col 9, 'rect' is defined but never used.
-django/applications/catmaid/static/libs/catmaid/svgutil.js: line 751, col 9, 'elems' is defined but never used.
+django/applications/catmaid/static/libs/catmaid/svgutil.js: line 241, col 9, 'rect' is defined but never used.
+django/applications/catmaid/static/libs/catmaid/svgutil.js: line 749, col 9, 'elems' is defined but never used.
 
-django/applications/catmaid/static/libs/catmaid/synapse_clustering.js: line 352, col 7, 'synapses' is defined but never used.
+django/applications/catmaid/static/libs/catmaid/synapse_clustering.js: line 349, col 7, 'synapses' is defined but never used.
 
-django/applications/catmaid/static/libs/catmaid/time-series.js: line 22, col 12, 'returnMaxTime' is defined but never used.
+django/applications/catmaid/static/libs/catmaid/time-series.js: line 19, col 12, 'returnMaxTime' is defined but never used.
 
-django/applications/catmaid/static/libs/catmaid/utils.js: line 8, col 1, 'Arbor' is defined but never used.
-django/applications/catmaid/static/libs/catmaid/utils.js: line 8, col 1, 'msgpack' is defined but never used.
-django/applications/catmaid/static/libs/catmaid/utils.js: line 8, col 1, 'requestQueue' is defined but never used.
-django/applications/catmaid/static/libs/catmaid/utils.js: line 81, col 5, 'fetchSkeletons' is defined but never used.
+django/applications/catmaid/static/libs/catmaid/utils.js: line 6, col 1, 'Arbor' is defined but never used.
+django/applications/catmaid/static/libs/catmaid/utils.js: line 6, col 1, 'msgpack' is defined but never used.
+django/applications/catmaid/static/libs/catmaid/utils.js: line 6, col 1, 'requestQueue' is defined but never used.
+django/applications/catmaid/static/libs/catmaid/utils.js: line 79, col 5, 'fetchSkeletons' is defined but never used.
 
-django/applications/catmaid/static/libs/catmaid/volumes.js: line 616, col 9, 'abs' is defined but never used.
-django/applications/catmaid/static/libs/catmaid/volumes.js: line 808, col 15, 'dSimplicesT' is defined but never used.
+django/applications/catmaid/static/libs/catmaid/volumes.js: line 613, col 9, 'abs' is defined but never used.
+django/applications/catmaid/static/libs/catmaid/volumes.js: line 805, col 15, 'dSimplicesT' is defined but never used.
 
 346 errors

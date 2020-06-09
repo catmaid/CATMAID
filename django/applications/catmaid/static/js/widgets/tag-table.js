@@ -1,6 +1,3 @@
-/* -*- mode: espresso; espresso-indent-level: 8; indent-tabs-mode: t -*- */
-/* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
-
 (function(CATMAID) {
 
   "use strict";

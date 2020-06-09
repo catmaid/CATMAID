@@ -1,5 +1,3 @@
-/* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
-/* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
   CircuitGraphAnalysis,
   fetchSkeletons,
@@ -210,7 +208,7 @@
     this.unregisterInstance();
     this.unregisterSource();
     CATMAID.NeuronNameService.getInstance().unregister(this);
-    
+
     Object.keys(this).forEach(function(key) { delete this[key]; }, this);
   };
 
@@ -420,7 +418,7 @@
     } else if (this.vectors.length > 3) {
       // Not disjoint: combine the third and fourth eigenvectors
       // as a function of the second eigenvector, according to the sign in the latter.
-      
+
       var ev4 = this.vectors[3][1].map(clean),
           vs = [ev3, ev4];
 
@@ -440,7 +438,7 @@
 
       // Create a new vector with the most signal from both the third (2) and fourth (3) eigenvectors
       this.vectors.push([-1, ev2.map(function(v, i) {
-        return vs[v > 0 ? indices[0] : indices[1]][i]; 
+        return vs[v > 0 ? indices[0] : indices[1]][i];
       }, this)]);
     } else {
       this.vectors.push([-1, this.ids.map(function() { return 0; })]);
@@ -560,7 +558,7 @@
 
     var sel1 = updateSelect($('#circuit_graph_plot_X_' + this.widgetID)[0]),
         sel2 = updateSelect($('#circuit_graph_plot_Y_' + this.widgetID)[0]);
-   
+
     if (!preserve_indices) {
       if (this.vectors.length > 0) {
         sel1.selectedIndex = 1;
@@ -583,7 +581,7 @@
 
   CircuitGraphPlot.prototype.getVectors = function() {
     if (!this.ids || 0 === this.ids.length) return;
-    
+
     var xSelect = $('#circuit_graph_plot_X_' + this.widgetID)[0],
         ySelect = $('#circuit_graph_plot_Y_' + this.widgetID)[0];
 
@@ -1407,7 +1405,7 @@
     // M is in a transposed state
     //var pca = numeric.svd(numeric.div(numeric.dot(numeric.transpose(M), M), M.length)).U;
     // Instead, compute in reverse
-    
+
     // Adjust error to prevent lack of convergence
     //var epsilon = numeric.epsilon;
     //numeric.epsilon = 0.0000000001;

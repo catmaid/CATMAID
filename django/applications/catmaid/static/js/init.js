@@ -1,6 +1,3 @@
-/* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
-/* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
-
 // These globals are currently used in many places and have yet to be moved into
 // the CATMAID namespace.
 var requestQueue; // jshint ignore:line

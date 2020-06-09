@@ -1,5 +1,3 @@
-/* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
-/* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
   fetchSkeletons,
   InstanceRegistry,
@@ -393,7 +391,7 @@
         in_synapses.forEach(function(syn_node) {
           stats.input_depths.push(distance_to_root.distances[syn_node]);
         });
-        out_synapses.forEach(function(syn_node) { 
+        out_synapses.forEach(function(syn_node) {
           stats.output_depths.push(distance_to_root.distances[syn_node]);
         });
       });
@@ -562,7 +560,7 @@
     if (!this.table) return;
     var rows = this.table.fnGetData();
     if (rows.length < 1) return;
-    
+
     // Create pie charts: summary of total each kind (cable, input, output) separated by region
     var rows = this.table.fnGetData(),
         sums = rows[0].map(function() { return 0; });
@@ -670,7 +668,7 @@
         if (-1 !== cable_labels.indexOf(label)) {
           // round to 1 micron increments
           inc = 1000;
-          var round = function(v) { return v - v % inc; }; 
+          var round = function(v) { return v - v % inc; };
           a = a.map(round);
           d = d.map(round);
         }

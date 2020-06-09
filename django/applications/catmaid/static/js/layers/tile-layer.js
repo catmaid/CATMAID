@@ -1,5 +1,3 @@
-/* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
-
 (function(CATMAID) {
 
   "use strict";

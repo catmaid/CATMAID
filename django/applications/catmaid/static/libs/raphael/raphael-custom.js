@@ -1,6 +1,3 @@
-/* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
-/* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
-
 // for customizing raphael js
 /*
 Raphael.fn.arrow = function (x1, y1, x2, y2, size) {

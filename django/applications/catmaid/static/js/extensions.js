@@ -1,6 +1,3 @@
-/* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
-/* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
-
 /**
  * This file is a place for small global extensions of libraries used by CATMAID.
  */

@@ -1,6 +1,3 @@
-/* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
-/* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
-
 QUnit.test('Basic skeleton source test', function( assert ) {
   var name = 'Test source';
   var skeletonIDs = [1,2,3];

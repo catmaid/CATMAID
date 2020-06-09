@@ -1,6 +1,3 @@
-/* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
-/* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
-
 QUnit.test('Tile sources test', function( assert ) {
     var baseURL = "https://example.com/";
     var fileExt = "png";

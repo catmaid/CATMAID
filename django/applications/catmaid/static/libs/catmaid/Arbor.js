@@ -1,6 +1,3 @@
-/* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
-/* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
-
 /** Albert Cardona 2013-10-28
  *
  * Functions for creating, iterating and inspecting trees as represented by CATMAID,

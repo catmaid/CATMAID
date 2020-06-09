@@ -1,6 +1,3 @@
-/* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
-/* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
-
 QUnit.test('Instance registry test', function( assert ) {
   // Create a new instance registry based type
   var T = function() { this.widgetID = this.registerInstance(); };

@@ -1,5 +1,3 @@
-/* -*- mode: espresso; espresso-indent-level: 2; indent-tabs-mode: nil -*- */
-/* vim: set softtabstop=2 shiftwidth=2 tabstop=2 expandtab: */
 /* global
   CATMAID
   */
@@ -131,7 +129,7 @@
     //            --
     // 0,-height/2   width/4,-height/2
     //
-    
+
     var w4 = width / 4.0,
         h2 = height / 2.0;
 
@@ -205,7 +203,7 @@
 
   SVGFactory.prototype.addTriangleTeeMarker = function(id, width, height, refX, refY, units, style) {
     var tee = document.createElementNS(this.getNamespaces().svg, 'path');
-    
+
     var w2 = width / 2.0,
         w4 = width / 4.0,
         h2 = height / 2.0;

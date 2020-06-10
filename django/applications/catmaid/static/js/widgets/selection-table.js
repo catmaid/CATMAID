@@ -802,9 +802,6 @@
 
         // Notify user if not all skeletons are valid
         if (0 !== noReviewInfoSkeletonIds.length) {
-          var missing = skeleton_ids.filter(function(skid) {
-            return !this[skid];
-          }, json);
           var msg = 'Could not find review summary for ' + noReviewInfoSkeletonIds.length +
               ' skeletons: ' + noReviewInfoSkeletonIds.join(', ');
           CATMAID.warn(msg);

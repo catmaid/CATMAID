@@ -8,7 +8,7 @@
  * Contains the current state of skeleton annotations.
  * TODO: Remove global variable
  */
-var SkeletonAnnotations = {};
+global.SkeletonAnnotations = {};
 
 (function(CATMAID) {
 

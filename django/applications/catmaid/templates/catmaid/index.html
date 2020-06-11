@@ -46,7 +46,7 @@
     </script>
 
     <!-- CATMAID and 3rd-party CATMAID extensions -->
-    {% javascript 'catmaid' %}
+    {% render_bundle 'main' %}
     {% for f in COMPRESSED_FILE_IDS %}
         {% if 'catmaid-ext-' in f %}
             {% javascript f %}
@@ -62,7 +62,6 @@
       <script type="text/javascript" src="{{ STATIC_EXTENSION_URL }}{{ f }}"></script>
     {% endfor %}
 
-    {% render_bundle 'main' %}
   </head>
 
   <body onload="CATMAID.initWebClient();" class="catmaid"><a></a>

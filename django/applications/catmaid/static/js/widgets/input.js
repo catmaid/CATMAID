@@ -2,7 +2,7 @@
  * input element with mousewheel-control and increase-decrease handles
  */
 
-function Input(
+global.Input = function (
 name, size, onchange, defaultvalue) {
   /**
    * returns the containing span-element for insertion to the document

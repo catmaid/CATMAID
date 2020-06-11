@@ -1,7 +1,7 @@
 // These globals are currently used in many places and have yet to be moved into
 // the CATMAID namespace.
-var requestQueue; // jshint ignore:line
-var project;
+// global.requestQueue = undefined; // jshint ignore:line
+global.project = undefined;
 
 (function(CATMAID) {
 

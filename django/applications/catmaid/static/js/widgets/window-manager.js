@@ -103,7 +103,7 @@ CMWNode.prototype.getTop = function()
 /**
  * Root node
  */
-function CMWRootNode() {
+global.CMWRootNode = function() {
   this.child = null;
 
   this.id = this.uniqueId();
@@ -222,7 +222,7 @@ CMWRootNode.prototype.closeAllChildren = function () {
 /**
  * Horizontal split node
  */
-function CMWHSplitNode(child1, child2) {
+global.CMWHSplitNode = function (child1, child2) {
   this.id = this.uniqueId();
 
   this.parent = null;
@@ -436,7 +436,7 @@ CMWHSplitNode.prototype.toXML = function (tabs)
 /**
  * Vertical split node.
  */
-function CMWVSplitNode(child1, child2) {
+global.CMWVSplitNode = function (child1, child2) {
   this.id = this.uniqueId();
 
   this.parent = null;
@@ -887,7 +887,7 @@ CMWTabbedNode.prototype.childChanged = function (child) {
 /**
  * Window is leaf of the binary tree.
  */
-function CMWWindow(title) {
+global.CMWWindow = function (title) {
   this.id = this.uniqueId();
 
   this.parent = null;

@@ -1,5 +1,5 @@
 /** An object that encapsulates the functions for creating accessory windows. */
-var WindowMaker = new function()
+global.WindowMaker = new function()
 {
   /** Map of window widget names to a map of CMWindow instances to widget objects.
    * Only windows that are open are stored. */

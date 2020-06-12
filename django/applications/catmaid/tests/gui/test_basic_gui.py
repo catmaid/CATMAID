@@ -118,6 +118,7 @@ class BasicUITest(StaticLiveServerTestCase):
                     "browserName": "chrome",
                     "version": "55.0",
                     "captureHtml": True,
+                    "extendedDebugging": True,
                     "webdriverRemoteQuietExceptions": False,
                     "tunnel-identifier": os.environ["TRAVIS_JOB_NUMBER"],
                     "name": f"Job: {os.environ['TRAVIS_JOB_NUMBER']} Commit {os.environ['TRAVIS_COMMIT']}",

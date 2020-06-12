@@ -137,7 +137,7 @@ class BasicUITest(StaticLiveServerTestCase):
                 self.selenium = webdriver.Firefox()
 
             # Give browser a chance to load elements
-            self.selenium.implicitly_wait(20)
+            self.selenium.implicitly_wait(50)
 
     def tearDown(self):
         """Figure out if this test case was successful (based on

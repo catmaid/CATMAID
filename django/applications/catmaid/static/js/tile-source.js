@@ -607,7 +607,8 @@
       if (!this.promiseN5wasm) {
         // This is done inside a Function/eval so that Firefox does not fail
         // to parse this whole file because of the dynamic import.
-        this.promiseN5wasm = (new Function("return import('../libs/n5-wasm/n5_wasm.js')"))()
+        const jsPath = CATMAID.makeStaticURL('libs/n5-wasm/n5_wasm.js');
+        this.promiseN5wasm = (new Function(`return import('${jsPath}')`))()
             .then(n5wasm =>
                 wasm_bindgen(CATMAID.makeStaticURL('libs/n5-wasm/n5_wasm_bg.wasm'))
                 .then(() => wasm_bindgen));

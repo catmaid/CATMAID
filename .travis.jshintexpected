@@ -352,9 +352,6 @@ django/applications/catmaid/static/js/widgets/window-manager.js: line 1313, col 
 django/applications/catmaid/static/libs/catmaid/Arbor.js: line 1312, col 13, 'pivot' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/Arbor.js: line 1896, col 7, 'root' is defined but never used.
 
-django/applications/catmaid/static/libs/catmaid/CATMAID.js: line 352, col 9, 'response' is defined but never used.
-django/applications/catmaid/static/libs/catmaid/CATMAID.js: line 502, col 17, 'response' is defined but never used.
-
 django/applications/catmaid/static/libs/catmaid/color-source.js: line 92, col 17, 'lowerStop' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/color-source.js: line 92, col 28, 'upperStop' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/color-source.js: line 93, col 17, 'sortedSteps' is defined but never used.
@@ -408,4 +405,4 @@ django/applications/catmaid/static/libs/catmaid/utils.js: line 79, col 5, 'fetch
 django/applications/catmaid/static/libs/catmaid/volumes.js: line 613, col 9, 'abs' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/volumes.js: line 805, col 15, 'dSimplicesT' is defined but never used.
 
-326 errors
+324 errors

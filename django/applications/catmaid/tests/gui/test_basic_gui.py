@@ -116,7 +116,7 @@ class BasicUITest(StaticLiveServerTestCase):
                 capabilities = {
                     "platform": "Windows 10",
                     "browserName": "chrome",
-                    "version": "55.0",
+                    "version": "latest",
                     "captureHtml": True,
                     "extendedDebugging": True,
                     "webdriverRemoteQuietExceptions": False,
@@ -125,6 +125,9 @@ class BasicUITest(StaticLiveServerTestCase):
                     "build": os.environ["TRAVIS_BUILD_NUMBER"],
                     "tags": [os.environ["TRAVIS_PYTHON_VERSION"], "CI"]
                 }
+                # This should be a HTTPS URL, but due to urllib3 being in use by
+                # selenium < v4 we can't get this to work with the Selenium
+                # server. More details here: https://travis-ci.community/t/8923
                 hub_url = f"{username}:{access_key}@ondemand.saucelabs.com"
                 self.selenium = webdriver.Remote(
                     desired_capabilities=capabilities,

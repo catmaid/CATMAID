@@ -112,7 +112,7 @@ var fetchSkeletons = function(skeleton_ids, fnMakeURL, fnPost, fnLoadedOne,
             }
           })
           .catch(error => {
-            if (error instanceof CATMAID.MissingResourceError) {
+            if (error instanceof CATMAID.ResourceUnavailableError) {
               missing.push(skeleton_id);
             } else {
               unloadable.push(skeleton_id);

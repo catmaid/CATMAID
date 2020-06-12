@@ -112,6 +112,11 @@ QUnit.test('Tracing overlay test', function( assert ) {
       "parent_id": 41
     };
 
+    // Let the fake server respond to the initial back-end HEAD request.
+    server.respondWith("HEAD", "/", [200, { "Content-Type": "text/html" }, '']);
+    server.respondWith("GET", "/permissions", [200, { "Content-Type": "application/json" }, '']);
+    // Let the fake server respond to settings requests
+    server.respondWith("GET", "/client/datastores/settings/?project_id=1", [200, { "Content-Type": "application/json"}, '[]']);
     // Let the fake server reply to a deletion request with the prepared answer
     // above.
     server.respondWith("POST", "/1/treenode/delete",
@@ -159,34 +164,43 @@ QUnit.test('Tracing overlay test', function( assert ) {
     fakeOverlay.submit.then(function() {
       delete availableNodes[nodeID];
     });
-    // Update the tracing layer immediately after queing the deleting
+    // Update the tracing layer immediately after queing the deleting. This
+    // callback is queued as a promise and is *not* executed synchronously.
     fakeOverlay.updateNodeCoordinatesInDB(function(json) {
       assert.deepEqual(json, {"updated": 1},
           "The node update returns with expected response.");
     });
-    // Update the tracing layer immediately after queing the deleting
-    fakeOverlay.submit.then(function() {
+    let lastQueueEntryReached = false;
+    // These callbacks need to be called through a promise, because calling
+    // `submit.then()` would execute them synchronously once the submitter is
+    // done. This is turn would break the assumption that the callbacksa are
+    // executed *after* the updateNodeCoordinatesInDB callback above.
+    fakeOverlay.submit.promise().then(function() {
+      lastQueueEntryReached = true;
       // Reset request queue to original queue
       reset();
       assert.ok(true, "Queing an update after node deletion works as expected.");
       done();
     }, function() {
+      lastQueueEntryReached = true;
       // Reset request queue to original queue
       reset();
       assert.ok(false, "Queing an update after node deletion works as expected.");
       done();
     });
 
-    // Expect two responses from the server, try in 100ms intervals.
-    respond(2, 100);
+    // Respond to all requests in 100ms intervals. While we know how many
+    // requests we issue above, there are othere requests issued by CATMAID taht
+    // we don't have direct knowledge and control over here. Therefore, we
+    // continue serveing as long as the last expected queue entry hasn't been
+    // reached.
+    respond(100);
 
-    function respond(requestsLeft, delay) {
-      if (requestsLeft > 0) {
+    function respond(delay) {
+      if (!lastQueueEntryReached) {
         setTimeout(function() {
-          // The fake server will respond to all requests in queue
-          var nResponds = server.requests.length;
           server.respond();
-          respond(requestsLeft - nResponds, delay);
+          respond(delay);
         }, delay);
       }
     }

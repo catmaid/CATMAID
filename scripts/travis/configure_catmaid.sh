@@ -23,7 +23,8 @@ echo "STATICFILES_STORAGE = 'pipeline.storage.PipelineStorage'" >> projects/mysi
 # Enable front-end tess
 echo "FRONT_END_TESTS_ENABLED = True" >> projects/mysite/settings.py
 # Enable Selenium GUI tests, this currently works only with non-hash file names.
-echo "GUI_TESTS_ENABLED = True" >> projects/mysite/settings.py
+echo "GUI Tests are temporarily disabled"
+echo "GUI_TESTS_ENABLED = False" >> projects/mysite/settings.py
 echo "GUI_TESTS_REMOTE = True" >> projects/mysite/settings.py
 # Show full front-end errors by default
 echo "EXPAND_FRONTEND_ERRORS = True" >> projects/mysite/settings.py

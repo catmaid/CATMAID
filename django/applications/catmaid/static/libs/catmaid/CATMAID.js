@@ -389,7 +389,7 @@ var requestQueue = new CATMAID.RequestQueue();
    * @returns {Object} parsed resonse text
    */
   CATMAID.validateJsonResponse = function(status, text, xml, additionalStatusCodes) {
-    var response = CATMAID.validateResponse(status, text, xml, undefined, additionalStatusCodes);
+    CATMAID.validateResponse(status, text, xml, undefined, additionalStatusCodes);
     // `text` may be empty for no content responses.
     return text.length ? JSON.parse(text) : {};
   };
@@ -539,8 +539,7 @@ var requestQueue = new CATMAID.RequestQueue();
           }
 
           if (raw) {
-            var response = CATMAID.validateResponse(status, text, xml,
-                responseType, supportedStatus);
+            CATMAID.validateResponse(status, text, xml, responseType, supportedStatus);
             if (details) {
               resolve({
                 data: text,
@@ -552,8 +551,7 @@ var requestQueue = new CATMAID.RequestQueue();
           } else {
             let json;
             if (decoder === 'msgpack') {
-              var response = CATMAID.validateResponse(status, text, xml,
-                  responseType, supportedStatus);
+              CATMAID.validateResponse(status, text, xml, responseType, supportedStatus);
               json = msgpack.decode(new Uint8Array(text));
             } else if (decoder === 'json') {
               json = CATMAID.validateJsonResponse(status, text, xml,

@@ -68,11 +68,13 @@ def get_review_count(skeleton_ids) -> DefaultDict:
     # Count nodes that have been reviewed by each user in each partner skeleton
     cursor = connection.cursor()
     cursor.execute('''
-    SELECT skeleton_id, reviewer_id, count(*)
-    FROM review
-    WHERE skeleton_id IN (%s)
-    GROUP BY reviewer_id, skeleton_id
-    ''' % ",".join(map(str, skeleton_ids)))
+        SELECT skeleton_id, reviewer_id, count(*)
+        FROM review
+        WHERE skeleton_id = ANY(%(skeleton_ids)s::bigint[])
+        GROUP BY reviewer_id, skeleton_id
+    ''', {
+        'skeleton_ids': skeleton_ids,
+    })
     # Build dictionary
     reviews:DefaultDict = defaultdict(lambda: defaultdict(int))
     for row in cursor.fetchall():

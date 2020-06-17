@@ -637,8 +637,7 @@
           initial_user_id: userId,
           changes_after: changesAfter,
           changes_before: changesBefore,
-          skeleton_ids: skeletonIds ?
-            skeletonIds.split(',').map(s => parseInt(s.trim(), 10)) : [],
+          skeleton_ids: skeletonIds,
         },
         api: api,
       });

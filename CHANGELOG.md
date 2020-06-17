@@ -84,6 +84,11 @@ Graph widget:
   which it will move towards its target. This setting is both available in the
   animation tab and the export dialog.
 
+Skeleton history widget:
+
+- Skeletons to query can now also be appened through the common skeleton source
+  controls.
+
 Docker:
 
 - Asynchronous tasks can now also be run inside the Docker container. Celery and

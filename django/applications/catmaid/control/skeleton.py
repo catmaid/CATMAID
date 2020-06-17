@@ -4142,53 +4142,62 @@ def change_history(request:HttpRequest, project_id=None) -> JsonResponse:
                     AND class_name = 'skeleton'
         ),
         changed_treenodes AS (
-                SELECT t.id, t.skeleton_id, MIN(txid) as txid, MIN(edition_time) as edition_time
+                SELECT t.id, t.skeleton_id, MIN(edition_time) as edition_time,
+                    bool_or(is_live) AS is_live
                 FROM (
                         /* Deleted skeletons from history */
-                        -- TODO: It might be that we want really the initial
-                        -- versions, and not all of them with each having the
-                        -- minimum th.txid and edit time.
-                        SELECT th.id as id, th.skeleton_id as skeleton_id, MIN(th.txid) as txid,
-                            MIN(th.edition_time) AS edition_time
+                        SELECT th.id as id, th.skeleton_id as skeleton_id,
+                            MIN(th.edition_time) AS edition_time, False AS is_live
                         FROM treenode__history th
-                        /* where th.exec_transaction_id = txs.transaction_id */
                         {init_constraints}
                         GROUP By th.id, th.skeleton_id
 
                         UNION ALL
 
-                        /* Current skeletons */
-                        select t.id as id, t.skeleton_id as skeleton_id, MIN(t.txid) as txid,
-                            MIN(t.edition_time) AS edition_time
+                        /* Current skeletons: */
+                        select t.id as id, t.skeleton_id as skeleton_id,
+                            MIN(t.edition_time) AS edition_time, True AS is_live
                         FROM treenode t
-                        /* where t.txid = txs.transaction_id */
                         {init_constraints}
-                        GROUP BY t.id, t.skeleton_id
+                        GROUP By t.id, t.skeleton_id
                 ) t
                 GROUP BY id, t.skeleton_id
         ),
+        /* Get all versions of all treenodes that where ever part of the query
+         * skeletons. Sort them by a "pos" number with the following pattern:
+         * -1: oldest versions of treenodes, 0: historic versions of treenodes
+         * that are newer than the oldest versions, 1: present versions of
+         * treenodes that are newer than the oldest versions. */
         all_changed_skeletons AS (
-                SELECT ct.id, ct.skeleton_id, -1 as pos, ct.edition_time, ct.txid
+                /* Part 1/3 - pos column -1: all oldest treenodes of the query
+                 * skeletons, both in terms of live tables and history tables. */
+                SELECT ct.id, ct.skeleton_id, -1 as pos, ct.edition_time, ct.is_live
                 FROM changed_treenodes ct
+                /* Part 2/3 - pos column 0: all historic treenodes that are
+                 * newer than the oldest version of them. */
                 UNION
-                SELECT th.id as treenode_id, th.skeleton_id, 0 as pos, th.edition_time, th.txid as txid
+                SELECT th.id as treenode_id, th.skeleton_id, 0 as pos, th.edition_time, False AS is_live
                 FROM changed_treenodes ct
                 JOIN treenode__history th
                         ON th.id = ct.id
-                WHERE th.txid > ct.txid
+                WHERE th.edition_time > ct.edition_time
+                OR th.skeleton_id <> ct.skeleton_id
+                /* Part 3/3 - pos column 1: all present treenodes that are newer
+                 * than the oldest version of them. */
                 UNION
-                SELECT t.id, t.skeleton_id, 1 as pos, t.edition_time, t.txid
+                SELECT t.id, t.skeleton_id, 1 as pos, t.edition_time, True AS is_live
                 FROM changed_treenodes ct
                 JOIN treenode t
                         ON t.id = ct.id
-                WHERE t.txid > ct.txid
+                WHERE t.edition_time > ct.edition_time
+                OR t.skeleton_id <> ct.skeleton_id
         ),
         agg_skeletons AS (
-                SELECT string_agg(skeleton_id::text, ':' ORDER BY pos ASC, txid ASC) as key,
-                    array_agg(skeleton_id ORDER BY pos ASC, txid ASC) AS skeleton_ids,
-                    array_agg(txid ORDER BY pos ASC, txid ASC) AS txids,
-                    max(pos) as present
-                    /*array_agg(edition_time ORDER BY pos ASC, txid ASC) AS times*/
+                SELECT string_agg(skeleton_id::text, ':' ORDER BY pos ASC, edition_time ASC) as key,
+                    array_agg(skeleton_id ORDER BY pos ASC, edition_time ASC) AS skeleton_ids,
+                    array_agg(edition_time ORDER BY pos ASC, edition_time ASC) AS edition_times,
+                    max(pos) as present,
+                    sum(case when is_live then 1 else 0 end) AS is_live
                 FROM all_changed_skeletons
                 GROUP BY id
         )
@@ -4200,7 +4209,8 @@ def change_history(request:HttpRequest, project_id=None) -> JsonResponse:
                 ORDER BY key
         )
         */
-        SELECT skeleton_ids, count(*), max(present) FROM agg_skeletons
+        SELECT skeleton_ids, count(*), max(present), sum(is_live)::bigint AS is_live
+        FROM agg_skeletons
         GROUP BY key, skeleton_ids
         ORDER BY skeleton_ids[0], count(*) DESC;
         /*
@@ -4219,7 +4229,8 @@ def change_history(request:HttpRequest, project_id=None) -> JsonResponse:
         'skeleton_ids': skeleton_ids,
     })
 
-    return JsonResponse(cursor.fetchall(), safe=False)
+    result = cursor.fetchall()
+    return JsonResponse(result, safe=False)
 
 
 @api_view(['GET', 'POST'])

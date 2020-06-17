@@ -19,7 +19,18 @@
     this.changesBefore = null;
     this.skeletonIds = null;
 
-    // Register a skeletonSource
+    // Input skeleton source
+    let boundUpdateFromInputSource = this.updateFromInputSource.bind(this);
+    let boundRemoveFromInputSource = this.removeFromInputSource.bind(this);
+    this.inputSkeletonSource = new CATMAID.BasicSkeletonSource(`${this.getName()} Input`, {
+      owner: this,
+      register: false,
+      handleAddedModels: boundUpdateFromInputSource,
+      handleChangedModels: this.updateData.bind(this),
+      handleRemovedModels: boundRemoveFromInputSource,
+    });
+
+    // Register a skeletonSource to pull results from
     this.skeletonSource = new CATMAID.BasicSkeletonSource(this.getName(), {
       owner: this
     });
@@ -43,6 +54,20 @@
     return {
       class: "skeleton-history-graph",
       createControls: function(buttons) {
+        var sourceSelect = CATMAID.skeletonListSources.createSelect(this.inputSkeletonSource);
+        buttons.appendChild(sourceSelect);
+
+        var add = document.createElement('input');
+        add.setAttribute("type", "button");
+        add.setAttribute("value", "Append");
+        add.onclick = this.inputSkeletonSource.loadSource.bind(this.inputSkeletonSource);
+        buttons.appendChild(add);
+
+        var clear = document.createElement('input');
+        clear.setAttribute("type", "button");
+        clear.setAttribute("value", "Clear");
+        clear.onclick = this.clear.bind(this);
+        buttons.appendChild(clear);
         CATMAID.DOM.appendButton(buttons, 'Refresh',
             'Reload skeleton history data and redraw graph', () => self.updateGraph());
         CATMAID.DOM.appendSelect(buttons, undefined, "Layout", this.layoutOptions,
@@ -65,7 +90,8 @@
         CATMAID.DOM.appendTextField(buttons, undefined, "(Past) Skeleton IDs",
             "Skeleton IDs, optionally past ones, can be provided as a list using commas.", this.skeletonIds || '',
             undefined, function() {
-              self.skeletonIds = this.value.length > 0 ? this.value : null;
+              self.skeletonIds = this.value.length > 0 ?
+                  this.value.split(',').map(s => s.trim()) : null;
               self.updateGraph();
             }, 15, '(all)');
         CATMAID.DOM.appendTextField(buttons, undefined, "Skeleton change after",
@@ -183,6 +209,13 @@
     };
   };
 
+  SkeletonHistoryGraph.prototype.clear = function() {
+    this.inputSkeletonSource.clear();
+    this.skeletonSource.clear();
+    this.skeletonIds = null;
+    this.updateGraph();
+  };
+
   SkeletonHistoryGraph.prototype.redraw = function() {
     if (!this.skeletonHistoryData || !this.cy) {
       return;
@@ -190,14 +223,36 @@
   };
 
   SkeletonHistoryGraph.prototype.updateData = function() {
-    var self = this;
-    return CATMAID.Skeletons.skeletonHistory(project.id, this.skeletonIds,
-        this.userId, this.changesAfter, this.changesBefore)
-      .then((history) => {
-        this.skeletonHistoryData = {
-          history: history,
-        };
-      });
+    if ((this.skeletonIds && this.skeletonIds.length > 0) || this.userId || this.userId === 0) {
+      return CATMAID.Skeletons.skeletonHistory(project.id, this.skeletonIds,
+          this.userId, this.changesAfter, this.changesBefore)
+        .then((history) => {
+          this.skeletonHistoryData = {
+            history: history,
+          };
+        });
+    } else {
+      this.skeletonHistoryData = null;
+      return Promise.resolve();
+    }
+  };
+
+  SkeletonHistoryGraph.prototype.updateFromInputSource = function(models) {
+    let inputSkeletonIds = this.inputSkeletonSource.getSelectedSkeletons();
+    if (inputSkeletonIds) {
+      this.skeletonIds = this.skeletonIds ?
+          [...this.skeletonIds, ...inputSkeletonIds] : inputSkeletonIds;
+      this.updateGraph();
+    }
+  };
+
+  SkeletonHistoryGraph.prototype.removeFromInputSource = function(models) {
+    let removedSkeletonIds = Object.keys(models);
+    if (removedSkeletonIds && this.skeletonIds) {
+      this.skeletonIds = Array.from(new Set(this.skeletonIds).difference(
+          new Set(removedSkeletonIds.map(s => parseInt(s, 10)))));
+      this.updateGraph();
+    }
   };
 
   /**
@@ -283,6 +338,12 @@
         // Remove all nodes and edges
         this.cy.remove('node');
 
+        if (!this.skeletonHistoryData) {
+          // Refresh layout
+          this.cy.layout(this.layouts[this.layout]);
+          return;
+        }
+
         let history = this.skeletonHistoryData.history;
 
         // Collect all nodes and add them to Cytoscape.js
@@ -331,7 +392,7 @@
         let seenEdges = new Map();
         this.cy.add(history.reduce((l, pathEntry) => {
           let skeletonIds = pathEntry[0];
-          if (skeletonIds.length > 1) {
+          if (skeletonIds.length > 0) {
             let firstSkeletonId = skeletonIds[0];
             let lastSkeletonId = skeletonIds[skeletonIds.length - 1];
              let edgeKey = `${firstSkeletonId}-${lastSkeletonId}`;
@@ -343,8 +404,8 @@
                let edge = {
                  group: 'edges',
                  data: {
-                   source: firstSkeletonId,
-                   target: lastSkeletonId,
+                   source: lastSkeletonId,
+                   target: firstSkeletonId,
                    weight: pathEntry[1],
                    mappedWeight: mapWeight(pathEntry[1], 1),
                    state: pathEntry[2],

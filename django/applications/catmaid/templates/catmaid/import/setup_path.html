@@ -41,6 +41,9 @@
       } else if ('json-spec' === source) {
         hideAll(document.querySelectorAll('.import-source-setting'));
         showAll(document.querySelectorAll('.json-spec'));
+      } else if ('yaml-spec' === source) {
+        hideAll(document.querySelectorAll('.import-source-setting'));
+        showAll(document.querySelectorAll('.yaml-spec'));
       } else {
         alert("Unknown import source: " + source);
       }

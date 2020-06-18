@@ -88,6 +88,13 @@ Skeleton history widget:
 
 - Skeletons to query can now also be appened through the common skeleton source
   controls.
+  
+- Now past skeletons with different skeleton IDs than the query IDs are
+  displayed as well as part of the graph.
+
+- Edges show now more information in their labels: the number of nodes added as
+  well as the number of nodes deleted from the transition of nodes from skeleton
+  A to skeleton B.
 
 Docker:
 
@@ -113,6 +120,9 @@ Administration:
 - Like every other new user, users created this way can be in default user
   groups (`NEW_USER_DEFAULT_GROUPS` setting) and the default tool visibility
   settings apply as well.
+
+- Project importer: YAML data can now also be pasted into a text box for
+  project import, just like JSON data.
 
 Miscellaneous:
 

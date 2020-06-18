@@ -489,6 +489,7 @@ class ImportingWizard(SessionWizardView):
             http_auth_user = cleaned_path_data['http_auth_user'].strip()
             http_auth_pass = cleaned_path_data['http_auth_pass']
             json_spec = cleaned_path_data['json_spec']
+            yaml_spec = cleaned_path_data['yaml_spec']
             known_project_filter = cleaned_path_data['known_project_filter']
             known_project_strategy = cleaned_path_data['known_project_strategy']
             base_url = cleaned_path_data['base_url']
@@ -516,6 +517,9 @@ class ImportingWizard(SessionWizardView):
             elif source == 'json-spec':
                 project_index, projects, not_readable = get_projects_from_raw_data(
                         json.loads(json_spec), filter_term, base_url=base_url)
+            elif source == 'yaml-spec':
+                project_index, projects, not_readable = get_projects_from_raw_data(
+                        yaml.load_all(yaml_spec), filter_term, base_url=base_url)
             else:
                 # Get all folders that match the selected criteria
                 data_dir = os.path.join(settings.CATMAID_IMPORT_PATH, path)
@@ -784,7 +788,8 @@ class DataFileForm(forms.Form):
             choices=(('filesystem', 'Data directory on server'),
                      ('remote-catmaid', 'Remote CATMAID instance'),
                      ('remote', 'General remote host'),
-                     ('json-spec', 'JSON representation')),
+                     ('json-spec', 'JSON representation'),
+                     ('yaml-spec', 'YAML representation')),
             help_text="Where new pojects and stacks will be looked for")
     relative_path = forms.CharField(required=False, widget=forms.TextInput(
         attrs={'size':'40', 'class': 'import-source-setting filesystem-import'}),
@@ -810,6 +815,8 @@ class DataFileForm(forms.Form):
         help_text="(Optional) HTTP-Auth password for the remote server.")
     json_spec = forms.CharField(required=False, widget=forms.Textarea(
         attrs={'class': 'import-source-setting json-spec'}))
+    yaml_spec = forms.CharField(required=False, widget=forms.Textarea(
+        attrs={'class': 'import-source-setting yaml-spec'}))
     filter_term = forms.CharField(initial="*", required=False,
         widget=forms.TextInput(attrs={'size':'40'}),
         help_text="Optionally, you can apply a <em>glob filter</em> to the " \

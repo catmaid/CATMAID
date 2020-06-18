@@ -135,7 +135,7 @@
               selector: 'edge',
               selectable: false,
               style: {
-                "label": "data(weight)",
+                "label": "data(label)",
                 'curve-style': 'bezier',
                 "width": "data(mappedWeight)", //mapData(weight, 0, 100, 10, 50)",
                 //'width': "mapData(weight, 0, 100, 1, 20)",
@@ -395,11 +395,19 @@
           if (skeletonIds.length > 0) {
             let firstSkeletonId = skeletonIds[0];
             let lastSkeletonId = skeletonIds[skeletonIds.length - 1];
-             let edgeKey = `${firstSkeletonId}-${lastSkeletonId}`;
+            let edgeKey = `${firstSkeletonId}-${lastSkeletonId}`;
+            let deletedNodes = pathEntry[1] - pathEntry[3];
+            let addedNodes = pathEntry[1] - deletedNodes;
+            let labelComponents = [];
+            if (addedNodes) labelComponents.push(`+${addedNodes}`);
+            if (deletedNodes) labelComponents.push(`-${deletedNodes}`);
+            let label = labelComponents.join(', ');
              if (seenEdges.has(edgeKey)) {
                let edge = seenEdges.get(edgeKey);
                edge.weight += pathEntry[1];
                edge.mappedWeight = mapWeight(edge.weight, 1);
+               edge.deletedNodes += pathEntry[3];
+               edge.label = label;
              } else {
                let edge = {
                  group: 'edges',
@@ -409,6 +417,8 @@
                    weight: pathEntry[1],
                    mappedWeight: mapWeight(pathEntry[1], 1),
                    state: pathEntry[2],
+                   deletedNodes: pathEntry[3],
+                   label: label,
                  }
                };
                l.push(edge);

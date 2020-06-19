@@ -124,6 +124,11 @@ Administration:
 - Project importer: YAML data can now also be pasted into a text box for
   project import, just like JSON data.
 
+- The basic scripts/tiles/tile Bash 2D tiling script now by default creates as
+  many zoom levels until the whole image fits on one tile (rather than two like
+  before). It also accepts now an additional optional argument with which the
+  number of zoom levels to generate can be specified.
+
 Miscellaneous:
 
 - The user registration form fits now the overal layout better and include first

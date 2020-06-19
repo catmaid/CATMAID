@@ -4,10 +4,15 @@
 # Generate a tiled scale pyramid of an image and a little overview thumbnail.
 # Call it this way:
 #
-# tile <image file name> <tile size> <thumbnail size>
+# tile <image file name> <tile size> <thumbnail size> [<max-zoom-level>]
 #
 # e.g.
+# tile image.tif 256 192 4
 # tile image.tif 256 192
+#
+# If <max-zoom-level> is ommitted, a default number of zoom levels is picked,
+# which is as many as it takes until the scaled image height fits on a single
+# tile.
 ##
 
 convert +compress ${1} s_0.ppm
@@ -15,18 +20,24 @@ convert +compress ${1} s_0.ppm
 width=`identify -format "%w" s_0.ppm`
 height=`identify -format "%h" s_0.ppm`
 
+tilesize=${2}
+zero=0
 s=0
+default_max_zoom=$(echo "l($((${width} / ${tilesize})))/l(2)" | bc -l | sed -e 's/\..*//')
+max_zoom=${4:-$default_max_zoom}
+echo "Max zoom level: ${max_zoom} (default: ${default_max_zoom})"
 
+# With s=0 initially this is just the regular width and height
 width=$((${width}/(2**${s})))
 height=$((${height}/(2**${s})))
 
-collumns=$((${width}/${2}))
-if [[ $width > $(($collumns*${2})) ]]
+collumns=$((${width}/${tilesize}))
+if [[ $width > $(($collumns*${tilesize})) ]]
 then
 	collumns=$(($collumns+1))
 fi
-rows=$((${height}/${2}))
-if [[ $height > $(($rows*${2})) ]]
+rows=$((${height}/${tilesize}))
+if [[ $height > $(($rows*${tilesize})) ]]
 then
 	rows=$(($rows+1))
 fi
@@ -34,7 +45,7 @@ fi
 echo "${width} => ${collumns}" >&2
 echo "${height} => ${rows}" >&2
 
-convert -crop ${2}x${2} s_${s}.ppm ${s}.jpg
+convert -crop ${tilesize}x${2} s_${s}.ppm ${s}.jpg
 for file in `ls ${s}-*.jpg`;
 do
 	regex="s/${s}-\([0-9][0-9]*\).jpg/\1/"
@@ -47,44 +58,58 @@ done
 s=$(($s+1))
 width=$((${width}/2))
 height=$((${height}/2))
-collumns=$((${width}/${2}))
-if [[ $width > $(($collumns*${2})) ]]
+collumns=$((${width}/${tilesize}))
+if [[ $width > $(($collumns*${tilesize})) ]]
 then
 	collumns=$(($collumns+1))
 fi
-rows=$((${height}/${2}))
-if [[ $height > $(($rows*${2})) ]]
+rows=$((${height}/${tilesize}))
+if [[ $height > $(($rows*${tilesize})) ]]
 then
 	rows=$(($rows+1))
 fi
 
-while [ $height -ge $((2*${2})) ];
+ref_s=$s
+ref_height=$height
+while [ $ref_height -ge $((2*${tilesize})) ];
+do
+	ref_s=$(($ref_s+1))
+	ref_height=$((${ref_height}/2))
+done
+
+nz=$((${max_zoom} - 2))
+while [ $height -ge $((${tilesize}/2**${nz})) ];
 do
 	echo "${width} => ${collumns}" >&2
 	echo "${height} => ${rows}" >&2
 
-	convert -resize ${width}x${height} s_$((${s}-1)).ppm s_${s}.ppm
+  if [[ "${collumns}" -eq "1" ]]; then
+    convert -resize ${width}x${height} -background black -extent ${tilesize}x${2} -gravity NorthWest s_$((${s}-1)).ppm s_${s}.ppm
+    convert s_${s}.ppm 0_0_${s}.jpg
+  else
+    convert -resize ${width}x${height} s_$((${s}-1)).ppm s_${s}.ppm
 
-	convert -crop ${2}x${2} s_${s}.ppm ${s}.jpg
-	for file in `ls ${s}-*.jpg`;
-	do
-		regex="s/${s}-\([0-9][0-9]*\).jpg/\1/"
-		n=`echo ${file} | sed "${regex}"`
-		r=$((${n}/${collumns}))
-		c=$((${n}%${collumns}))
-		mv $file ${r}_${c}_${s}.jpg
-	done
+    convert -crop ${tilesize}x${2} s_${s}.ppm ${s}.jpg
+    for file in `ls ${s}-*.jpg`;
+    do
+      regex="s/${s}-\([0-9][0-9]*\).jpg/\1/"
+      n=`echo ${file} | sed "${regex}"`
+      r=$((${n}/${collumns}))
+      c=$((${n}%${collumns}))
+      mv $file ${r}_${c}_${s}.jpg
+    done
+  fi
 
 	s=$(($s+1))
 	width=$((${width}/2))
 	height=$((${height}/2))
-	collumns=$((${width}/${2}))
-	if [[ $width > $(($collumns*${2})) ]]
+	collumns=$((${width}/${tilesize}))
+	if [[ $width > $(($collumns*${tilesize})) ]]
 	then
 		collumns=$(($collumns+1))
 	fi
-	rows=$((${height}/${2}))
-	if [[ $height > $(($rows*${2})) ]]
+	rows=$((${height}/${tilesize}))
+	if [[ $height > $(($rows*${tilesize})) ]]
 	then
 		rows=$(($rows+1))
 	fi
@@ -92,9 +117,9 @@ done
 
 if [[ $height < $width ]]
 then
-	convert -resize ${3} s_$((${s}-2)).ppm small.jpg
+	convert -resize ${3} s_$((${ref_s}-2)).ppm small.jpg
 else
-	convert -resize x${3} s_$((${s}-2)).ppm small.jpg
+	convert -resize x${3} s_$((${ref_s}-2)).ppm small.jpg
 fi
 
 rm *.ppm

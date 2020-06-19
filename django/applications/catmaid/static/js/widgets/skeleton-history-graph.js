@@ -270,14 +270,14 @@
     var parents = node.annotations;
     for (var i=0, max=parents.length; i<max; ++i) {
       var a = annotationIds[parents[i].id];
-      var created = exploreComponent(target, a, childIds, annotationIds, newComponentId);
+      exploreComponent(target, a, childIds, annotationIds, newComponentId);
     }
     // Make sure all children of this node are in the same component
     var children = childIds[node.id];
     if (children) {
       for (var i=0, max=children.length; i<max; ++i) {
         var a = annotationIds[children[i].id];
-        var created = exploreComponent(target, a, childIds, annotationIds, newComponentId);
+        exploreComponent(target, a, childIds, annotationIds, newComponentId);
       }
     }
 

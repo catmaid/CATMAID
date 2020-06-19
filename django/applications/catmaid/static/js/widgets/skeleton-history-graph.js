@@ -241,7 +241,7 @@
     let inputSkeletonIds = this.inputSkeletonSource.getSelectedSkeletons();
     if (inputSkeletonIds) {
       this.skeletonIds = this.skeletonIds ?
-          [...this.skeletonIds, ...inputSkeletonIds] : inputSkeletonIds;
+          [...new Set([...this.skeletonIds, ...inputSkeletonIds])] : inputSkeletonIds;
       this.updateGraph();
     }
   };

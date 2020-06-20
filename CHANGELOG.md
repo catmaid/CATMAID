@@ -127,7 +127,9 @@ Administration:
 - The basic scripts/tiles/tile Bash 2D tiling script now by default creates as
   many zoom levels until the whole image fits on one tile (rather than two like
   before). It also accepts now an additional optional argument with which the
-  number of zoom levels to generate can be specified.
+  number of zoom levels to generate can be specified. Moreover it also provides
+  an option to specificy an output directory and knows the common default value
+  for the overview size (192px).
 
 Miscellaneous:
 

@@ -4,27 +4,52 @@
 # Generate a tiled scale pyramid of an image and a little overview thumbnail.
 # Call it this way:
 #
-# tile <image file name> <tile size> <thumbnail size> [<max-zoom-level>]
+# tile <image-file-name> <tile-size> [<outfolder> [<thumbnail-size> [<max-zoom-level>]]]
 #
 # e.g.
-# tile image.tif 256 192 4
-# tile image.tif 256 192
+# tile image.tif 256 /outpath/ 192 4
+# tile image.tif 256 /outpath/ 4
+# tile image.tif 256 /outpath/
+# tile image.tif 256
 #
 # If <max-zoom-level> is ommitted, a default number of zoom levels is picked,
 # which is as many as it takes until the scaled image height fits on a single
 # tile.
 ##
 
-convert +compress ${1} s_0.ppm
+#set -eux
 
-width=`identify -format "%w" s_0.ppm`
-height=`identify -format "%h" s_0.ppm`
+usage="Usage: ${0} <image-file-name> <tile-size> [<outfolder> [<thumbnail-size> [<max-zoom-level>]]]"
 
+if [ $# -le 1  ]
+then
+	echo $usage
+	exit 0
+elif ! [[ $2 =~ ^[0-9]+$ ]]
+then
+	echo $usage
+	exit 0
+fi
+
+
+image="$1"
 tilesize=${2}
+image_folder="$( dirname $image )"
+outfolder="${3:-$image_folder/}"
+thumbsize="${4:-192}"
+
+mkdir -p "${outfolder}"
+cd "${outfolder}" || exit
+
+convert +compress "${image}" "s_0.ppm" || exit
+
+width=`identify -format "%w" "s_0.ppm"`
+height=`identify -format "%h" "s_0.ppm"`
+
 zero=0
 s=0
 default_max_zoom=$(echo "l($((${width} / ${tilesize})))/l(2)" | bc -l | sed -e 's/\..*//')
-max_zoom=${4:-$default_max_zoom}
+max_zoom=${5:-$default_max_zoom}
 echo "Max zoom level: ${max_zoom} (default: ${default_max_zoom})"
 
 # With s=0 initially this is just the regular width and height
@@ -45,14 +70,14 @@ fi
 echo "${width} => ${collumns}" >&2
 echo "${height} => ${rows}" >&2
 
-convert -crop ${tilesize}x${2} s_${s}.ppm ${s}.jpg
-for file in `ls ${s}-*.jpg`;
+convert -crop ${tilesize}x${tilesize} "s_${s}.ppm" "${s}.jpg"
+for file in ${s}-*.jpg
 do
 	regex="s/${s}-\([0-9][0-9]*\).jpg/\1/"
-	n=`echo ${file} | sed "${regex}"`
-	r=$((${n}/${collumns}))
-	c=$((${n}%${collumns}))
-	mv $file ${r}_${c}_${s}.jpg
+	n=`echo "${file}" | sed "${regex}"`
+	r="$((${n}/${collumns}))"
+	c="$((${n}%${collumns}))"
+	mv "$file" "${r}_${c}_${s}.jpg"
 done
 
 s=$(($s+1))
@@ -84,19 +109,19 @@ do
 	echo "${height} => ${rows}" >&2
 
   if [[ "${collumns}" -eq "1" ]]; then
-    convert -resize ${width}x${height} -background black -extent ${tilesize}x${2} -gravity NorthWest s_$((${s}-1)).ppm s_${s}.ppm
-    convert s_${s}.ppm 0_0_${s}.jpg
+    convert -resize ${width}x${height} -background black -extent ${tilesize}x${tilesize} -gravity NorthWest "s_$((${s}-1)).ppm" "s_${s}.ppm"
+    convert "s_${s}.ppm" "0_0_${s}.jpg"
   else
-    convert -resize ${width}x${height} s_$((${s}-1)).ppm s_${s}.ppm
+    convert -resize ${width}x${height} "s_$((${s}-1)).ppm" "s_${s}.ppm"
 
-    convert -crop ${tilesize}x${2} s_${s}.ppm ${s}.jpg
-    for file in `ls ${s}-*.jpg`;
+    convert -crop ${tilesize}x${tilesize} "s_${s}.ppm" "${s}.jpg"
+    for file in ${s}-*.jpg
     do
       regex="s/${s}-\([0-9][0-9]*\).jpg/\1/"
-      n=`echo ${file} | sed "${regex}"`
+      n=`echo "${file}" | sed "${regex}"`
       r=$((${n}/${collumns}))
       c=$((${n}%${collumns}))
-      mv $file ${r}_${c}_${s}.jpg
+      mv "$file" "${r}_${c}_${s}.jpg"
     done
   fi
 
@@ -117,9 +142,9 @@ done
 
 if [[ $height < $width ]]
 then
-	convert -resize ${3} s_$((${ref_s}-2)).ppm small.jpg
+	convert -resize ${thumbsize} "s_$((${ref_s}-2)).ppm" "small.jpg"
 else
-	convert -resize x${3} s_$((${ref_s}-2)).ppm small.jpg
+	convert -resize x${thumbsize} "s_$((${ref_s}-2)).ppm" "small.jpg"
 fi
 
 rm *.ppm

@@ -291,7 +291,7 @@
    * Return a mapping of component IDs versus lists of nodes. Each list
    * represents a single connected component.
    */
-  function getComponents(annotations, annotationIds) {
+  SkeletonHistoryGraph.getComponents = function(annotations, annotationIds) {
     // Map meta-annotations (parents) to annotations (children)
     var children = annotations.reduce(function(g, n) {
       var metaAnnotations = n.annotations;
@@ -330,7 +330,7 @@
     }, {});
 
     return components;
-  }
+  };
 
   /**
    * Clear graph, filter available annotation data and rebuild graph.

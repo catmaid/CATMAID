@@ -205,7 +205,7 @@
       'value': stats[statName],
     }));
 
-    let datatable = $(table).DataTable({
+    $(table).DataTable({
       data: statsObjects,
       dom: "lrfhtip",
       order: [],
@@ -374,7 +374,7 @@
       'value': stats[statName],
     }));
 
-    let datatable = $(table).DataTable({
+    $(table).DataTable({
       data: statsObjects,
       dom: "lrfhtip",
       order: [],

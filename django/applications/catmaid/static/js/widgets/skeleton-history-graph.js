@@ -157,7 +157,10 @@
 
         this.cy.on('click', function(event) {
           if (event.originalEvent.ctrlKey) {
-            let skeletonId = event.cyTarget.data()['skeleton_id'];
+            let skeletonId;
+            if (event.cyTarget.data) {
+              skeletonId = event.cyTarget.data()['skeleton_id'];
+            }
             if (skeletonId === undefined) {
               return;
             }

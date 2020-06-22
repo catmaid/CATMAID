@@ -731,8 +731,8 @@
         }
         var validSections = self.stackViewer.getValidSections();
         self.slider_z.update(
-          undefined,
-          undefined,
+          validSections.reduce((s,v) => Math.min(s,v)),
+          validSections.reduce((s,v) => Math.max(s,v)),
           { major: validSections.filter(function(e, i) { return i % 10 === 0; }),
             minor: validSections },
           self.stackViewer.z,

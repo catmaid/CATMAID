@@ -4169,6 +4169,9 @@ def change_history(request:HttpRequest, project_id=None) -> JsonResponse:
          * that are newer than the oldest versions, 1: present versions of
          * treenodes that are newer than the oldest versions. */
         all_changed_skeletons AS (
+          SELECT id, skeleton_id, MAX(pos) AS pos, MIN(edition_time) AS edition_time,
+            bool_or(is_live) AS is_live
+          FROM (
                 /* Part 1/3 - pos column -1: all oldest treenodes of the query
                  * skeletons, both in terms of live tables and history tables. */
                 SELECT ct.id, ct.skeleton_id, -1 as pos, ct.edition_time, ct.is_live
@@ -4191,13 +4194,14 @@ def change_history(request:HttpRequest, project_id=None) -> JsonResponse:
                         ON t.id = ct.id
                 WHERE t.edition_time > ct.edition_time
                 OR t.skeleton_id <> ct.skeleton_id
+          ) sub
+          GROUP BY id, skeleton_id
         ),
         agg_skeletons AS (
                 SELECT string_agg(skeleton_id::text, ':' ORDER BY pos ASC, edition_time ASC) as key,
                     array_agg(skeleton_id ORDER BY pos ASC, edition_time ASC) AS skeleton_ids,
                     array_agg(edition_time ORDER BY pos ASC, edition_time ASC) AS edition_times,
-                    max(pos) as present,
-                    sum(case when is_live then 1 else 0 end) AS is_live
+                    max(pos) as present, bool_or(is_live) AS is_live
                 FROM all_changed_skeletons
                 GROUP BY id
         )
@@ -4209,7 +4213,7 @@ def change_history(request:HttpRequest, project_id=None) -> JsonResponse:
                 ORDER BY key
         )
         */
-        SELECT skeleton_ids, count(*), max(present), sum(is_live)::bigint AS is_live
+        SELECT skeleton_ids, count(*), max(present), sum(CASE WHEN is_live THEN 1 ELSE 0 END)::bigint AS is_live
         FROM agg_skeletons
         GROUP BY key, skeleton_ids
         ORDER BY skeleton_ids[0], count(*) DESC;

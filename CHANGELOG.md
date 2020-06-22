@@ -131,6 +131,9 @@ Administration:
   an option to specificy an output directory and knows the common default value
   for the overview size (192px).
 
+- System check widget: more information regarding a potential transaction ID
+  wraparound has been added to the database section.
+
 Miscellaneous:
 
 - The user registration form fits now the overal layout better and include first

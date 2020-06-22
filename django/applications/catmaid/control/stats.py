@@ -1342,6 +1342,28 @@ class ServerStats(APIView):
         """)
         bgwriter_stats = cursor.fetchone()
 
+        cursor.execute("""
+        WITH max_age AS (
+            SELECT 2000000000 as max_old_xid
+                , setting AS autovacuum_freeze_max_age
+                FROM pg_catalog.pg_settings
+                WHERE name = 'autovacuum_freeze_max_age' )
+        , per_database_stats AS (
+            SELECT datname
+                , m.max_old_xid::int
+                , m.autovacuum_freeze_max_age::int
+                , age(d.datfrozenxid) AS oldest_current_xid
+            FROM pg_catalog.pg_database d
+            JOIN max_age m ON (true)
+            WHERE d.datallowconn )
+        SELECT max(oldest_current_xid) AS oldest_current_xid
+            , current_setting('autovacuum_freeze_max_age')
+            , max(ROUND(100*(oldest_current_xid/max_old_xid::float))) AS percent_towards_wraparound
+            , max(ROUND(100*(oldest_current_xid/autovacuum_freeze_max_age::float))) AS percent_towards_emergency_autovac
+        FROM per_database_stats
+        """)
+        tx_stats = cursor.fetchone()
+
         return {
             'version': db_version,
             # Should be above 95%
@@ -1377,4 +1399,11 @@ class ServerStats(APIView):
             'buffers_backend_fsync': bgwriter_stats[4],
             # Should be close to 0 or 0
             'replication_lag': bgwriter_stats[5],
+            # Must be < 1,000,000,000, should be below autovacuum_freeze_max_age.
+            'oldest_current_xid': tx_stats[0],
+            'autovacuum_freeze_max_age': tx_stats[1],
+            # Must be << 1
+            'percent_towards_wraparound': tx_stats[2],
+            # Must be << 1
+            'percent_towards_emergency_autovac': tx_stats[3],
         }

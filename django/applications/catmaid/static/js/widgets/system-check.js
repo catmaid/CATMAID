@@ -335,7 +335,23 @@
     'replication_lag': {
       name: 'Replication lag (sec)',
       comment: 'If replication is enabled, this shows how far behind this replica is (in seconds). Should be low.',
-    }
+    },
+    'oldest_current_xid': {
+      name: 'Oldest current Transaction ID',
+      comment: 'The number of transactions performed by the database. This should be below 200,000,000 (autovacuum_freeze_max_age) and must be < 1,000,000,000.',
+    },
+    'autovacuum_freeze_max_age': {
+      name: 'Auto-vacuum freeze max age',
+      comment: 'Oldest allowed transaction. Once reached auto-vacuum will prevent a wraparound.',
+    },
+    'percent_towards_wraparound': {
+      name: 'Percent towards wraparound',
+      comment: 'If close to one, manual intervention and care should be taken with respect to transaction wraparound.',
+    },
+    'percent_towards_emergency_autovac': {
+      name: 'Percent towards emergency auto-vacuum',
+      comment: 'If close to one, an emergency auto-vacuum will be performed to freeze transaction IDs.',
+    },
   };
 
   SystemCheckWidget.prototype.redrawDatabaseStats = function(stats) {

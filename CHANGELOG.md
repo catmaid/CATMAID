@@ -96,6 +96,9 @@ Skeleton history widget:
   well as the number of nodes deleted from the transition of nodes from skeleton
   A to skeleton B.
 
+- By default skeleton refreshs keep all nodes in-place. To try a different
+  version of the current layout, use the "Relayout" button.
+
 Docker:
 
 - Asynchronous tasks can now also be run inside the Docker container. Celery and

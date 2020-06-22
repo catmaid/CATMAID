@@ -77,6 +77,9 @@
               self.layout = this.value;
               self.cy.layout(self.layouts[this.value]);
             });
+        CATMAID.DOM.appendButton(buttons, 'Relayout',
+            'Reload skeleton history data and redraw graph without keeping previous positions',
+            () => self.updateGraph(false));
         CATMAID.DOM.appendElement(buttons, {
           type: 'select',
           label: 'Initial user',
@@ -363,9 +366,22 @@
   /**
    * Clear graph, filter available annotation data and rebuild graph.
    */
-  SkeletonHistoryGraph.prototype.updateGraph = function() {
+  SkeletonHistoryGraph.prototype.updateGraph = function(keepProperties = true) {
     return this.updateData()
       .then(() => {
+        // Remember positions and sizes
+        let positions = {}, sizes = {}, selected = {};
+        this.cy.nodes().each((i, node) => {
+          var id = node.id();
+          if (keepProperties) {
+            positions[id] = node.position();
+            if (!(id in sizes)) {
+              sizes[id] = {width: node.width(), height: node.height()};
+            }
+            if (node.selected()) selected[id] = true;
+          }
+        });
+
         // Remove all nodes and edges
         this.cy.remove('node');
 
@@ -460,8 +476,37 @@
            return l;
         }, []));
 
+        // Set position, lock in place, then relayout and unlock
+
+        // Batch node property changes
+        this.cy.startBatch();
+
+        this.cy.nodes().each(function(i, node) {
+          // Lock old nodes into place and restore their position
+          var id = node.id();
+          if (id in sizes) {
+            node.size(sizes[id]);
+          }
+          if (id in positions) {
+            node.position(positions[id]);
+            node.lock();
+          }
+          // Restore selection state
+          if (id in selected) node.select();
+        });
+
+        this.cy.edges().each((i, edge) => {
+          var id = edge.id();
+          // Restore selection state
+          if (id in selected) edge.select();
+        });
+        this.cy.endBatch();
+
         // Refresh layout
-        this.cy.layout(this.layouts[this.layout]);
+        let options = $.extend({}, this.layouts[this.layout]);
+        options.stop = () => this.cy.nodes().each(
+              (i, node) => node.unlock());
+        this.cy.layout(options);
       })
       .then(this.redraw.bind(this))
       .catch(CATMAID.handleError);

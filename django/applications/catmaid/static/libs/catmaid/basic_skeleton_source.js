@@ -38,6 +38,9 @@
       this.handleRemovedModels = options.handleRemovedModels;
     }
 
+    this.handleHighlight = options.handleHighlight ?
+      options.handleHighlight : CATMAID.noop();
+
     // If an owner reference is provided, this source can be discovered as being
     // part of a widget.
     this.owner = CATMAID.tools.getDefined(options.owner, null);
@@ -297,7 +300,9 @@
    * Highlighting is not implemented in this source since it is use case
    * specific.
    */
-  BasicSkeletonSource.prototype.highlight = function() {};
+  BasicSkeletonSource.prototype.highlight = function() {
+    return this.handleHighlight.apply(this, arguments);
+  };
 
 
   /* Non-interface methods */

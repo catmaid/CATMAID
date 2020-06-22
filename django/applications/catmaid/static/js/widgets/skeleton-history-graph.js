@@ -32,7 +32,8 @@
 
     // Register a skeletonSource to pull results from
     this.skeletonSource = new CATMAID.BasicSkeletonSource(this.getName(), {
-      owner: this
+      owner: this,
+      handleHighlight: this.highlight.bind(this),
     });
   };
 
@@ -225,6 +226,30 @@
       return;
     }
   };
+
+  SkeletonHistoryGraph.prototype.getNodes = function(skeleton_id) {
+    return this.cy.nodes().filter(
+        (i, node) => node.data("skeleton_id") == skeleton_id);
+  };
+
+  SkeletonHistoryGraph.prototype.highlight = function(skeleton_id) {
+    var nodes = this.getNodes(skeleton_id),
+        css = {};
+    if (0 === nodes.length) return;
+    nodes.each(function(i, node) {
+      css[node.id()] = {w: node.css('width'),
+                        h: node.css('height')};
+    });
+    nodes.animate({css: {width: '100px',
+                         height: '100px'}},
+                  {duration: 1000,
+                   complete: function() { nodes.each(function(i, node) {
+                     var p = css[node.id()];
+                     node.css('width', p.w)
+                         .css('height', p.h);
+                   });}});
+  };
+
 
   SkeletonHistoryGraph.prototype.updateData = function() {
     if ((this.skeletonIds && this.skeletonIds.length > 0) || this.userId || this.userId === 0) {

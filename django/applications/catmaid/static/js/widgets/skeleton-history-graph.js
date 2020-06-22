@@ -46,6 +46,7 @@
   SkeletonHistoryGraph.prototype.destroy = function() {
     this.unregisterInstance();
     this.skeletonSource.destroy();
+    CATMAID.NeuronNameService.getInstance().unregister(this);
   };
 
   SkeletonHistoryGraph.prototype.getWidgetConfiguration = function() {
@@ -230,6 +231,8 @@
           this.skeletonHistoryData = {
             history: history,
           };
+          return CATMAID.NeuronNameService.getInstance().registerAllFromList(
+              this, this.skeletonIds);
         });
     } else {
       this.skeletonHistoryData = null;
@@ -345,6 +348,7 @@
         }
 
         let history = this.skeletonHistoryData.history;
+        let nns = CATMAID.NeuronNameService.getInstance();
 
         // Collect all nodes and add them to Cytoscape.js
         let seenNodes = new Set();
@@ -356,7 +360,7 @@
               l.push({
                 group: 'nodes',
                 data: {
-                  name: firstSkeletonId,
+                  name: nns.getName(firstSkeletonId, `Skeleton ${firstSkeletonId}`),
                   id: firstSkeletonId,
                   index: seenNodes.size,
                   shape: 'ellipse',
@@ -372,7 +376,7 @@
               l.push({
                 group: 'nodes',
                 data: {
-                  name: lastSkeletonId,
+                  name: nns.getName(lastSkeletonId, `Skeleton ${lastSkeletonId}`),
                   id: lastSkeletonId,
                   index: seenNodes.size,
                   shape: 'ellipse',
@@ -433,6 +437,10 @@
       })
       .then(this.redraw.bind(this))
       .catch(CATMAID.handleError);
+  };
+
+  SkeletonHistoryGraph.prototype.updateNeuronNames = function() {
+    this.updateGraph();
   };
 
   SkeletonHistoryGraph.prototype.layouts = {

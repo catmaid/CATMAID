@@ -47,10 +47,6 @@ div.toolbar .toolbar_slider_item .hSliderView .hSliderBarBottom {
   min-width: 0;
 }
 
-div.toolbar #sliders_box {
-  min-width: 15em;
-}
-
 div.toolbar #zoom_level_box {
   min-width: 14em;
 }

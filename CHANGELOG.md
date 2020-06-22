@@ -263,6 +263,9 @@ Miscellaneous:
   previous behavior, the "Include half links/synapses" checkbox can be
   unchecked.
 
+- Navigator tool and sub-tools like Tracing tool: the Z slider is now properly
+  hidden if the image data set has only one section.
+
 ## 2020.02.15
 
 Contributors: Chris Barnes, Andrew Champion, Stephan Gerhard, Pat Gunn, Tom Kazimiers

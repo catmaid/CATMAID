@@ -67,8 +67,8 @@
     //! estimate the zoom levels
     if (!Array.isArray(downsample_factors)) {
       var max_dim = Math.max( MAX_X, MAX_Y );
-      var min_size = 1024;
-      self.MAX_S = Math.max(0, Math.ceil(Math.log2(max_dim / min_size)));
+      var min_size = mirrors.reduce((s,m) => Math.min(s, Math.min(m.tile_width, m.tile_height)), Infinity);
+      self.MAX_S = min_size > 0 && min_size < Infinity ? Math.max(0, Math.ceil(Math.log2(max_dim / min_size))) : 0;
       downsample_factors = Array.from(Array(self.MAX_S + 1), (_, s) => {
         // By default, assume factor 2 downsampling in x, y, and no downsampling in z.
         return {

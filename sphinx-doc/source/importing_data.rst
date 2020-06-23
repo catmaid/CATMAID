@@ -224,7 +224,6 @@ file and could look like this for the example above::
            description: "PMT Offset: 10, Laser Power: 0.5, PMT Voltage: 550"
            dimension: "(3886,3893,55)"
            resolution: "(138.0,138.0,1.0)"
-           zoomlevels: 2
            mirrors:
              - title: "Channel 2 overlay"
                folder: "stack1"
@@ -233,7 +232,7 @@ file and could look like this for the example above::
            description: "PMT Offset: 10, Laser Power: 0.7, PMT Voltage: 500"
            dimension: "(3886,3893,55)"
            resolution: "(138.0,138.0,1.0)"
-           zoomlevels: 2
+           downsample_factors: ["(1,1,1)", "(2,2,1)", "(4,4,1)"]
            mirrors:
              - title: Channel 2 image data
                folder: "stack2"
@@ -245,6 +244,7 @@ file and could look like this for the example above::
            dimension: "(3886,3893,55)"
            resolution: "(138.0,138.0,1.0)"
            zoomlevels: 3
+           downsample_factors: ["(1,1,1)", "(2,2,1)", "(4,4,1)", "(8,8,1)", "(16,16,1)"]
            translation: "(10.0, 20.0, 30.0)"
            mirrors:
              - tile_width: 512
@@ -271,10 +271,27 @@ stack also needs ``dimensions`` and ``resolution`` information.
 Dimensions are the stacks X, Y and Z extent in *pixel*. The resolution
 should be in in *nanometers per pixel*, in X, Y and Z.
 
-Additionally to the folder information, the second stack above uses the
-``zoomlevels`` field to declare the number of available zoom levels. It also
-specifies the file extension of the image files with the ``fileextension``
-key. Both fields are required.
+In addition to the ``folder`` information, the second and third stack above use
+the ``downsample_factors`` field to declare the number of available "zoom
+levels".  This is done by providing a list of 3D scale factors, one for each
+zoom level available, with ``1,1,1`` being the unscaled voxel size of the data
+set. In a classical anisotropic TEM data set, it is common to zoom out in steps
+of factors of two in X and Y and keep the visual section thickness the same.
+Assuming there are four additional zoom levels besides the original version, this
+could be expressed as the downsample factors ``["(1,1,1)", "(2,2,1)", "(4,4,1)",
+"(8,8,1)", "(16,16,1)"]``, scaling X and Y by a factor of two and Z not at all
+for each entry of the array.
+
+Of course, any other configuration could be chosen as well. Likewise for
+isotropic data sets like FIB-SEM, the ``Z`` component in each tuple would be
+scaled as well. If no downsample_factors are given, CATMAID's default behavior
+is to use as many scale levels as are needed in the above anisotropic downsample
+factors for the original image width or height to fit on a single tile. Since
+different stack mirrors can have different tile sizes, the minimum of those are
+used. Without any mirrors, no zoom levels will be assumed.
+
+The example above also specifies the file extension of the image files with the
+``fileextension`` key. Both fields are required.
 
 The last stack in the example above *doesn't* use a local stack folder, but
 declares the stack mirror's image base explicitly by using the ``url`` setting.

@@ -35,6 +35,15 @@
   This also requires updating all installed R packages. In all likelihood this
   requires executing "manage.py catmaid_setup_nblast_environment".
 
+- The default downsample factors for a stack without explicit factors defined,
+  changed slightly: if you relied on the automatic creation of downsample
+  factors for image stacks, make sure the changed behavior still works for you
+  or enforce the previous configuration with an explicit specification of
+  downsample factors. Previously as many zoom levels as needed were created to
+  map the image size in a quadratic fashion per level onto a 1024x1024px tile.
+  Instead of hard-coding the 1024px, the minimum tile size defined in the mirror
+  set is used. Without any mirrors, no extra zoom levels will be assumed.
+
 ### Features and enhancements
 
 Neuron renaming:

@@ -191,7 +191,7 @@ void main(void){
 %forloop%
 %color_type% step0 = color;
 %steps%
-myOutputColor = %steps_output%;
+myOutputColor = %steps_output% * vColor;
 }`;
 
 function generateMultiTextureShader(gl, maxTextures, dataType) {

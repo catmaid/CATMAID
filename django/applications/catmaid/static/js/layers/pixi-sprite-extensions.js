@@ -33,7 +33,11 @@ CATMAID.Pixi.TypedSpriteRenderer = class TypedSpriteRenderer extends PIXI.Sprite
     const gl = this.renderer.gl;
     const params = CATMAID.PixiImageBlockLayer.dataTypeWebGLParams(gl, this.dataType);
     const glTex = new PIXI.glCore.GLTexture(gl, 1, 1, params.internalFormat, params.type);
-    glTex.bind();
+
+    // To be able to return the gl and Pixi bound texture state, use texture
+    // unit 0 and note the previously bound texture.
+    let oldBoundTex = this.renderer.boundTextures[0];
+    glTex.bind(0);
     gl.texImage2D(gl.TEXTURE_2D, 0, glTex.format, 1, 1, 0, params.format, glTex.type, null);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
@@ -42,6 +46,9 @@ CATMAID.Pixi.TypedSpriteRenderer = class TypedSpriteRenderer extends PIXI.Sprite
       baseTex._glTextures[this.renderer.CONTEXT_UID] = glTex;
       return baseTex;
     });
+
+    // Restore the unit to the texture Pixi believes is there.
+    oldBoundTex._glTextures[this.renderer.CONTEXT_UID].bind(0);
   }
 
   flush() {

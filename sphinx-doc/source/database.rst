@@ -159,3 +159,7 @@ else already::
     SELECT setval('catmaid_userprofile_id_seq', coalesce(max("id"), 1), max("id") IS NOT null) FROM catmaid_userprofile;
     SELECT setval('guardian_userobjectpermission_id_seq', coalesce(max("id"), 1), max("id") IS NOT null) FROM guardian_userobjectpermission;
     SELECT setval('guardian_groupobjectpermission_id_seq', coalesce(max("id"), 1), max("id") IS NOT null) FROM guardian_groupobjectpermission;
+
+Alterantively, if such a sync operation is happening repeatedly, it can be
+convenient to set the ID sequences of the target database to a different range,
+e.g. to start new IDs only with enough headroom to the repeated imports.

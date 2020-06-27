@@ -27,7 +27,7 @@ class GroupList(APIView):
             required: false
         """
         if not access_check(request.user):
-            return []
+            return JsonResponse([], safe=False)
 
         member_id = request.query_params.get('member_id')
 

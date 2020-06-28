@@ -158,19 +158,26 @@ this command should ask you for the password of the replication user on the
 primary and print progress information. This will take a while, depending on
 your database size, because all the data from the primary server is copied over.
 
-Of course the replica shouldn't write on its own to the database, instead it
-should follow the primary. This is done by creating a file named
-``recovery.conf`` in the Postgres data directory
-(``/var/lib/postgresql/12/main/`` in this example)  with the following content::
+Of course the replica shouldn't allow general write-operations to its replicated
+databases. Instead it should follow the primary. This is done by adding the
+following settings to your ``postgresql.conf`` file::
 
   primary_conninfo      = 'host=my.primary.db.xyz port=7432 user=replication_user password=<password>'
-  promote_trigger_file = '/tmp/MasterNow'
+  promote_trigger_file = '/var/lib/postgresql/12/main/standby.signal'
   #restore_command = 'cp /opt/postgresql_wal/%f "%p"
 
 To let the cluster know that it runs in standby mode, create the file
 ``standby.signal`` in the Postgres data directory
-(``/var/lib/postgresql/11/main/`` in this example). This file needs to be owned
-by the ``postgres`` user and the ``postgres`` group.
+(``/var/lib/postgresql/12/main/`` in this example). This file needs to be owned
+by the ``postgres`` user and the ``postgres`` group. Otherwise, the server will
+start as regular primary, which would likely render the database unusable for
+replication without further action. Therefore: make sure the ``standby.signal``
+file is present on the replica!
+
+This configuration makes Postgres start as a standby (read-only) server. It will
+automatically contact the primary server to stay up-to-date. If the file
+``/var/lib/postgresql/12/main/standby.signal`` doesn't exist anymore, the
+replica is promoted to a primary.
 
 .. note::
 
@@ -179,17 +186,14 @@ by the ``postgres`` user and the ``postgres`` group.
   ``postgresql.conf`` changes above):
 
   primary_conninfo      = 'host=my.primary.db.xyz port=7432 user=replication_user password=<password>'
-  promote_trigger_file = '/tmp/MasterNow'
+  trigger_file = '/var/lib/postgresql/11/main/master.now'
   #restore_command = 'cp /opt/postgresql_wal/%f "%p"
   standby_mode          = 'on'
 
   This file needs to be owned by the ``postgres`` user and the ``postgres`` group.
 
-This configuration makes Postgres start as a standby (read-only) server. It will
-automatically contact the primary server to stay up-to-date. If the file
-``/tmp/MasterNow`` exists, Postgres will stop replication and become a primary.
-If ``archive_command`` was used on the primary, the ``restore_command`` has to
-be uncommented and configured.
+  Also, in Postgres 11, if the ``trigger_file`` is created on the file system,
+  the replica is promoted to a primary.
 
 Now the replica can be started. A line similar to the following should show up
 in the log::
@@ -199,6 +203,12 @@ in the log::
 On the primary server, replicas should be visible in a query like this::
 
   select * from pg_stat_activity  where usename = 'replication_user' ;
+
+This provides a basic replication setup. It might be useful to also look at PITR
+(backups) of Postgres. This would cause a copy of each WAL file can be created
+(and also used on the replica). This can be done using the ``archive_command``
+setting on the primary or the replica. The ``restore_command`` can then be used
+to actually restore the backup into a data directory.
 
 Configure CATMAID
 ^^^^^^^^^^^^^^^^^

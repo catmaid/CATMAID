@@ -137,7 +137,7 @@
     }
   };
 
-  User.getUsers = function(completionCallback)
+  User.getUsers = function()
   {
     // Asynchronously request the list of users from the server.
     return CATMAID.fetch('user-list')
@@ -150,10 +150,6 @@
               new THREE.Color(userData.color[0], userData.color[1], userData.color[2]),
               userData.primary_group_id);
         }
-      })
-      .catch(CATMAID.handleError)
-      .then(function() {
-        CATMAID.tools.callIfFn(completionCallback);
       });
   };
 

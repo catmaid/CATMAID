@@ -450,6 +450,23 @@ class ViewPageTests(TestCase, AssertStatusMixin):
         self.assertTrue(found_anon_user)
 
 
+    def test_user_list_anonymous_user(self):
+        response = self.client.get('/user-list')
+
+        self.assertStatus(response)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+
+        # The anonymous user is created by Guardian, we don't know its ID. A
+        # second test user (test2) has a run-time updated password, which we
+        # don't know and therefore we skip it.
+        self.assertEqual(1, len(parsed_response))
+        found_anon_user = False
+        for u in parsed_response:
+            if u['login'] == 'AnonymousUser':
+                found_anon_user = True
+        self.assertTrue(found_anon_user)
+
+
     def test_user_reviewer_whitelist(self):
         self.fake_authentication()
 

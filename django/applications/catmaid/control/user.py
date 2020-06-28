@@ -22,11 +22,13 @@ def not_anonymous(user):
     """
     return user.is_authenticated and user != get_anonymous_user()
 
-@user_passes_test(access_check)
 def user_list(request:HttpRequest) -> JsonResponse:
-    """List registered users in this CATMAID instance. Must be logged in.
-    An administrator can export users including their encrpyted password. This
-    is meant to import users into other CATMAID instances.
+    """List registered users in this CATMAID instance. If accessed by an
+    anonymous user, only the anonymous user is returned unless the anonymous
+    user has can_browse permissions, which allows it to retrieve all users.
+
+    An administrator can export users including their salted and encrpyted
+    password. This is meant to import users into other CATMAID instances.
     ---
     parameters:
     - name: with_passwords
@@ -43,23 +45,39 @@ def user_list(request:HttpRequest) -> JsonResponse:
             raise PermissionError("Superuser permissions required to export "
                     "encrypted user passwords")
 
-    result = []
-    for u in User.objects.all().select_related('userprofile') \
-            .order_by('last_name', 'first_name'):
-        up = u.userprofile
-        user_data = {
-            "id": u.id,
-            "login": u.username,
-            "full_name": u.get_full_name(),
-            "first_name": u.first_name,
-            "last_name": u.last_name,
+    user = request.user
+    can_see_all_users = user.is_authenticated and \
+            (user != get_anonymous_user() or user.has_perm('catmaid.can_browse'))
+
+    if can_see_all_users:
+        result = []
+        for u in User.objects.all().select_related('userprofile') \
+                .order_by('last_name', 'first_name'):
+            up = u.userprofile
+            user_data = {
+                "id": u.id,
+                "login": u.username,
+                "full_name": u.get_full_name(),
+                "first_name": u.first_name,
+                "last_name": u.last_name,
+                "color": (up.color.r, up.color.g, up.color.b),
+                "primary_group_id": up.primary_group_id,
+            }
+            if with_passwords:
+                # Append encypted user password
+                user_data['password'] = u.password
+            result.append(user_data)
+    else:
+        up = user.userprofile
+        result = [{
+            "id": user.id,
+            "login": user.username,
+            "full_name": user.get_full_name(),
+            "first_name": user.first_name,
+            "last_name": user.last_name,
             "color": (up.color.r, up.color.g, up.color.b),
-            "primary_group_id": up.primary_group_id,
-        }
-        if with_passwords:
-            # Append encypted user password
-            user_data['password'] = u.password
-        result.append(user_data)
+            "primary_group_id": up.primary_group_id
+        }]
 
     return JsonResponse(result, safe=False)
 

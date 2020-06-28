@@ -1034,15 +1034,15 @@ var project;
     // Re-configure CSRF protection to update the CSRF cookie.
     CATMAID.setupCsrfProtection();
 
-    var load = CATMAID.updatePermissions();
-    if (e.is_authenticated || (e.permissions && -1 !== e.permissions.indexOf('catmaid.can_browse'))) {
-      // Asynchronously, try to get a full list of users if a user is logged in
-      // or the anonymous user has can_browse permissions.
-      load = load.then(() => Promise.all([
-        CATMAID.User.getUsers(),
-        CATMAID.Group.updateGroupCache(),
-      ]));
-    }
+    let load = Promise.all([
+      CATMAID.updatePermissions(),
+      // Get the list of visible users. For the anonymous user without can_browse
+      // permission, this means essentially a list consisting only of the
+      // anonymous user itself. For logged in users and the anonymous user
+      // *with* can_browse permissions, all users are provided by the back-end.
+      CATMAID.User.getUsers(),
+      CATMAID.Group.updateGroupCache(),
+    ]);
 
     return load.then(done);
   }

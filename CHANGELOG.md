@@ -56,6 +56,15 @@ Neuron renaming:
 - The dialog supports simple find/replace, but also regular expressions
   including capture groups and presents live previews.
 
+Neuron search:
+
+- Neuron search: add option to show meta data columns (cable length, number of
+  nodes, creation time and last edition time) for neurons.
+
+- Removal tools for annotations are now opt-in, i.e. not shown by default. To
+  enable them during annotation display, click the "Show removal tools"
+  checkbox.
+
 Volume manager:
 
 - The table of filters applied to input neurons for volume creation has now a
@@ -166,9 +175,6 @@ Miscellaneous:
 
 - Log/history tables: the relevant data is now fetched in parallel and doesn't
   block the rest of CATMAID anymore.
-
-- Neuron search: add option to show meta data columns (cable length, number of
-  nodes, creation time and last edition time) for neurons.
 
 - Cropping: the ARTIST TIFF tag is now used to store meta information about the
   cropping task: the min and max coordinates of the bounding box as well as the

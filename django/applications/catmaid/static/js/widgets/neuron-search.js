@@ -41,6 +41,8 @@
     this.annotationUserFilter = null;
     // Whether metadata like cable length should be displayed
     this.displayMetadata = false;
+    // Whether removal tools should be displayed
+    this.showRemovalTools = false;
 
     // A set of filter rules to apply to the handled skeletons
     this.filterRules = [];
@@ -190,13 +192,17 @@
             '<input type="button" id="neuron_annotations_export_csv{{NA-ID}}" ' +
                 'value="Export CSV" title="Export selected neuron IDs and names. ' +
                 'Annotations are exported if displayed."/>' +
-            '<label class="checkbox-label">' +
+            '<label class="checkbox-label" title="Show all annotations for each result element.">' +
               '<input type="checkbox" id="neuron_search_show_annotations{{NA-ID}}" />' +
               'Show annotations' +
             '</label>' +
             '<label class="checkbox-label">' +
               '<input type="checkbox" id="neuron_search_show_metadata{{NA-ID}}" />' +
               'Show metadata' +
+            '</label>' +
+            `<label class="checkbox-label removal-highlight" title="Show annotation removal tools if annotations are displayed. Not useful without displayed annotations at the moment.">` +
+              `<input type="checkbox" id="neuron_search_show_removal_tools{{NA-ID}}" ${this.displayAnnotations ? '' : 'disabled'} />` +
+              'Show ann. removal tools' +
             '</label>' +
           '</div>' +
           '<table cellpadding="0" cellspacing="0" border="0" ' +
@@ -299,6 +305,9 @@
             var widget = e.data;
             widget.displayAnnotations = this.checked;
             widget.updateAnnotations().then(() => widget.refresh());
+
+            $(`input#neuron_search_show_removal_tools${self.widgetID}`)
+                .prop('disabled', !this.checked);
           });
         $(`#neuron_search_show_metadata${this.widgetID}`)
           .prop('checked', this.displayMetadata)
@@ -306,6 +315,17 @@
             var widget = e.data;
             widget.displayMetadata = this.checked;
             widget.updateMetadata().then(() => widget.refresh());
+          });
+        $(`#neuron_search_show_removal_tools${this.widgetID}`)
+          .prop('checked', this.showRemovalTools)
+          .on('change', this, function(e) {
+            var widget = e.data;
+            widget.showRemovalTools = this.checked;
+            widget.refresh();
+
+            if (!widget.displayAnnotations && this.checked) {
+              CATMAID.warn("Annotations are not displayed at the moment");
+            }
           });
         $('#neuron_search_apply_filters' + this.widgetID)
           .prop('checked', this.applyFilterRules)
@@ -826,8 +846,7 @@
         function(a, b) {
           return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
         }) : [];
-    var ul = sortedAnnotations.reduce(
-      function(o, e) {
+    var ul = sortedAnnotations.reduce((o, e) => {
         var li = document.createElement('li');
         li.setAttribute('title', 'Show annotation in navigator');
         li.setAttribute('class', 'show_annotation');
@@ -835,11 +854,14 @@
         li.setAttribute('annotation_id', e.id);
         li.setAttribute('user_id', e.uid);
 
-        var remove_button = document.createElement('div');
-        remove_button.setAttribute('title', 'Remove annotation');
-        remove_button.setAttribute('class', 'remove_annotation');
         li.appendChild(document.createTextNode(e.name));
-        li.appendChild(remove_button);
+
+        if (this.showRemovalTools) {
+          var remove_button = document.createElement('div');
+          remove_button.setAttribute('title', 'Remove annotation');
+          remove_button.setAttribute('class', 'remove_annotation');
+          li.appendChild(remove_button);
+        }
         o.appendChild(li);
         return o;
       }, document.createElement('ul'));

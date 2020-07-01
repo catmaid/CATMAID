@@ -203,6 +203,35 @@ jQuery.expr[":"].icontainsnot = jQuery.expr.createPseudo(function(arg) {
 
 
 /**
+ * jQuery UI extensions
+ */
+(function(CATMAID) {
+
+  /**
+   * This creates a helper function that can be used as the "source" function of
+   * the jQuery autocompletion. It expects a maxResults parameter to limit the
+   * number of displated items:
+   *
+   * $(input).autocomplete({
+   *   maxResults: 10,
+   *   source: CATMAID.makeMaxResultsAutoCompleteSourceFn(items),
+   * });
+   */
+  CATMAID.makeMaxResultsAutoCompleteSourceFn = function(items) {
+    return function(request, response) {
+      let results = $.ui.autocomplete.filter(items, request.term);
+      let limitedResults = results.slice(0, CATMAID.tools.getDefined((this.options.maxResults, 10)));
+      if (limitedResults.length !== results.length) {
+        limitedResults.push('…');
+      }
+      response(limitedResults);
+    };
+  };
+
+})(CATMAID);
+
+
+/**
  * Three.js extensions
  */
 

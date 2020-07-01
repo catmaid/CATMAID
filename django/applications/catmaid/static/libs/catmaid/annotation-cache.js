@@ -137,7 +137,8 @@
   {
     // Expects the annotation cache to be up-to-date
     $(input).autocomplete({
-      source: this.getAllNames()
+      maxResults: 15,
+      source: CATMAID.makeMaxResultsAutoCompleteSourceFn(this.getAllNames()),
     });
   };
 

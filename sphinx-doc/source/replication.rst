@@ -226,3 +226,30 @@ index* setting in the *Tracing Overlay* section can be set to the 1-based index
 of the entry in the list of other CATMAID instances. With this, the tracing
 layer will use the respective remote server to load tracing data except for the
 active node. Empty values, -1 or 0 will disable the use of a database replica.
+
+While the replica's CATMAID front-end isn't meant to be accessed directly, if
+one wanted to do that, it seems possible by using ``memcached`` for the session
+storage and configuring CATMAID the following additional settings::
+
+  EMAIL_BACKEND = 'django.core.mail.backends.dummy.EmailBackend'
+
+  CACHES = {
+      'default': {
+          'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
+          'LOCATION': '127.0.0.1:11211',
+          'OPTIONS': {
+                  # Allow maximum object size of 10MB
+                  'server_max_value_length': 1024 * 1024 * 10,
+          }
+      }
+  }
+
+  SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+
+  INSTALLED_APPS += tuple(['nolastlogin'])
+  NO_UPDATE_LAST_LOGIN = True
+
+Should that not work for some reason, a file based session cache might be an
+option, too::
+
+  SESSION_ENGINE = 'django.contrib.sessions.backends.file'

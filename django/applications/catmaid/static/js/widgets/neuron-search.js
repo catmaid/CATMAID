@@ -39,10 +39,16 @@
     this.displayAnnotations = false;
     // Set a user ID to show only annotations of specific users
     this.annotationUserFilter = null;
+    // Define a meta annotation that displayed annotations need to have
+    this.annotationMetaFilter = null;
     // Whether metadata like cable length should be displayed
     this.displayMetadata = false;
     // Whether removal tools should be displayed
     this.showRemovalTools = false;
+    // A list of displayed annotation IDs
+    this.displayedAnnotations = new Set();
+    // A Map of annotation IDs vs. their meta-annotations
+    this.metaAnnotationMapping = null;
 
     // A set of filter rules to apply to the handled skeletons
     this.filterRules = [];
@@ -217,14 +223,20 @@
                 '</th>' +
                 '<th>Type</th>' +
                 '<th>' +
-                  '<div class="result_annotations_column">Annotations by</div>' +
-                  '<div>' +
-                    '<label for="neuron_annotations_user_filter{{NA-ID}}">' +
-                    '</label>' +
-                    '<select name="annotator_filter" class="" ' +
-                        'id="neuron_annotations_user_filter{{NA-ID}}">' +
-                      '<option value="show_all" selected>Anyone</option>' +
-                    '</select>' +
+                  '<div style="display: flex; justify-content: center">' +
+                    '<div style="margin-right: 0.3em;" class="result_annotations_column">Annotations by</div>' +
+                    '<div style="margin-right: 3em; margin-left: 0.2em>' +
+                      '<label for="neuron_annotations_user_filter{{NA-ID}}">' +
+                      '</label>' +
+                      '<select name="annotator_filter" style="max-width: 10em;" class="" ' +
+                          'id="neuron_annotations_user_filter{{NA-ID}}">' +
+                        '<option value="show_all" selected>Anyone</option>' +
+                      '</select>' +
+                    '</div>' +
+                    '<div class="result_metaannotations_filter">Meta-annotated with</div>' +
+                    '<div>' +
+                      '<input id="meta_annotation_filter{{NA-ID}}" style="margin: 0 0.2em 0 0.3em;" class="medium-filter filter" type="text" title="Use / for regex" placeholder="meta-annotation" id="" autocomplete="off" />' +
+                    '</div>' +
                   '</div>' +
                 '</th>' +
                 '<th>' +
@@ -373,6 +385,21 @@
             var val = $(this).val();
             self.annotationUserFilter = val != 'show_all' ? val : null;
             self.updateAnnotationFiltering();
+          }
+        });
+
+        let metaAnnotationFilter = $(`input#meta_annotation_filter${this.widgetID}`);
+        CATMAID.annotations.add_autocomplete_to_input(metaAnnotationFilter);
+        metaAnnotationFilter.on('keyup', e => {
+          if ('Enter' === e.key) {
+            if (!this.displayedAnnotations || this.displayedAnnotations.size === 0) {
+              this.updateAnnotationFiltering();
+              return;
+            }
+            this.annotationMetaFilter = e.target.value;
+            this._updateMetaAnnotationMap()
+              .then(e => this.updateAnnotationFiltering())
+              .catch(CATMAID.handleError);
           }
         });
 
@@ -705,7 +732,6 @@
         }
       }).off('.dt').on('draw.dt', this, function(e) {
         e.data.updateSelectionUI();
-        e.data.updateAnnotationFiltering();
         let promises = [];
         if (requestAnnotationUpdate) {
           requestAnnotationUpdate = false;
@@ -715,10 +741,15 @@
           requestMetadataUpdate = false;
           promises.push(e.data.updateMetadata());
         }
-
         // Only refresh if there is work to be done.
         if (promises.length > 0) {
-          Promise.all(promises).then(() => e.data.refresh());
+          Promise.all(promises)
+            .then(() => e.data.refresh())
+            .then(() => {
+              e.data.updateAnnotationFiltering();
+            });
+        } else {
+          e.data.updateAnnotationFiltering();
         }
       }).on('page.dt', this, function(e) {
         // After every page chage, annotations should be updated. This can't be
@@ -1119,7 +1150,7 @@
       .then((function(e) {
         return this.filterResults(e);
       }).bind(this))
-      .then((function(e) {
+      .then(e => {
         // Keep a copy of all models that are removed
         var removedModels = this.getSkeletonModels();
         // Unregister last result set from neuron name service
@@ -1130,6 +1161,9 @@
         var selectionMap = this.entity_selection_map;
         var selected = initialize ? function() { return false; } :
             function(id) { return !!this[id]; }.bind(selectionMap);
+
+        // Empty meta annotation data
+        this.metaAnnotationMapping = null;
 
         // Empty selection map and store results
         this.entity_selection_map = {};
@@ -1149,12 +1183,20 @@
         // Register search results with neuron name service and rebuild
         // result table.
         var skeletonObject = getSkeletonIDsInResult(e.entities);
-        CATMAID.NeuronNameService.getInstance().registerAll(this, skeletonObject,
-            this.refresh.bind(this));
+        return CATMAID.NeuronNameService.getInstance().registerAll(this, skeletonObject, () => {
+          if (this.displayAnnotations) {
+            return this.updateAnnotations();
+          }
+          if (this.displayAnnotations && this.annotationMetaFilter) {
+            this._updateMetaAnnotationMap(true).then(() => this.refresh());
+          } else {
+            this.refresh();
+          }
+        });
 
         this.triggerRemove(removedModels);
         this.triggerAdd(addedModels);
-      }).bind(this))
+      })
       .catch(CATMAID.handleError);
   };
 
@@ -1767,6 +1809,18 @@
 
     var entityIdsToQuery = entitiesToQuery.map(function(e) { return e.id; });
 
+    let updateAnnotationIds = () => {
+      this.queryResults.forEach(entities => {
+        entities.forEach(e => {
+          if (e.annotations) {
+            for (let a of e.annotations) {
+              this.displayedAnnotations.add(a.id);
+            }
+          }
+        });
+      });
+    };
+
     if (entitiesToQuery.length > 0) {
       var self = this;
       return CATMAID.Annotations.forTarget(project.id, entityIdsToQuery)
@@ -1791,10 +1845,13 @@
                 uid: a.uid
               });
             });
+            updateAnnotationIds();
           });
         })
         .catch(CATMAID.handleError);
     }
+
+    updateAnnotationIds();
     return Promise.resolve();
   };
 
@@ -1805,12 +1862,28 @@
    */
   NeuronSearch.prototype.updateAnnotationFiltering = function() {
     var $results= $('#neuron_annotations_query_results' + this.widgetID);
+    let filtered = false;
     if (this.annotationUserFilter) {
       $results.find('li[user_id!=' + this.annotationUserFilter + ']').hide();
       $results.find('li[user_id=' + this.annotationUserFilter + ']').show();
-    } else {
+      filtered = true;
+    }
+    if (this.annotationMetaFilter && this.metaAnnotationMapping) {
+      // Collect all annotation IDs and get their annotations
+      $results.find('li').hide();
+      let metaAnnotatedAnnotationIds = this.metaAnnotationMapping.get(this.annotationMetaFilter);
+      if (metaAnnotatedAnnotationIds) {
+        for (let aid of metaAnnotatedAnnotationIds) {
+          $results.find(`li[annotation_id=${aid}]`).show();
+        }
+      }
+      filtered = true;
+    }
+
+    if (!filtered) {
       $results.find('li').show();
     }
+
   };
 
   /**
@@ -1863,6 +1936,39 @@
 
     var blob = new Blob([csv], {type: 'text/plain'});
     saveAs(blob, 'catmaid_neuron_search.csv');
+  };
+
+  /**
+   * Update the local annotation cache.
+   */
+  NeuronSearch.prototype._updateMetaAnnotationMap = function(force) {
+    if (!this.metaAnnotationMapping || force) {
+      let annotationIds = Array.from(this.displayedAnnotations);
+      return CATMAID.Annotations.forTarget(project.id, annotationIds)
+        .then(json => {
+          // Create mapping from skeleton ID to result object
+          this.metaAnnotationMapping = new Map();
+
+          // Add annotation id, name and annotator to result set
+          for (let annotationId of annotationIds) {
+            let metaAnnotations = json.entities[annotationId];
+            if (!metaAnnotations || metaAnnotations.length === 0) continue;
+            for (let ma of metaAnnotations) {
+              let maName = json.annotations[ma.id];
+              let target = this.metaAnnotationMapping.get(maName);
+              if (!target) {
+                target = [];
+                this.metaAnnotationMapping.set(maName, target);
+              }
+              target.push(annotationId);
+            }
+          }
+
+          return this.metaAnnotationMapping;
+        });
+    } else {
+      return Promise.resolve(this.metaAnnotationMapping);
+    }
   };
 
   // Make neuron search widget available in CATMAID namespace

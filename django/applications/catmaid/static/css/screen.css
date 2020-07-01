@@ -1836,3 +1836,7 @@ button.files-loaded {
 .removal-highlight {
   color: #d70000;
 }
+
+.medium-filter {
+  width: 12em;
+}

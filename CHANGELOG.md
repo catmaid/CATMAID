@@ -65,6 +65,10 @@ Neuron search:
   enable them during annotation display, click the "Show removal tools"
   checkbox.
 
+- The optional annotation column has now the option to only show annotations
+  with a particular meta-annotation. This meta-annotation can be configured in
+  the input field in the table column header.
+
 Volume manager:
 
 - The table of filters applied to input neurons for volume creation has now a

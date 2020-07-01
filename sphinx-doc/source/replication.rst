@@ -208,8 +208,11 @@ This provides a basic replication setup. It might be useful to also look at PITR
 (backups) of Postgres. This would cause a copy of each WAL file can be created
 (and also used on the replica). This can be done using the ``archive_command``
 setting on the primary or the replica. The ``restore_command`` can then be used
-to actually restore the backup into a data directory. A section below has more
-details on this.
+to actually restore the backup into a data directory. The
+:ref:`database backup documentation page <backup>` has more details on this. This will for instance
+also allow to bring a replica server "up to speed" (get to the current database
+version) after a longer downtime with the WAL being already removed in the
+primary.
 
 Configure CATMAID
 ^^^^^^^^^^^^^^^^^

@@ -8,6 +8,7 @@ Administrator Documentation
    options
    administration
    Production setup <nginx>
+   Database backups <backup>
    Node providers <node_providers>
    permissions
    celery

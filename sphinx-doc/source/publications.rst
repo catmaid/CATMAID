@@ -17,7 +17,9 @@ Publications using CATMAID
 
 * Fei Wang, Kaiyu Wang, Nora Forknall, Christopher Patrick, Tansy Yang, Ruchi Parekh, Davi Bock, Barry J. Dickson. `Neural circuitry linking mating and egg laying in Drosophila females <https://www.nature.com/articles/s41586-020-2055-9>`_, Nature, 2020.
 
-* Elizabeth C. Marin, Laurin Büld, Maria Theiss, Tatevik Sarkissian, Ruairí J.V. Roberts, Robert Turnbull, Imaan F.M. Tamimi, Markus W. Pleijzier, Willem J. Laursen, Nik Drummond, Philipp Schlegel, Alexander S. Bates, Feng Li, Matthias Landgraf, Marta Costa, Davi D. Bock, Paul A. Garrity, Gregory S.X.E. Jefferis. `Connectomics Analysis Reveals First-, Second-, and Third-Order Thermosensory and Hygrosensory Neurons in the Adult Drosophila Brain <https://www.cell.com/current-biology/fulltext/S0960-9822(20)30844-7>`_, Cell, 2020.
+* Elizabeth C. Marin, Laurin Büld, Maria Theiss, Tatevik Sarkissian, Ruairí J.V. Roberts, Robert Turnbull, Imaan F.M. Tamimi, Markus W. Pleijzier, Willem J. Laursen, Nik Drummond, Philipp Schlegel, Alexander S. Bates, Feng Li, Matthias Landgraf, Marta Costa, Davi D. Bock, Paul A. Garrity, Gregory S.X.E. Jefferis. `Connectomics Analysis Reveals First-, Second-, and Third-Order Thermosensory and Hygrosensory Neurons in the Adult Drosophila Brain <https://www.cell.com/current-biology/fulltext/S0960-9822(20)30844-7>`_, Cell Current Biology, 2020.
+
+* Nils Otto, Markus W. Pleijzier, Isabel C. Morgan, Amelia J. Edmondson-Stait, Konrad J. Heinz, Ildiko Stark, Georgia Dempsey, Masayoshi Ito, Ishaan Kapoor, Joseph Hsu, Philipp M. Schlegel, Alexander S. Bates, Li Feng, Marta Costa, Kei Ito, Davi D. Bock, Gerald M. Rubin, Gregory S.X.E. Jefferis, Scott Waddell. `Input Connectivity Reveals Additional Heterogeneity of Dopaminergic Reinforcement in Drosophila <cell.com/current-biology/fulltext/S0960-9822(20)30764-8>`_, Cell Current Biology, 2020
 
 2019
 ~~~~

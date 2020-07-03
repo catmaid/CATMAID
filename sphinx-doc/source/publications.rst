@@ -17,6 +17,8 @@ Publications using CATMAID
 
 * Fei Wang, Kaiyu Wang, Nora Forknall, Christopher Patrick, Tansy Yang, Ruchi Parekh, Davi Bock, Barry J. Dickson. `Neural circuitry linking mating and egg laying in Drosophila females <https://www.nature.com/articles/s41586-020-2055-9>`_, Nature, 2020.
 
+* Elizabeth C. Marin, Laurin Büld, Maria Theiss, Tatevik Sarkissian, Ruairí J.V. Roberts, Robert Turnbull, Imaan F.M. Tamimi, Markus W. Pleijzier, Willem J. Laursen, Nik Drummond, Philipp Schlegel, Alexander S. Bates, Feng Li, Matthias Landgraf, Marta Costa, Davi D. Bock, Paul A. Garrity, Gregory S.X.E. Jefferis. `Connectomics Analysis Reveals First-, Second-, and Third-Order Thermosensory and Hygrosensory Neurons in the Adult Drosophila Brain <https://www.cell.com/current-biology/fulltext/S0960-9822(20)30844-7>`_, Cell, 2020.
+
 2019
 ~~~~
 

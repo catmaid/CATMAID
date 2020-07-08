@@ -408,6 +408,23 @@ var WindowMaker = new function()
           ['Append', WA.loadSource.bind(WA)],
           ['Clear', WA.clear.bind(WA)],
           ['Refresh', WA.updateSkeletons.bind(WA)],
+          {
+            type: 'button',
+            label: 'Focus skeleton',
+            title: 'Look at active skeleton\'s center of mass from current camera location',
+            onclick: function() {
+              let activeSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
+              if (activeSkeletonId) {
+                if (WA.hasSkeleton(activeSkeletonId)) {
+                  WA.lookAtSkeleton(activeSkeletonId);
+                } else {
+                  CATMAID.warn('Active skeleton not loaded in 3D Viewer');
+                }
+              } else {
+                CATMAID.warn('No skeleton selected!');
+              }
+            }
+          },
           [document.createTextNode(' - ')],
           ['Spatial select', WA.spatialSelect.bind(WA)],
           [document.createTextNode(' - ')],

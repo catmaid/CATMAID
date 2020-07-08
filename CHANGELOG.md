@@ -106,11 +106,15 @@ Graph widget:
   which it will move towards its target. This setting is both available in the
   animation tab and the export dialog.
 
+- A scaled version of the Strahler analysis shading mode has been added. The
+  scaling factor can be adjusted in the Shading parameters tab. This is mainly
+  useful for visualization.
+
 Skeleton history widget:
 
 - Skeletons to query can now also be appened through the common skeleton source
   controls.
-  
+
 - Now past skeletons with different skeleton IDs than the query IDs are
   displayed as well as part of the graph.
 

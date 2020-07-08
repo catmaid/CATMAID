@@ -572,6 +572,7 @@ var WindowMaker = new function()
      ['distance_to_root', 'Distance to root'],
      ['partitions', 'Principal branch length'],
      ['strahler', 'Strahler analysis'],
+     ['scaled-strahler', 'Strahler analysis (scaled)'],
      ['single-strahler-number', 'Single Strahler number'],
      ['strahler-threshold', 'Strahler threshold'],
      ['downstream-of-tag', 'Downstream of tag'],
@@ -1433,6 +1434,23 @@ var WindowMaker = new function()
             value: o.tag_regex,
             onchange, function() {
               WA.updateShadingParameter('tag_regex', this.value, 'downstream-of-tag');
+            },
+            length: 4
+          },
+          {
+            type: 'numeric',
+            label: 'Shading scale:',
+            title: 'A scale factor applied to scalable shading modes',
+            value: o.shading_scale,
+            step: 0.05,
+            min: 0,
+            onchange: function() {
+              let value = Number(this.value);
+              if (value && !Number.isNaN(value)) {
+                WA.options.shading_scale = value;
+                WA.updateSkeletonColors()
+                  .then(() => WA.render());
+              }
             },
             length: 4
           },

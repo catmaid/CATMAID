@@ -1284,6 +1284,7 @@
     this.shading_method = 'none';
     this.color_method = 'none';
     this.tag_regex = '';
+    this.shading_scale = 1.0;
     this.connector_color = 'cyan-red';
     this.custom_connector_colors = {
         'presynaptic_to': '#ffa500',
@@ -6827,6 +6828,7 @@
       this.line_material.vertexColors = THREE.VertexColors;
       this.line_material.needsUpdate = true;
 
+      let shadingScale = CATMAID.tools.getDefined(this.space.options.shading_scale, 1.0);
       var pickColor = colorizer.colorPicker(this);
       var interpolate = colorizer.interpolateVertexColors;
 
@@ -6853,7 +6855,11 @@
         last = node_id;
 
         var weight = node_weights[node_id];
-        weight = undefined === weight? 1.0 : weight * 0.9 + 0.1;
+        weight = undefined === weight? 1.0 : (weight * 0.9 + 0.1);
+
+        if (colorizer.scalable) {
+          weight *= shadingScale;
+        }
 
         var baseColor = pickColor(md);
         color = new THREE.Color(baseColor.r * weight,

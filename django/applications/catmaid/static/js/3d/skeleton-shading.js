@@ -907,6 +907,18 @@
         return node_weights;
       }
     },
+    'scaled-strahler': {
+      scalable: true,
+      weights: function(skeleton, options) {
+        var arbor = skeleton.createArbor();
+        var node_weights = arbor.strahlerAnalysis();
+        var max = node_weights[arbor.root];
+        Object.keys(node_weights).forEach(function(node) {
+          node_weights[node] /= max;
+        });
+        return node_weights;
+      }
+    },
     'partitions': {
       weights: function(skeleton, options) {
         // Shade by euclidian length, relative to the longest branch
@@ -1228,6 +1240,7 @@
 
         return node_weights;
       },
+      scalable: shading.scalable,
       vertexColors: !!coloring.vertexColorizer,
       colorPicker: function(skeleton) {
         if (isFn(coloring.vertexColorizer)) {

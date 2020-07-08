@@ -24,6 +24,13 @@ button {
   line-height: 13px;
 }
 
+input[type=text]:disabled,
+input[type=search]:disabled,
+input[type=number]:disabled,
+input[type=password]:disabled {/* csslint allow: outline-none */
+  background-color: #ececec;
+}
+
 input:not([type]),
 input[type=text],
 input[type=search],

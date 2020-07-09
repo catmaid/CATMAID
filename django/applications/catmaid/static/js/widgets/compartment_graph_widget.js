@@ -526,7 +526,7 @@
 
         CATMAID.DOM.appendToTab(tabs['Grow'],
             [[document.createTextNode('Grow ')],
-             ['Circles', GG.growGraph.bind(GG)],
+             ['Circles', () => GG.growGraph()],
              [document.createTextNode(" by ")],
              [CATMAID.DOM.createSelect("gg_n_circles_of_hell" + GG.widgetID, [1, 2, 3, 4, 5])],
              [document.createTextNode(" orders, limit:")],
@@ -2100,6 +2100,9 @@
         id: 'graph_widget_request',
       })
       .then(json => this.updateGraph(json, models, undefined, positions, sizes))
+      .then(() => {
+        this.triggerAdd(models);
+      })
       .catch(error => {
         if (error instanceof CATMAID.ReplacedRequestError) return;
         CATMAID.handleError(error);
@@ -2332,8 +2335,8 @@
             splits: splits};
   };
 
-  GroupGraph.prototype.growGraph = function() {
-    var p = this._getGrowParameters(),
+  GroupGraph.prototype.growGraph = function(params = undefined) {
+    var p = CATMAID.tools.getDefined(params, this._getGrowParameters()),
         s = this._findSkeletonsToGrow(this.cy.nodes(), p.min_downstream, p.min_upstream),
         accum = $.extend({}, s.split_partners); // TODO unused?
 

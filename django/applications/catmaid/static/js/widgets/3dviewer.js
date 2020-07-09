@@ -2100,13 +2100,13 @@
     }).bind(this));
 
     // Update skeleton properties
+    var updatedSkeletons = [];
     var add = prepare.then((function() {
       if (!this.space) {
         return;
       }
       var availableSkletons = this.space.content.skeletons;
       var inputSkeletonIds = Object.keys(models);
-      var updatedSkeletons = [];
       for (var i=0, max=inputSkeletonIds.length; i<max; ++i) {
         var skeletonId = inputSkeletonIds[i];
         var model = models[skeletonId];
@@ -2140,6 +2140,12 @@
         this.refreshRestrictedConnectors();
       }
       CATMAID.tools.callIfFn(callback);
+      if (updatedSkeletons.length > 0) {
+        this.triggerAdd(updatedSkeletons.reduce((o,s) => {
+          o[s] = new CATMAID.SkeletonModel(s);
+          return o;
+        }, {}));
+      }
     }).bind(this))
     .catch(CATMAID.handleError);
 

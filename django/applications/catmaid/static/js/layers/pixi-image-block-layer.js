@@ -8,6 +8,12 @@
     constructor(...args) {
       super(...args);
 
+      // If the selected source is *not* block data, return an appropriate layer instead.
+      if (!(this.tileSource instanceof CATMAID.AbstractImageBlockSource)) {
+        this.unregister();
+        return this.constructCopy({}, CATMAID.PixiTileLayer);
+      }
+
       // This layer needs WebGL2, raise error if unavailable.
       if (this._context.webglVersion < 2) {
         throw new CATMAID.PreConditionError("PixiImageBlockLayer needs WebGL2, but it isn't available.");

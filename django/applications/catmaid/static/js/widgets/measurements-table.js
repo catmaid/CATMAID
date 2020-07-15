@@ -322,6 +322,7 @@
   SkeletonMeasurementsTable.prototype.clear = function() {
       if (!this.table) return;
       this.models = {};
+      this.allowedNodes.clear();
       this.table.clear().draw();
   };
 
@@ -357,7 +358,8 @@
       return this.updateFilter();
     } else {
       var models = this.models;
-      this.clear();
+      this.models = {};
+      this.table.clear().draw();
       this.append(models);
     }
   };
@@ -584,7 +586,8 @@
     var filter = new CATMAID.SkeletonFilter(this.filterRules, this.models);
     filter.execute()
       .then(function(filteredNodes) {
-        self.allowedNodes = new Set(Object.keys(filteredNodes.nodes).map(function(n) {
+        self.allowedNodes.clear();
+        self.allowedNodes.addAll(Object.keys(filteredNodes.nodes).map(function(n) {
           return parseInt(n, 10);
         }));
         if (0 === self.allowedNodes.length) {

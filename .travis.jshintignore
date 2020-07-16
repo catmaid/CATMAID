@@ -1,6 +1,7 @@
 *
 !django/applications/**
 django/applications/vncbrowser/**
+django/applications/circuitmap/**
 **/*.min.js
 django/applications/catmaid/static/js/tests/libs/**
 django/applications/catmaid/static/libs/MochiKit/**
@@ -14,6 +15,7 @@ django/applications/catmaid/static/libs/geometry/**
 django/applications/catmaid/static/libs/jquery/**
 django/applications/catmaid/static/libs/jsTree/**
 django/applications/catmaid/static/libs/jsnetworkx/**
+django/applications/catmaid/static/libs/jszip/**
 django/applications/catmaid/static/libs/modernizr/**
 django/applications/catmaid/static/libs/n5-wasm/**
 django/applications/catmaid/static/libs/numeric/**

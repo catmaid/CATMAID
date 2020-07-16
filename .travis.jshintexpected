@@ -5,13 +5,18 @@ django/applications/catmaid/static/js/3d/buffer-object-factory.js: line 286, col
 django/applications/catmaid/static/js/3d/skeleton-shading.js: line 276, col 15, 'lastReviewerColor' is defined but never used.
 django/applications/catmaid/static/js/3d/skeleton-shading.js: line 546, col 13, 'arbor' is defined but never used.
 django/applications/catmaid/static/js/3d/skeleton-shading.js: line 571, col 9, 'nAddedDomains' is defined but never used.
-django/applications/catmaid/static/js/3d/skeleton-shading.js: line 1032, col 13, 'arbor' is defined but never used.
+django/applications/catmaid/static/js/3d/skeleton-shading.js: line 1044, col 13, 'arbor' is defined but never used.
 
-django/applications/catmaid/static/js/WindowMaker.js: line 2079, col 17, 'frame' is defined but never used.
-django/applications/catmaid/static/js/WindowMaker.js: line 1157, col 9, 'textScalingInput' is defined but never used.
-django/applications/catmaid/static/js/WindowMaker.js: line 2192, col 18, 'action' is defined but never used.
-django/applications/catmaid/static/js/WindowMaker.js: line 2192, col 26, 'i' is defined but never used.
-django/applications/catmaid/static/js/WindowMaker.js: line 2450, col 15, 'handle' is defined but never used.
+django/applications/catmaid/static/js/WindowMaker.js: line 2114, col 17, 'frame' is defined but never used.
+django/applications/catmaid/static/js/WindowMaker.js: line 1175, col 9, 'textScalingInput' is defined but never used.
+django/applications/catmaid/static/js/WindowMaker.js: line 2227, col 18, 'action' is defined but never used.
+django/applications/catmaid/static/js/WindowMaker.js: line 2227, col 26, 'i' is defined but never used.
+django/applications/catmaid/static/js/WindowMaker.js: line 2485, col 15, 'handle' is defined but never used.
+
+django/applications/catmaid/static/js/box-3d.js: line 12, col 18, Expected '(' and instead saw '='.
+django/applications/catmaid/static/js/box-3d.js: line 12, col 20, Expected an identifier and instead saw 'function' (a reserved word).
+django/applications/catmaid/static/js/box-3d.js: line 12, col 28, Expected an identifier and instead saw '('.
+django/applications/catmaid/static/js/box-3d.js: line 19, col 4, Unnecessary semicolon.
 
 django/applications/catmaid/static/js/dom.js: line 652, col 13, 'self' is defined but never used.
 django/applications/catmaid/static/js/dom.js: line 827, col 15, 'opened' is defined but never used.
@@ -27,6 +32,8 @@ django/applications/catmaid/static/js/layers/landmark-layer.js: line 291, col 9,
 
 django/applications/catmaid/static/js/layers/skeleton-projection-layer.js: line 338, col 9, 'self' is defined but never used.
 django/applications/catmaid/static/js/layers/skeleton-projection-layer.js: line 115, col 7, 'hasSource' is defined but never used.
+
+django/applications/catmaid/static/js/layers/volume-layer.js: line 68, col 9, 'projectViewBox' is defined but never used.
 
 django/applications/catmaid/static/js/layout.js: line 522, col 12, 'v' is defined but never used.
 django/applications/catmaid/static/js/layout.js: line 526, col 12, 'h' is defined but never used.
@@ -91,27 +98,27 @@ django/applications/catmaid/static/js/ui.js: line 25, col 9, 'y' is defined but 
 django/applications/catmaid/static/js/widgets/3dviewer.js: line 744, col 11, 'name' is defined but never used.
 django/applications/catmaid/static/js/widgets/3dviewer.js: line 877, col 13, 'skeletonData' is defined but never used.
 django/applications/catmaid/static/js/widgets/3dviewer.js: line 1062, col 21, 'names' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 1728, col 9, 'source1' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 1728, col 18, 'source2' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 2619, col 13, 'initPromise' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 2875, col 11, 'color' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 3945, col 11, 'tileVertices' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 3960, col 15, 'ul' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 3963, col 15, 'll' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 3966, col 15, 'lr' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 3969, col 15, 'ur' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 4148, col 15, 'name' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 5584, col 11, 'projector' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 6084, col 9, 'intersectionFound' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 7378, col 13, 'fnMakeColorFromRange' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 7800, col 9, 'history' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 8799, col 21, 'start' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 9023, col 13, 'visType' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 9026, col 13, 'visOpts' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 9074, col 13, 'now' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 9329, col 11, 'historyVisibility' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 9371, col 11, 'visMap' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 9746, col 11, 'rows' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 1729, col 9, 'source1' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 1729, col 18, 'source2' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 2626, col 13, 'initPromise' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 2882, col 11, 'color' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 3952, col 11, 'tileVertices' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 3967, col 15, 'ul' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 3970, col 15, 'll' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 3973, col 15, 'lr' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 3976, col 15, 'ur' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 4155, col 15, 'name' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 5591, col 11, 'projector' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 6091, col 9, 'intersectionFound' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 7390, col 13, 'fnMakeColorFromRange' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 7812, col 9, 'history' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 8811, col 21, 'start' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 9035, col 13, 'visType' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 9038, col 13, 'visOpts' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 9086, col 13, 'now' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 9341, col 11, 'historyVisibility' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 9383, col 11, 'visMap' is defined but never used.
+django/applications/catmaid/static/js/widgets/3dviewer.js: line 9758, col 11, 'rows' is defined but never used.
 django/applications/catmaid/static/js/widgets/3dviewer.js: line 11, col 1, 'SkeletonRegistry' is defined but never used.
 
 django/applications/catmaid/static/js/widgets/analyze_arbor.js: line 586, col 9, 'pie_cable' is defined but never used.
@@ -145,11 +152,11 @@ django/applications/catmaid/static/js/widgets/clustering_widget.js: line 691, co
 
 django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 1348, col 13, 'orders' is defined but never used.
 django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 1870, col 11, 'one' is defined but never used.
-django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 2338, col 9, 'accum' is defined but never used.
-django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 3033, col 11, 'startId' is defined but never used.
-django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 3379, col 13, 'intragroup' is defined but never used.
-django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 3759, col 11, 'sorted' is defined but never used.
-django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 4098, col 9, 'edgeData' is defined but never used.
+django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 2341, col 9, 'accum' is defined but never used.
+django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 3036, col 11, 'startId' is defined but never used.
+django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 3382, col 13, 'intragroup' is defined but never used.
+django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 3762, col 11, 'sorted' is defined but never used.
+django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 4101, col 9, 'edgeData' is defined but never used.
 
 django/applications/catmaid/static/js/widgets/connectivity-matrix.js: line 750, col 11, 'rowSkeletonIDs' is defined but never used.
 django/applications/catmaid/static/js/widgets/connectivity-matrix.js: line 751, col 11, 'colSkeletonIDs' is defined but never used.
@@ -207,9 +214,9 @@ django/applications/catmaid/static/js/widgets/landmark-widget.js: line 3579, col
 django/applications/catmaid/static/js/widgets/landmark-widget.js: line 3617, col 13, 'mirrorAxisSetting' is defined but never used.
 django/applications/catmaid/static/js/widgets/landmark-widget.js: line 990, col 12, 'getId' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/measurements-table.js: line 424, col 9, 'n_labels' is defined but never used.
-django/applications/catmaid/static/js/widgets/measurements-table.js: line 513, col 9, 'nns' is defined but never used.
-django/applications/catmaid/static/js/widgets/measurements-table.js: line 537, col 9, 'nns' is defined but never used.
+django/applications/catmaid/static/js/widgets/measurements-table.js: line 426, col 9, 'n_labels' is defined but never used.
+django/applications/catmaid/static/js/widgets/measurements-table.js: line 515, col 9, 'nns' is defined but never used.
+django/applications/catmaid/static/js/widgets/measurements-table.js: line 539, col 9, 'nns' is defined but never used.
 
 django/applications/catmaid/static/js/widgets/menu.js: line 130, col 7, 'self' is defined but never used.
 
@@ -228,10 +235,11 @@ django/applications/catmaid/static/js/widgets/neuron-navigator.js: line 1676, co
 django/applications/catmaid/static/js/widgets/neuron-navigator.js: line 2409, col 9, 'num_loaded' is defined but never used.
 django/applications/catmaid/static/js/widgets/neuron-navigator.js: line 8, col 1, 'CATMAID   Arbor' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/neuron-search.js: line 647, col 21, 'entity' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-search.js: line 1403, col 13, 'path' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-search.js: line 1322, col 11, 'key' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-search.js: line 1749, col 11, 'self' is defined but never used.
+django/applications/catmaid/static/js/widgets/neuron-search.js: line 694, col 21, 'entity' is defined but never used.
+django/applications/catmaid/static/js/widgets/neuron-search.js: line 1197, col 9, Unreachable 'this' after 'return'.
+django/applications/catmaid/static/js/widgets/neuron-search.js: line 1467, col 13, 'path' is defined but never used.
+django/applications/catmaid/static/js/widgets/neuron-search.js: line 1386, col 11, 'key' is defined but never used.
+django/applications/catmaid/static/js/widgets/neuron-search.js: line 1825, col 11, 'self' is defined but never used.
 
 django/applications/catmaid/static/js/widgets/neuron-similarity-detail-widget.js: line 113, col 13, 'refreshSimilarityList' is defined but never used.
 django/applications/catmaid/static/js/widgets/neuron-similarity-detail-widget.js: line 332, col 9, 'tbody' is defined but never used.
@@ -278,6 +286,8 @@ django/applications/catmaid/static/js/widgets/project-statistics-widget.js: line
 django/applications/catmaid/static/js/widgets/project-statistics-widget.js: line 734, col 9, 'refresh_summary' is defined but never used.
 django/applications/catmaid/static/js/widgets/project-statistics-widget.js: line 919, col 7, 'openUserProficiency' is defined but never used.
 
+django/applications/catmaid/static/js/widgets/random-points-widget.js: line 11, col 4, Missing semicolon.
+
 django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 152, col 13, 'state' is defined but never used.
 django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 198, col 9, 'month' is defined but never used.
 django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 199, col 9, 'day' is defined but never used.
@@ -292,6 +302,9 @@ django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 27
 django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 3126, col 9, 'connectorId' is defined but never used.
 django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 3127, col 9, 'connectorPartners' is defined but never used.
 django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 3250, col 9, 'promises' is defined but never used.
+
+django/applications/catmaid/static/js/widgets/remote-data-widget.js: line 70, col 23, 'currentProjectMode' is defined but never used.
+django/applications/catmaid/static/js/widgets/remote-data-widget.js: line 38, col 15, 'sourceNeuronAnnotation' is defined but never used.
 
 django/applications/catmaid/static/js/widgets/rename-neurons-dialog.js: line 94, col 9, 'self' is defined but never used.
 
@@ -343,7 +356,7 @@ django/applications/catmaid/static/js/widgets/window-manager.js: line 1037, col 
 django/applications/catmaid/static/js/widgets/window-manager.js: line 1313, col 7, 'self' is defined but never used.
 
 django/applications/catmaid/static/libs/catmaid/Arbor.js: line 1312, col 13, 'pivot' is defined but never used.
-django/applications/catmaid/static/libs/catmaid/Arbor.js: line 1896, col 7, 'root' is defined but never used.
+django/applications/catmaid/static/libs/catmaid/Arbor.js: line 1904, col 7, 'root' is defined but never used.
 
 django/applications/catmaid/static/libs/catmaid/color-source.js: line 92, col 17, 'lowerStop' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/color-source.js: line 92, col 28, 'upperStop' is defined but never used.
@@ -359,6 +372,9 @@ django/applications/catmaid/static/libs/catmaid/models/landmarks.js: line 8, col
 
 django/applications/catmaid/static/libs/catmaid/models/nodes.js: line 354, col 15, 'neuron_id' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/models/nodes.js: line 866, col 13, 'parentEditionTime' is defined but never used.
+
+django/applications/catmaid/static/libs/catmaid/models/publication.js: line 86, col 25, Expected an assignment or function call and instead saw an expression.
+django/applications/catmaid/static/libs/catmaid/models/publication.js: line 86, col 31, Missing semicolon.
 
 django/applications/catmaid/static/libs/catmaid/models/sampler.js: line 245, col 15, 'thisIsLast' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/models/sampler.js: line 156, col 11, 'intervalStartPos' is defined but never used.
@@ -398,4 +414,327 @@ django/applications/catmaid/static/libs/catmaid/utils.js: line 79, col 5, 'fetch
 django/applications/catmaid/static/libs/catmaid/volumes.js: line 613, col 9, 'abs' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/volumes.js: line 805, col 15, 'dSimplicesT' is defined but never used.
 
-319 errors
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/Gruntfile.js: line 46, col 25, Duplicate key 'max-duration'.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/Gruntfile.js: line 47, col 19, Duplicate key 'browsers'.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/dist/jszip.js: line 13, col 91, Missing semicolon.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/dist/jszip.js: line 13, col 152, Missing semicolon.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/dist/jszip.js: line 13, col 204, Missing semicolon.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/dist/jszip.js: line 13, col 250, Missing semicolon.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/dist/jszip.js: line 13, col 292, Missing semicolon.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/dist/jszip.js: line 13, col 304, Missing semicolon.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/dist/jszip.js: line 13, col 318, Missing semicolon.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/dist/jszip.js: line 13, col 565, Missing semicolon.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/dist/jszip.js: line 13, col 565, Expected an identifier and instead saw '='.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/dist/jszip.js: line 13, col 565, Expected an assignment or function call and instead saw an expression.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/dist/jszip.js: line 13, col 566, Missing semicolon.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/dist/jszip.js: line 13, col 585, Expected an assignment or function call and instead saw an expression.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/dist/jszip.js: line 13, col 586, Missing semicolon.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/dist/jszip.js: line 13, col 678, Missing semicolon.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/dist/jszip.js: line 13, col 700, Missing semicolon.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/dist/jszip.js: line 13, col 720, Missing semicolon.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/dist/jszip.js: line 13, col 806, Missing semicolon.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/dist/jszip.js: line 936, col 18, Value of 'e' may be overwritten in IE 8 and earlier.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/dist/jszip.js: line 2866, col 9, 'str' is defined but never used.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/dist/jszip.js: line 3518, col 5, 'utf8' is defined but never used.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/dist/jszip.js: line 4277, col 136, Missing semicolon.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/dist/jszip.js: line 4467, col 24, If a strict mode function is executed using function invocation, its 'this' value will be undefined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/dist/jszip.js: line 4470, col 31, If a strict mode function is executed using function invocation, its 'this' value will be undefined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/dist/jszip.js: line 4475, col 21, If a strict mode function is executed using function invocation, its 'this' value will be undefined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/dist/jszip.js: line 4481, col 14, If a strict mode function is executed using function invocation, its 'this' value will be undefined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/dist/jszip.js: line 4483, col 12, If a strict mode function is executed using function invocation, its 'this' value will be undefined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/dist/jszip.js: line 4489, col 12, If a strict mode function is executed using function invocation, its 'this' value will be undefined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/dist/jszip.js: line 4495, col 21, If a strict mode function is executed using function invocation, its 'this' value will be undefined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/dist/jszip.js: line 4520, col 14, If a strict mode function is executed using function invocation, its 'this' value will be undefined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/dist/jszip.js: line 4522, col 12, If a strict mode function is executed using function invocation, its 'this' value will be undefined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/dist/jszip.js: line 4528, col 12, If a strict mode function is executed using function invocation, its 'this' value will be undefined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/dist/jszip.js: line 4532, col 21, If a strict mode function is executed using function invocation, its 'this' value will be undefined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/dist/jszip.js: line 11366, col 20, Missing semicolon.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/dist/jszip.js: line 13, col 337, 'define' is defined but never used.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/dist/jszip.js: line 13, col 344, 'module' is defined but never used.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/dist/jszip.js: line 13, col 351, 'exports' is defined but never used.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/documentation/examples/downloader.inc/downloader.js: line 24, col 5, '$form' is defined but never used.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/documentation/examples/downloader.inc/helpers.js: line 13, col 10, 'showMessage' is defined but never used.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/documentation/examples/downloader.inc/helpers.js: line 33, col 10, 'updatePercent' is defined but never used.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/base64.js: line 2, col 13, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/base64.js: line 3, col 15, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/base64.js: line 9, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/base64.js: line 41, col 1, 'exports' is not defined.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/compressedObject.js: line 3, col 16, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/compressedObject.js: line 4, col 18, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/compressedObject.js: line 5, col 23, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/compressedObject.js: line 6, col 18, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/compressedObject.js: line 7, col 23, 'require' is not defined.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/compressions.js: line 3, col 21, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/compressions.js: line 14, col 19, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/compressions.js: line 5, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/compressions.js: line 14, col 1, 'exports' is not defined.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/crc32.js: line 3, col 13, 'require' is not defined.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/defaults.js: line 2, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/defaults.js: line 3, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/defaults.js: line 4, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/defaults.js: line 5, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/defaults.js: line 6, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/defaults.js: line 7, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/defaults.js: line 8, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/defaults.js: line 9, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/defaults.js: line 10, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/defaults.js: line 11, col 1, 'exports' is not defined.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/external.js: line 11, col 18, 'require' is not defined.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/flate.js: line 4, col 12, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/flate.js: line 5, col 13, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/flate.js: line 6, col 21, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/flate.js: line 10, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/flate.js: line 80, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/flate.js: line 83, col 1, 'exports' is not defined.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/generate/ZipFileWorker.js: line 522, col 18, Value of 'e' may be overwritten in IE 8 and earlier.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/generate/ZipFileWorker.js: line 3, col 13, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/generate/ZipFileWorker.js: line 4, col 21, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/generate/ZipFileWorker.js: line 5, col 12, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/generate/ZipFileWorker.js: line 6, col 13, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/generate/ZipFileWorker.js: line 7, col 17, 'require' is not defined.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/generate/index.js: line 3, col 20, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/generate/index.js: line 4, col 21, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/generate/index.js: line 28, col 1, 'exports' is not defined.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/index.js: line 38, col 19, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/index.js: line 39, col 29, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/index.js: line 40, col 17, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/index.js: line 41, col 18, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/index.js: line 51, col 18, 'require' is not defined.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/load.js: line 2, col 13, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/load.js: line 3, col 16, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/load.js: line 4, col 12, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/load.js: line 5, col 13, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/load.js: line 6, col 18, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/load.js: line 7, col 18, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/load.js: line 8, col 19, 'require' is not defined.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/nodejs/NodejsStreamInputAdapter.js: line 3, col 13, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/nodejs/NodejsStreamInputAdapter.js: line 4, col 21, 'require' is not defined.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/nodejs/NodejsStreamOutputAdapter.js: line 3, col 16, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/nodejs/NodejsStreamOutputAdapter.js: line 5, col 13, 'require' is not defined.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/nodejsUtils.js: line 17, col 13, 'Buffer' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/nodejsUtils.js: line 17, col 28, 'Buffer' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/nodejsUtils.js: line 18, col 20, 'Buffer' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/nodejsUtils.js: line 25, col 24, 'Buffer' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/nodejsUtils.js: line 34, col 13, 'Buffer' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/nodejsUtils.js: line 35, col 20, 'Buffer' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/nodejsUtils.js: line 37, col 27, 'Buffer' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/nodejsUtils.js: line 48, col 16, 'Buffer' is not defined.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/object.js: line 2, col 12, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/object.js: line 3, col 13, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/object.js: line 4, col 21, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/object.js: line 5, col 20, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/object.js: line 6, col 16, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/object.js: line 7, col 24, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/object.js: line 8, col 17, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/object.js: line 9, col 16, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/object.js: line 10, col 19, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/object.js: line 11, col 32, 'require' is not defined.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/reader/ArrayReader.js: line 2, col 18, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/reader/ArrayReader.js: line 3, col 13, 'require' is not defined.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/reader/DataReader.js: line 2, col 13, 'require' is not defined.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/reader/NodeBufferReader.js: line 2, col 24, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/reader/NodeBufferReader.js: line 3, col 13, 'require' is not defined.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/reader/StringReader.js: line 2, col 18, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/reader/StringReader.js: line 3, col 13, 'require' is not defined.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/reader/Uint8ArrayReader.js: line 2, col 19, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/reader/Uint8ArrayReader.js: line 3, col 13, 'require' is not defined.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/reader/readerFor.js: line 3, col 13, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/reader/readerFor.js: line 4, col 15, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/reader/readerFor.js: line 5, col 19, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/reader/readerFor.js: line 6, col 20, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/reader/readerFor.js: line 7, col 24, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/reader/readerFor.js: line 8, col 24, 'require' is not defined.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/signature.js: line 2, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/signature.js: line 3, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/signature.js: line 4, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/signature.js: line 5, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/signature.js: line 6, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/signature.js: line 7, col 1, 'exports' is not defined.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/stream/ConvertWorker.js: line 3, col 21, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/stream/ConvertWorker.js: line 4, col 13, 'require' is not defined.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/stream/Crc32Probe.js: line 3, col 21, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/stream/Crc32Probe.js: line 4, col 13, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/stream/Crc32Probe.js: line 5, col 13, 'require' is not defined.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/stream/DataLengthProbe.js: line 3, col 13, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/stream/DataLengthProbe.js: line 4, col 21, 'require' is not defined.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/stream/DataWorker.js: line 3, col 13, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/stream/DataWorker.js: line 4, col 21, 'require' is not defined.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/stream/StreamHelper.js: line 3, col 13, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/stream/StreamHelper.js: line 4, col 21, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/stream/StreamHelper.js: line 5, col 21, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/stream/StreamHelper.js: line 6, col 14, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/stream/StreamHelper.js: line 7, col 15, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/stream/StreamHelper.js: line 8, col 16, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/stream/StreamHelper.js: line 13, col 37, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/stream/StreamHelper.js: line 62, col 20, 'Buffer' is not defined.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/support.js: line 3, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/support.js: line 4, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/support.js: line 5, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/support.js: line 6, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/support.js: line 7, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/support.js: line 9, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/support.js: line 12, col 5, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/support.js: line 17, col 9, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/support.js: line 26, col 13, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/support.js: line 29, col 13, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/support.js: line 35, col 5, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/support.js: line 37, col 5, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/support.js: line 23, col 27, 'self' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/support.js: line 23, col 47, 'self' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/support.js: line 23, col 73, 'self' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/support.js: line 23, col 96, 'self' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/support.js: line 35, col 28, 'require' is not defined.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utf8.js: line 109, col 9, 'str' is defined but never used.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utf8.js: line 3, col 13, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utf8.js: line 4, col 15, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utf8.js: line 5, col 19, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utf8.js: line 6, col 21, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utf8.js: line 169, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utf8.js: line 184, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utf8.js: line 238, col 16, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utf8.js: line 249, col 20, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utf8.js: line 255, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utf8.js: line 271, col 16, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utf8.js: line 275, col 1, 'exports' is not defined.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utils.js: line 3, col 15, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utils.js: line 4, col 14, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utils.js: line 5, col 19, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utils.js: line 6, col 20, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utils.js: line 7, col 16, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utils.js: line 40, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utils.js: line 41, col 5, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utils.js: line 176, col 16, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utils.js: line 199, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utils.js: line 305, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utils.js: line 314, col 5, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utils.js: line 315, col 21, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utils.js: line 326, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utils.js: line 349, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utils.js: line 356, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utils.js: line 357, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utils.js: line 364, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utils.js: line 379, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utils.js: line 391, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utils.js: line 403, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utils.js: line 424, col 1, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utils.js: line 450, col 24, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utils.js: line 460, col 20, 'exports' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utils.js: line 53, col 27, 'self' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utils.js: line 53, col 47, 'self' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utils.js: line 53, col 73, 'self' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/utils.js: line 53, col 96, 'self' is not defined.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/zipEntries.js: line 2, col 17, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/zipEntries.js: line 3, col 13, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/zipEntries.js: line 4, col 11, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/zipEntries.js: line 5, col 16, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/zipEntries.js: line 6, col 12, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/zipEntries.js: line 7, col 15, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/zipEntries.js: line 6, col 5, 'utf8' is defined but never used.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/zipEntry.js: line 2, col 17, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/zipEntry.js: line 3, col 13, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/zipEntry.js: line 4, col 24, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/zipEntry.js: line 5, col 15, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/zipEntry.js: line 6, col 12, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/zipEntry.js: line 7, col 20, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/zipEntry.js: line 8, col 15, 'require' is not defined.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/zipObject.js: line 3, col 20, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/zipObject.js: line 4, col 18, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/zipObject.js: line 5, col 12, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/zipObject.js: line 6, col 24, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/lib/zipObject.js: line 7, col 21, 'require' is not defined.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/test/asserts/constructor.js: line 1, col 1, 'JSZipTestUtils' is defined but never used.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/test/asserts/deprecated.js: line 7, col 9, 'file' is defined but never used.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/test/asserts/deprecated.js: line 20, col 17, 'zip' is defined but never used.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/test/asserts/deprecated.js: line 17, col 9, 'file' is defined but never used.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/test/asserts/deprecated.js: line 37, col 9, 'file' is defined but never used.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/test/asserts/file.js: line 178, col 17, 'err' is defined but never used.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/test/asserts/file.js: line 178, col 29, 'content' is defined but never used.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/test/asserts/file.js: line 238, col 51, 'Buffer' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/test/asserts/file.js: line 522, col 33, 'Buffer' is not defined.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/test/asserts/filter.js: line 1, col 1, 'JSZipTestUtils' is defined but never used.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/test/asserts/generate.js: line 130, col 49, 'Buffer' is not defined.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/test/asserts/load.js: line 114, col 28, 'Buffer' is not defined.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/test/asserts/stream.js: line 53, col 18, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/test/asserts/stream.js: line 60, col 28, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/test/asserts/stream.js: line 91, col 28, 'require' is not defined.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/test/asserts/version.js: line 1, col 1, 'JSZipTestUtils' is defined but never used.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/test/helpers/browser-test-utils.js: line 1, col 1, 'JSZip' is defined but never used.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/test/helpers/node-test-utils.js: line 4, col 10, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/test/helpers/node-test-utils.js: line 5, col 12, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/test/helpers/node-test-utils.js: line 7, col 16, 'require' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/test/helpers/node-test-utils.js: line 7, col 1, 'global' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/test/helpers/node-test-utils.js: line 9, col 1, 'global' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/test/helpers/node-test-utils.js: line 12, col 1, 'process' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/test/helpers/node-test-utils.js: line 14, col 7, 'process' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/test/helpers/node-test-utils.js: line 17, col 1, 'process' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/test/helpers/node-test-utils.js: line 19, col 7, 'process' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/test/helpers/node-test-utils.js: line 1, col 1, 'QUnit' is defined but never used.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/test/helpers/node-test-utils.js: line 1, col 1, 'JSZip' is defined but never used.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/test/helpers/node-test-utils.js: line 1, col 1, 'JSZipTestUtils' is defined but never used.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/test/helpers/test-utils.js: line 212, col 47, 'global' is not defined.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/test/helpers/test-utils.js: line 1, col 1, 'JSZipTestUtils' is defined but never used.
+
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/vendor/FileSaver.js: line 15, col 5, Redefinition of 'saveAs'.
+django/applications/catmaid/static/libs/jszip/jszip-3.2.2/vendor/FileSaver.js: line 36, col 11, 'click' is defined but never used.
+
+django/applications/circuitmap/circuitmap/static/circuitmap/js/widgets/circuitmap-widget.js: line 13, col 65, 'Exponentiation operator' is only available in ES7 (use 'esversion: 7').
+django/applications/circuitmap/circuitmap/static/circuitmap/js/widgets/circuitmap-widget.js: line 35, col 55, Missing semicolon.
+django/applications/circuitmap/circuitmap/static/circuitmap/js/widgets/circuitmap-widget.js: line 55, col 13, 'activeSkeletonTab' is defined but never used.
+django/applications/circuitmap/circuitmap/static/circuitmap/js/widgets/circuitmap-widget.js: line 226, col 68, Missing semicolon.
+django/applications/circuitmap/circuitmap/static/circuitmap/js/widgets/circuitmap-widget.js: line 253, col 97, Missing semicolon.
+django/applications/circuitmap/circuitmap/static/circuitmap/js/widgets/circuitmap-widget.js: line 261, col 27, 'lidElement' is defined but never used.
+django/applications/circuitmap/circuitmap/static/circuitmap/js/widgets/circuitmap-widget.js: line 436, col 15, 'userSelectSelect' is defined but never used.
+django/applications/circuitmap/circuitmap/static/circuitmap/js/widgets/circuitmap-widget.js: line 632, col 9, 'stack' is defined but never used.
+django/applications/circuitmap/circuitmap/static/circuitmap/js/widgets/circuitmap-widget.js: line 731, col 89, Missing semicolon.
+django/applications/circuitmap/circuitmap/static/circuitmap/js/widgets/circuitmap-widget.js: line 742, col 9, Missing semicolon.
+django/applications/circuitmap/circuitmap/static/circuitmap/js/widgets/circuitmap-widget.js: line 674, col 9, 'stack' is defined but never used.
+django/applications/circuitmap/circuitmap/static/circuitmap/js/widgets/circuitmap-widget.js: line 811, col 15, 'win' is defined but never used.
+
+603 errors

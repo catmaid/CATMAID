@@ -1844,7 +1844,7 @@ Arbor.prototype.connectedFractions = function(nodes) {
         $.extend(p2.edges, p.edges);
         p2.edges[node] = paren;
         delete arbors[p_root];
-        p_root = paren;
+        p_root = p2.root;
         p = p2;
       } else {
         p.edges[node] = paren;
@@ -1852,6 +1852,14 @@ Arbor.prototype.connectedFractions = function(nodes) {
       }
       node = paren;
       paren = this.edges[paren];
+    }
+
+    // If the last valid parent was found without joining into another arbor
+    // instance, <p> likely has a root node that is different from how the arbor
+    // was indexed initially. This is remedied here.
+    if (p_root !== p.root) {
+      delete arbors[p_root];
+      arbors[p.root] = p;
     }
   }
 

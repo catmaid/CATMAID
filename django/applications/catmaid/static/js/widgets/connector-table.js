@@ -156,7 +156,7 @@
         content.appendChild(table);
 
         this.connectorTable = $(table).DataTable({
-          dom: "lrphtip",
+          dom: "lrfhtip",
           paging: true,
           order: [],
           lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],

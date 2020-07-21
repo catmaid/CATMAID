@@ -39,7 +39,7 @@
     }
 
     this.handleHighlight = options.handleHighlight ?
-      options.handleHighlight : CATMAID.noop();
+      options.handleHighlight : CATMAID.noop;
 
     // If an owner reference is provided, this source can be discovered as being
     // part of a widget.

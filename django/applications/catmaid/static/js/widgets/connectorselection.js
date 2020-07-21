@@ -123,54 +123,52 @@
       table.remove();
     }
 
-    table = $('#connectorselectiontable').dataTable({
+    table = $('#connectorselectiontable').DataTable({
       // http://www.datatables.net/usage/options
-      "bDestroy": true,
-      "sDom": '<"H"lr>t<"F"ip>',
-      // default: <"H"lfr>t<"F"ip>
-      "bProcessing": true,
-      "bServerSide": false, // Enable sorting locally, and prevent sorting from calling the fnServerData to reload the table -- an expensive and undesirable operation.
-      "bAutoWidth": false,
-      "iDisplayLength": -1,
-      "aLengthMenu": [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
-      //"aLengthChange": false,
-      "bJQueryUI": true,
-      "aoColumns": [
+      destroy: true,
+      dom: "lrfhtip",
+      processing: true,
+      serverSide: false, // Enable sorting locally, and prevent sorting from calling the fnServerData to reload the table -- an expensive and undesirable operation.
+      autoWidth: false,
+      displayLength: -1,
+      lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
+      jQueryUI: true,
+      columns: [
       { // Connector
-        "bSearchable": true,
-        "bSortable": true
+        searchable: true,
+        sortable: true
       },
       { // Treenode 1
-        "bSearchable": true,
-        "bSortable": true
+        searchable: true,
+        sortable: true
       },
       { // Skeleton 1
-        "bSearchable": true,
-        "bSortable": true,
+        searchable: true,
+        sortable: true,
       },
       { // Confidence 1
-        "bSearchable": true,
-        "bSortable": true
+        searchable: true,
+        sortable: true
       },
       { // Creator 1
-        "bSearchable": true,
-        "bSortable": true
+        searchable: true,
+        sortable: true
       },
       { // Treenode 2
-        "bSearchable": true,
-        "bSortable": true
+        searchable: true,
+        sortable: true
       },
       { // Skeleton 2
-        "bSearchable": true,
-        "bSortable": true,
+        searchable: true,
+        sortable: true,
       },
       { // Confidence 2
-        "bSearchable": true,
-        "bSortable": true
+        searchable: true,
+        sortable: true
       },
       { // Creator 2
-        "bSearchable": true,
-        "bSortable": true
+        searchable: true,
+        sortable: true
       }
       ]
     });
@@ -221,20 +219,20 @@
     });
 
     // Populate the table
-    table.fnClearTable(0);
-    table.fnAddData(rows);
+    table.clear();
+    table.rows.add(rows).draw();
 
     // Specify what happens on double click
     $('#connectorselectiontable tbody tr').on('dblclick', function(evt) {
-      var aData = table.fnGetData(this);
+      var data = table.row(this).data();
       var cell = $(evt.target).closest('td').index();
       var nid;
       if (0 === cell) {
-        nid = aData[0];
+        nid = data[0];
       } else if (cell < 5) {
-        nid = aData[1];
+        nid = data[1];
       } else {
-        nid = aData[5];
+        nid = data[5];
       }
       var loc = locations[nid];
       SkeletonAnnotations.staticMoveTo(loc[2], loc[1], loc[0])

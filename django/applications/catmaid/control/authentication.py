@@ -26,6 +26,7 @@ from django.shortcuts import _get_queryset, render
 from allauth.account.adapter import get_adapter
 
 from rest_framework.authtoken import views as auth_views
+from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 
 from catmaid.error import ClientError
@@ -754,6 +755,16 @@ class ObtainAuthToken(auth_views.ObtainAuthToken):
     """
     def get_serializer_class(self):
         return AuthTokenSerializer
+
+
+def get_anonymous_token(request:HttpRequest) -> JsonResponse:
+    """Get the API token for the anonymous user.
+    """
+    anon_user = get_anonymous_user()
+    token, created = Token.objects.get_or_create(user=anon_user)
+    return JsonResponse({
+        "token": token.key
+    })
 
 
 def exceeds_group_inactivity_period(user_id) -> bool:

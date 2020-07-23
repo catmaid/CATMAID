@@ -26,7 +26,11 @@ from django.shortcuts import _get_queryset, render
 from allauth.account.adapter import get_adapter
 
 from rest_framework.authtoken import views as auth_views
+from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.serializers import AuthTokenSerializer
+from rest_framework.exceptions import MethodNotAllowed
+from rest_framework.request import Request
+from rest_framework.response import Response
 
 from catmaid.error import ClientError
 from catmaid.forms import RegisterForm
@@ -754,6 +758,17 @@ class ObtainAuthToken(auth_views.ObtainAuthToken):
     """
     def get_serializer_class(self):
         return AuthTokenSerializer
+
+    def get(self, request:Request, *args, **kwargs) -> Response:
+        """Allow look-up of the API token for the anonymous user through a
+        regular GET request (i.e. no CSRF check).
+        """
+        if request.user == get_anonymous_user():
+            token, created = Token.objects.get_or_create(user=request.user)
+            return Response({
+                "token": token.key
+            })
+        raise MethodNotAllowed("GET")
 
 
 def exceeds_group_inactivity_period(user_id) -> bool:

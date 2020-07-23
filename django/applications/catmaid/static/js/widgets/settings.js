@@ -2333,7 +2333,7 @@
       updateComponentList();
 
       let newRemoteName = '';
-      let newRemoteType = null;
+      let newRemoteType = 'catmaid';
       let newRemoteUrl = '';
       let newRemoteApiKey = '';
       let newRemoteAuthUser = '';
@@ -2396,30 +2396,62 @@
           CATMAID.warn("Need a URL by which to reach the new remote reference");
           return;
         }
-        let newRemote = {
-          name: newRemoteName,
-          type: newRemoteType,
-          url: newRemoteUrl,
-          api_key: newRemoteApiKey,
-          http_auth_user: newRemoteAuthUser,
-          http_auth_pass: newRemoteAuthPass,
-        };
+        // If the remote URL ends with a hash character, remove it, because it
+        // can cause trauble with the initial request.
+        if (newRemoteUrl.endsWith('#')) {
+          newRemoteUrl = newRemoteUrl.replace(/#+$/, '');
+          CATMAID.msg("Adjusted URL", "The trailing hash character of the URL has been removed");
+        }
+        // If there is no API key provided, assume use of the anonymouse user
+        // and try to obtain its API key.
+        let prepareSteps = [];
+        let effectiveRemoteApiKey = newRemoteApiKey;
+        if (!effectiveRemoteApiKey && newRemoteType === 'catmaid') {
+          let tokenUrl = CATMAID.tools.urlJoin(newRemoteUrl, '/api-token-auth');
+          prepareSteps.push(CATMAID.fetch({
+              absoluteURL: tokenUrl,
+            })
+            .then(result => {
+              if (result.token) {
+                effectiveRemoteApiKey = result.token;
+                CATMAID.msg("Success", "Retrieved API key from remote anonymous user");
+              } else {
+                CATMAID.warn("Could not retrieve remote API key. Using the empty one that was provided.");
+              }
+            })
+            .catch(e => {
+              CATMAID.warn("Could not retrieve remote API key. Using the empty one that was provided.");
+            }));
+        }
 
-        let newList = CATMAID.tools.deepCopy(CATMAID.Client.Settings[SETTINGS_SCOPE].remote_servers);
-        newList.push(newRemote);
-        CATMAID.Client.Settings.set(
-            'remote_servers',
-            newList,
-            SETTINGS_SCOPE)
-          .then(function() {
-            CATMAID.Init.trigger(CATMAID.Init.EVENT_KNOWN_REMOTES_CHANGED, newList);
-            updateComponentList();
-            newRemoteNameInput.find('input').val('');
-            newRemoteTypeSelect.find('select').val('catmaid');
-            newRemoteNameUrlInput.find('input').val('');
-            newRemoteApiKeyInput.find('input').val('');
-            newRemoteAuthUserInput.find('input').val('');
-            newRemoteAuthPassInput.find('input').val('');
+        Promise.all(prepareSteps)
+          .then(() => {
+            let newRemote = {
+              name: newRemoteName,
+              type: newRemoteType,
+              url: newRemoteUrl,
+              api_key: effectiveRemoteApiKey,
+              http_auth_user: newRemoteAuthUser,
+              http_auth_pass: newRemoteAuthPass,
+            };
+
+            let newList = CATMAID.tools.deepCopy(CATMAID.Client.Settings[SETTINGS_SCOPE].remote_servers);
+            newList.push(newRemote);
+
+            return CATMAID.Client.Settings.set(
+              'remote_servers',
+              newList,
+              SETTINGS_SCOPE)
+            .then(function() {
+              CATMAID.Init.trigger(CATMAID.Init.EVENT_KNOWN_REMOTES_CHANGED, newList);
+              updateComponentList();
+              newRemoteNameInput.find('input').val('');
+              newRemoteTypeSelect.find('select').val('catmaid');
+              newRemoteNameUrlInput.find('input').val('');
+              newRemoteApiKeyInput.find('input').val('');
+              newRemoteAuthUserInput.find('input').val('');
+              newRemoteAuthPassInput.find('input').val('');
+            });
           })
           .catch(CATMAID.handleError);
       });

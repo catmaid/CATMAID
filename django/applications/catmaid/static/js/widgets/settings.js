@@ -1010,7 +1010,10 @@
                       SETTINGS_SCOPE)
                     .then(function () {
                       project.getStackViewers().forEach(function (s) {
-                        SkeletonAnnotations.getTracingOverlay(s.getId()).redraw(true);
+                        let overlay = SkeletonAnnotations.getTracingOverlay(s.getId());
+                        if (overlay) {
+                          overlay.redraw(true);
+                        }
                       });
                     });
               }).addClass('setting'),
@@ -1192,7 +1195,10 @@
                       SETTINGS_SCOPE)
                     .then(function () {
                       project.getStackViewers().forEach(function (s) {
-                        SkeletonAnnotations.getTracingOverlay(s.getId()).redraw(true);
+                        let overlay = SkeletonAnnotations.getTracingOverlay(s.getId());
+                        if (overlay) {
+                          overlay.redraw(true);
+                        }
                       });
                     });
               }).addClass('setting'),

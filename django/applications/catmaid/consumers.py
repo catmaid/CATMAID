@@ -80,6 +80,7 @@ def msg_user(user_id, event_name, data:str="", data_type:str="text", is_raw_data
         # message.
         if not channel_layer:
             return
+        print(f'name: {get_user_group_name(user_id)} payload: {payload} layer {channel_layer}')
         async_to_sync(channel_layer.group_send)(get_user_group_name(user_id), {
             'type': 'user.message',
             'data': payload,

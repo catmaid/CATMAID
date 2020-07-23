@@ -2407,7 +2407,7 @@
         let prepareSteps = [];
         let effectiveRemoteApiKey = newRemoteApiKey;
         if (!effectiveRemoteApiKey && newRemoteType === 'catmaid') {
-          let tokenUrl = CATMAID.tools.urlJoin(newRemoteUrl, '/api-token-auth');
+          let tokenUrl = CATMAID.tools.urlJoin(newRemoteUrl, '/accounts/anonymous-api-token');
           prepareSteps.push(CATMAID.fetch({
               absoluteURL: tokenUrl,
             })

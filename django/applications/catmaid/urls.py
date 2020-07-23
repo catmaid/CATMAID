@@ -51,6 +51,7 @@ urlpatterns += [
 urlpatterns += [
     url(r'^accounts/login$', authentication.login_user),
     url(r'^accounts/logout$', authentication.logout_user),
+    url(r'^accounts/anonymous-api-token$', authentication.get_anonymous_token),
     url(r'^accounts/(?P<project_id>\d+)/all-usernames$', authentication.all_usernames),
     url(r'^permissions$', authentication.user_project_permissions),
     url(r'^classinstance/(?P<ci_id>\d+)/permissions$', authentication.get_object_permissions),

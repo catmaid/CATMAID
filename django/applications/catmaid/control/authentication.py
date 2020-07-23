@@ -771,6 +771,16 @@ class ObtainAuthToken(auth_views.ObtainAuthToken):
         raise MethodNotAllowed("GET")
 
 
+def get_anonymous_token(request:HttpRequest) -> JsonResponse:
+    """Get the API token for the anonymous user.
+    """
+    anon_user = get_anonymous_user()
+    token, created = Token.objects.get_or_create(user=anon_user)
+    return JsonResponse({
+        "token": token.key
+    })
+
+
 def exceeds_group_inactivity_period(user_id) -> bool:
     """Returns whether a user is inactive and their last login is past a maximum
     inactivity period.

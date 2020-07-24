@@ -3426,10 +3426,14 @@
           targetInGroup = target !== undefined,
           intragroup = source === target && sourceInGroup && targetInGroup;
       if (sourceInGroup || targetInGroup) {
+        // Edge between skeletons, with at least one of them belonging to a group. I
         source = source ? source : d.source;
         target = target ? target : d.target;
-        // Edge between skeletons, with at least one of them belonging to a group
-        var id = source + '_' + target;
+        // If the edge is undirected, sort source and target name, to not
+        // accidentally create two edges between the groups, depending on who is
+        // source and who is partner.
+        var id = d.directed ? `${source}_${target}` :
+            [target, source].sort(CATMAID.tools.compareStrings).join('_');
         var gedge = gedges[id];
         if (gedge) {
           // Just append the synapse count to the already existing edge

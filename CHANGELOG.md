@@ -67,6 +67,9 @@
   previous behavior, the "Include half links/synapses" checkbox can be
   unchecked.
 
+- Graph widget: grouping with undirected edges like desmosomes won't lead to
+  multiple edges between the same groups anymore.
+
 ## 2020.02.15
 
 Contributors: Chris Barnes, Andrew Champion, Stephan Gerhard, Pat Gunn, Tom Kazimiers

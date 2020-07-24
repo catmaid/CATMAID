@@ -12,6 +12,9 @@ included in this changelog.
 - GET|POST `/{project_id}/skeletons/summary`:
   Retrieve meta information like cable length or number of nodes for skeletons.
 
+- GET `/accounts/anonymous-api-token`:
+  Get the API token for the anonymous user.
+
 ### Modifications
 
 None.

@@ -173,6 +173,13 @@ Miscellaneous:
 - Connector selection: a search filter is now available for the table that allows
   filtering across all columns.
 
+- Settings widget: adding a remote CATMAID instance without supplying an API key
+  will now make CATMAID try and get the API key of the remote anonymous user.
+  This makes it easy to add publicly accessible CATMAID instances, because it is
+  now enough to provide the URL of the remote CATMAID instance. Additionally,
+  hash characters (#) at the end of passed in URLs are now removed
+  automatically.
+
 - The user registration form fits now the overal layout better and include first
   and last name as well as the email address. Also, a link to the user
   registration form is now displayed right next to the login link in the top

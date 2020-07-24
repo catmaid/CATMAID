@@ -297,6 +297,9 @@ Miscellaneous:
 - Navigator tool and sub-tools like Tracing tool: the Z slider is now properly
   hidden if the image data set has only one section.
 
+- Graph widget: grouping with undirected edges like desmosomes won't lead to
+  multiple edges between the same groups anymore.
+
 ## 2020.02.15
 
 Contributors: Chris Barnes, Andrew Champion, Stephan Gerhard, Pat Gunn, Tom Kazimiers

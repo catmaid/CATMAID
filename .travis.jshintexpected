@@ -13,11 +13,6 @@ django/applications/catmaid/static/js/WindowMaker.js: line 2227, col 18, 'action
 django/applications/catmaid/static/js/WindowMaker.js: line 2227, col 26, 'i' is defined but never used.
 django/applications/catmaid/static/js/WindowMaker.js: line 2485, col 15, 'handle' is defined but never used.
 
-django/applications/catmaid/static/js/box-3d.js: line 12, col 18, Expected '(' and instead saw '='.
-django/applications/catmaid/static/js/box-3d.js: line 12, col 20, Expected an identifier and instead saw 'function' (a reserved word).
-django/applications/catmaid/static/js/box-3d.js: line 12, col 28, Expected an identifier and instead saw '('.
-django/applications/catmaid/static/js/box-3d.js: line 19, col 4, Unnecessary semicolon.
-
 django/applications/catmaid/static/js/dom.js: line 652, col 13, 'self' is defined but never used.
 django/applications/catmaid/static/js/dom.js: line 827, col 15, 'opened' is defined but never used.
 django/applications/catmaid/static/js/dom.js: line 822, col 9, 'update' is defined but never used.
@@ -32,8 +27,6 @@ django/applications/catmaid/static/js/layers/landmark-layer.js: line 291, col 9,
 
 django/applications/catmaid/static/js/layers/skeleton-projection-layer.js: line 338, col 9, 'self' is defined but never used.
 django/applications/catmaid/static/js/layers/skeleton-projection-layer.js: line 115, col 7, 'hasSource' is defined but never used.
-
-django/applications/catmaid/static/js/layers/volume-layer.js: line 68, col 9, 'projectViewBox' is defined but never used.
 
 django/applications/catmaid/static/js/layout.js: line 522, col 12, 'v' is defined but never used.
 django/applications/catmaid/static/js/layout.js: line 526, col 12, 'h' is defined but never used.
@@ -286,8 +279,6 @@ django/applications/catmaid/static/js/widgets/project-statistics-widget.js: line
 django/applications/catmaid/static/js/widgets/project-statistics-widget.js: line 734, col 9, 'refresh_summary' is defined but never used.
 django/applications/catmaid/static/js/widgets/project-statistics-widget.js: line 919, col 7, 'openUserProficiency' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/random-points-widget.js: line 11, col 4, Missing semicolon.
-
 django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 152, col 13, 'state' is defined but never used.
 django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 198, col 9, 'month' is defined but never used.
 django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 199, col 9, 'day' is defined but never used.
@@ -302,9 +293,6 @@ django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 27
 django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 3126, col 9, 'connectorId' is defined but never used.
 django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 3127, col 9, 'connectorPartners' is defined but never used.
 django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 3250, col 9, 'promises' is defined but never used.
-
-django/applications/catmaid/static/js/widgets/remote-data-widget.js: line 70, col 23, 'currentProjectMode' is defined but never used.
-django/applications/catmaid/static/js/widgets/remote-data-widget.js: line 38, col 15, 'sourceNeuronAnnotation' is defined but never used.
 
 django/applications/catmaid/static/js/widgets/rename-neurons-dialog.js: line 94, col 9, 'self' is defined but never used.
 
@@ -373,9 +361,6 @@ django/applications/catmaid/static/libs/catmaid/models/landmarks.js: line 8, col
 django/applications/catmaid/static/libs/catmaid/models/nodes.js: line 354, col 15, 'neuron_id' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/models/nodes.js: line 866, col 13, 'parentEditionTime' is defined but never used.
 
-django/applications/catmaid/static/libs/catmaid/models/publication.js: line 86, col 25, Expected an assignment or function call and instead saw an expression.
-django/applications/catmaid/static/libs/catmaid/models/publication.js: line 86, col 31, Missing semicolon.
-
 django/applications/catmaid/static/libs/catmaid/models/sampler.js: line 245, col 15, 'thisIsLast' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/models/sampler.js: line 156, col 11, 'intervalStartPos' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/models/sampler.js: line 479, col 11, 'arbor' is defined but never used.
@@ -414,4 +399,4 @@ django/applications/catmaid/static/libs/catmaid/utils.js: line 79, col 5, 'fetch
 django/applications/catmaid/static/libs/catmaid/volumes.js: line 613, col 9, 'abs' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/volumes.js: line 805, col 15, 'dSimplicesT' is defined but never used.
 
-330 errors
+320 errors

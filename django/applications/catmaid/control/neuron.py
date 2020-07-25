@@ -5,7 +5,7 @@ import datetime
 from functools import reduce
 import json
 import operator
-from typing import Any, DefaultDict, List, Optional, Tuple
+from typing import Any, Dict, DefaultDict, List, Optional, Tuple
 
 from django.http import HttpRequest, JsonResponse
 from django.shortcuts import get_object_or_404
@@ -83,7 +83,7 @@ def list_all_skeletons(request:HttpRequest, project_id=None) -> JsonResponse:
     return JsonResponse(skeleton_ids, safe=False)
 
 
-def get_skeleton_ids_for_neurons(project_id:int, neuron_ids:List) -> List:
+def get_skeleton_ids_for_neurons(project_id:int, neuron_ids:List) -> Dict[int, List[int]]:
     """Obtain a dictionary that maps neuron IDs to lists of skeleton IDs.
     """
     cursor = connection.cursor()
@@ -117,7 +117,7 @@ def get_skeleton_ids_for_neurons(project_id:int, neuron_ids:List) -> List:
 
     # While unlikely, in theory it can happen that multiple skeletons model the
     # same neuron. Therefore, we can't return a 1:1 mapping.
-    skeleton_map = dict()
+    skeleton_map:Dict[int, List[int]] = dict()
     for neuron_id, skeleton_id in cursor.fetchall():
         entry = skeleton_map.get(neuron_id)
         if entry is None:

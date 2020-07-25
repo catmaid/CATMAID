@@ -55,6 +55,79 @@ def _get_all_skeletons_of_neuron(project_id:int, neuron_id:int) -> List:
         cici_via_a__class_instance_b=neuron)
     return [x.id for x in qs]
 
+
+@api_view(['POST'])
+@requires_user_role(UserRole.Browse)
+def list_all_skeletons(request:HttpRequest, project_id=None) -> JsonResponse:
+    """ Find all skeleton IDs linked to the passed in neurons.
+
+    A map
+    ---
+    parameters:
+      - name: project_id
+        description: Project to operate in
+        type: integer
+        paramType: path
+        required: true
+      - name: neuron_ids
+        description: IDs of neurons to get skeletons for
+        required: true
+        type: array
+        items:
+          type: integer
+        paramType: path
+    """
+    project_id = int(project_id)
+    neuron_ids = get_request_list(request.POST, 'neuron_ids', map_fn=int)
+    skeleton_ids = get_skeleton_ids_for_neurons(project_id, neuron_ids)
+    return JsonResponse(skeleton_ids, safe=False)
+
+
+def get_skeleton_ids_for_neurons(project_id:int, neuron_ids:List) -> List:
+    """Obtain a dictionary that maps neuron IDs to lists of skeleton IDs.
+    """
+    cursor = connection.cursor()
+    cursor.execute("""
+        WITH model_of AS (
+            SELECT id FROM relation
+            WHERE relation_name = 'model_of' AND project_id = %(project_id)s
+        ), neuron_class AS (
+            SELECT id FROM class
+            WHERE class_name = 'neuron' AND project_id = %(project_id)s
+        ), skeleton_class AS (
+            SELECT id FROM class
+            WHERE class_name = 'skeleton' AND project_id = %(project_id)s
+        )
+        SELECT cici.class_instance_b, cici.class_instance_a
+        FROM model_of, neuron_class, skeleton_class,
+        class_instance_class_instance cici
+        JOIN class_instance cia
+            ON (cia.id = cici.class_instance_a)
+        JOIN class_instance cib
+            ON (cib.id = cici.class_instance_b)
+        WHERE cici.project_id = %(project_id)s AND
+              cici.class_instance_b = ANY(%(neuron_ids)s::bigint[]) AND
+              cici.relation_id = model_of.id AND
+              cia.class_id = skeleton_class.id AND
+              cib.class_id = neuron_class.id
+    """, {
+        'project_id': project_id,
+        'neuron_ids': neuron_ids,
+    })
+
+    # While unlikely, in theory it can happen that multiple skeletons model the
+    # same neuron. Therefore, we can't return a 1:1 mapping.
+    skeleton_map = dict()
+    for neuron_id, skeleton_id in cursor.fetchall():
+        entry = skeleton_map.get(neuron_id)
+        if entry is None:
+            skeleton_map[neuron_id] = [skeleton_id]
+        else:
+            entry.append(skeleton_id)
+
+    return skeleton_map
+
+
 def _delete_if_empty(neuron_id) -> bool:
     """ Delete this neuron if no class_instance is a model_of it;
     which is to say, it contains no skeletons. """

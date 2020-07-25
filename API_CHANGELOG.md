@@ -15,6 +15,9 @@ included in this changelog.
 - GET `/accounts/anonymous-api-token`:
   Get the API token for the anonymous user.
 
+- POST `/{project_id}/neurons/all-skeletons`:
+  Map a list of neuron IDs to the skeleton IDs that model them.
+
 ### Modifications
 
 None.

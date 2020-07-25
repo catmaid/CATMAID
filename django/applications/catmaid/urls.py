@@ -235,6 +235,7 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/neurons/$', neuron.list_neurons),
     url(r'^(?P<project_id>\d+)/neurons/from-models$', neuron.get_neuron_ids_from_models),
     url(r'^(?P<project_id>\d+)/neurons/rename$', neuron.rename_neurons),
+    url(r'^(?P<project_id>\d+)/neurons/all-skeletons$', neuron.list_all_skeletons),
 ]
 
 # Node access

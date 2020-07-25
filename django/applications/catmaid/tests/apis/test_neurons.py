@@ -81,3 +81,17 @@ class NeuronsApiTests(CatmaidApiTestCase):
         parsed_data = json.loads(response.content.decode('utf-8'))
         self.assertEqual(len(parsed_data), 1)
         self.assertEqual(parsed_data[0], 235)
+
+
+    def test_skeletons_from_neuron_list(self):
+        self.fake_authentication()
+        url = f'/{int(self.test_project_id)}/neurons/all-skeletons'
+        response = self.client.post(url, {
+            'neuron_ids': [233, 374],
+        })
+        self.assertStatus(response)
+
+        parsed_data = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(len(parsed_data), 2)
+        self.assertEqual(parsed_data['233'], [235])
+        self.assertEqual(parsed_data['374'], [373])

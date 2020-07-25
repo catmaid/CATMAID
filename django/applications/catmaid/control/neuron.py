@@ -23,12 +23,27 @@ from rest_framework.decorators import api_view
 
 
 
-@requires_user_role([UserRole.Annotate, UserRole.Browse])
-def get_all_skeletons_of_neuron(request:HttpRequest, project_id=None, neuron_id=None) -> JsonResponse:
+@api_view(['GET'])
+@requires_user_role(UserRole.Browse)
+def get_all_skeletons_of_neuron(request:HttpRequest, project_id, neuron_id) -> JsonResponse:
+    """Get a list of all skeleton IDs linked to the passed in neuron.
+    ---
+    parameters:
+      - name: project_id
+        description: Project to operate in
+        type: integer
+        paramType: path
+        required: true
+      - name: neuron_id
+        description: ID of neuron to get skeletons for
+        required: true
+        type: integer
+        paramType: path
+    """
     skeleton_ids = _get_all_skeletons_of_neuron(project_id, neuron_id)
     return JsonResponse(skeleton_ids, safe=False)
 
-def _get_all_skeletons_of_neuron(project_id, neuron_id) -> List:
+def _get_all_skeletons_of_neuron(project_id:int, neuron_id:int) -> List:
     p = get_object_or_404(Project, pk=project_id)
     neuron = get_object_or_404(ClassInstance,
         pk=neuron_id,

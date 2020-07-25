@@ -155,8 +155,8 @@ django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 
 django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 2341, col 9, 'accum' is defined but never used.
 django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 3036, col 11, 'startId' is defined but never used.
 django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 3382, col 13, 'intragroup' is defined but never used.
-django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 3762, col 11, 'sorted' is defined but never used.
-django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 4101, col 9, 'edgeData' is defined but never used.
+django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 3766, col 11, 'sorted' is defined but never used.
+django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 4105, col 9, 'edgeData' is defined but never used.
 
 django/applications/catmaid/static/js/widgets/connectivity-matrix.js: line 750, col 11, 'rowSkeletonIDs' is defined but never used.
 django/applications/catmaid/static/js/widgets/connectivity-matrix.js: line 751, col 11, 'colSkeletonIDs' is defined but never used.

@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
 
+from collections import defaultdict
 from datetime import datetime
 from itertools import chain
+from functools import reduce
 from typing import Dict, List, Optional, Set
+from enum import Enum
 
 from catmaid.control.annotation import (get_annotated_entities,
-        get_annotation_to_id_map, get_sub_annotation_ids)
+        get_annotation_to_id_map, get_sub_annotation_ids,
+        get_annotations_for_entities)
 from catmaid.control.tracing import check_tracing_setup
 from catmaid.control.volume import find_volumes
 from catmaid.models import (Class, ClassInstance, ClassInstanceClassInstance,
@@ -41,23 +45,103 @@ def ask_to_continue():
         if c is not None:
             return c
 
+
+class ExportAnnotation(Enum):
+    AnnotationsYes = 'export: annotations'
+    AnnotationsNo = 'export: no-annotations'
+    TagsYes = 'export: tags'
+    TagsNo = 'export: no-tags'
+    TreenodesYes = 'export: treenodes'
+    TreenodesNo = 'export: no-treenodes'
+    ConnectorsOnlyIntra = 'export: intra-connectors-only'
+    ConnectorsNewPlaceholders = 'export: intra-connectors-and-placeholders'
+    ConnectorsOriginalPlaceholders = 'export: intra-connectors-and-original-placeholders'
+    ConnectorsNo = 'export: no-connectors'
+
+    ConnectorOptions = (
+        'export: intra-connectors-only',
+        'export: intra-connectors-and-placeholders',
+        'export: intra-connectors-and-original-placeholders',
+        'export: no-connectors',
+    )
+
+    @staticmethod
+    def has_more_weight(a, b):
+        if a is None:
+            return False
+        if b is None:
+            return True
+        if a == ExportAnnotation.AnnotationsYes:
+            if b == ExportAnnotation.AnnotationsYes:
+                return False
+            elif b == ExportAnnotation.AnnotationsNo:
+                return True
+            else:
+                raise ValueError(f"Can't compare export annotations {a} and {b}")
+        elif a == ExportAnnotation.TagsYes:
+            if b == ExportAnnotation.TagsYes:
+                return False
+            elif b == ExportAnnotation.TagsNo:
+                return True
+            else:
+                raise ValueError(f"Can't compare export annotations {a} and {b}")
+        elif a == ExportAnnotation.AnnotationsYes:
+            if b == ExportAnnotation.AnnotationsYes:
+                return False
+            elif b == ExportAnnotation.AnnotationsNo:
+                return True
+            else:
+                raise ValueError(f"Can't compare export annotations {a} and {b}")
+        elif a == ExportAnnotation.ConnectorsNo:
+            return False
+        elif a == ExportAnnotation.ConnectorsOnlyIntra:
+            if b.value in ExportAnnotation.ConnectorOptions.value:
+                return b == ExportAnnotation.ConnectorsNo
+            else:
+                raise ValueError(f"Can't compare export annotations {a} and {b}")
+        elif a == ExportAnnotation.ConnectorsNewPlaceholders:
+            if b.value in ExportAnnotation.ConnectorOptions.value:
+                return b == ExportAnnotation.ConnectorsNo or \
+                        b == ExportAnnotation.ConnectorsOnlyIntra
+            else:
+                raise ValueError(f"Can't compare export annotations {a} and {b}")
+        elif a == ExportAnnotation.ConnectorsOriginalPlaceholders:
+            if b.value in ExportAnnotation.ConnectorOptions.value:
+                return b != ExportAnnotation.ConnectorsOriginalPlaceholders
+            else:
+                raise ValueError(f"Can't compare export annotations {a} and {b}")
+
+
 class Exporter():
 
     def __init__(self, project, options):
         self.project = project
         self.options = options
         self.export_treenodes = options['export_treenodes']
-        self.export_connectors = options['export_connectors']
+        self.connector_mode = options['connector_mode']
         self.export_annotations = options['export_annotations']
         self.export_tags = options['export_tags']
         self.export_users = options['export_users']
         self.export_volumes = options['export_volumes']
+        # If in use, annotations annotated with this meta annotation are
+        # expected to be also annotated with settings meta-annotations. They
+        # also define for each set of neurons and can be annotated with
+        # "settings annotations": "export: annotations" / "export: no-annotations",
+        # "export: tags" / "export: no-tags" and "export: intra-connectors-only" (1) /
+        # "export: intra-connectors-and-placeholders" (2) /
+        # "export: intra-connectors-and-original-placeholders" (3) / "export: no-connectors".
+        # Assuming the annotation "Coates et al 2020" is annotated with
+        # "Publication" and "Publication is set as "settings_meta_annotation".
+        # Without any further annotations annotations, the respective defaults
+        # are used. If however "export: annotations" is used, annotations will
+        # be exported for the respective neurons, regardless of the global
+        # default.
+        self.settings_meta_annotation = options['settings_meta_annotation']
         self.required_annotations = options['required_annotations']
         self.excluded_annotations = options['excluded_annotations']
         self.volume_annotations = options['volume_annotations']
         self.annotation_annotations = options['annotation_annotations']
         self.exclusion_is_final = options['exclusion_is_final']
-        self.original_placeholder_context = options['original_placeholder_context']
         if 'run_noninteractive' in options:
             self.run_noninteractive = options['run_noninteractive']
         else:
@@ -75,6 +159,8 @@ class Exporter():
 
         self.to_serialize:List = []
         self.seen:Dict = {}
+
+        self.per_skeleton_annotations = True
 
     def collect_data(self):
         self.to_serialize = []
@@ -112,6 +198,160 @@ class Exporter():
             exclude_skeleton_id_constraints = set(chain.from_iterable(
                     [n['skeleton_ids'] for n in neuron_info]))
             exclude_neuron_id_constraint = set(n['id'] for n in neuron_info)
+
+        # This data structure allows settings look-up for neuron-centric export
+        # options. If no neuron specific override has been made, the look-up
+        # will provide the default values provided to the exporter.
+        export_settings = {
+            'treenodes': defaultdict(lambda: self.export_treenodes),
+            'connectors': defaultdict(lambda: self.connector_mode),
+            'annotations': defaultdict(lambda: self.export_annotations),
+            'tags': defaultdict(lambda: self.export_tags),
+        }
+
+        if self.settings_meta_annotation:
+            # Get all annotations that are annotated with the
+            # settings_meta_annotation. For each of those annotations, get the
+            # value for each of the following settings:
+            # "settings annotations": "export: annotations" / "export: no-annotations",
+            # "export: tags" / "export: no-tags" and "export: intra-connectors-only" (1) /
+            # "export: intra-connectors-and-placeholders" (2) /
+            # "export: intra-connectors-and-original-placeholders" (3) / "export: no-connectors"
+            # Next, associate these settings with individual neurons. In
+            # conflicting situations there more open strategy wins.
+            settings_meta_annotation_map = get_annotation_to_id_map(self.project.id,
+                    [self.settings_meta_annotation], relations, classes)
+            settings_annotation_ids = list(map(str, settings_meta_annotation_map.values()))
+            if not settings_annotation_ids:
+                missing_annotations = set(self.settings_meta_annotation) - set(settings_meta_annotation_map.keys())
+                raise CommandError("Could not find the following settings meta-annotations: " +
+                        ", ".join(missing_annotations))
+
+            query_params = {
+              'annotated_with': ",".join(settings_annotation_ids),
+            }
+            settings_annotations, num_total_records = get_annotated_entities(self.project.id,
+                    query_params, relations, classes, ['annotation'])
+
+            logger.info(f"Found {num_total_records} annotations with the "
+                    f"following settings meta-annotations: {self.settings_meta_annotation}")
+
+            set_annotation_map = dict([(n['name'], n['id']) for n in settings_annotations])
+            set_annotation_ids = list(set_annotation_map.values())
+
+            # Get a map of all export settings annotations
+            settings_annotation_names = ["export: annotations", "export: no-annotations",
+                    "export: tags", "export: no-tags", "export: intra-connectors-only",
+                    "export: intra-connectors-and-placeholders",
+                    "export: intra-connectors-and-original-placeholders",
+                    "export: no-connectors"]
+            settings_annotations_map = get_annotation_to_id_map(
+                    self.project.id, settings_annotation_names, relations, classes)
+
+            logger.info(f"Found {len(settings_annotations_map)} used "
+                    f"settings annotations: {', '.join(settings_annotations_map.keys())}")
+
+            # For each of these annotations, collect all annotated neurons and
+            # the settings for them.
+            settings_neuron_infos = dict()
+            for se_name, se_id in set_annotation_map.items():
+                query_params = {
+                    'annotated_with': str(se_id),
+                    'sub_annotated_with': str(se_id),
+                }
+                settings_neuron_info, num_total_records = get_annotated_entities(self.project.id,
+                        query_params, relations, classes, ['neuron'], with_skeletons=True)
+
+                logger.info(f"Found {num_total_records} neurons with the "
+                  f"following settings meta-annotations: {se_name}")
+
+                skeleton_ids_with_settings:Optional[List] = \
+                        list(chain.from_iterable([n['skeleton_ids'] for n in settings_neuron_info]))
+                neuron_ids_with_settings = [n['id'] for n in settings_neuron_info]
+
+                # Get all annotations of this neuron set, including settings annotations
+                annotation_entity_map, annotation_annotation_map = \
+                        get_annotations_for_entities(self.project.id, [se_id])
+
+                # Whether treenodes should be exported for this neuron set. If there
+                # are both TreenodesYes and TreenodesNo annotations, the former wins.
+                treenode_setting = None
+                for ex_an in (ExportAnnotation.TreenodesNo, ExportAnnotation.TreenodesYes):
+                    if ex_an in settings_annotations_map:
+                        treenode_setting = settings_annotations_map[ex_an] in annotation_annotation_map
+
+                # Whether tags should be exported for this neuron set. If there
+                # are both TagsYes and TagsNo annotations, the former wins.
+                tag_setings = None
+                for ex_an in (ExportAnnotation.TagsNo, ExportAnnotation.TagsYes):
+                    if ex_an in settings_annotations_map:
+                        tag_setings = settings_annotations_map[ex_an] in annotation_annotation_map
+
+                # Whether tags should be exported for this neuron set. If there
+                # are both AnnotationsYes and AnnotationsNo annotations, the former wins.
+                annotation_settings = None
+                for ex_an in (ExportAnnotation.AnnotationsNo, ExportAnnotation.AnnotationsYes):
+                    if ex_an in settings_annotations_map:
+                        annotation_settings = settings_annotations_map[ex_an] in annotation_annotation_map
+
+                # Whether connectors should be exported for this neuron set. If there
+                # are multiple of the annotations ConnectorsNo, ConnectorsOnlyIntra,
+                # ConnectorsNewPlaceholders or ConnectorsOriginalPlaceholders are
+                # assigned, they dominate each other in this order.
+                connector_settings = None
+                connector_ann_hierarchy = (
+                        ExportAnnotation.ConnectorsNo,
+                        ExportAnnotation.ConnectorsOnlyIntra,
+                        ExportAnnotation.ConnectorsNewPlaceholders,
+                        ExportAnnotation.ConnectorsOriginalPlaceholders,
+                )
+                for ex_an in connector_ann_hierarchy:
+                    if ex_an.value in settings_annotations_map and \
+                            settings_annotations_map[ex_an.value] in annotation_annotation_map:
+                        connector_settings = ex_an
+
+                settings_neuron_infos[se_id] = {
+                    'info': settings_neuron_info,
+                    'skeleton_ids': skeleton_ids_with_settings,
+                    'treenode_setting': treenode_setting,
+                    'tag_setings': tag_setings,
+                    'annotation_settings': annotation_settings,
+                    'connector_settings': connector_settings,
+                }
+
+                # Store each setting, as long as it is not already stored for
+                # this neuron in a form with more weight.
+                n_updated_treenodes = 0
+                n_updated_tags = 0
+                n_updated_annotations = 0
+                n_updated_connectors = 0
+                for skeleton_id in skeleton_ids_with_settings:
+                    if ExportAnnotation.has_more_weight(treenode_setting,
+                            export_settings['treenodes'].get(skeleton_id)):
+                        export_settings['treenodes'][skeleton_id] = treenode_setting
+                        n_updated_treenodes += 1
+                    if ExportAnnotation.has_more_weight(tag_setings,
+                            export_settings['tags'].get(skeleton_id)):
+                        export_settings['tags'][skeleton_id] = tag_setings
+                        n_updated_tags += 1
+                    if ExportAnnotation.has_more_weight(annotation_settings,
+                            export_settings['annotations'].get(skeleton_id)):
+                        export_settings['annotation'][skeleton_id] = annotation_setting
+                        n_updated_annotations += 1
+                    if ExportAnnotation.has_more_weight(connector_settings,
+                            export_settings['connectors'].get(skeleton_id)):
+                        export_settings['connectors'][skeleton_id] = connector_settings
+                        n_updated_connectors += 1
+
+                logger.info(f'Updated export settings for set "{se_name}" '
+                        f'({len(skeleton_ids_with_settings)} skeletons) based on annotations for '
+                        f'treenodes ({n_updated_treenodes} neurons), '
+                        f'tags ({n_updated_tags} neurons), '
+                        f'annotations ({n_updated_annotations} neurons), '
+                        f'connectors ({n_updated_connectors} neurons).')
+
+        n_export_settings = reduce(lambda x, y: x + len(y), export_settings.values(), 0)
+        n_export_settings_connectors = len(export_settings['connectors'])
 
         if self.required_annotations:
             annotation_map = get_annotation_to_id_map(self.project.id,
@@ -222,16 +462,74 @@ class Exporter():
                         skeleton_id__in=skeleton_id_constraints)
                 self.to_serialize.append(treenodes)
 
-            # Export connectors and connector links
-            if self.export_connectors:
-                connector_links = TreenodeConnector.objects.filter(
-                        project=self.project, skeleton_id__in=skeleton_id_constraints).values_list('id', 'connector', 'treenode')
+            # Export connectors and connector links. If there are no overrides,
+            # just use the default value.
+            connector_links = None
+            n_skeletons_ignored_for_connectors = 0
+            if len(export_settings['connectors']) == 0:
+                if self.connector_mode != ConnectorMode.NoConnectors:
+                    connector_links = TreenodeConnector.objects.filter(
+                            project=self.project, skeleton_id__in=skeleton_id_constraints) \
+                            .values_list('id', 'connector', 'treenode')
+            else:
+                # Find subset of connectors that should be exported, which are
+                # all skeletons that have been found to be exported before, plus
+                # those explicitly marked for export, minus those explicitly
+                # unmarked for export and minus connector links that cross
+                # between sets that don't want to share synapses in the export.
+                if self.connector_mode != ConnectorMode.NoConnectors:
+                    connector_skeletons = set(skeleton_id_constraints)
+                else:
+                    connector_skeletons = set()
+                n_default_connector_skeletons = len(connector_skeletons)
 
-                # Add matching connectors
+                connector_link_lists = []
+                logger.info('Marking connector links for export for individual neuron sets')
+                for se_name, se_id in set_annotation_map.items():
+                    settings_neuron_info = settings_neuron_infos.get(se_id)
+                    if settings_neuron_info is None:
+                        logger.error(f'Could not find export setting info for set annotation {se_name} with ID {se_id}')
+                        continue
+
+                    skeleton_ids = settings_neuron_info['skeleton_ids']
+                    connector_setting = settings_neuron_info['connector_settings']
+
+                    if connector_setting == ExportAnnotation.ConnectorsOnlyIntra:
+                        logger.info(f'Allowing only intra-set connector links export for neuron set "{se_name}" (ID: {se_id}, # skeletons: {len(skeleton_ids)})')
+                        # Remove this neuron set from the general set of connector skeletons
+                        connector_skeletons = connector_skeletons - set(skeleton_ids)
+                    elif connector_setting == ExportAnnotation.ConnectorsNo:
+                        logger.info(f'Skipping connector link export for neuron set "{se_name}" (ID: {se_id}, # skeletons: {len(skeleton_ids)})')
+                        connector_skeletons = connector_skeletons - set(skeleton_ids)
+                        n_skeletons_ignored_for_connectors += len(skeleton_ids)
+                        continue
+                    elif connector_setting is None:
+                        logger.info(f'Applying no connector link constraints for neuron set "{se_name}" (ID: {se_id}, # skeletons: {len(skeleton_ids)}, Default: {self.connector_mode})')
+                        continue
+                    else:
+                        logger.info(f'Allowing regular connectivity for neuron set "{se_name}" (ID: {se_id}, # skeletons: {len(skeleton_ids)})')
+
+                    connector_link_lists.append(TreenodeConnector.objects \
+                            .filter(project=self.project, skeleton_id__in=skeleton_ids) \
+                            .values_list('id', 'connector', 'treenode'))
+                    logger.info(f'Current number of connector links: {len(connector_link_lists[-1])}')
+
+                # Add remaining export skeletons that didn't have any explicit constraint.
+                connector_link_lists.append(TreenodeConnector.objects \
+                        .filter(project=self.project, skeleton_id__in=connector_skeletons) \
+                        .values_list('id', 'connector', 'treenode'))
+
+                # Merge all sets
+                connector_links = list(chain.from_iterable(connector_link_lists))
+
+            # Add matching connectors
+            if connector_links:
                 connector_ids = set(c for _,c,_ in connector_links)
                 self.to_serialize.append(Connector.objects.filter(
                         id__in=connector_ids))
-                logger.info("Exporting %s connectors" % len(connector_ids))
+                logger.info(f'Exporting {len(connector_ids)} connectors '
+                        f'({n_skeletons_ignored_for_connectors} explicitly ignored) '
+                        f'with {len(connector_links)} links')
 
                 # Add matching connector links
                 self.to_serialize.append(TreenodeConnector.objects.filter(
@@ -240,6 +538,12 @@ class Exporter():
             # Export annotations and annotation-neuron links. Include meta
             # annotations.
             if self.export_annotations and 'annotated_with' in relations:
+                # TODO: Add export annotation support for annotations
+                if len(export_settings['annotations']) > 0:
+                    logger.warn('Export settings are currently not supported for '
+                            f'annotation exports. Found {len(export_annotations["annotations"])} '
+                            'annotation export related export settings.')
+
                 annotated_with = relations['annotated_with']
                 all_annotations:Set = set()
                 all_annotation_links:Set = set()
@@ -307,22 +611,42 @@ class Exporter():
                     self.to_serialize.append(all_annotation_links)
 
                 logger.info(f"Exporting {len(all_annotations)} annotations " + \
-                            f"and {len(all_annotation_links)} annotation links: {', '.join([a.name for a in all_annotations])}")
+                            f"and {len(all_annotation_links)} annotation links")#: {', '.join([a.name for a in all_annotations])}")
                 if self.annotation_annotations:
                     logger.info("Only annotations in hierarchy of the following " + \
                                 f"annotations are exported: {', '.join(self.annotation_annotations)}")
 
             # Export tags
-            if self.export_tags and 'labeled_as' in relations:
+            tags = None
+            if len(export_settings['tags']) == 0:
+                if self.export_tags and 'labeled_as' in relations:
+                    tag_links = TreenodeClassInstance.objects.select_related('class_instance').filter(
+                            project=self.project,
+                            class_instance__class_column=classes['label'],
+                            relation_id=relations['labeled_as'],
+                            treenode__skeleton_id__in=skeleton_id_constraints)
+                    # Because we retrieve these objects as part of the returned
+                    # links to get only the used tags.
+                    tags = set(t.class_instance for t in tag_links)
+            else:
+                tag_skeletons = set(skeleton_id_constraints)
+                n_default_tag_skeletons = len(tag_skeletons)
+                for skeleton_id, export_annotation in export_settings['tags'].items():
+                    if export_annotation == ExportAnnotation.TagsNo:
+                        connector_skeletons.remove(skeleton_id)
+                    elif export_annotations == ExportAnnotation.TagsYes:
+                        connector_skeletons.add(skeleton_id)
+                n_skeletons_ignored_for_tags = n_default_tag_skeletons - len(tag_skeletons)
                 tag_links = TreenodeClassInstance.objects.select_related('class_instance').filter(
                         project=self.project,
                         class_instance__class_column=classes['label'],
                         relation_id=relations['labeled_as'],
-                        treenode__skeleton_id__in=skeleton_id_constraints)
+                        treenode__skeleton_id__in=tag_skeletons)
                 # Because we retrieve these objects as part of the returned
                 # links to get only the used tags.
                 tags = set(t.class_instance for t in tag_links)
 
+            if tags:
                 tag_names = sorted(set(t.name for t in tags))
                 logger.info(f"Exporting {len(tags)} tags, part of {tag_links.count()} links: {', '.join(tag_names)}")
 
@@ -332,6 +656,12 @@ class Exporter():
 
             # TODO: Export reviews
         else:
+            # TODO: Add support for export annotations
+            if n_export_settings > 0:
+                logger.warn('Export settings are currently only supported for '
+                        f'annotation based exports. Found {n_export_settings} '
+                        'export setting annotations')
+
             # Export treenodes
             if self.export_treenodes:
                 treenodes = Treenode.objects.filter(project=self.project)
@@ -340,7 +670,7 @@ class Exporter():
                 self.to_serialize.append(treenodes)
 
             # Export connectors and connector links
-            if self.export_connectors:
+            if self.connector_mode != ConnectorMode.NoConnectors:
                 self.to_serialize.append(Connector.objects.filter(
                         project=self.project))
                 self.to_serialize.append(TreenodeConnector.objects.filter(
@@ -396,23 +726,32 @@ class Exporter():
                     .exclude(skeleton_id__in=skeleton_id_constraints))
                 connector_tids = set(c.treenode_id for c in connector_links)
                 extra_tids = connector_tids - exported_tids
-                if self.original_placeholder_context:
-                    logger.info("Exporting %s placeholder nodes" % len(extra_tids))
-                else:
-                    logger.info("Exporting %s placeholder nodes with first new class instance ID %s" % (len(extra_tids), new_skeleton_id))
+
+                connector_export_settings = export_settings['connectors']
+                logger.info(f"Exporting {len(extra_tids)} placeholder nodes")
 
                 placeholder_treenodes = Treenode.objects.prefetch_related(
                         'treenodeconnector_set').filter(id__in=extra_tids)
+
                 # Placeholder nodes will be transformed into root nodes of new
                 # skeletons.
                 new_skeleton_cis = []
                 new_neuron_cis = []
                 new_model_of_links = []
                 new_tc_links = []
+                n_new_placeholder_context = 0
+                original_placeholder_nodes = []
+                default_to_new_context  = self.connector_mode == ConnectorMode.IntraConnectorsAndPlaceholders
                 for pt in placeholder_treenodes:
+                    # Remov ereference to other treenodes
                     pt.parent_id = None
 
-                    if not self.original_placeholder_context:
+                    export_mode = connector_export_settings.get(pt.skeleton_id)
+                    create_new_placeholder_context = \
+                            (export_mode is None and not default_to_new_context) or \
+                            export_mode == ExportAnnotation.ConnectorsNewPlaceholders
+                    if create_new_placeholder_context:
+                        n_new_placeholder_context += 1
                         original_skeleton_id = pt.skeleton_id
                         pt.skeleton_id = new_skeleton_id
 
@@ -476,8 +815,16 @@ class Exporter():
                         new_skeleton_cis.append(new_skeleton_ci)
                         new_neuron_cis.append(new_neuron_ci)
                         new_model_of_links.append(new_model_of_link)
+                    else:
+                        original_placeholder_nodes.append(pt)
 
-                if placeholder_treenodes and not self.original_placeholder_context:
+                # Find treenodes
+                logger.info(f"Exported {len(original_placeholder_nodes)} "
+                        "placeholder nodes with original context, and "
+                        f"{n_new_placeholder_context} placeholder nodes with a new "
+                        "context.")
+
+                if n_new_placeholder_context > 0:
                     self.to_serialize.append(new_skeleton_cis)
                     self.to_serialize.append(new_neuron_cis)
                     self.to_serialize.append(new_model_of_links)
@@ -487,10 +834,9 @@ class Exporter():
                 self.to_serialize.append(placeholder_treenodes)
 
                 # Add additional skeletons and neuron-skeleton links
-                if self.original_placeholder_context:
+                if original_placeholder_nodes:
                     # Original skeletons
-                    extra_skids = set(Treenode.objects.filter(id__in=extra_tids,
-                            project=self.project).values_list('skeleton_id', flat=True))
+                    extra_skids = set(tn.skeleton_id for tn in original_placeholder_nodes)
                     self.to_serialize.append(ClassInstance.objects.filter(id__in=extra_skids))
 
                     # Original skeleton model-of neuron links
@@ -571,6 +917,27 @@ class Exporter():
             raise CommandError("Unable to serialize database: %s" % e)
 
 
+class ConnectorMode(Enum):
+    """The way connector links are handled if they are outside of the current
+    set of exported neurons. These can either be all neurons or annotation based
+    sets.
+    """
+    NoConnectors = 'false'
+    IntraConnectorsOnly = 'intra_connectors_only' # 1
+    IntraConnectorsAndPlaceholders = 'intra_connectors_and_placeholders' # 2
+    IntraConnectorsAndOriginalPlaceholders = 'intra_connectors_and_original_placeholders' # 3
+
+    def __str__(self):
+        return self.name
+
+    @staticmethod
+    def from_string(s):
+        for m in list(ConnectorMode):
+            if m.value == s:
+                return m
+        raise ValueError()
+
+
 class Command(BaseCommand):
     """ Call e.g. like
         ./manage.py catmaid_export_data --source 1 --required-annotation "Kenyon cells"
@@ -585,9 +952,12 @@ class Command(BaseCommand):
         parser.add_argument('--treenodes', dest='export_treenodes',
                 type=str2bool, nargs='?', const=True, default=True,
                 help='Export treenodes from source')
-        parser.add_argument('--connectors', dest='export_connectors',
-                type=str2bool, nargs='?', const=True, default=True,
-                help='Export connectors from source')
+        parser.add_argument('--connectors', dest='connector_mode',
+                type=ConnectorMode, choices=list(ConnectorMode),
+                help="Whether connectors should be exported. Connectors "
+                "outside of the current group of exported neurons can be "
+                "handled in differnt ways. These so called " "placeholder nodes "
+                "can be not exported at all, with their " "original IDs or new IDs.")
         parser.add_argument('--annotations', dest='export_annotations',
                 type=str2bool, nargs='?', const=True, default=True,
                 help='Export annotations from source')
@@ -614,10 +984,13 @@ class Command(BaseCommand):
             action='append', help='Name a required annotation for exported ' +
             'annotations. Meta-annotations can be used as well, will export ' +
             'whole hierarchies.')
-        parser.add_argument('--connector-placeholders', dest='connector_placeholders',
-            action='store_true', help='Should placeholder nodes be exported')
-        parser.add_argument('--original-placeholder-context', dest='original_placeholder_context',
-            action='store_true', default=False, help='Whether or not exported placeholder nodes refer to their original skeltons and neurons')
+        parser.add_argument('--settings-meta-annotation', dest='settings_meta_annotation',
+            action='append', help='A meta-annotation passed in will be used to '
+            'find other annotations that will group neurons. For each of these '
+            'grouping annotations, the exporter will look for export annotations '
+            '(on the annotation itself). Anything found will be used for the '
+            'respective neurons. In case of conflict, the one exporting more, '
+            'wins.', default=None)
         parser.add_argument('--exclusion-is-final', dest='exclusion_is_final',
             action='store_true', default=False, help='Whether or not neurons ' +
             'should be excluded if in addition to an exclusion annotation ' +
@@ -647,11 +1020,19 @@ class Command(BaseCommand):
         # Give some information about the export
         will_export = []
         wont_export = []
-        for t in ('treenodes', 'connectors', 'annotations', 'tags'):
+        for t in ('treenodes', 'annotations', 'tags'):
             if options['export_' + t]:
                 will_export.append(t)
             else:
                 wont_export.append(t)
+
+        connector_mode = options['connector_mode']
+        if connector_mode == ConnectorMode.IntraConnectorsOnly:
+            will_export('connectors (only intra)')
+        elif connector_mode == ConnectorMode.IntraConnectorsAndPlaceholders:
+            will_export('connectors (intra + new placeholders)')
+        elif connector_mode == ConnectorMode.IntraConnectorsOnly:
+            will_export('connectors (intra + original placeholders)')
 
         if will_export:
             logger.info("Will export: " + ", ".join(will_export))

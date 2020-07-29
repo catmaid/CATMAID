@@ -1716,6 +1716,15 @@ def annotations_for_entities(request:HttpRequest, project_id=None) -> JsonRespon
     """
     # Get 'annotated_with' relation ID
     object_ids = tuple(get_request_list(request.POST, 'object_ids', [], map_fn=int))
+    entity_map, annotation_map = get_annotations_for_entities(project_id, object_ids)
+
+    return JsonResponse({
+        'entities': entity_map,
+        'annotations': annotation_map
+    }, json_dumps_params={'separators': (',', ':')})
+
+
+def get_annotations_for_entities(project_id, object_ids):
     cursor = connection.cursor()
     cursor.execute("""
         SELECT id FROM relation
@@ -1735,16 +1744,14 @@ def annotations_for_entities(request:HttpRequest, project_id=None) -> JsonRespon
     ''' % (",".join(map(str, object_ids)), annotated_with_id))
 
     # Group by entity ID
-    m:DefaultDict[Any, List] = defaultdict(list)
-    a = dict()
+    entities:DefaultDict[Any, List] = defaultdict(list)
+    annotations = dict()
     for eid, aid, name, uid in cursor.fetchall():
-        m[eid].append({'id': aid, 'uid': uid})
-        a[aid] = name
+        entities[eid].append({'id': aid, 'uid': uid})
+        annotations[aid] = name
 
-    return JsonResponse({
-        'entities': m,
-        'annotations': a
-    }, json_dumps_params={'separators': (',', ':')})
+    return entities, annotations
+
 
 def annotations_for_skeleton(project_id:Union[int,str], skeleton_id, relations=None, classes=None) -> Dict:
     """Get a a dictionary mapping annotations on the neuron modeled by the

@@ -1,3 +1,5 @@
+import logging
+
 from django.core.management import call_command
 from django.conf import settings
 from catmaid.control.cropping import cleanup as cropping_cleanup, process_crop_job
@@ -7,7 +9,15 @@ from catmaid.control.roi import create_roi_image
 from catmaid.control.node import update_node_query_cache as do_update_node_query_cache
 from catmaid.control.authentication import deactivate_inactive_users as \
     deactivate_inactive_users_impl
-from celery import shared_task
+from celery import shared_task, Task
+
+logger = logging.getLogger(__name__)
+
+
+class LoggingTask(Task):
+    def on_failure(self, exc, task_id, args, kwargs, einfo):
+        logger.exception('Task failed: %s' % exc, exc_info=exc)
+        super(LoggingTask, self).on_failure(exc, task_id, args, kwargs, einfo)
 
 
 @shared_task

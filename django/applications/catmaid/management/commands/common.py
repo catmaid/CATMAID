@@ -5,7 +5,6 @@ def set_log_level(logger, verbosity=1):
     """This sets the log level of the passed in logger according to the
     management command verbosity.
     """
-    print(verbosity)
     handler = logging.StreamHandler(sys.stdout)
     logger.addHandler(handler)
 

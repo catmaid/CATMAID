@@ -8,6 +8,7 @@ User Documentation
    screenshots
    tools
    tracing_neurons
+   annotations
    widgets
    api
    api-doc

@@ -29,6 +29,14 @@ need to be applied to neurons or annotations is noted in the description.
       If present on neuron, no change in morphology is allowed anymore.
 
 .. glossary::
+  ``stable``
+      If present on neuron, during a join, the back-end will enforce that it is
+      the winner in the join, i.e. its ID remains. If both join partners have this
+      annotation, the join is canceled. This annotation can be configured
+      through the Settings Widget for users with ``can_administer`` permissions
+      on a project. Only the project/instance level config is respected by the back-end.
+
+.. glossary::
   ``export: annotations``
       If present on a "publication annotation", it is interpreted by the
       exporter to export annotations for the respective set of neurons,

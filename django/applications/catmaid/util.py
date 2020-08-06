@@ -78,3 +78,8 @@ def str2bool(v) -> bool:
         return False
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
+
+def str2list(v):
+    if len(v.strip()) == 0:
+        return None
+    return list(map(lambda x: x.strip(), v.split(',')))

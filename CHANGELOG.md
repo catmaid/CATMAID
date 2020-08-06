@@ -192,6 +192,14 @@ Tracing data export
   intra_connectors_and_original_placeholders. This provides the default
   configuration if no publication specific options are provided.
 
+- With the help of the new --allowed-tags-only parameter it is possible to limit
+  the kinds of tags that are exported. Without this parameter, all tags are
+  exported. If --allowed-tags-only is provided without arguments, a standard set
+  of known tags is included (uncertain end, posterior end, ends, anterior end,
+  not a branch, really ends, uncertain continuation, soma, microtubules end, out
+  to nerve). Alternatively, such a list can be provided as argument to this
+  parameter.
+
 Miscellaneous:
 
 - Auto-completion should now be faster by displaying only 15 filtering results.

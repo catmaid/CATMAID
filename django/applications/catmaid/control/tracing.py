@@ -71,6 +71,8 @@ end_tags = frozenset(['uncertain continuation', 'not a branch', 'ends',
         'really ends', 'uncertain end', 'anterior end', 'posterior end',
         'soma', 'out to nerve'])
 
+known_tags = end_tags.union(frozenset(['microtubules end', 'soma']))
+
 
 def check_tracing_setup_view(request:HttpRequest, project_id=None) -> JsonResponse:
     all_good, mc, mr, mci = check_tracing_setup_detailed(project_id)

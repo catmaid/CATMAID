@@ -10,12 +10,12 @@ from enum import Enum
 from catmaid.control.annotation import (get_annotated_entities,
         get_annotation_to_id_map, get_sub_annotation_ids,
         get_annotations_for_entities)
-from catmaid.control.tracing import check_tracing_setup
+from catmaid.control.tracing import check_tracing_setup, known_tags
 from catmaid.control.volume import find_volumes
 from catmaid.models import (Class, ClassInstance, ClassInstanceClassInstance,
         Relation, Connector, Project, Treenode, TreenodeClassInstance,
         TreenodeConnector, User, ReducedInfoUser, ExportUser, Volume)
-from catmaid.util import str2bool
+from catmaid.util import str2bool, str2list
 from django.db import connection
 from django.core import serializers
 from django.core.management.base import BaseCommand, CommandError
@@ -121,6 +121,10 @@ class Exporter():
         self.connector_mode = options['connector_mode']
         self.export_annotations = options['export_annotations']
         self.export_tags = options['export_tags']
+        self.allowed_tags = options['allowed_tags']
+
+        if self.allowed_tags == True:
+            self.allowed_tags = list(known_tags)
 
         self.export_users = options['export_users']
         self.export_volumes = options['export_volumes']
@@ -642,11 +646,17 @@ class Exporter():
             tags = None
             if len(export_settings['tags']) == 0:
                 if self.export_tags and 'labeled_as' in relations:
+                    tag_filter_params = {
+                        'project': self.project,
+                        'class_instance__class_column': classes['label'],
+                        'relation_id': relations['labeled_as'],
+                        'treenode__skeleton_id__in': skeleton_id_constraints,
+                    }
+                    if self.allowed_tags is not None:
+                        tag_filter_params['class_instance__name__in'] = self.allowed_tags
+
                     tag_links = TreenodeClassInstance.objects.select_related('class_instance').filter(
-                            project=self.project,
-                            class_instance__class_column=classes['label'],
-                            relation_id=relations['labeled_as'],
-                            treenode__skeleton_id__in=skeleton_id_constraints)
+                            **tag_filter_params)
                     # Because we retrieve these objects as part of the returned
                     # links to get only the used tags.
                     tags = set(t.class_instance for t in tag_links)
@@ -659,17 +669,29 @@ class Exporter():
                     elif export_annotation == ExportAnnotation.TagsYes:
                         tag_skeletons.add(skeleton_id)
                 n_skeletons_ignored_for_tags = n_default_tag_skeletons - len(tag_skeletons)
-                tag_links = TreenodeClassInstance.objects.select_related('class_instance').filter(
-                        project=self.project,
-                        class_instance__class_column=classes['label'],
-                        relation_id=relations['labeled_as'],
-                        treenode__skeleton_id__in=tag_skeletons)
+
+                tag_filter_params = {
+                    'project': self.project,
+                    'class_instance__class_column': classes['label'],
+                    'relation_id': relations['labeled_as'],
+                    'treenode__skeleton_id__in': tag_skeletons,
+                }
+
+                if self.allowed_tags is not None:
+                    tag_filter_params['class_instance__name__in'] = self.allowed_tags
+
+                tag_links = TreenodeClassInstance.objects.select_related('class_instance') \
+                        .filter(**tag_filter_params)
                 # Because we retrieve these objects as part of the returned
                 # links to get only the used tags.
                 tags = set(t.class_instance for t in tag_links)
 
             if tags or tag_links:
                 tag_names = sorted(set(t.name for t in tags))
+                if self.allowed_tags is None:
+                    logger.info(f'All tags are allowed for export')
+                else:
+                    logger.info(f'Allowed tags: {", ".join(self.allowed_tags)}')
                 logger.info(f"Exporting {len(tags)} tags, part of {tag_links.count()} links: {', '.join(tag_names)}")
 
                 self.to_serialize.append(tags)
@@ -988,6 +1010,11 @@ class Command(BaseCommand):
         parser.add_argument('--tags', dest='export_tags',
                 type=str2bool, nargs='?', const=True, default=True,
                 help='Export tags from source')
+        parser.add_argument('--allowed-tags-only', dest='allowed_tags',
+                type=str2list, nargs='?', const=True, default=None,
+                help='The list of allowed tags. If omitted, all tags will be '
+                'exported. If provided without arguments, the call is equivalent '
+                'to providing the parameters: ' + ', '.join(known_tags))
         parser.add_argument('--users', dest='export_users',
                 type=str2bool, nargs='?', const=True, default=False,
                 help='Export users from source')

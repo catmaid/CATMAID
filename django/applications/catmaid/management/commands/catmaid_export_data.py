@@ -1079,14 +1079,17 @@ class Command(BaseCommand):
 
         connector_mode = options['connector_mode']
         if connector_mode == ConnectorMode.IntraConnectorsOnly:
-            will_export('connectors (only intra)')
+            will_export.append('connectors (only intra)')
         elif connector_mode == ConnectorMode.IntraConnectorsAndPlaceholders:
-            will_export('connectors (intra + new placeholders)')
+            will_export.append('connectors (intra + new placeholders)')
         elif connector_mode == ConnectorMode.IntraConnectorsOnly:
-            will_export('connectors (intra + original placeholders)')
+            will_export.append('connectors (intra + original placeholders)')
+        elif connector_mode != ConnectorMode.NoConnectors:
+            logger.warn(f'Unknown connector mode: {connector_mode}')
+
 
         if will_export:
-            logger.info("Will export: " + ", ".join(will_export))
+            logger.info("Will export by default: " + ", ".join(will_export))
         else:
             logger.info("Nothing selected for export")
             return

@@ -3,7 +3,7 @@ celery==4.3.0
 channels==2.4.0
 cssmin==0.2.0
 Cython==0.29.14
-Django==3.0.7
+Django==3.0.9
 django-adminplus==0.5
 django-allauth==0.41.0
 django-formtools==2.2
@@ -19,7 +19,7 @@ msgpack==0.6.2; platform_python_implementation != 'PyPy'
 msgpack_python==0.5.6
 networkx==2.4
 numpy==1.17.4
-pillow==7.0.0
+pillow==7.1.0
 progressbar2==3.47.0
 psycopg2-binary==2.8.4; platform_python_implementation != 'PyPy'
 psycopg2cffi==2.8.1;  platform_python_implementation == 'PyPy'

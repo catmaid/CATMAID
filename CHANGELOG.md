@@ -171,6 +171,27 @@ Administration:
 - System check widget: more information regarding a potential transaction ID
   wraparound has been added to the database section.
 
+Tracing data export
+
+- The management command catmaid_export_data supports now the sepcification of
+  export options for tags, annotations and connectors per publication. To tell
+  the exporter which annotations/publications are allowed to carry these
+  settings, the "--settings-meta-annotation <annotation>" can be provided to the
+  exporter. For instance, assuming the provided <annotation> is "Published",
+  then all annotations that are annotated with "Published" are checked for
+  additional annotations that specify explicitly whether to export tags,
+  annotations and connectivity. The following annotations are respected:
+  "export: no-connectors", "export: no-tags", "export: annotations",
+  "export: no-annotations", "export: no-connectors",
+  "export: intra-connectors-only", "export: intra-connectors-and-placeholders",
+  and "export: intra-connectors-and-original-placeholders".
+
+- The --conector-placeholders and the --original-placeholder-context options
+  have been removed. Instead the --connector option can now have four different
+  options: false, intra_connectors_only, intra_connectors_and_placeholders,
+  intra_connectors_and_original_placeholders. This provides the default
+  configuration if no publication specific options are provided.
+
 Miscellaneous:
 
 - Auto-completion should now be faster by displaying only 15 filtering results.

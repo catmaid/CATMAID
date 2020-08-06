@@ -541,30 +541,37 @@ class Exporter():
 
             # Export annotations and annotation-neuron links. Include meta
             # annotations.
-            if self.export_annotations and 'annotated_with' in relations:
-                # TODO: Add export annotation support for annotations
-                if len(export_settings['annotations']) > 0:
-                    logger.warn('Export settings are currently not supported for '
-                            f'annotation exports. Found {len(export_annotations["annotations"])} '
-                            'annotation export related export settings.')
-
+            if (self.export_annotations or len(export_settings['annotations']) > 0) and \
+                    'annotated_with' in relations:
                 annotated_with = relations['annotated_with']
                 all_annotations:Set = set()
                 all_annotation_links:Set = set()
 
-                if self.per_skeleton_annotations:
-                    query_params = {
-                            'annotated_with': "export: no-annotations",
-                        'sub_annotated_with': "export: no-annotations",
-                    }
-                    neuron_info, num_total_records = get_annotated_entities(self.project.id,
-                            query_params, relations, classes, ['neuron'], with_skeletons=True)
-                    neuron_ids_without_annotations = set(chain.from_iterable(
-                            [n['id'] for n in neuron_info]))
-                    working_set = [e for e in entities \
-                            if e.id not in neuron_ids_without_annotations]
-                else:
+                if len(export_settings['annotations']) == 0:
                     working_set = [e for e in entities]
+                else:
+                    annotation_skeletons = set(skeleton_id_constraints)
+                    n_default_annotation_skeletons = len(annotation_skeletons)
+                    for skeleton_id, export_annotation in export_settings['annotations'].items():
+                        if export_annotation == ExportAnnotation.AnnotationsNo:
+                            connector_skeletons.remove(skeleton_id)
+                        elif export_annotations == ExportAnnotation.AnnotationsYes:
+                            connector_skeletons.add(skeleton_id)
+                    n_skeletons_ignored_for_annotations = n_default_annotation_skeletons - len(annotation_skeletons)
+
+                    # Create a map of skeleton IDs to neuron IDs
+                    cursor.execute("""
+                        SELECT array_agg(cici.class_instance_b)
+                        FROM class_instance_class_instance cici
+                        WHERE cici.project_id = %(project_id)s AND
+                              cici.relation_id = %(model_of)s AND
+                              cici.class_instance_a = ANY(%(skeleton_ids)s::bigint[])
+                    """, {
+                        'project_id': project_id,
+                        'model_of': relations['model_of'],
+                        'skeleton_ids': list(annotation_skeletons),
+                    })
+                    working_set = cursor.fetchone()[0]
 
                 # Optionally, allow only annotations that are themselves
                 # annotated with a required annotation. These annotations are

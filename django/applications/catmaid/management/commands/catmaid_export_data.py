@@ -276,23 +276,25 @@ class Exporter():
                 # are both TreenodesYes and TreenodesNo annotations, the former wins.
                 treenode_setting = None
                 for ex_an in (ExportAnnotation.TreenodesNo, ExportAnnotation.TreenodesYes):
-                    if ex_an in settings_annotations_map:
-                        treenode_setting = settings_annotations_map[ex_an] in annotation_annotation_map
+                    if ex_an in settings_annotations_map and \
+                            settings_annotations_map[ex_an] in annotation_annotation_map:
+                        treenode_setting = ex_an
 
                 # Whether tags should be exported for this neuron set. If there
                 # are both TagsYes and TagsNo annotations, the former wins.
                 tag_setings = None
                 for ex_an in (ExportAnnotation.TagsNo, ExportAnnotation.TagsYes):
-                    if ex_an in settings_annotations_map:
-                        tag_setings = settings_annotations_map[ex_an] in annotation_annotation_map
+                    if ex_an.value in settings_annotations_map and \
+                            settings_annotations_map[ex_an.value] in annotation_annotation_map:
+                        tag_setings = ex_an
 
                 # Whether tags should be exported for this neuron set. If there
                 # are both AnnotationsYes and AnnotationsNo annotations, the former wins.
                 annotation_settings = None
                 for ex_an in (ExportAnnotation.AnnotationsNo, ExportAnnotation.AnnotationsYes):
-                    if ex_an in settings_annotations_map:
-                        annotation_settings = settings_annotations_map[ex_an] in annotation_annotation_map
-
+                    if ex_an.value in settings_annotations_map and \
+                            settings_annotations_map[ex_an.value] in annotation_annotation_map:
+                        annotation_settings = ex_an
                 # Whether connectors should be exported for this neuron set. If there
                 # are multiple of the annotations ConnectorsNo, ConnectorsOnlyIntra,
                 # ConnectorsNewPlaceholders or ConnectorsOriginalPlaceholders are
@@ -335,7 +337,7 @@ class Exporter():
                         n_updated_tags += 1
                     if ExportAnnotation.has_more_weight(annotation_settings,
                             export_settings['annotations'].get(skeleton_id)):
-                        export_settings['annotation'][skeleton_id] = annotation_setting
+                        export_settings['annotations'][skeleton_id] = annotation_settings
                         n_updated_annotations += 1
                     if ExportAnnotation.has_more_weight(connector_settings,
                             export_settings['connectors'].get(skeleton_id)):
@@ -549,12 +551,13 @@ class Exporter():
                     n_default_annotation_skeletons = len(annotation_skeletons)
                     for skeleton_id, export_annotation in export_settings['annotations'].items():
                         if export_annotation == ExportAnnotation.AnnotationsNo:
-                            connector_skeletons.remove(skeleton_id)
-                        elif export_annotations == ExportAnnotation.AnnotationsYes:
-                            connector_skeletons.add(skeleton_id)
+                            annotation_skeletons.remove(skeleton_id)
+                        elif export_annotation == ExportAnnotation.AnnotationsYes:
+                            annotation_skeletons.add(skeleton_id)
                     n_skeletons_ignored_for_annotations = n_default_annotation_skeletons - len(annotation_skeletons)
 
                     # Create a map of skeleton IDs to neuron IDs
+                    cursor = connection.cursor()
                     cursor.execute("""
                         SELECT array_agg(cici.class_instance_b)
                         FROM class_instance_class_instance cici
@@ -562,7 +565,7 @@ class Exporter():
                               cici.relation_id = %(model_of)s AND
                               cici.class_instance_a = ANY(%(skeleton_ids)s::bigint[])
                     """, {
-                        'project_id': project_id,
+                        'project_id': self.project.id,
                         'model_of': relations['model_of'],
                         'skeleton_ids': list(annotation_skeletons),
                     })
@@ -652,9 +655,9 @@ class Exporter():
                 n_default_tag_skeletons = len(tag_skeletons)
                 for skeleton_id, export_annotation in export_settings['tags'].items():
                     if export_annotation == ExportAnnotation.TagsNo:
-                        connector_skeletons.remove(skeleton_id)
-                    elif export_annotations == ExportAnnotation.TagsYes:
-                        connector_skeletons.add(skeleton_id)
+                        tag_skeletons.remove(skeleton_id)
+                    elif export_annotation == ExportAnnotation.TagsYes:
+                        tag_skeletons.add(skeleton_id)
                 n_skeletons_ignored_for_tags = n_default_tag_skeletons - len(tag_skeletons)
                 tag_links = TreenodeClassInstance.objects.select_related('class_instance').filter(
                         project=self.project,
@@ -665,12 +668,14 @@ class Exporter():
                 # links to get only the used tags.
                 tags = set(t.class_instance for t in tag_links)
 
-            if tags:
+            if tags or tag_links:
                 tag_names = sorted(set(t.name for t in tags))
                 logger.info(f"Exporting {len(tags)} tags, part of {tag_links.count()} links: {', '.join(tag_names)}")
 
                 self.to_serialize.append(tags)
                 self.to_serialize.append(tag_links)
+            else:
+                logger.info(f"Exporting {len(tags)} tags and {tag_links.count()} tag links")
 
 
             # TODO: Export reviews

@@ -123,7 +123,7 @@ class Exporter():
         self.export_tags = options['export_tags']
         self.allowed_tags = options['allowed_tags']
 
-        if self.allowed_tags == True:
+        if self.allowed_tags is True:
             self.allowed_tags = list(known_tags)
 
         self.export_users = options['export_users']
@@ -231,7 +231,7 @@ class Exporter():
                         ", ".join(missing_annotations))
 
             query_params = {
-              'annotated_with': ",".join(settings_annotation_ids),
+                'annotated_with': ",".join(settings_annotation_ids),
             }
             settings_annotations, num_total_records = get_annotated_entities(self.project.id,
                     query_params, relations, classes, ['annotation'])
@@ -689,7 +689,7 @@ class Exporter():
             if tags or tag_links:
                 tag_names = sorted(set(t.name for t in tags))
                 if self.allowed_tags is None:
-                    logger.info(f'All tags are allowed for export')
+                    logger.info('All tags are allowed for export')
                 else:
                     logger.info(f'Allowed tags: {", ".join(self.allowed_tags)}')
                 logger.info(f"Exporting {len(tags)} tags, part of {tag_links.count()} links: {', '.join(tag_names)}")
@@ -787,7 +787,7 @@ class Exporter():
                 new_tc_links = []
                 n_new_placeholder_context = 0
                 original_placeholder_nodes = []
-                default_to_new_context  = self.connector_mode == ConnectorMode.IntraConnectorsAndPlaceholders
+                default_to_new_context = self.connector_mode == ConnectorMode.IntraConnectorsAndPlaceholders
                 for pt in placeholder_treenodes:
                     # Remov ereference to other treenodes
                     pt.parent_id = None

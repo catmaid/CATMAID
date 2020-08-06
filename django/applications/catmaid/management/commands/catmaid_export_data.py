@@ -121,9 +121,6 @@ class Exporter():
         self.connector_mode = options['connector_mode']
         self.export_annotations = options['export_annotations']
         self.export_tags = options['export_tags']
-        self.per_skeleton_treenodes = options['per_skeleton_treenodes']
-        self.per_skeleton_connectors = options['per_skeleton_connectors']
-        self.per_skeleton_annotations = options['per_skeleton_annotations']
 
         self.export_users = options['export_users']
         self.export_volumes = options['export_volumes']
@@ -163,8 +160,6 @@ class Exporter():
 
         self.to_serialize:List = []
         self.seen:Dict = {}
-
-        self.per_skeleton_annotations = True
 
     def collect_data(self):
         self.to_serialize = []

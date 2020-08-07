@@ -27,6 +27,7 @@ THREE.TrackballControls = function ( object, domElement ) {
 
 	this.staticMoving = false;
 	this.dynamicDampingFactor = 0.2;
+	this.cylindricalRotation = true;
 
 	this.minDistance = 0;
 	this.maxDistance = Infinity;
@@ -48,6 +49,9 @@ THREE.TrackballControls = function ( object, domElement ) {
 		_keyState = STATE.NONE,
 
 		_eye = new THREE.Vector3(),
+
+		_rotateStart = new THREE.Vector3(),
+		_rotateEnd = new THREE.Vector3(),
 
 		_movePrev = new THREE.Vector2(),
 		_moveCurr = new THREE.Vector2(),
@@ -126,6 +130,56 @@ THREE.TrackballControls = function ( object, domElement ) {
 
 	}() );
 
+	var getMouseProjectionOnBall = ( function () {
+
+		var vector = new THREE.Vector3();
+		var objectUp = new THREE.Vector3();
+		var mouseOnBall = new THREE.Vector3();
+
+		return function getMouseProjectionOnBall( pageX, pageY ) {
+
+			mouseOnBall.set(
+				( pageX - scope.screen.width * 0.5 - scope.screen.left ) / ( scope.screen.width * 0.5 ),
+				( scope.screen.height * 0.5 + scope.screen.top - pageY ) / ( scope.screen.height * 0.5 ),
+				0.0
+			);
+
+			var length = mouseOnBall.length();
+
+			if ( scope.noRoll ) {
+
+				if ( length < Math.SQRT1_2 ) {
+
+					mouseOnBall.z = Math.sqrt( 1.0 - length * length );
+
+				} else {
+
+					mouseOnBall.z = 0.5 / length;
+
+				}
+
+			} else if ( length > 1.0 ) {
+
+				mouseOnBall.normalize();
+
+			} else {
+
+				mouseOnBall.z = Math.sqrt( 1.0 - length * length );
+
+			}
+
+			_eye.copy( scope.object.position ).sub( scope.target );
+
+			vector.copy( scope.object.up ).setLength( mouseOnBall.y );
+			vector.add( objectUp.copy( scope.object.up ).cross( _eye ).setLength( mouseOnBall.x ) );
+			vector.add( _eye.setLength( mouseOnBall.z ) );
+
+			return vector;
+
+		};
+
+	}() );
+
 	this.rotateCamera = ( function () {
 
 		var axis = new THREE.Vector3(),
@@ -138,44 +192,78 @@ THREE.TrackballControls = function ( object, domElement ) {
 
 		return function rotateCamera() {
 
-			moveDirection.set( _moveCurr.x - _movePrev.x, _moveCurr.y - _movePrev.y, 0 );
-			angle = moveDirection.length();
+			if (scope.cylindricalRotation) {
 
-			if ( angle ) {
+				moveDirection.set( _moveCurr.x - _movePrev.x, _moveCurr.y - _movePrev.y, 0 );
+				angle = moveDirection.length();
 
-				_eye.copy( scope.object.position ).sub( scope.target );
+				if ( angle ) {
 
-				eyeDirection.copy( _eye ).normalize();
-				objectUpDirection.copy( scope.object.up ).normalize();
-				objectSidewaysDirection.crossVectors( objectUpDirection, eyeDirection ).normalize();
+					_eye.copy( scope.object.position ).sub( scope.target );
 
-				objectUpDirection.setLength( _moveCurr.y - _movePrev.y );
-				objectSidewaysDirection.setLength( _moveCurr.x - _movePrev.x );
+					eyeDirection.copy( _eye ).normalize();
+					objectUpDirection.copy( scope.object.up ).normalize();
+					objectSidewaysDirection.crossVectors( objectUpDirection, eyeDirection ).normalize();
 
-				moveDirection.copy( objectUpDirection.add( objectSidewaysDirection ) );
+					objectUpDirection.setLength( _moveCurr.y - _movePrev.y );
+					objectSidewaysDirection.setLength( _moveCurr.x - _movePrev.x );
 
-				axis.crossVectors( moveDirection, _eye ).normalize();
+					moveDirection.copy( objectUpDirection.add( objectSidewaysDirection ) );
 
-				angle *= scope.rotateSpeed;
-				quaternion.setFromAxisAngle( axis, angle );
+					axis.crossVectors( moveDirection, _eye ).normalize();
 
-				_eye.applyQuaternion( quaternion );
-				scope.object.up.applyQuaternion( quaternion );
+					angle *= scope.rotateSpeed;
+					quaternion.setFromAxisAngle( axis, angle );
 
-				_lastAxis.copy( axis );
-				_lastAngle = angle;
+					_eye.applyQuaternion( quaternion );
+					scope.object.up.applyQuaternion( quaternion );
 
-			} else if ( ! scope.staticMoving && _lastAngle ) {
+					_lastAxis.copy( axis );
+					_lastAngle = angle;
 
-				_lastAngle *= Math.sqrt( 1.0 - scope.dynamicDampingFactor );
-				_eye.copy( scope.object.position ).sub( scope.target );
-				quaternion.setFromAxisAngle( _lastAxis, _lastAngle );
-				_eye.applyQuaternion( quaternion );
-				scope.object.up.applyQuaternion( quaternion );
+				} else if ( ! scope.staticMoving && _lastAngle ) {
+
+					_lastAngle *= Math.sqrt( 1.0 - scope.dynamicDampingFactor );
+					_eye.copy( scope.object.position ).sub( scope.target );
+					quaternion.setFromAxisAngle( _lastAxis, _lastAngle );
+					_eye.applyQuaternion( quaternion );
+					scope.object.up.applyQuaternion( quaternion );
+
+				}
+
+				_movePrev.copy( _moveCurr );
+
+			} else {
+
+				angle = Math.acos( _rotateStart.dot( _rotateEnd ) / _rotateStart.length() / _rotateEnd.length() );
+
+				if ( angle ) {
+
+					axis.crossVectors( _rotateStart, _rotateEnd ).normalize();
+
+					angle *= scope.rotateSpeed;
+
+					quaternion.setFromAxisAngle( axis, -angle );
+
+					_eye.applyQuaternion( quaternion );
+					scope.object.up.applyQuaternion( quaternion );
+
+					_rotateEnd.applyQuaternion( quaternion );
+
+					if ( scope.staticMoving ) {
+
+						_rotateStart.copy( _rotateEnd );
+
+					} else {
+
+						quaternion.setFromAxisAngle( axis, angle * ( scope.dynamicDampingFactor - 1.0 ) );
+						_rotateStart.applyQuaternion( quaternion );
+
+					}
+
+				}
 
 			}
-
-			_movePrev.copy( _moveCurr );
 
 		};
 
@@ -465,8 +553,17 @@ THREE.TrackballControls = function ( object, domElement ) {
 
 		if ( state === STATE.ROTATE && ! scope.noRotate ) {
 
-			_moveCurr.copy( getMouseOnCircle( event.pageX, event.pageY ) );
-			_movePrev.copy( _moveCurr );
+			if ( scope.cylindricalRotation) {
+
+				_moveCurr.copy( getMouseOnCircle( event.pageX, event.pageY ) );
+				_movePrev.copy( _moveCurr );
+
+			} else {
+
+				_rotateStart.copy( getMouseProjectionOnBall( event.pageX, event.pageY ) );
+				_rotateEnd.copy( _rotateStart );
+
+			}
 
 		} else if ( state === STATE.ZOOM && ! scope.noZoom ) {
 
@@ -498,8 +595,16 @@ THREE.TrackballControls = function ( object, domElement ) {
 
 		if ( state === STATE.ROTATE && ! scope.noRotate ) {
 
-			_movePrev.copy( _moveCurr );
-			_moveCurr.copy( getMouseOnCircle( event.pageX, event.pageY ) );
+			if ( scope.cylindricalRotation) {
+
+				_movePrev.copy( _moveCurr );
+				_moveCurr.copy( getMouseOnCircle( event.pageX, event.pageY ) );
+
+			} else {
+
+				_rotateEnd.copy( getMouseProjectionOnBall( event.pageX, event.pageY ) );
+
+			}
 
 		} else if ( state === STATE.ZOOM && ! scope.noZoom ) {
 
@@ -571,8 +676,19 @@ THREE.TrackballControls = function ( object, domElement ) {
 
 			case 1:
 				_state = STATE.TOUCH_ROTATE;
-				_moveCurr.copy( getMouseOnCircle( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY ) );
-				_movePrev.copy( _moveCurr );
+
+				if ( scope.cylindricalRotation) {
+
+					_moveCurr.copy( getMouseOnCircle( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY ) );
+					_movePrev.copy( _moveCurr );
+
+				} else {
+
+					_rotateStart.copy( getMouseProjectionOnBall( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY ) );
+					_rotateEnd.copy( _rotateStart );
+
+				}
+
 				break;
 
 			default: // 2 or more
@@ -603,8 +719,17 @@ THREE.TrackballControls = function ( object, domElement ) {
 		switch ( event.touches.length ) {
 
 			case 1:
-				_movePrev.copy( _moveCurr );
-				_moveCurr.copy( getMouseOnCircle( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY ) );
+
+				if ( scope.cylindricalRotation ) {
+
+					_movePrev.copy( _moveCurr );
+					_moveCurr.copy( getMouseOnCircle( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY ) );
+
+				} else {
+
+					_rotateEnd.copy( getMouseProjectionOnBall( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY ) );
+
+				}
 				break;
 
 			default: // 2 or more
@@ -633,8 +758,19 @@ THREE.TrackballControls = function ( object, domElement ) {
 
 			case 1:
 				_state = STATE.TOUCH_ROTATE;
-				_moveCurr.copy( getMouseOnCircle( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY ) );
-				_movePrev.copy( _moveCurr );
+
+				if ( scope.cylindricalRotation) {
+
+					_moveCurr.copy( getMouseOnCircle( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY ) );
+					_movePrev.copy( _moveCurr );
+
+				} else {
+
+					_rotateEnd.copy( getMouseProjectionOnBall( event.touches[ 0 ].pageX, event.touches[ 0 ].pageY ) );
+					_rotateStart.copy( _rotateEnd );
+
+				}
+
 				break;
 
 		}

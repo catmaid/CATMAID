@@ -104,7 +104,7 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
                 raise ValueError("Unknown annotation: " + inval)
             return id
     else:
-        def to_id(inval) -> int:
+        def to_id(inval) -> Optional[int]:
             return int(inval)
 
     # Collect annotations and sub-annotation information. Each entry can be a

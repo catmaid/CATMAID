@@ -4,7 +4,7 @@ from collections import defaultdict
 from datetime import datetime
 from itertools import chain
 from functools import reduce
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional, Set, DefaultDict
 from enum import Enum
 
 from catmaid.control.annotation import (get_annotated_entities,
@@ -205,7 +205,7 @@ class Exporter():
         # This data structure allows settings look-up for neuron-centric export
         # options. If no neuron specific override has been made, the look-up
         # will provide the default values provided to the exporter.
-        export_settings = {
+        export_settings:Dict[str, DefaultDict[str, Optional[ExportAnnotation]]] = {
             'treenodes': defaultdict(lambda: self.export_treenodes),
             'connectors': defaultdict(lambda: self.connector_mode),
             'annotations': defaultdict(lambda: self.export_annotations),
@@ -268,7 +268,7 @@ class Exporter():
                 logger.info(f"Found {num_total_records} neurons with the "
                   f"following settings meta-annotations: {se_name}")
 
-                skeleton_ids_with_settings:Optional[List] = \
+                skeleton_ids_with_settings:List = \
                         list(chain.from_iterable([n['skeleton_ids'] for n in settings_neuron_info]))
                 neuron_ids_with_settings = [n['id'] for n in settings_neuron_info]
 
@@ -643,7 +643,7 @@ class Exporter():
                                 f"annotations are exported: {', '.join(self.annotation_annotations)}")
 
             # Export tags
-            tags = None
+            tags = set()
             if len(export_settings['tags']) == 0:
                 if self.export_tags and 'labeled_as' in relations:
                     tag_filter_params = {

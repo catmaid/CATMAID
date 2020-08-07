@@ -133,7 +133,7 @@
       init: () => {
         this.update();
       },
-      helpPath: 'publication.html',
+      helpPath: 'publication-widget.html',
     };
   };
 

@@ -257,7 +257,7 @@ jQuery.expr[":"].icontainsnot = jQuery.expr.createPseudo(function(arg) {
         var nVertices = this.vertices.length;
         if (this._bufferGeometry) {
           if (nVertices !== this._bufferGeometry.attributes.color.count) {
-            this._bufferGeometry.addAttribute("color",
+            this._bufferGeometry.setAttribute("color",
                 new THREE.BufferAttribute(new Float32Array(nVertices * 3), 3));
           }
         }

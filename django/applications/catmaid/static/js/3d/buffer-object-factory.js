@@ -179,20 +179,20 @@
       // Create buffer geometry, add 'New' suffix to custom attributes to not
       // conflict with THREE.js internal arguments.
       this.setIndex(new THREE.BufferAttribute(indices, 1));
-      this.addAttribute('position', new THREE.BufferAttribute(positions, 3));
-      this.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
-      this.addAttribute('colorNew', new THREE.BufferAttribute(colors, 3));
-      this.addAttribute('visibleNew', new THREE.BufferAttribute(visible, 1));
-      this.addAttribute('alphaNew', new THREE.BufferAttribute(alphas, 1));
+      this.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      this.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+      this.setAttribute('colorNew', new THREE.BufferAttribute(colors, 3));
+      this.setAttribute('visibleNew', new THREE.BufferAttribute(visible, 1));
+      this.setAttribute('alphaNew', new THREE.BufferAttribute(alphas, 1));
 
       // Mark position, visible and alpha attributes as dynamic so that they can
       // be changed during runtime.
-      this.index.setDynamic(true);
-      this.attributes.position.setDynamic(true);
-      this.attributes.normal.setDynamic(true);
-      this.attributes.visibleNew.setDynamic(true);
-      this.attributes.alphaNew.setDynamic(true);
-      this.attributes.colorNew.setDynamic(true);
+      this.index.setUsage(THREE.DynamicDrawUsage);
+      this.attributes.position.setUsage(THREE.DynamicDrawUsage);
+      this.attributes.normal.setUsage(THREE.DynamicDrawUsage);
+      this.attributes.visibleNew.setUsage(THREE.DynamicDrawUsage);
+      this.attributes.alphaNew.setUsage(THREE.DynamicDrawUsage);
+      this.attributes.colorNew.setUsage(THREE.DynamicDrawUsage);
 
       this.nVerticesPerObject = nPointsPerObject;
     } else {
@@ -389,7 +389,7 @@
 
     THREE.InstancedBufferGeometry.call(this);
 
-    this.maxInstancedCount = nObjects;
+    this.instanceCount = nObjects;
 
     // Per mesh data
     var templateVertices = this.templateGeometry.vertices;
@@ -441,8 +441,8 @@
     applyMatrix4ToVector3Array(scaleMatrix, vertices);
 
     this.setIndex(new THREE.BufferAttribute(indices, 1));
-    this.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
-    this.addAttribute('position', new THREE.BufferAttribute(vertices, 3));
+    this.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+    this.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
 
     this.computeBoundingBox();
     this.computeBoundingSphere();
@@ -455,17 +455,17 @@
 
     // Create buffer geometry, add 'New' suffix to custom attributes to not
     // conflict with THREE.js internal arguments.
-    this.addAttribute('offset', new THREE.InstancedBufferAttribute(offsets, 3));
-    this.addAttribute('colorNew', new THREE.InstancedBufferAttribute(colors, 3));
-    this.addAttribute('visibleNew', new THREE.InstancedBufferAttribute(visible, 1));
-    this.addAttribute('alphaNew', new THREE.InstancedBufferAttribute(alphas, 1));
+    this.setAttribute('offset', new THREE.InstancedBufferAttribute(offsets, 3));
+    this.setAttribute('colorNew', new THREE.InstancedBufferAttribute(colors, 3));
+    this.setAttribute('visibleNew', new THREE.InstancedBufferAttribute(visible, 1));
+    this.setAttribute('alphaNew', new THREE.InstancedBufferAttribute(alphas, 1));
 
     // Mark position, visible and alpha attributes as dynamic so that they can
     // be changed during runtime.
-    this.attributes.offset.setDynamic(true);
-    this.attributes.colorNew.setDynamic(true);
-    this.attributes.visibleNew.setDynamic(true);
-    this.attributes.alphaNew.setDynamic(true);
+    this.attributes.offset.setUsage(THREE.DynamicDrawUsage);
+    this.attributes.colorNew.setUsage(THREE.DynamicDrawUsage);
+    this.attributes.visibleNew.setUsage(THREE.DynamicDrawUsage);
+    this.attributes.alphaNew.setUsage(THREE.DynamicDrawUsage);
 
     this.nVerticesPerObject = nVerticesPerObject;
   };

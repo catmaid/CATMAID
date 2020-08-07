@@ -94,6 +94,7 @@ libraries_js = OrderedDict([
     ('msgpack-lite', ['msgpack.min.js']),
     ('numeric', ['numeric-1.2.6.js']),
     ('numjs', ['numjs.min.js']),
+    ('chevrotain', ['chevrotain.min.js']),
     ('three.js', ['three.js', 'controls/TrackballControls.js',
                  'camera/CombinedCamera.js', 'WebGL.js',
                  'lines/LineSegmentsGeometry.js', 'lines/LineGeometry.js',

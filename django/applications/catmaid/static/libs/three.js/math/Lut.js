@@ -1,6 +1,4 @@
-/**
- * @author daron1337 / http://daron1337.github.io/
- */
+console.warn( "THREE.Lut: As part of the transition to ES6 Modules, the files in 'examples/js' were deprecated in May 2020 (r117) and will be deleted in December 2020 (r124). You can find more information about developing using ES6 Modules in https://threejs.org/docs/#manual/en/introduction/Installation." );
 
 THREE.Lut = function ( colormap, numberofcolors ) {
 
@@ -9,20 +7,6 @@ THREE.Lut = function ( colormap, numberofcolors ) {
 	return this;
 
 };
-
-var defaultLabelParameters = {
-	fontsize: 24,
-	fontface: 'Arial',
-	title: '',
-	um: '',
-	ticks: 0,
-	decimal: 2,
-	notation: 'standard'
-};
-
-var defaultBackgroundColor = { r: 255, g: 100, b: 100, a: 0.8 };
-var defaultBorderColor = { r: 255, g: 0, b: 0, a: 1.0 };
-var defaultBorderThickness = 4;
 
 THREE.Lut.prototype = {
 
@@ -188,7 +172,6 @@ THREE.Lut.prototype = {
 
 	}
 };
-
 
 THREE.ColorMapKeywords = {
 

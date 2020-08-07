@@ -819,7 +819,7 @@
             (pos.y + parentPos.y) / 2,
             (pos.z + parentPos.z) / 2);
         m.setPosition(position);
-        cylinder.applyMatrix(m);
+        cylinder.applyMatrix4(m);
         this.mesh.geometry.merge(cylinder);
       }
     };
@@ -3759,7 +3759,7 @@
       }
 
       var geometry = new THREE.BufferGeometry();
-      geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
       geometry.computeBoundingSphere();
 
       var material = new THREE.LineBasicMaterial({
@@ -4004,7 +4004,7 @@
         var axis = planeVertices[3].clone().sub(planeVertices[0]).normalize();
         var rotation = new THREE.Matrix4();
         rotation.makeRotationAxis(axis, -Math.PI);
-        geometry.applyMatrix(rotation);
+        geometry.applyMatrix4(rotation);
       }
     } else {
       // Push vertices for lower left, lower right, upper left, upper right
@@ -4623,10 +4623,9 @@
   };
 
   var destroyRenderer = function(renderer) {
-    renderer.context.canvas.removeEventListener('webglcontextlost',
+    renderer.getContext().canvas.removeEventListener('webglcontextlost',
         renderContextLost);
     renderer.forceContextLoss();
-    renderer.context = null;
     renderer.domElement = null;
     renderer.dispose();
   };
@@ -4675,8 +4674,8 @@
     this.mouseControls.attach(this, this.renderer.domElement);
 
     // Add handlers for WebGL context lost and restore events
-    this.renderer.context.canvas.addEventListener('webglcontextlost', renderContextLost, false);
-    this.renderer.context.canvas.addEventListener('webglcontextrestored', (function(e) {
+    this.renderer.getContext().canvas.addEventListener('webglcontextlost', renderContextLost, false);
+    this.renderer.getContext().canvas.addEventListener('webglcontextrestored', (function(e) {
       this.initRenderer();
     }).bind(this), false);
   };
@@ -5719,7 +5718,7 @@
       skeletonProperties.vertexShader = skeleton.line_material.vertexShader;
       skeletonProperties.fragmentShader = skeleton.line_material.fragmentShader;
 
-      skeleton.line_material.vertexColors = THREE.NoColors;
+      skeleton.line_material.vertexColors = false;
       skeleton.line_material.needsUpdate = true;
 
       skeleton.actor['neurite'].material.color = skeletonColor;
@@ -6831,7 +6830,7 @@
 
     if (node_weights || colorizer.vertexColors) {
       // The skeleton colors need to be set per-vertex.
-      this.line_material.vertexColors = THREE.VertexColors;
+      this.line_material.vertexColors = true;
       this.line_material.needsUpdate = true;
 
       let shadingScale = CATMAID.tools.getDefined(this.space.options.shading_scale, 1.0);
@@ -6913,7 +6912,7 @@
 
     } else {
 
-      this.line_material.vertexColors = THREE.NoColors;
+      this.line_material.vertexColors = false;
       this.line_material.needsUpdate = true;
 
       this.actor['neurite'].material.color = this.actorColor;
@@ -7170,10 +7169,10 @@
           if ('cyan-red' === options.connector_color) post.color.setRGB(0, 1, 1); // cyan
           else post.color.setHex(0x00b7eb); // dark cyan
         }
-        pre.vertexColors = THREE.NoColors;
+        pre.vertexColors = false;
         pre.needsUpdate = true;
 
-        post.vertexColors = THREE.NoColors;
+        post.vertexColors = false;
         post.needsUpdate = true;
 
         skeletons.forEach(function(skeleton) {
@@ -7248,7 +7247,7 @@
       this.CTYPES.slice(1).forEach(function(type, i) {
         this.geometry[type].colors = [];
         this.geometry[type].colorsNeedUpdate = true;
-        this.actor[type].material.vertexColors = THREE.NoColors;
+        this.actor[type].material.vertexColors = false;
         this.actor[type].material.color = this.synapticColors[this.CTYPES[1] === type ? 0 : 1].color;
         this.actor[type].material.needsUpdate = true;
       }, this);
@@ -7455,7 +7454,7 @@
     this.geometry[type].colors = colors;
     this.geometry[type].colorsNeedUpdate = true;
     var material = new THREE.LineBasicMaterial({color: 0xffffff, opacity: 1.0, linewidth: 6});
-    material.vertexColors = THREE.VertexColors;
+    material.vertexColors = true;
     material.needsUpdate = true;
     this.actor[type].material = material;
   };

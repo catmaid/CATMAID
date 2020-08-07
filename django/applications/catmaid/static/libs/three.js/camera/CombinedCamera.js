@@ -48,7 +48,9 @@ THREE.CombinedCamera.prototype.toPerspective = function () {
 	this.projectionMatrix = this.cameraP.projectionMatrix;
 
 	this.inPerspectiveMode = true;
+	this.isPerspectiveCamera = true;
 	this.inOrthographicMode = false;
+	this.isOrthographicCamera = false;
 
 };
 
@@ -93,7 +95,9 @@ THREE.CombinedCamera.prototype.toOrthographic = function () {
 	this.projectionMatrix = this.cameraO.projectionMatrix;
 
 	this.inPerspectiveMode = false;
+	this.isPerspectiveCamera = false;
 	this.inOrthographicMode = true;
+	this.isOrthographicCamera = true;
 
 };
 

@@ -1921,16 +1921,25 @@
       return true;
     }
 
-    var makeCsvLine = this.displayAnnotations ?
-      function(n) {
-        // Prepare annotations so that they are represented as a single string,
-        // with each annotation quoted also on its own.
+    let exportHeader = true;
+
+    let makeCsvLine = (n, i) => {
+      if (i == 0 && exportHeader) {
+        let columns = ['"Neuron"', '"Name"'];
+        if (this.displayAnnotations) columns.push('"Annotations"');
+        if (this.displayMetadata) columns.push('"Cable length"', '"# Nodes"',
+              '"Created (UTC)"', '"Last Edit (UTC)"');
+        return columns;
+      }
+      let row = [n.id, quote(n.name)];
+      if (this.displayAnnotations) {
         var annotations = (n.annotations || []).map(getName).map(quote).join(', ');
-        return [n.id, quote(n.name), quote(annotations)];
-      } :
-      function(n) {
-        return [n.id, quote(n.name)];
-      };
+        row.push(quote(annotations));
+      }
+      if (this.displayMetadata) row.push(n.cable_length, n.n_nodes,
+          quote(n.creation_time), quote(n.last_edition_time));
+      return row;
+    };
 
     var csv = selectedNeurons.map(makeCsvLine).map(joinList).join('\n');
 

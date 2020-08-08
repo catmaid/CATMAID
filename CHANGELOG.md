@@ -77,6 +77,10 @@ Neuron search:
   with a particular meta-annotation. This meta-annotation can be configured in
   the input field in the table column header.
 
+- The CSV export comes now with a header row to make clear the first column is a
+  neuron ID. The CSV export now also exports metadata like cable length, if
+  enabled in the UI.
+
 Volume manager:
 
 - The table of filters applied to input neurons for volume creation has now a

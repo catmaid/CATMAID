@@ -1921,17 +1921,9 @@
       return true;
     }
 
-    let exportHeader = true;
-
     let makeCsvLine = (n, i) => {
-      if (i == 0 && exportHeader) {
-        let columns = ['"Neuron"', '"Name"'];
-        if (this.displayAnnotations) columns.push('"Annotations"');
-        if (this.displayMetadata) columns.push('"Cable length"', '"# Nodes"',
-              '"Created (UTC)"', '"Last Edit (UTC)"');
-        return columns;
-      }
-      let row = [n.id, quote(n.name)];
+      // We assume one skeleton per neuron here
+      let row = [n.id, quote(n.name), n.skeleton_ids[0]];
       if (this.displayAnnotations) {
         var annotations = (n.annotations || []).map(getName).map(quote).join(', ');
         row.push(quote(annotations));
@@ -1941,7 +1933,18 @@
       return row;
     };
 
-    var csv = selectedNeurons.map(makeCsvLine).map(joinList).join('\n');
+    var csv = selectedNeurons.map(makeCsvLine);
+
+    let exportHeader = true;
+    if (exportHeader) {
+      let columns = ['"Neuron"', '"Name"', '"Skeleton"'];
+      if (this.displayAnnotations) columns.push('"Annotations"');
+      if (this.displayMetadata) columns.push('"Cable length"', '"# Nodes"',
+            '"Created (UTC)"', '"Last Edit (UTC)"');
+      csv = [columns].concat(csv);
+    }
+
+    csv = csv.map(joinList).join('\n');
 
     var blob = new Blob([csv], {type: 'text/plain'});
     saveAs(blob, 'catmaid_neuron_search.csv');

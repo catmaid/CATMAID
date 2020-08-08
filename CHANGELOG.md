@@ -78,8 +78,10 @@ Neuron search:
   the input field in the table column header.
 
 - The CSV export comes now with a header row to make clear the first column is a
-  neuron ID. The CSV export now also exports metadata like cable length, if
-  enabled in the UI.
+  neuron ID.
+
+- The CSV export includes now the skeleton ID as well and will export metadata
+  like cable length, if metadata display is enabled in the UI.
 
 Volume manager:
 

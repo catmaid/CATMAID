@@ -21,6 +21,8 @@ Publications using CATMAID
 
 * Nils Otto, Markus W. Pleijzier, Isabel C. Morgan, Amelia J. Edmondson-Stait, Konrad J. Heinz, Ildiko Stark, Georgia Dempsey, Masayoshi Ito, Ishaan Kapoor, Joseph Hsu, Philipp M. Schlegel, Alexander S. Bates, Li Feng, Marta Costa, Kei Ito, Davi D. Bock, Gerald M. Rubin, Gregory S.X.E. Jefferis, Scott Waddell. `Input Connectivity Reveals Additional Heterogeneity of Dopaminergic Reinforcement in Drosophila <cell.com/current-biology/fulltext/S0960-9822(20)30764-8>`_, Cell Current Biology, 2020
 
+* Kaylynn E. Coates, Steven A. Calle-Schuler, Levi M. Helmick, Victoria L. Knotts, Brennah N. Martik, Farzaan Salman, Lauren T. Warner, Sophia V. Valla, Davi D. Bock and Andrew M. Dacks. `The Wiring Logic of an Identified Serotonergic Neuron That Spans Sensory Networks <https://www.jneurosci.org/content/40/33/6309>`_, Journal of Neuroscience, 2020
+
 2019
 ~~~~
 

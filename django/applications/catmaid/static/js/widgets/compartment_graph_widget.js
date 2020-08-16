@@ -4880,7 +4880,8 @@
           grid_snap: widget.grid_snap,
           grid_side: widget.grid_side,
           prevent_selection_overlaps: widget.prevent_selection_overlaps,
-          linkTypeColors: Array.from(widget.linkTypeColors)
+          linkTypeColors: Array.from(widget.linkTypeColors),
+          selectedLinkTypes: Array.from(widget.selectedLinkTypes),
         };
       },
       setState: function(widget, state) {
@@ -4905,6 +4906,11 @@
             var ltc = state.linkTypeColors[i];
             widget.linkTypeColors[ltc[0]] = CATMAID.tools.deepCopy(ltc[1]);
           }
+        }
+
+        if (state.selectedLinkTypes) {
+          widget.selectedLinkTypes.clear();
+          widget.selectedLinkTypes.addAll(state.selectedLinkTypes);
         }
       }
     },

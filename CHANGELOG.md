@@ -353,6 +353,8 @@ Miscellaneous:
 - Graph widget: ungrouping groups with members having non-synaptic links (e.g.
   desmosomes) doesn't lead to an error anymore.
 
+- Graph widget: remember selected link types in local widget state storage.
+
 ## 2020.02.15
 
 Contributors: Chris Barnes, Andrew Champion, Stephan Gerhard, Pat Gunn, Tom Kazimiers

@@ -350,6 +350,9 @@ Miscellaneous:
 - Graph widget: grouping with undirected edges like desmosomes won't lead to
   multiple edges between the same groups anymore.
 
+- Graph widget: ungrouping groups with members having non-synaptic links (e.g.
+  desmosomes) doesn't lead to an error anymore.
+
 ## 2020.02.15
 
 Contributors: Chris Barnes, Andrew Champion, Stephan Gerhard, Pat Gunn, Tom Kazimiers

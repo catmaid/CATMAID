@@ -3440,7 +3440,7 @@
         // accidentally create two edges between the groups, depending on who is
         // source and who is partner.
         var id = d.directed ? `${source}_${target}` :
-            [target, source].sort(CATMAID.tools.compareStrings).join('_');
+            [`${target}`, `${source}`].sort(CATMAID.tools.compareStrings).join('_');
         var gedge = gedges[id];
         if (gedge) {
           // Just append the synapse count to the already existing edge

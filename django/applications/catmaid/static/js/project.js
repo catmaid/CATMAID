@@ -495,9 +495,6 @@
       z : 0
     };
 
-    var template;       //!< DTD like abstract object tree (classes)
-    var data;         //!< instances in a DOM representation
-
     var stackViewers = [];  //!< a list of stacks related to the project
     this.focusedStackViewer = undefined;
 
@@ -506,8 +503,6 @@
 
     var mode = "move";
     var show_textlabels = true;
-
-    var icon_text_apply = document.getElementById( "icon_text_apply" );
 
     /** The only actions that should be added to Project are those
         that should be run regardless of the current tool, such as

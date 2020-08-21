@@ -395,4 +395,4 @@ django/applications/catmaid/static/libs/catmaid/utils.js: line 79, col 5, 'fetch
 django/applications/catmaid/static/libs/catmaid/volumes.js: line 613, col 9, 'abs' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/volumes.js: line 805, col 15, 'dSimplicesT' is defined but never used.
 
-320 errors
+317 errors

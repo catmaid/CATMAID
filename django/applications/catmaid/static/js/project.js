@@ -624,12 +624,13 @@
   /**
    * Create a fork of this project with this name.
    */
-  Project.createFork = function(projectId, name) {
+  Project.createFork = function(projectId, name, copyVolumes = false) {
     return CATMAID.fetch({
       url: `${projectId}/fork`,
       method: 'POST',
       data: {
         name: name,
+        copy_volumes: copyVolumes,
       }
     });
   };

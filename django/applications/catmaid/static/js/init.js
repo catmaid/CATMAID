@@ -2114,7 +2114,7 @@ var project;
             if (newName.length === 0) {
               throw new CATMAID.Warning('Empty name not allowed');
             }
-            CATMAID.Project.createFork(project.id, newName)
+            CATMAID.Project.createFork(project.id, newName, volumeField.checked)
               .then(result => {
                   switchToNewProject(result.new_project_id);
                   return Promise.all([
@@ -2131,6 +2131,9 @@ var project;
         confirmationDialog.appendMessage("Please confirm the creation of the new space. Update the name if you like.");
         var nameField = confirmationDialog.appendField("Name", undefined, newName);
         nameField.size = 50;
+
+        var volumeField = confirmationDialog.appendCheckbox("Copy volumes/meshes", undefined, true,
+            "If enabled, all visible volumes/meshes will copied from this project to the new space");
 
         return confirmationDialog.show(400, 'auto');
       })

@@ -812,7 +812,8 @@ Spaces:
 
 - Users with the new "can_fork" permission have a new user menu entry in the
   upper right corner: "Create own space". This allows to create a personal copy
-  of a project, without any tracing data.
+  of a project, without any tracing data. By default, all meshes/volumes are
+  copied to the new space, which can be disabled in the creation dialog.
 
 Miscellaneous:
 

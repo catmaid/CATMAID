@@ -593,10 +593,17 @@ def fork(request:HttpRequest, project_id) -> JsonResponse:
       description: Name of new project
       required: true
       type: string
+    - name: copy_volumes
+      description: Whether volumes will be copied to the new project
+      required: false
+      type: boolean
+      defaultValue: false
     """
     name = request.POST.get('name')
     if not name:
         raise ValueError('Need new project name')
+
+    copy_volumes = get_request_bool(request.POST, 'copy_volumes', False)
 
     current_p = get_object_or_404(Project, pk=project_id)
     new_p = get_object_or_404(Project, pk=project_id)
@@ -625,6 +632,22 @@ def fork(request:HttpRequest, project_id) -> JsonResponse:
     from catmaid.control.tracing import check_tracing_setup, setup_tracing
     if check_tracing_setup(project_id):
         setup_tracing(new_p.id)
+
+    if copy_volumes:
+        cursor = connection.cursor()
+        cursor.execute("""
+            INSERT INTO catmaid_volume (user_id, project_id, creation_time,
+                    edition_time, editor_id, name, comment, geometry, area,
+                    volume, watertight, meta_computed)
+            SELECT user_id, %(new_project_id)s, creation_time, edition_time,
+                    editor_id, name, comment, geometry, area, volume, watertight,
+                    meta_computed
+            FROM catmaid_volume
+            WHERE project_id = %(project_id)s;
+        """, {
+            'project_id': project_id,
+            'new_project_id': new_p.id
+        })
 
     return JsonResponse({
         'new_project_id': new_p.id,

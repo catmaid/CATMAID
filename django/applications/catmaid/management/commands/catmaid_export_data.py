@@ -686,7 +686,7 @@ class Exporter():
                 # links to get only the used tags.
                 tags = set(t.class_instance for t in tag_links)
 
-            if tags or tag_links:
+            if tags:
                 tag_names = sorted(set(t.name for t in tags))
                 if self.allowed_tags is None:
                     logger.info('All tags are allowed for export')

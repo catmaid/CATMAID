@@ -790,7 +790,7 @@
       // Figure out what window the current display is
       var widgetInfo = CATMAID.WindowMaker.getWidgetKeyForWindow(node);
       if (!widgetInfo) {
-        return;
+        return target;
       }
 
       // Keep track of widgets per type

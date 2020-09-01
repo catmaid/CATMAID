@@ -112,6 +112,7 @@ class TileSourceTypes(enum.IntEnum):
     N5 = 11
     BOSS = 12
     CATMAID_BACKEND_CLOUDVOLUME = 13
+    NEUROGLANCER_PRECOMPUTED = 14
 
 TILE_SOURCE_TYPE_DESCRIPTIONS = {
     TileSourceTypes.FILE_BASED_STACK: 'File-based image stack',
@@ -127,6 +128,7 @@ TILE_SOURCE_TYPE_DESCRIPTIONS = {
     TileSourceTypes.N5: 'N5 volume',
     TileSourceTypes.BOSS: 'Boss tiles',
     TileSourceTypes.CATMAID_BACKEND_CLOUDVOLUME: 'CloudVolume tiles (back-end)',
+    TileSourceTypes.NEUROGLANCER_PRECOMPUTED: 'Neuroglancer precomputed',
 }
 
 TILE_SOURCE_TYPE_CHOICES = [(t.value, f'{t.value}: {TILE_SOURCE_TYPE_DESCRIPTIONS[t]}') for t in TileSourceTypes]
@@ -208,7 +210,7 @@ class StackMirror(models.Model):
         # Do not return "" as some browsers will direct extra requests at the
         # page root (CATMAID index) for this URL.
         EMPTY_IMAGE = '//:0'
-        if self.tile_source_type == TileSourceTypes.N5:
+        if self.tile_source_type in (TileSourceTypes.N5, TileSourceTypes.NEUROGLANCER_PRECOMPUTED):
             return EMPTY_IMAGE
         if self.tile_source_type == TileSourceTypes.H2N5:
             # Note this does not produce the preferred 192px image, but simply

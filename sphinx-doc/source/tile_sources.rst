@@ -368,6 +368,37 @@ Tile source types are listed by the enumeration integer ID referenced by
 
   Currently, only HTTPS mode is supported (i.e. no explicit credentials).
 
+14. Neuroglander precomputed image blocks
+*****************************************
+
+   This type supports loading **image blocks** from
+   `Neuroglancer Precomputed format <https://github.com/google/neuroglancer/tree/master/src/neuroglancer/datasource/precomputed>`_ served over HTTP.
+
+   Like with N5 image blocks and unlike other sources, ``sourceBaseUrl`` is not
+   a valid URL on its own. It contains several substitution strings the CATMAID
+   replaces on each tile request. This is necessary to support n-dimensional
+   volumes. The substitution strings are:
+
+   ``%SCALE_DATASET%`` (optional)
+      Where to insert the dataset name for different scale levels. Currently
+      these are ``s0``, ``s1``, etc., but in the future may be read from the
+      N5 attributes of the parent dataset of where this substitution string
+      appears.
+
+   Further, and also like the N5 source, ``sourceBaseUrl`` has special path
+   components. It should end in a path component specifying the ordered
+   dimensions from which image data should be sliced, separated by underscores.
+   For example, ``2_1_0`` will slices chunk dimensions 2, 1, and 0 as the x, y,
+   and z stack dimensions, respectively.
+
+   This tile source will also look for a path component ending in ``/info`` to
+   use as the dataset root directory. If it does not find such a component, it will
+   assume the origin is the root directory.
+
+   For example::
+
+    gs://neuroglancer/basil_v0/son_of_alignment/v3.04_cracks_only_normalized_rechunked/%SCALE_DATASET%/0_1_2
+
 Backend Representation
 ----------------------
 

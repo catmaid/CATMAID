@@ -41,6 +41,7 @@
       '11': CATMAID.N5ImageBlockWorkerSource,
       '12': CATMAID.BossTileSource,
       '13': CATMAID.CloudVolumeTileSource,
+      '14': CATMAID.NeuroglancerPrecomputedImageBlockWorkerSource,
     };
 
     return tileSources[tileSourceType];
@@ -609,6 +610,7 @@
 
       this.hasScaleLevels = this.baseURL.includes('%SCALE_DATASET%');
       this.datasetURL = this.baseURL.substring(0, this.baseURL.lastIndexOf('/'));
+      this.datasetPathFormat = this.datasetURL.substring(this.rootURL.length + 1);
       let sliceDims = this.baseURL.substring(this.baseURL.lastIndexOf('/') + 1);
       this.sliceDims = sliceDims.split('_').map(d => parseInt(d, 10));
       this.reciprocalSliceDims = Array.from(Array(this.sliceDims.length).keys())
@@ -672,7 +674,7 @@
       return this.rootURL + '/' + this.datasetPath(zoomLevel) + '/' + blockCoord.join('/');
     }
 
-    populateDatasetAttributes(zoomLevel = 0) {
+    populateDatasetAttributes() {
       let datasetPath = this.datasetPath(zoomLevel);
       return this.reader
           .dataset_exists(datasetPath)
@@ -966,6 +968,287 @@
         }));
   };
 
+  /**
+   * Image block source type for Neuroglancer precomputed datasets.
+   * See https://github.com/google/neuroglancer/blob/master/src/neuroglancer/datasource/precomputed/README.md
+   *
+   * Source type: 14
+   */
+  CATMAID.NeuroglancerPrecomputedImageBlockSource = class NeuroglancerPrecomputedImageBlockSource extends CATMAID.AbstractImageBlockSource {
+    constructor(...args) {
+      super(...args);
+
+      function supportsDynamicImport() {
+        try {
+          new Function('import("")');
+          return true;
+        } catch (err) {
+          return false;
+        }
+      }
+
+      if (!supportsDynamicImport() || typeof BigInt === 'undefined') {
+        // TODO: should fail gracefully here instead.
+        throw new CATMAID.Error(
+          'Your browser does not support features required for NeuroglancerPrecomputed mirrors');
+      }
+
+      this.datasetURL = this.baseURL.substring(0, this.baseURL.lastIndexOf('/'))
+          .replace(/^gs:\/\//, 'https://storage.googleapis.com/');
+
+      let sliceDims = this.baseURL.substring(this.baseURL.lastIndexOf('/') + 1);
+      this.sliceDims = sliceDims.split('_').map(d => parseInt(d, 10));
+      this.reciprocalSliceDims = Array.from(Array(this.sliceDims.length).keys())
+          .sort((a, b) => this.sliceDims[a] - this.sliceDims[b]);
+      // Because we cannot infer the root URL, must find it exhaustively.
+      let ngPreSearchIndex = this.datasetURL.lastIndexOf('%SCALE_DATASET%');
+      // Initial guess of root:
+      this.rootURL = ngPreSearchIndex === -1 ?
+          this.datasetURL :
+          this.datasetURL.substring(0, ngPreSearchIndex - 1);
+      this.datasetPathFormat = this.datasetURL.substring(this.rootURL.length + 1);
+
+      this.datasetAttributes = [];
+      this.promiseReady = NeuroglancerPrecomputedImageBlockSource.loadNeuroglancerPrecomputed()
+          .then(ngprewasm => this._findRoot(ngprewasm).then(r => this.reader = r))
+          .then(() => this.populateDatasetAttributes());
+      this.ready = false;
+    }
+
+    static loadNeuroglancerPrecomputed() {
+      // Store a static promise for loading the NeuroglancerPrecomputed wasm module to prevent
+      // reloading for multiple stacks and to prevent strange wasm panics when
+      // loading multiple times.
+      if (!this.promiseNeuroglancerPrecomputedwasm) {
+        // This is done inside a Function/eval so that Firefox does not fail
+        // to parse this whole file because of the dynamic import.
+        const jsPath = CATMAID.makeStaticURL('libs/ngpre-wasm/ngpre_wasm.js');
+        this.promiseNeuroglancerPrecomputedwasm = (new Function(`return import('${jsPath}')`))()
+            .then(module =>
+                // The global ngpre_wasm variable is created in ngpre_wasm.js
+                ngpre_wasm(CATMAID.makeStaticURL('libs/ngpre-wasm/ngpre_wasm_bg.wasm'))
+                .then(() => ngpre_wasm));
+      }
+
+      return this.promiseNeuroglancerPrecomputedwasm;
+    }
+
+    /** Find the root of this NeuroglancerPrecomputed container by recursively walking up the path. */
+    _findRoot(ngeprewasm) {
+      return ngeprewasm.NgPreHTTPFetch.open(this.rootURL)
+        .then(r => {
+          this.datasetPathFormat = this.datasetURL.substring(this.rootURL.length + 1);
+          return r;
+        })
+        .catch(error => {
+          let origin = (new URL(this.rootURL)).origin;
+          let nextDir = this.rootURL.lastIndexOf('/');
+          if (nextDir === -1 || origin == this.rootURL) {
+            CATMAID.msg('Mirror Inaccessible', `Could not locate Neuroglancer Precomputed root for mirror ${this.id}`, {style: 'error'});
+            // Don't cause error popups, but do not resolve promise.
+            return new Promise(() => {});
+          }
+          this.rootURL = this.rootURL.substring(0, nextDir);
+          return this._findRoot(ngeprewasm);
+        });
+    }
+
+    getTileURL(project, stack, slicePixelPosition, col, row, zoomLevel) {
+      let bs = this.blockSize(zoomLevel);
+      let z = Math.floor(slicePixelPosition[0] / bs[2]);
+      let vo = this.voxelOffset(zoomLevel);
+      let sourceCoord = [col, row, z];
+      let blockCoord = CATMAID.tools.permute(sourceCoord, this.reciprocalSliceDims);
+      // The voxel offset specifies how the image dataset is translated relativ
+      // to the global origin. We want to map from global into voxel
+      let voxelCoord = [
+          blockCoord[0] * bs[0] /* - vo[0] */,
+          blockCoord[1] * bs[1] /* - vo[1] */,
+          blockCoord[2] * bs[2] /* - vo[2] */];
+
+      return `${this.rootURL}/${this.datasetPath(zoomLevel)}/` +
+          `${voxelCoord[0]}-${voxelCoord[0] + bs[0]}_${voxelCoord[1]}-${voxelCoord[1] + bs[1]}_${voxelCoord[2]}-${voxelCoord[2] + bs[2]}`;
+    }
+
+    populateDatasetAttributes(zoomLevel = 0) {
+      return this.reader
+          .get_dataset_attributes("")
+          .then(dataAttrs => {
+            this.datasetAttributes[zoomLevel] = dataAttrs;
+            this.ready = true;
+          });
+    }
+
+    blockCoordBounds(zoomLevel) {
+      if (!this.ready) return;
+
+      let attrs = this.datasetAttributes[zoomLevel];
+      let bs = attrs.get_block_size();
+      // Use `BigInt` rather than literals to not break old parsers.
+      let n0 = BigInt(0);
+      let n1 = BigInt(1);
+      let max = attrs.get_dimensions().map((d, i) => {
+        let b = BigInt(bs[i]);
+        // - 1 because this is inclusive.
+        return (d + n1) / b + (d % b != n0  ? n1 : n0) - n1;
+      });
+      // FIXME: check conversion is valid
+      let maxNum = new Array(max.length);
+      max.forEach((n, i) => maxNum[i] = Number(n));
+
+      let min = new Array(maxNum.length).fill(0);
+      return new CATMAID.BlockCoordBounds(min, maxNum);
+    }
+
+    blockSize(zoomLevel) {
+      if (!this.ready || !this.datasetAttributes[zoomLevel]) return [
+        this.tileWidth,
+        this.tileHeight,
+        1
+      ];
+      let bs = this.datasetAttributes[zoomLevel].get_block_size();
+      return CATMAID.tools.permute(bs, this.sliceDims);
+    }
+
+    voxelOffset(zoomLevel) {
+      if (!this.ready || !this.datasetAttributes[zoomLevel]) return [
+        0,
+        0,
+        0
+      ];
+      let vo = this.datasetAttributes[zoomLevel].get_voxel_offset();
+      return CATMAID.tools.permute(vo, this.sliceDims);
+    }
+
+    dataType () {
+      return this.ready ?
+          this.datasetAttributes[0].get_data_type().toLowerCase() :
+          undefined;
+    }
+
+    readBlock(zoomLevel, ...sourceCoord) {
+      return this.promiseReady.then(() => {
+        let path = this.datasetPath(zoomLevel);
+        let dataAttrs = this.datasetAttributes[zoomLevel];
+
+        let blockCoord = CATMAID.tools.permute(sourceCoord, this.reciprocalSliceDims);
+
+        return this.reader
+            .read_block_with_etag(path, dataAttrs, blockCoord.map(BigInt))
+            .then(block => {
+              if (block) {
+                let etag = block.get_etag();
+                let size = block.get_size();
+                let n = 1;
+                let stride = size.map(s => { let rn = n; n *= s; return rn; });
+                return {
+                  etag,
+                  block: new nj.NdArray(nj.ndarray(block.into_data(), size, stride))
+                      .transpose(...this.sliceDims)
+                };
+              } else {
+                return {block, etag: undefined};
+              }
+            });
+      });
+    }
+
+    datasetPath(zoomLevel) {
+      return this.datasetPathFormat
+          .replace('%SCALE_DATASET%', this.scaleLevelPath(zoomLevel));
+    }
+
+    scaleLevelPath(zoomLevel) {
+      // FIXME: use actual keys
+      return '4_4_40';
+    }
+
+    numScaleLevels() {
+      return this.datasetAttributes.length;
+    }
+
+    checkCanary(project, stack, noCache) {
+      let request = (options) => {
+        let url = this.getCanaryUrl(project, stack);
+
+        if (noCache) {
+          url += "?nocache=" + Date.now();
+        }
+
+        let before = performance.now();
+        return fetch(new Request(url, options))
+          .then(response =>
+            [response.status === 200, performance.now() - before]
+          )
+          .catch(() => [false, Infinity]);
+      };
+
+      return this.promiseReady.then(() => Promise.all([
+          request(),
+          request({mode: 'cors', credentials: 'same-origin'})
+      ]).then(result => ({
+          normal:     result[0][0],
+          normalTime: result[0][1],
+          cors:       result[1][0],
+          corsTime:   result[1][1]
+      })));
+    }
+  };
+
+  /**
+   * Image block source type for NeuroglancerPrecomputed datasets. This sub-implementation uses
+   * a pool of web workers for block loading.
+   * See https://github.com/saalfeldlab/n5
+   * See https://github.com/aschampion/n5-wasm
+   *
+   * Source type: 14
+   */
+  CATMAID.NeuroglancerPrecomputedImageBlockWorkerSource = class NeuroglancerPrecomputedImageBlockWorkerSource extends CATMAID.NeuroglancerPrecomputedImageBlockSource {
+    constructor(...args) {
+      super(...args);
+
+      this.promiseReady.then(() => {
+        this.workers = new CATMAID.PromiseWorkerPool(
+          () => { return {
+            worker: new CATMAID.PromiseWorker(
+              new Worker(CATMAID.makeStaticURL('libs/ngpre-wasm/ngpre_wasm_worker.js'))
+            ),
+            init: (worker) => worker.postMessage([
+              [ngpre_wasm.__wbindgen_wasm_module],
+              this.rootURL,
+            ]),
+          };}
+        );
+      });
+    }
+
+    readBlock(zoomLevel, ...sourceCoord) {
+      return this.promiseReady.then(() => {
+        let path = this.datasetPath(zoomLevel);
+        let dataAttrs = this.datasetAttributes[zoomLevel];
+
+        if (!dataAttrs) return {block: null, etag: undefined};
+
+        let blockCoord = CATMAID.tools.permute(sourceCoord, this.reciprocalSliceDims);
+
+        return this.workers
+            .postMessage([path, dataAttrs.to_json(), blockCoord.map(BigInt)])
+            .then(block => {
+              if (block) {
+                let n = 1;
+                let stride = block.size.map(s => { let rn = n; n *= s; return rn; });
+                return {
+                  etag: block.etag,
+                  block: new nj.NdArray(nj.ndarray(block.data, block.size, stride))
+                      .transpose(...this.sliceDims)
+                };
+              } else {
+                return {block, etag: undefined};
+              }
+            });
+      });
+    }
+  };
 
   /**
    * This is an overview layer that doesn't display anything.

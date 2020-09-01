@@ -8,6 +8,10 @@
     <title>CATMAID</title>
     <link rel="shortcut icon" type="image/ico" href="{{STATIC_URL}}images/favicon.ico"/>
 
+    {% if DEBUG %}
+      <meta http-equiv="Content-Security-Policy" content="default-src * self blob: data: gap:; style-src * self 'unsafe-inline' blob: data: gap:; script-src * 'self' 'unsafe-eval' 'unsafe-inline' blob: data: gap:; object-src * 'self' blob: data: gap:; img-src * self 'unsafe-inline' blob: data: gap:; connect-src self * 'unsafe-inline' blob: data: gap:; frame-src * self blob: data: gap:;">
+    {% endif %}
+
     <script type="text/javascript">
       var STATIC_URL_JS = '{{ STATIC_URL|escapejs }}';
       var django_url = "{{ CATMAID_URL }}";

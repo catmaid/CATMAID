@@ -25,6 +25,7 @@ class CatmaidView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context['DEBUG'] = settings.DEBUG
         context['CATMAID_URL'] = settings.CATMAID_URL
         context['COOKIE_SUFFIX'] = settings.COOKIE_SUFFIX
         context['COMPRESSED_FILE_IDS'] = settings.COMPRESSED_FILE_IDS

@@ -94,6 +94,15 @@ Layouts:
   specification of the current view to the clipboard. This can be useful when
   constructing URLs to specific views.
 
+- The Selection Table can now receive an options parameter from the layout
+  initialization. If it contains a list of skeleton IDs like this, then
+  selection table will load this automatically:
+
+  options: {"skeleton-ids": [16035815, 16035701]}
+
+  This has to be added to the URL manually at the moment, by adding it to the
+  selection table config part in the layout spec.
+
 Volume manager:
 
 - The table of filters applied to input neurons for volume creation has now a

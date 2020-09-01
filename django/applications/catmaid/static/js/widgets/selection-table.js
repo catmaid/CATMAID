@@ -371,10 +371,21 @@
           return skeletonID;
         }
       },
-      init: function(win) {
+      init: function(win, options) {
         // Add auto completetion to annotation filter
         CATMAID.annotations.add_autocomplete_to_input(
             $("#selection-table-ann-filter" + this.widgetID));
+
+        if (options) {
+          if (options["skeleton-ids"]) {
+            try {
+              this.insertSkeletons(options["skeleton-ids"]);
+            } catch (e) {
+              CATMAID.warn(`Could not parse skeletons": ${options["skeleton-ids"]}`);
+            }
+          }
+        }
+
         this.init();
         this.focus();
       },
@@ -688,9 +699,15 @@
   /** sks: object with skeleton_id as keys and neuron names as values. */
   SelectionTable.prototype.insertSkeletons = function(sks, callback) {
     var models = {};
-    Object.keys(sks).forEach(function(id) {
-      models[id] = new CATMAID.SkeletonModel(id, sks[id], this.pickColor());
-    }, this);
+    if (sks instanceof Array) {
+      sks.forEach(function(id) {
+        models[id] = new CATMAID.SkeletonModel(id, undefined, this.pickColor());
+      }, this);
+    } else {
+      Object.keys(sks).forEach(function(id) {
+        models[id] = new CATMAID.SkeletonModel(id, sks[id], this.pickColor());
+      }, this);
+    }
     this.append(models);
 
     this.gui.update();

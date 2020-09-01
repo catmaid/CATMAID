@@ -83,6 +83,12 @@ Neuron search:
 - The CSV export includes now the skeleton ID as well and will export metadata
   like cable length, if metadata display is enabled in the UI.
 
+Layouts:
+
+- New layout menu item: "Copy current layout spec". This will copy the layout
+  specification of the current view to the clipboard. This can be useful when
+  constructing URLs to specific views.
+
 Volume manager:
 
 - The table of filters applied to input neurons for volume creation has now a

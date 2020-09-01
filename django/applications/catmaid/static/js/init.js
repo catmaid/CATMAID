@@ -1846,6 +1846,19 @@ var project;
         dialog.show('auto', 'auto');
       }
     }, {
+      id: 'copy-current-layout-spec',
+      title: 'Copy current layout spec',
+      note: '',
+      action: function() {
+        let layout = CATMAID.Layout.makeLayoutSpecForWindow(CATMAID.rootWindow);
+        if (layout) {
+          CATMAID.tools.copyToClipBoard(layout);
+          CATMAID.msg('Success', `Copied layout spec: ${layout}`);
+        } else {
+          CATMAID.warn('Could not create layout');
+        }
+      }
+    }, {
       id: 'close-all-widgets',
       title: 'Close all widgets',
       note: '',

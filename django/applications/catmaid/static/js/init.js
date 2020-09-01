@@ -400,13 +400,14 @@ var project;
     var a_url = document.getElementById( "a_url" );
     a_url.onpointerover = function( e )
     {
-      this.href = project.createURL();
+      this.href = project.createURL(e.shiftKey);
       return true;
     };
 
-    $(document.body).on('click', 'a[data-role=url-to-clipboard]', function() {
+    $(document.body).on('click', 'a[data-role=url-to-clipboard]', function(e) {
+      e.preventDefault();
       let l = document.location;
-      CATMAID.tools.copyToClipBoard(l.origin + l.pathname + project.createURL());
+      CATMAID.tools.copyToClipBoard(l.origin + l.pathname + project.createURL(e.shiftKey));
     });
 
     // Assume an unauthenticated session by default
@@ -1844,6 +1845,15 @@ var project;
             .catch(CATMAID.handleError);
         };
         dialog.show('auto', 'auto');
+      }
+    }, {
+      id: 'copy-current-layout-url',
+      title: 'Copy URL to view with layout',
+      note: '',
+      action: function() {
+        let l = document.location;
+        CATMAID.tools.copyToClipBoard(l.origin + l.pathname + project.createURL(true));
+        CATMAID.msg('Success', 'Copied URL to view with layout to clipboard');
       }
     }, {
       id: 'copy-current-layout-spec',

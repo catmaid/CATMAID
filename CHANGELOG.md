@@ -85,6 +85,11 @@ Neuron search:
 
 Layouts:
 
+- New layout menu item: "Copy URL to view with layout". This will create a URL
+  to the current view like the link button on the right hand side of the second
+  toolbar, but with a layout spec included. It will open all widgets in the new
+  CATMAID like in the current one. This won't add skeletons automatically though.
+
 - New layout menu item: "Copy current layout spec". This will copy the layout
   specification of the current view to the clipboard. This can be useful when
   constructing URLs to specific views.

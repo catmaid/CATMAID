@@ -822,7 +822,7 @@
     for (var sourceName in CATMAID.skeletonListSources.sources) {
       var source = CATMAID.skeletonListSources.getSource(sourceName);
       var subscriptions = source.getSourceSubscriptions();
-      if (subscriptions) {
+      if (subscriptions && subscriptions.length > 0) {
         var subList = subscriptionInfo.subscriptions.get(source);
         if (!subList) {
           subList = [];

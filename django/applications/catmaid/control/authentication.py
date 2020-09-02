@@ -9,8 +9,9 @@ from psycopg2 import ProgrammingError
 
 from guardian.core import ObjectPermissionChecker
 from guardian.models import UserObjectPermission, GroupObjectPermission
-from guardian.shortcuts import (get_perms_for_model, get_user_perms,
-        get_group_perms)
+from guardian.shortcuts import (assign_perm, get_perms_for_model,
+        get_user_perms, get_group_perms, get_users_with_perms,
+        get_groups_with_perms, remove_perm)
 from guardian.utils import get_anonymous_user
 
 from django import forms
@@ -31,6 +32,7 @@ from rest_framework.authtoken.serializers import AuthTokenSerializer
 
 from catmaid.error import ClientError
 from catmaid.forms import RegisterForm
+from catmaid.control.common import get_request_list
 from catmaid.models import Project, UserRole, ClassInstance, \
         ClassInstanceClassInstance
 
@@ -357,6 +359,100 @@ def user_project_permissions(request:HttpRequest) -> JsonResponse:
         groups = []
 
     return JsonResponse((permissions, groups), safe=False)
+
+
+def project_user_permission_set(request:HttpRequest, project_id:int) -> JsonResponse:
+    """ If a user is authenticated and has can_administer permissions in this
+    project, a list of user permissions for the current project is returned. If
+    the user has no permission to view this informaiton, a permission error is
+    raised.
+    """
+    project = Project.objects.get(id=project_id)
+    checker = ObjectPermissionChecker(request.user)
+    has_admin_role = checker.has_perm('can_administer', project)
+    if not request.user.is_authenticated or \
+            not (request.user.is_superuser or has_admin_role):
+        raise PermissionError("User needs to be logged in ans superuser")
+
+    if request.method == 'GET':
+        project_perms = get_perms_for_model(Project)
+        perm_names = [perm.codename for perm in project_perms]
+
+        # Get all user permissions for this project
+        users_with_perms = dict((u.id, {"permissions": l, "user_name": u.username}) for u,l in \
+                get_users_with_perms(project, attach_perms=True,
+                with_group_users=False).items())
+
+        return JsonResponse(users_with_perms)
+    elif request.method == 'POST':
+        target_user_id = request.POST.get('user_id')
+        if target_user_id is None:
+            raise ValueError("Need target user ID (user_id)")
+        target_user = User.objects.get(id=target_user_id)
+        permissions = get_request_list(request.POST, 'permissions')
+        if not permissions:
+            raise ValueError("Need permissions to update")
+        permissions = dict([(perm, b.lower() == 'true') for perm, b in \
+                get_request_list(request.POST, 'permissions')])
+
+        for perm, enabled in permissions.items():
+            if enabled:
+                assign_perm(perm, target_user, project)
+            else:
+                remove_perm(perm, target_user, project)
+
+        return JsonResponse({
+            'n_updated_permissions': len(permissions),
+        })
+    else:
+        raise ValueError(f'Unsupported HTTP method: {request.method}')
+
+
+def project_group_permission_set(request:HttpRequest, project_id:int) -> JsonResponse:
+    """ If a user is authenticated and has can_administer permissions in this
+    project, a list of group permissions for the current project is returned. If
+    the user has no permission to view this informaiton, a permission error is
+    raised.
+    """
+    project = Project.objects.get(id=project_id)
+    checker = ObjectPermissionChecker(request.user)
+    has_admin_role = checker.has_perm('can_administer', project)
+    if not request.user.is_authenticated or \
+            not (request.user.is_superuser or has_admin_role):
+        raise PermissionError("User needs to be logged in ans superuser")
+
+    if request.method == 'GET':
+        project_perms = get_perms_for_model(Project)
+        perm_names = [perm.codename for perm in project_perms]
+
+        # Get all user permissions for this project
+        users_with_perms = dict((g.id, {"permissions": l, "group_name": g.name}) for g,l in \
+                get_groups_with_perms(project, attach_perms=True).items())
+
+        return JsonResponse(users_with_perms)
+    elif request.method == 'POST':
+        target_group_id = request.POST.get('group_id')
+        if target_group_id is None:
+            raise ValueError("Need target group ID (group_id)")
+        target_group = Group.objects.get(id=target_group_id)
+        permissions = get_request_list(request.POST, 'permissions')
+        if not permissions:
+            raise ValueError("Need permissions to update")
+        permissions = dict([(perm, b.lower() == 'true') for perm, b in \
+                get_request_list(request.POST, 'permissions')])
+
+        for perm, enabled in permissions.items():
+            if enabled:
+                assign_perm(perm, target_group, project)
+            else:
+                remove_perm(perm, target_group, project)
+
+        return JsonResponse({
+            'n_updated_permissions': len(permissions),
+        })
+    else:
+        raise ValueError(f'Unsupported HTTP method: {request.method}')
+
 
 def get_object_permissions(request:HttpRequest, ci_id) -> JsonResponse:
     """ Tests editing permissions of a user on a class_instance and returns the

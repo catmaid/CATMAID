@@ -84,6 +84,12 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/transactions/location$', transaction.get_location),
 ]
 
+# Project permissions
+urlpatterns += [
+    url(r'^(?P<project_id>\d+)/permissions/project-user$', authentication.project_user_permission_set),
+    url(r'^(?P<project_id>\d+)/permissions/project-group$', authentication.project_group_permission_set),
+]
+
 # Messages
 urlpatterns += [
     url(r'^messages/list$', message.list_messages),

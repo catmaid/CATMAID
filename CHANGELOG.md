@@ -54,6 +54,20 @@ Publication widget
   represents a publication for the widget. The export options for each one of
   them can now be configured through the table.
 
+Project management widget:
+
+- This new widget allows superusers and users with can_administer role in a
+  project to edit user and group permissions for this project. This interface is
+  easier to find and manage then the admin view and allows for more granular
+  admin permissions. It is also useful to share own spaces (own copies of
+  projects) with other users.
+
+- The widget allows to define for both user and groups the following
+  permissions: can browse (read), can annotate (write), can administer, can
+  import, can queue, compute taks, can write through API, can fork
+
+- Clicking any checkbox will store the value right away.
+
 Neuron renaming:
 
 - There is now a new neuron renaming dialog, which allows a search/replace

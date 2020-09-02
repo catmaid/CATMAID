@@ -666,6 +666,76 @@
     return url;
   };
 
+  /**
+   * Get all explicitly defined user permissions for a project. This is only
+   * available for superusers and those with can_administer permission in the
+   * project. Implicit group permissions are ignored.
+   *
+   * @param projectId {Integer} The project to look up the permissions for.
+   * @returns {Promise} resolving in a map of user IDs to objects with a user name
+   *          and a list of permissions.
+   */
+  Project.getUserPermissions = function(projectId) {
+    if (!CATMAID.hasPermission(project.id, 'can_administer')) {
+      return Promise.reject(new CATMAID.PermissionError("Need administration permission in this project"));
+    }
+    return CATMAID.fetch(`${project.id}/permissions/project-user`);
+  };
+
+  /**
+   * Update a set of permission for a user in a project. This is only allowed
+   * for superusers or users with the can_administer role in this project.
+   *
+   * @param projectId   {Integer} The project to update permissions in.
+   * @param userId      {Integer} The user to update permissions of.
+   * @param permissions {Object} Maps role names like can_administer to boolean
+   *                             values, indicating whether to switch them on or off.
+   */
+  Project.updateUserPermission = function(projectId, userId, permissions) {
+    if (!CATMAID.hasPermission(project.id, 'can_administer')) {
+      return Promise.reject(new CATMAID.PermissionError("Need administration permission in this project"));
+    }
+    return CATMAID.fetch(`${project.id}/permissions/project-user`, 'POST', {
+      'user_id': userId,
+      'permissions': Object.keys(permissions).map(p => [p, permissions[p]]),
+    });
+  };
+
+  /**
+   * Get all explicitly defined group permissions for a project. This is only
+   * available for superusers and those with can_administer permission in the
+   * project.
+   *
+   * @param projectId {Integer} The project to look up the permissions for.
+   * @returns {Promise} resolving in a map of group IDs to objects with a group name
+   *          and a list of permissions.
+   */
+  Project.getGroupPermissions = function(projectId) {
+    if (!CATMAID.hasPermission(project.id, 'can_administer')) {
+      return Promise.reject(new CATMAID.PermissionError("Need administration permission in this project"));
+    }
+    return CATMAID.fetch(`${project.id}/permissions/project-group`);
+  };
+
+  /**
+   * Update a set of permission for a group in a project. This is only allowed
+   * for superusers or users with the can_administer role in this project.
+   *
+   * @param projectId   {Integer} The project to update permissions in.
+   * @param groupId     {Integer} The group to update permissions of.
+   * @param permissions {Object} Maps role names like can_administer to boolean
+   *                             values, indicating whether to switch them on or off.
+   */
+  Project.updateGroupPermission = function(projectId, groupId, permissions) {
+    if (!CATMAID.hasPermission(project.id, 'can_administer')) {
+      return Promise.reject(new CATMAID.PermissionError("Need administration permission in this project"));
+    }
+    return CATMAID.fetch(`${project.id}/permissions/project-group`, 'POST', {
+      'group_id': groupId,
+      'permissions': Object.keys(permissions).map(p => [p, permissions[p]]),
+    });
+  };
+
   // Add event support to project and define some event constants
   CATMAID.asEventSource(Project.prototype);
   CATMAID.asEventSource(Project);

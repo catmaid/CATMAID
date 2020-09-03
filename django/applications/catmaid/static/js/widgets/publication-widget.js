@@ -203,6 +203,14 @@
               metaAnnotations = [metaAnnotations[0]];
             }
 
+            if (isPublic && metaAnnotations.indexOf('Published') === -1) {
+              metaAnnotations.push('Published');
+            }
+
+            if (isPreprint && metaAnnotations.indexOf('Preprint') === -1) {
+              metaAnnotations.push('Preprint');
+            }
+
             CATMAID.Publication.addPublication(project.id, name, isPreprint, isPublic, metaAnnotations)
               .then(result => {
                 widget.refresh();

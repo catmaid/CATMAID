@@ -24,8 +24,8 @@ With this individual tables (or alternatively all) can be imported into the
 local database::
 
     IMPORT FOREIGN SCHEMA public LIMIT TO (auth_user, auth_group,
-      auth_user_group, catmaid_userprofile, guardian_userobjectpermission,
-      guardian_groupobjectpermission)
+      auth_user_group, auth_user_groups, catmaid_userprofile,
+      guardian_userobjectpermission, guardian_groupobjectpermission)
     FROM SERVER remote_catmaid INTO remote_catmaid_fdw;
 
 Now it's possible to select data from the remote source::

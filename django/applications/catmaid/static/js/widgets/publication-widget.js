@@ -303,7 +303,9 @@
               searchable: true,
               orderable: true,
               render: function(data, type, row, meta) {
-                return data ? "Yes" : "No";
+                if (type === 'sort') return data;
+                let value = data ? 1 : 0;
+                return `<input type="checkbox" data-role="is-public" data-state=${value} ${value ? "checked" : ""} />`;
               },
             }, {
               data: "preprint",
@@ -312,7 +314,9 @@
               searchable: true,
               orderable: true,
               render: function(data, type, row, meta) {
-                return data ? "Yes" : "No";
+                if (type === 'sort') return data;
+                let value = data ? 1 : 0;
+                return `<input type="checkbox" data-role="is-preprint" data-state=${value} ${value ? "checked" : ""} />`;
               },
             /*
             }, {
@@ -401,6 +405,22 @@
               checkbox.dataset.state = 2;
             }
           },
+        }).on('change', 'input[type=checkbox][data-role=is-public]', function() {
+          let data = datatable.row($(this).parents('tr')).data();
+          data.public = this.checked;
+          let newAnnotations = this.checked ? ['Published'] : [];
+          CATMAID.Annotations.replaceAnnotations(project.id, [data.id],
+              ['Published'], newAnnotations)
+            .then(() => widget.refresh())
+            .catch(CATMAID.handleError);
+        }).on('change', 'input[type=checkbox][data-role=is-preprint]', function() {
+          let data = datatable.row($(this).parents('tr')).data();
+          data.preprint = this.checked;
+          let newAnnotations = this.checked ? ['Preprint'] : [];
+          CATMAID.Annotations.replaceAnnotations(project.id, [data.id],
+              ['Preprint'], newAnnotations)
+            .then(() => widget.refresh())
+            .catch(CATMAID.handleError);
         }).on('change', 'input[type=checkbox][data-role=export-treenodes]', function() {
           let data = datatable.row($(this).parents('tr')).data();
           data.treenodes = this.checked;

@@ -91,9 +91,9 @@
         version: 1,
         entries: {
           'publication_annotations': {
-            default: ['Published', 'papers', 'paper'],
+            default: ['papers', 'paper', 'Published'],
           },
-          'export_tags_by_default': {
+          'assign_only_first_pub_annotation_for_new': {
             default: true,
           },
           'export_annotations_by_default': {
@@ -198,7 +198,10 @@
               CATMAID.warn("Please configure publication annotations in Settings Widget");
               return;
             }
-            metaAnnotations = [metaAnnotations[0]];
+
+            if (CATMAID.PublicationWidget.Settings.session.assign_only_first_pub_annotation_for_new) {
+              metaAnnotations = [metaAnnotations[0]];
+            }
 
             CATMAID.Publication.addPublication(project.id, name, isPreprint, isPublic, metaAnnotations)
               .then(result => {

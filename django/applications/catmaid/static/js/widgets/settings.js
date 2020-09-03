@@ -2302,6 +2302,18 @@
 
       ds.append(wrapSettingsControl(
           CATMAID.DOM.createCheckboxSetting(
+              'Only assign first publication annotation to new publications',
+              CATMAID.PublicationWidget.Settings[SETTINGS_SCOPE].assign_only_first_pub_annotation_for_new,
+              "Whether newly created annotations will get only the first publication annotation (see above) assigned or all of them. By default only the first is to avoid confusion.",
+              function() {
+                CATMAID.PublicationWidget.Settings[SETTINGS_SCOPE].assign_only_first_pub_annotation_for_new = this.checked;
+              }),
+          CATMAID.PublicationWidget.Settings,
+          'assign_only_first_pub_annotation_for_new',
+          SETTINGS_SCOPE));
+
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
               'Export annotations by default',
               CATMAID.PublicationWidget.Settings[SETTINGS_SCOPE].export_annotations_by_default,
               "Whether annotations should be exported by default, if publications aren't marked explicitly. Only annotations that are meta-annotated with 'exportable' are going to be exported by default.",

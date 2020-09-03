@@ -341,7 +341,7 @@
                 else if (defaultMode === CA.ConnectorsNewPlaceholders) defaultModeLabel = 'All links + new placeholders';
                 else if (defaultMode === CA.ConnectorsOriginalPlaceholders) defaultModeLabel = 'All links + original placeholders';
 
-                let options = `<option value='${CA.ConnectorsNo}'${a}>None</option><option value='${CA.ConnectorsOnlyIntra}'${b}>Only intra-set links (1)</option><option value='${CA.ConnectorsNewPlaceholders}'${c}>All links + new placeholders (2)</option><option value='${CA.ConnectorsOriginalPlaceholders}'${d}>All links + original placeholders (3)</option><option value ='default'${e}>Inherit (${defaultModeLabel})</option>`;
+                let options = `<option value='${CA.ConnectorsNo}'${a}>None</option><option value='${CA.ConnectorsOnlyIntra}'${b}>Only intra-set links (1)</option><option value='${CA.ConnectorsNewPlaceholders}'${c}>All links + new placeholders (2)</option><option value='${CA.ConnectorsOriginalPlaceholders}'${d}>All links + original placeholders (3)</option><option value ='default'${e}>Project default (${defaultModeLabel})</option>`;
                 return `<select onfocus="this.selectedIndex = -1;" style="width: 10em" data-role="export-connectors" data-state=${state} \>${options}</select> <i data-action="reset-connectors-to-inherit" title="Enable/disable use of project wide default" class="reset-to-inherit fa fa-asterisk ${inheritClass}" />`;
               },
             }, {

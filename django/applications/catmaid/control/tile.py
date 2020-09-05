@@ -6,6 +6,7 @@ from io import BytesIO
 import logging
 import numpy as np
 import os
+import math
 
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse
@@ -19,6 +20,8 @@ from catmaid.control.authentication import requires_user_role
 logger = logging.getLogger(__name__)
 
 tile_loading_enabled = True
+# Whether or not cloudvolume tile loading is enabled
+cv_tile_loading_enabled = True
 
 try:
     import h5py
@@ -34,13 +37,16 @@ except ImportError:
     logger.warning("CATMAID was unable to load the PIL/pillow library. "
           "HDF5 tiles are therefore disabled.")
 
+try:
+    import cloudvolume
+except ImportError:
+    cv_tile_loading_enabled = False
+    logger.warning("CATMAID was unable to load the cloudvolume library. "
+          "Neuroglancer precomputed tiles are therefore disabled.")
+
 
 @requires_user_role([UserRole.Browse])
 def get_tile(request:HttpRequest, project_id=None, stack_id=None) -> HttpResponse:
-
-    if not tile_loading_enabled:
-        raise ConfigurationError("HDF5 tile loading is currently disabled")
-
     scale = float(request.GET.get('scale', '0'))
     height = int(request.GET.get('height', '0'))
     width = int(request.GET.get('width', '0'))
@@ -51,7 +57,24 @@ def get_tile(request:HttpRequest, project_id=None, stack_id=None) -> HttpRespons
     row = request.GET.get('row', 'x')
     file_extension = request.GET.get('file_extension', 'png')
     basename = request.GET.get('basename', 'raw')
+    data_format = request.GET.get('format', 'hdf5')
 
+    if data_format == 'hdf5':
+        tile = get_hdf5_tile(scale, height, width, x, y, z, col, row,
+                file_extension, basename)
+    elif data_format == 'cloudvolume':
+        tile = get_cloudvolume_tile(scale, height, width, x, y, z, col, row,
+                file_extension, basename)
+    else:
+        raise ValueError(f'Unknown data format request: {data_format}')
+
+    return tile
+
+
+def get_hdf5_tile(scale, height, width, x, y, z, col, row, file_extension,
+        basename):
+    if not tile_loading_enabled:
+        raise ConfigurationError("HDF5 tile loading is currently disabled")
     # need to know the stack name
     fpath=os.path.join(settings.HDF5_STORAGE_PATH, f'{project_id}_{stack_id}_{basename}.hdf')
 
@@ -80,6 +103,29 @@ def get_tile(request:HttpRequest, project_id=None, stack_id=None) -> HttpRespons
         return response
 
     return response
+
+
+def get_cloudvolume_tile(scale, height, width, x, y, z, col, row,
+        file_extension='png', basename=None, fill_missing=False, cache=True):
+    if not cv_tile_loading_enabled:
+        raise ConfigurationError("CloudVolume tile loading is currently disabled")
+
+    mip = int(abs(math.log(scale) / math.log(2)))
+    cv = cloudvolume.CloudVolume(basename, use_https=True, parallel=False,
+            cache=cache, mip=mip, bounded=False, fill_missing=fill_missing)
+
+    cutout = cv[x:(x + width), y:(y + height), z]
+    if cutout is None:
+        data = np.zeros((height, width))
+    else:
+        data = np.transpose(cutout[:,:,0,0])
+
+    img = Image.frombuffer('RGBA', (width, height), data, 'raw', 'L', 0, 1)
+
+    response = HttpResponse(content_type=f"image/{file_extension.lower()}")
+    img.save(response, file_extension.upper())
+    return response
+
 
 @requires_user_role([UserRole.Annotate])
 def put_tile(request:HttpRequest, project_id=None, stack_id=None) -> HttpResponse:

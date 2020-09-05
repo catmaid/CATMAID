@@ -107,6 +107,7 @@ TILE_SOURCE_TYPES = (
     (10, '10: H2N5 tiles'),
     (11, '11: N5 volume'),
     (12, '12: Boss tiles'),
+    (13, '13: CloudVolume tiles (back-end)'),
 )
 
 class Stack(models.Model):

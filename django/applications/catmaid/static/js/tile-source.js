@@ -40,6 +40,7 @@
       '10': CATMAID.H2N5TileSource,
       '11': CATMAID.N5ImageBlockWorkerSource,
       '12': CATMAID.BossTileSource,
+      '13': CATMAID.CloudVolumeTileSource,
     };
 
     return tileSources[tileSourceType];
@@ -275,7 +276,8 @@
           z: slicePixelPosition[0],
           file_extension: this.fileExtension,
           basename: this.baseURL,
-          type:'all'
+          type:'all',
+          format: 'hdf5',
         }));
   };
 
@@ -876,6 +878,39 @@
 
   CATMAID.BossTileSource.prototype.getRequestHeaders = function () {
     return this.headers;
+  };
+
+
+  /**
+   * Get Tiles from another source through CloudVolume on the back-end. Note:
+   * this isn't very performant when accessed by many people. A front-end based
+   * approach should be used/implemented instead.
+   *
+   * Source type: 13
+   */
+  CATMAID.CloudVolumeTileSource = function () {
+    CATMAID.AbstractTileSource.apply(this, arguments);
+  };
+
+  CATMAID.CloudVolumeTileSource.prototype = Object.create(CATMAID.AbstractTileSource.prototype);
+
+  CATMAID.CloudVolumeTileSource.prototype.getTileURL = function (
+      project, stack, slicePixelPosition, col, row, zoomLevel) {
+    return CATMAID.makeURL(project.id + '/stack/' + stack.id + '/tile?' +
+        $.param({
+          x: col * this.tileWidth,
+          y: row * this.tileHeight,
+          width : this.tileWidth,
+          height : this.tileHeight,
+          row : 'y',
+          col : 'x',
+          scale : 1/(1 << zoomLevel), // Bitshift is safe because zoomLevel is integral.
+          z: slicePixelPosition[0],
+          file_extension: this.fileExtension,
+          basename: this.baseURL,
+          type:'all',
+          format: 'cloudvolume',
+        }));
   };
 
 

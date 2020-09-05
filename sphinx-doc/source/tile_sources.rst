@@ -356,6 +356,18 @@ Tile source types are listed by the enumeration integer ID referenced by
 
        <sourceBaseURL>xy/<tileWidth>/<zoomLevel>/<col>/<row>/<pixelPosition.z>
 
+13. CloudVolume tiles
+*********************
+
+  Using this type, the back-end is instructed to go get a tile through
+  the cloudvolume library. The URL can be anything that CloudVolume can take,
+  e.g. a Neuroglancer Premcomputed image dataset like public Google hosted FAFB
+  dataset::
+
+    precomputed://gs://neuroglancer-fafb-data/fafb_v14/fafb_v14_clahe
+
+  Currently, only HTTPS mode is supported (i.e. no explicit credentials).
+
 Backend Representation
 ----------------------
 

@@ -12,7 +12,7 @@ from django.conf import settings
 from django.http import HttpRequest, HttpResponse
 
 from catmaid.models import UserRole, TILE_SOURCE_TYPES
-from catmaid.control.common import ConfigurationError
+from catmaid.control.common import ConfigurationError, get_request_bool
 from catmaid.control.authentication import requires_user_role
 
 
@@ -58,13 +58,14 @@ def get_tile(request:HttpRequest, project_id=None, stack_id=None) -> HttpRespons
     file_extension = request.GET.get('file_extension', 'png')
     basename = request.GET.get('basename', 'raw')
     data_format = request.GET.get('format', 'hdf5')
+    upscale = get_request_bool(request.GET, 'upscale', False)
 
     if data_format == 'hdf5':
         tile = get_hdf5_tile(scale, height, width, x, y, z, col, row,
                 file_extension, basename)
     elif data_format == 'cloudvolume':
         tile = get_cloudvolume_tile(scale, height, width, x, y, z, col, row,
-                file_extension, basename)
+                file_extension, basename, upscale=upscale)
     else:
         raise ValueError(f'Unknown data format request: {data_format}')
 
@@ -106,21 +107,63 @@ def get_hdf5_tile(scale, height, width, x, y, z, col, row, file_extension,
 
 
 def get_cloudvolume_tile(scale, height, width, x, y, z, col, row,
-        file_extension='png', basename=None, fill_missing=False, cache=True):
+        file_extension='png', basename=None, fill_missing=False, cache=True,
+        upscale=False):
     if not cv_tile_loading_enabled:
         raise ConfigurationError("CloudVolume tile loading is currently disabled")
 
-    mip = int(abs(math.log(scale) / math.log(2)))
-    cv = cloudvolume.CloudVolume(basename, use_https=True, parallel=False,
-            cache=cache, mip=mip, bounded=False, fill_missing=fill_missing)
+    if upscale:
+        mip = math.ceil(abs(math.log(scale) / math.log(2)))
+    else:
+        mip = math.floor(abs(math.log(scale) / math.log(2)))
+    scale_to_fit = False
+    effective_scale = 1.0
+    voxel_offset = (0, 0, 0)
+    try:
+        cv = cloudvolume.CloudVolume(basename, use_https=True, parallel=False,
+                cache=cache, mip=mip, bounded=False, fill_missing=fill_missing)
+        cutout = cv[x:(x + width), y:(y + height), z]
+    except cloudvolume.exceptions.ScaleUnavailableError as e:
+        logger.info(f'Need to use extra scaling, because mip level {mip} is not available: {e}')
+        cv_test = cloudvolume.CloudVolume(basename, use_https=True, parallel=False,
+                cache=cache, bounded=False, fill_missing=fill_missing)
+        # Find mip closest to the request
+        min_mip = None
+        min_mip_dist = float('infinity')
+        for ex_mip in cv_test.available_mips:
+            if abs(mip - ex_mip) < min_mip_dist:
+                min_mip = ex_mip
+                min_mip_dist = abs(mip - ex_mip)
 
-    cutout = cv[x:(x + width), y:(y + height), z]
+        if min_mip is None:
+            raise ValueError('No fitting scale level found')
+
+        # Get volume with best fit
+        cv = cloudvolume.CloudVolume(basename, use_https=True, parallel=False,
+                cache=cache, mip=min_mip, bounded=False, fill_missing=fill_missing)
+        effective_scale = 2**mip / 2**min_mip
+
+        # TODO: Correctly walk downsample factors / scale levels in each
+        # dimensions for exact scaling in non power-of-two scale pyramids.
+        scale_to_fit = True
+        x, y = math.floor(x * effective_scale), math.floor(y * effective_scale)
+        width, height = math.ceil(width * effective_scale), math.ceil(height * effective_scale)
+
+    cutout = cv[
+        (x + cv.voxel_offset[0]):(x + cv.voxel_offset[0] + width),
+        (y + cv.voxel_offset[1]):(y + cv.voxel_offset[1] + height),
+        z
+    ]
+
     if cutout is None:
         data = np.zeros((height, width))
     else:
         data = np.transpose(cutout[:,:,0,0])
 
     img = Image.frombuffer('RGBA', (width, height), data, 'raw', 'L', 0, 1)
+
+    if scale_to_fit:
+        img = img.resize((math.ceil(width / effective_scale), math.ceil(height / effective_scale)))
 
     response = HttpResponse(content_type=f"image/{file_extension.lower()}")
     img.save(response, file_extension.upper())

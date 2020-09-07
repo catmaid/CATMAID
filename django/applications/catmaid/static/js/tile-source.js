@@ -889,10 +889,10 @@
    * Source type: 13
    */
   CATMAID.CloudVolumeTileSource = function () {
-    CATMAID.AbstractTileSource.apply(this, arguments);
+    CATMAID.AbstractTileSourceWithOverview.apply(this, arguments);
   };
 
-  CATMAID.CloudVolumeTileSource.prototype = Object.create(CATMAID.AbstractTileSource.prototype);
+  CATMAID.CloudVolumeTileSource.prototype = Object.create(CATMAID.AbstractTileSourceWithOverview.prototype);
 
   CATMAID.CloudVolumeTileSource.prototype.getTileURL = function (
       project, stack, slicePixelPosition, col, row, zoomLevel) {
@@ -900,15 +900,43 @@
         $.param({
           x: col * this.tileWidth,
           y: row * this.tileHeight,
-          width : this.tileWidth,
-          height : this.tileHeight,
-          row : 'y',
-          col : 'x',
-          scale : 1/(1 << zoomLevel), // Bitshift is safe because zoomLevel is integral.
+          width: this.tileWidth,
+          height: this.tileHeight,
+          row: 'y',
+          col: 'x',
+          scale: 1/(1 << zoomLevel), // Bitshift is safe because zoomLevel is integral.
           z: slicePixelPosition[0],
           file_extension: this.fileExtension,
           basename: this.baseURL,
           type:'all',
+          format: 'cloudvolume',
+        }));
+  };
+
+  CATMAID.CloudVolumeTileSource.prototype.getOverviewURL = function(stack, slicePixelPosition) {
+    let [stackWidth, stackHeight] = [stack.dimension.x, stack.dimension.y];
+    let scale, width, height;
+    if (stackWidth > stackHeight) {
+      [width, height] = [192, Math.ceil(192 * (stackHeight / stackWidth))];
+      scale = 1 / Math.floor(stackWidth / 192);
+    } else {
+      [width, height] = [Math.ceil(192 * (stackWidth / stackHeight)), 192];
+      scale = 1 / Math.floor(stackHeight / 192);
+    }
+    return CATMAID.makeURL(project.id + '/stack/' + stack.id + '/tile?' +
+        $.param({
+          x: 0,
+          y: 0,
+          width: width,
+          height: height,
+          row: 'y',
+          col: 'x',
+          scale: scale,
+          z: slicePixelPosition[0],
+          file_extension: this.fileExtension,
+          basename: this.baseURL,
+          type:'all',
+          upscale: true,
           format: 'cloudvolume',
         }));
   };

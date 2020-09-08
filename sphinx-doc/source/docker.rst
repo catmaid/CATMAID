@@ -224,6 +224,22 @@ could look like this and allow the container management through systemd::
   [Install]
   WantedBy=multi-user.target
 
+Backup and restore of Docker Postgres databases
+-----------------------------------------------
+
+In order to create simple ``pg_dumpall`` backups from the host, the following
+line executed as a ``cron`` job, can be used to create backups regularly::
+
+  docker exec -t <container-name> pg_dumpall -c -U catmaid > /data/backup/catmaid/postgresql/$(TZ='America/New_York' date +%Y-%m-%d-%H-%M)-catmaid-db.sql
+
+The ``<container-name>`` is ``catmaid`` for the regular ``docker`` setup, and
+``catmaid_db_1`` for the ``docker-compose`` setup. Also not that this expectes
+the folder ``/data/backup/catmaid/postgresql/`` to be writable.
+
+In order to restore such a backup, a line similar to this can be used::
+
+  cat <backup.sql> | docker exec -i <container-name>-db-container psql -U catmaid
+
 
 Notes on shared memory in Docker
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -61,19 +61,19 @@ def get_tile(request:HttpRequest, project_id=None, stack_id=None) -> HttpRespons
     upscale = get_request_bool(request.GET, 'upscale', False)
 
     if data_format == 'hdf5':
-        tile = get_hdf5_tile(scale, height, width, x, y, z, col, row,
-                file_extension, basename)
+        tile = get_hdf5_tile(project_id, stack_id, scale, height, width, x, y,
+                z, col, row, file_extension, basename)
     elif data_format == 'cloudvolume':
-        tile = get_cloudvolume_tile(scale, height, width, x, y, z, col, row,
-                file_extension, basename, upscale=upscale)
+        tile = get_cloudvolume_tile(project_id, stack_id, scale, height, width,
+                x, y, z, col, row, file_extension, basename, upscale=upscale)
     else:
         raise ValueError(f'Unknown data format request: {data_format}')
 
     return tile
 
 
-def get_hdf5_tile(scale, height, width, x, y, z, col, row, file_extension,
-        basename):
+def get_hdf5_tile(project_id, stack_id, scale, height, width, x, y, z, col, row,
+        file_extension, basename):
     if not tile_loading_enabled:
         raise ConfigurationError("HDF5 tile loading is currently disabled")
     # need to know the stack name
@@ -106,9 +106,9 @@ def get_hdf5_tile(scale, height, width, x, y, z, col, row, file_extension,
     return response
 
 
-def get_cloudvolume_tile(scale, height, width, x, y, z, col, row,
-        file_extension='png', basename=None, fill_missing=False, cache=True,
-        upscale=False):
+def get_cloudvolume_tile(project_id, stack_id, scale, height, width, x, y, z,
+        col, row, file_extension='png', basename=None, fill_missing=False,
+        cache=True, upscale=False):
     if not cv_tile_loading_enabled:
         raise ConfigurationError("CloudVolume tile loading is currently disabled")
 

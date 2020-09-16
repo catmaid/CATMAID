@@ -2080,8 +2080,9 @@
 
           let activeSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
 
-          if (skeletonId !== activeSkeletonId) {
-            throw new CATMAID.Warning("The second node isn't part of the same skeleton");
+          let sameSkeleton = skeletonId === activeSkeletonId;
+          if (!sameSkeleton) {
+            CATMAID.warn("The second node isn't part of the same skeleton, only the euclidian distances is computed.");
           }
 
           let arborTransform;
@@ -2116,22 +2117,62 @@
             };
           }
 
-          resolve(CATMAID.Skeletons.distanceBetweenNodes(project.id, skeletonId,
-              firstNodeId, secondNodeId, arborTransform));
+          let firstPosition, secondPosition;
+          if (firstIsVirtual) {
+            let vnComponents = SkeletonAnnotations.getVirtualNodeComponents(firstNodeId);
+            let vnX = Number(SkeletonAnnotations.getXOfVirtualNode(firstNodeId, vnComponents));
+            let vnY = Number(SkeletonAnnotations.getYOfVirtualNode(firstNodeId, vnComponents));
+            let vnZ = Number(SkeletonAnnotations.getZOfVirtualNode(firstNodeId, vnComponents));
+            firstPosition = new THREE.Vector3(vnX, vnY, vnZ);
+          }
+          if (secondIsVirtual) {
+            let vnComponents = SkeletonAnnotations.getVirtualNodeComponents(secondNodeId);
+            let vnX = Number(SkeletonAnnotations.getXOfVirtualNode(secondNodeId, vnComponents));
+            let vnY = Number(SkeletonAnnotations.getYOfVirtualNode(secondNodeId, vnComponents));
+            let vnZ = Number(SkeletonAnnotations.getZOfVirtualNode(secondNodeId, vnComponents));
+            secondPosition = new THREE.Vector3(vnX, vnY, vnZ);
+          }
+
+          Promise.all([
+              sameSkeleton ? CATMAID.Skeletons.distanceBetweenNodes(project.id,
+                  skeletonId, firstNodeId, secondNodeId, arborTransform) : -1,
+              firstPosition ? firstPosition : CATMAID.Nodes.getLocation(firstNodeId)
+                  .then(l => new THREE.Vector3(l[0], l[1], l[2])),
+              secondPosition ? secondPosition : CATMAID.Nodes.getLocation(secondNodeId)
+                  .then(l => new THREE.Vector3(l[0], l[1], l[2])),
+            ]).then(results => {
+              resolve({
+                sameSkeleton: sameSkeleton,
+                euclidianDistance: results[1].distanceTo(results[2]),
+                pathDistance: results[0],
+              });
+            })
+            .catch(CATMAID.handleError);
         }
       });
-      dialog.appendMessage("Please select a second node on the same skeleton!");
+      dialog.appendMessage("Please select a second node on the same or another skeleton!");
       dialog.show('auto', 'auto', false);
     });
 
-    getNode.then(function(length) {
+    getNode.then(function(result) {
         var dialog = new CATMAID.OptionsDialog("Node distance", {
           'Close': function() {},
         });
-        dialog.appendMessage("The distance between node " +
-            firstNodeId + " and " + secondNodeId + " on skeleton " +
-            skeletonId + " is:");
-        dialog.appendMessage(Math.round(length) + " nm");
+        if (result.sameSkeleton) {
+          dialog.appendMessage("Both path distance and straight line distance between nodes " +
+              firstNodeId + " and " + secondNodeId + " on skeleton " +
+              skeletonId + " have been computed.");
+        } else {
+          dialog.appendMessage("Only the the eucledian distance between node " +
+              firstNodeId + " and " + secondNodeId + " could be computed, " +
+              "they are part of different skeletons.");
+        }
+
+        dialog.appendMessage("Straight line distance: " + Math.round(result.euclidianDistance) + " nm");
+        if (result.sameSkeleton) {
+          dialog.appendMessage("Path distance: " + Math.round(result.pathDistance) + " nm");
+        }
+
         dialog.show(500, 'auto', false);
       })
       .catch(CATMAID.handleError);

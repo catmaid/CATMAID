@@ -163,7 +163,7 @@ databases. Instead it should follow the primary. This is done by adding the
 following settings to your ``postgresql.conf`` file::
 
   primary_conninfo      = 'host=my.primary.db.xyz port=7432 user=replication_user password=<password>'
-  promote_trigger_file = '/var/lib/postgresql/12/main/standby.signal'
+  promote_trigger_file = '/var/lib/postgresql/12/main/primary.now'
   #restore_command = 'cp /opt/postgresql_wal/%f "%p"
 
 To let the cluster know that it runs in standby mode, create the file
@@ -186,7 +186,7 @@ replica is promoted to a primary.
   ``postgresql.conf`` changes above):
 
   primary_conninfo      = 'host=my.primary.db.xyz port=7432 user=replication_user password=<password>'
-  trigger_file = '/var/lib/postgresql/11/main/master.now'
+  trigger_file = '/var/lib/postgresql/11/main/primary.now'
   #restore_command = 'cp /opt/postgresql_wal/%f "%p"
   standby_mode          = 'on'
 
@@ -202,7 +202,7 @@ in the log::
 
 On the primary server, replicas should be visible in a query like this::
 
-  select * from pg_stat_activity  where usename = 'replication_user' ;
+  select * from pg_stat_activity  where usename = 'replication_user';
 
 This provides a basic replication setup. It might be useful to also look at PITR
 (backups) of Postgres. This would cause a copy of each WAL file can be created

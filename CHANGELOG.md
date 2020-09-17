@@ -249,6 +249,11 @@ Tracing data export
 
 Miscellaneous:
 
+- Node distance measurements (icon in tracing tool bar) are now allowed also
+  between nodes of different skeletons. In this case only the straight line
+  distance will be displayed. Both the straight line distance and the path
+  distance will be displayed for nodes of the same skeleton.
+
 - Auto-completion should now be faster by displaying only 15 filtering results.
 
 - Connector table: a search filter is now available for the table that allows

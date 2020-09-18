@@ -145,7 +145,12 @@ class PostGISVolume(object):
                 RETURNING volume_id
                 """, params)
 
-        return cursor.fetchone()[0]
+        # Make sure volume meta information is correct
+        volume_id = cursor.fetchone()[0]
+        update_volume_meta_information(self.project_id, [volume_id])
+
+        return volume_id
+
 
 class TriangleMeshVolume(PostGISVolume):
     """A generic triangle mesh, provided from an external source.

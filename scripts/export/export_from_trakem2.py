@@ -511,11 +511,11 @@ def insertTree(tree,skeleton_id):
 
 def add_recursively(pt,parent_id,depth=0):
   name_with_id = get_project_thing_name(pt)
-  print(" "*depth, pt, name_with_id)
+  pt_type = pt.getType()
+  print(" "*depth, pt, f'(type: {pt_type})', name_with_id)
   ignore = True
   is_neuron = False
   new_id = None
-  pt_type = pt.getType()
   if not parent_id:
     # Then this should be the root:
     #new_id = insert_project_root_node(name_with_id)

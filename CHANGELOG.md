@@ -282,6 +282,21 @@ Import/export widget:
   displayed at the bottom of the widget. Each link is a successful import and,
   when clicked, selects and moves to the respective skeleton.
 
+TrakEM2 import managmenet command:
+
+- The new catmaid_import_from_trakem2 management command can be used to import
+  data from a TrakEM2 XML file in a similar fashion as the
+  scripts/export/export_from_trakem2.py script. It can however import in
+  addition TrakEM2 AreaList objects and connectivity.
+
+- It generates meshes and skeletons by first generating a marching cubes based
+  mesh from the AreaList (using TrakEM2 functionality), then using Blender to
+  remesh that mesh to get a watertight manifold. This mesh is then first
+  imported as a triangle volume into CATMAID and then it is skeletonized. The
+  skeletonization can be done in different ways, by using skeletor or stl2swc.
+  The latter seems to generate better skeletons at the moment, but might require
+  a bit more setup time.
+
 Miscellaneous:
 
 - Each stack viewer will now show the project name by default along with the

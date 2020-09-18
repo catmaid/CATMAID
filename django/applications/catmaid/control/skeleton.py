@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from itertools import chain
 import dateutil.parser
 import json
+import math
 import networkx as nx
 import pytz
 import re
@@ -2988,7 +2989,7 @@ def import_skeleton(request:HttpRequest, project_id=None) -> Union[HttpResponse,
     return HttpResponseBadRequest('No file received.')
 
 
-def import_skeleton_swc(user, project_id, swc_string, neuron_id=None,
+def _import_skeleton_swc(user, project_id, swc_string, neuron_id=None,
         skeleton_id=None, name=None, annotations=['Import'], force=False,
         auto_id=True, source_id=None, source_url=None, source_project_id=None,
         source_type='skeleton') -> JsonResponse:
@@ -3023,11 +3024,22 @@ def import_skeleton_swc(user, project_id, swc_string, neuron_id=None,
             source_project_id, source_type)
     node_id_map = {n: d['id'] for n, d in import_info['graph'].nodes(data=True)}
 
-    return JsonResponse({
+    return {
         'neuron_id': import_info['neuron_id'],
         'skeleton_id': import_info['skeleton_id'],
         'node_id_map': node_id_map,
-    })
+    }
+
+
+def import_skeleton_swc(user, project_id, swc_string, neuron_id=None,
+        skeleton_id=None, name=None, annotations=['Import'], force=False,
+        auto_id=True, source_id=None, source_url=None, source_project_id=None,
+        source_type='skeleton') -> JsonResponse:
+    """Import a neuron modeled by a skeleton in SWC format.
+    """
+    return JsonResponse(_import_skeleton_swc(user, project_id, swc_string,
+        neuron_id, skeleton_id, name, annotations, force, auto_id, source_id,
+        source_url, source_project_id, source_type))
 
 
 def import_skeleton_eswc(user, project_id, swc_string, neuron_id=None,
@@ -3112,7 +3124,7 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
             existing_neuron = ClassInstance.objects.select_related('class_column').get(pk=neuron_id)
             if force:
                 if existing_neuron.project_id != project_id:
-                    raise ValueError("Target neuron exists, but is part of other project")
+                    raise ValueError(f"Target neuron exists, but is part of other project (neuron ID: {neuron_id}, project ID: {existing_neuron.project_id}, new project ID: {project_id}")
 
                 if existing_neuron.class_column.class_name != 'neuron':
                     raise ValueError(f"Existing object with ID {existing_neuron.id} is not a neuron, " + \
@@ -3140,8 +3152,10 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
                     can_edit_all_or_fail(user, treenode_ids, 'treenode')
 
                     # Remove existing skeletons
-                    skeleton_link.delete()
-                    old_skeleton.delete()
+                    if skeleton_id != old_skeleton.id:
+                        skeleton_link.delete()
+                        old_skeleton.delete()
+
                     treenodes.delete()
 
                 new_neuron = existing_neuron
@@ -3237,7 +3251,7 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
     new_neuron.class_column_id = class_map['neuron']
     if name is not None:
         new_neuron.name = name
-    else:
+    elif neuron_id is None: # Don't override existing neuron names
         new_neuron.name = 'neuron'
         new_neuron.save()
         new_neuron.name = 'neuron %d' % new_neuron.id
@@ -4532,3 +4546,74 @@ def get_completeness_data(project_id, skeleton_ids, open_ends_percent=0.03,
     }), params)
 
     return cursor.fetchall()
+
+
+def edge_list_to_swc(edge_lines):
+    """Convert an iterable set of line of edges (x1 y1 z1 x2 y2 z3) to an SWC
+    representation, which is returned.
+    """
+    # Each line has three coordinates: edge start, edge end,
+    # associated mesh point. We construct a skeletn SWC by
+    # Assigning each position an ID and linking, starting with the
+    # first one as root.
+    edge_map = {}
+    parents = {}
+    swc_data = []
+    next_node_id = 0
+    root_candidates = set()
+    impossible_roots = set()
+    make_edge_key = lambda edge: f'{edge[0]} {edge[1]} {edge[2]}'
+
+    # Define IDs for all
+    g = nx.Graph()
+    meta = {}
+    dist = {}
+    for edge in edge_lines:
+        edge_key = make_edge_key(edge)
+        parent_id = edge_map.get(edge_key)
+        if parent_id is None:
+            parent_id = next_node_id
+            next_node_id += 1
+            edge_map[edge_key] = parent_id
+
+        meta[parent_id] = edge[0:3]
+        dist[parent_id] = edge[6:9]
+
+        child_key = make_edge_key(edge[3:6])
+        child_id = edge_map.get(child_key)
+        if child_id is None:
+            child_id = next_node_id
+            next_node_id += 1
+            edge_map[child_key] = child_id
+            meta[child_id] = edge[3:6]
+            # FIXME: Might be better to not default to the partner
+            # node mesh representing node
+            dist[child_id] = edge[6:9]
+
+        g.add_edge(parent_id, child_id)
+
+    root_node_id = edge_map[make_edge_key(edge_lines[0])]
+    tree = nx.bfs_tree(g, root_node_id)
+
+    if len(tree) == 0:
+        raise ValueError("Could not generate tree")
+
+    for node in tree.nodes():
+        parents = list(tree.predecessors(node))
+        if parents:
+            if len(parents) > 1:
+                raise ValueError(f"Found more than one parent nodes in tree {len(parents)}")
+            parent_id = parents[0]
+        else:
+            parent_id = -1
+
+        pos = meta[node]
+        ref_mesh_node = dist.get(node)
+        if ref_mesh_node is None:
+            radius = -1
+        else:
+            radius = math.sqrt((pos[0] - ref_mesh_node[0])**2 +
+                    (pos[1] - ref_mesh_node[1])**2 + (pos[2] - ref_mesh_node[2])**2)
+        swc_data.append([node, 0, pos[0], pos[1], pos[2], radius, parent_id])
+
+    return swc_data

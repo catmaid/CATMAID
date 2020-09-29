@@ -5471,7 +5471,9 @@
     let absUpdateDistance = Math.abs(distance);
     if (camTargetDistance < absUpdateDistance && distance < 0) {
       absUpdateDistance = camTargetDistance * 0.5;
-      distance = absUpdateDistance * dirFactor;
+      // The -1 is multiplied because of distance < 0, which implies we are
+      // moving forward.
+      distance = absUpdateDistance * -1;
       // And cancel the location update if we are closer than ten units
       // (arbitary close distance).
       if (camTargetDistance - absUpdateDistance < 10) {

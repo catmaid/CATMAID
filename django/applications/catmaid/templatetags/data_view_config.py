@@ -74,6 +74,10 @@ def get_slice(stack, pos):
     # Return None if nothing else matched
     return None
 
+@register.filter
+def get_overview(mirror, slice):
+    return mirror.slice_overview(slice)
+
 class ProjectListVarNode(template.Node):
     """ Stores the tag references in a template node and
     allows access to the projects tagged with them.

@@ -169,6 +169,10 @@ class StackMirror(models.Model):
     def __str__(self) -> str:
         return self.stack.title + " (" + self.title + ")"
 
+    def slice_overview(self, slice_position) -> str:
+        """Return the URL for an overview thumbnail of the slice at a z coordinate."""
+        return f"{self.image_base}{slice_position}/small.{self.file_extension}"
+
 
 class ProjectStack(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE)

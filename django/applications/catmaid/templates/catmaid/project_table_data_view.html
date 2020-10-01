@@ -40,7 +40,7 @@
                 onclick="CATMAID.openProjectStack({{p.id}}, {{s.id}}).catch(CATMAID.handleError);return false">
               {% with s.stackmirror_set.all|dictsort:'position'|get:sample_mirror_index as mirror %}
                 <img class="lazy"
-                  data-src="{{ mirror.image_base }}{{ slice }}/small.{{ mirror.file_extension }}"
+                  data-src="{{ mirror|get_overview:slice }}"
                   alt="Sample image for {{ s.title }} on slice {{ slice }}"
                   title="{{ s.comment|striptags|safe }}"
                   {% if sample_width > -1 %} width="{{ sample_width }}" {% endif %}

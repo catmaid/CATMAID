@@ -32,7 +32,7 @@
                     {% elif stack.stackmirror_set.all|length %}
                         {% with stack.stackmirror_set.all|dictsort:'position'|get:sample_mirror_index as mirror %}
                           <img class="lazy"
-                              data-src="{{ mirror.image_base }}{{ slice }}/small.{{ mirror.file_extension }}"
+                              data-src="{{ mirror|get_overview:slice }}"
                               alt="Sample image for {{ stack.title }} on slice {{ slice }}"
                               {% if sample_width > -1 %} width="{{ sample_width }}" {% endif %}
                               {% if sample_height > -1 %} height="{{ sample_height }}" {% endif %} />

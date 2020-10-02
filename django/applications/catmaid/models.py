@@ -162,6 +162,19 @@ class Stack(models.Model):
         """Number of zoom levels, or -1 if determined automatically."""
         return -1 if self.downsample_factors is None else len(self.downsample_factors) - 1
 
+    def zoom_level_fitting_slice(self, size, slice_axis=2) -> int:
+        """The smallest zoom level fitting a square slice of linear size."""
+        slice_dim = [self.dimension.x, self.dimension.y, self.dimension.z]
+        slice_dim.pop(slice_axis)
+        # Find the zoom level index of a downsample level where the slice along
+        # the specified axis is smaller in all dimensions than `size`.
+        for (i, df) in enumerate(self.downsample_factors):
+            slice_factors = [df.x, df.y, df.z]
+            slice_factors.pop(slice_axis)
+            if all((sd / factor) <= size for (factor, sd) in zip(slice_factors, slice_dim)):
+                return i
+        return -1
+
 
 class StackMirror(models.Model):
     stack = models.ForeignKey(Stack, on_delete=models.CASCADE)
@@ -190,6 +203,26 @@ class StackMirror(models.Model):
 
     def slice_overview(self, slice_position) -> str:
         """Return the URL for an overview thumbnail of the slice at a z coordinate."""
+        # Do not return "" as some browsers will direct extra requests at the
+        # page root (CATMAID index) for this URL.
+        EMPTY_IMAGE = '//:0'
+        if self.tile_source_type == TileSourceTypes.N5:
+            return EMPTY_IMAGE
+        if self.tile_source_type == TileSourceTypes.H2N5:
+            # Note this does not produce the preferred 192px image, but simply
+            # one fitting in one tile.
+            slice_size = max(self.tile_width, self.tile_height)
+            zoom_level = self.stack.zoom_level_fitting_slice(slice_size)
+            if zoom_level < 0 or zoom_level > 0 and '%SCALE_DATASET%' not in self.image_base:
+                return EMPTY_IMAGE
+            zoom_slice_position = int(slice_position / self.stack.downsample_factors[zoom_level].z)
+            url = self.image_base\
+                .replace('%SCALE_DATASET%', f's{zoom_level}')\
+                .replace('%AXIS_0%', '0').replace('%AXIS_1%', '0')\
+                .replace('%AXIS_2%', str(zoom_slice_position)) + '.' + self.file_extension
+            return url
+
+        # Default case is only correct for tile source 4.
         return f"{self.image_base}{slice_position}/small.{self.file_extension}"
 
 

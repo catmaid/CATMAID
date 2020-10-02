@@ -20,7 +20,7 @@
         {% if sample_images %}
             <tr><td class="stackimage">
             {% if show_stacks and stacks_of|get:p.id %}
-                {# Get the samlpe stack  #}
+                {# Get the sample stack #}
                 {% with stack=stacks_of|get:p.id|dictsort:'id'|get_stack:sample_stack %}
                 {% if stack|is_none %}
                     Couldn't find requested stack: {{ sample_stack }}

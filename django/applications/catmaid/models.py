@@ -2,6 +2,7 @@
 
 import colorsys
 from datetime import datetime, timedelta
+import enum
 import logging
 from random import random
 import re
@@ -94,21 +95,39 @@ def on_project_save(sender, instance, created, raw, **kwargs) -> None:
 post_save.connect(on_project_save, sender=Project)
 
 # Supported tile source types
-TILE_SOURCE_TYPES = (
-    (1, '1: File-based image stack'),
-    (2, '2: Request query-based image stack'),
-    (3, '3: HDF5 via CATMAID backend'),
-    (4, '4: File-based image stack with zoom level directories'),
-    (5, '5: Directory-based image stack'),
-    (6, '6: DVID imageblk voxels'),
-    (7, '7: Render service'),
-    (8, '8: DVID imagetile tiles'),
-    (9, '9: FlixServer tiles'),
-    (10, '10: H2N5 tiles'),
-    (11, '11: N5 volume'),
-    (12, '12: Boss tiles'),
-    (13, '13: CloudVolume tiles (back-end)'),
-)
+@enum.unique
+class TileSourceTypes(enum.IntEnum):
+    FILE_BASED_STACK = 1
+    REQUEST_BASED_STACK = 2
+    CATMAID_BACKEND_HDF5 = 3
+    FILE_BASED_ZOOM_STACK = 4
+    DIRECTORY_BASED_STACK = 5
+    DVID_IMAGEBLK = 6
+    RENDER_SERVICE = 7
+    DVID_IMAGETILE = 8
+    FLIXSERVER = 9
+    H2N5 = 10
+    N5 = 11
+    BOSS = 12
+    CATMAID_BACKEND_CLOUDVOLUME = 13
+
+TILE_SOURCE_TYPE_DESCRIPTIONS = {
+    TileSourceTypes.FILE_BASED_STACK: 'File-based image stack',
+    TileSourceTypes.REQUEST_BASED_STACK: 'Request query-based image stack',
+    TileSourceTypes.CATMAID_BACKEND_HDF5: 'HDF5 via CATMAID backend',
+    TileSourceTypes.FILE_BASED_ZOOM_STACK: 'File-based image stack with zoom level directories',
+    TileSourceTypes.DIRECTORY_BASED_STACK: 'Directory-based image stack',
+    TileSourceTypes.DVID_IMAGEBLK: 'DVID imageblk voxels',
+    TileSourceTypes.RENDER_SERVICE: 'Render service',
+    TileSourceTypes.DVID_IMAGETILE: 'DVID imagetile tiles',
+    TileSourceTypes.FLIXSERVER: 'FlixServer tiles',
+    TileSourceTypes.H2N5: 'H2N5 tiles',
+    TileSourceTypes.N5: 'N5 volume',
+    TileSourceTypes.BOSS: 'Boss tiles',
+    TileSourceTypes.CATMAID_BACKEND_CLOUDVOLUME: 'CloudVolume tiles (back-end)',
+}
+
+TILE_SOURCE_TYPE_CHOICES = [(t.value, f'{t.value}: {TILE_SOURCE_TYPE_DESCRIPTIONS[t]}') for t in TileSourceTypes]
 
 class Stack(models.Model):
     title = models.TextField(help_text="Descriptive title of this stack.")
@@ -156,7 +175,7 @@ class StackMirror(models.Model):
     tile_height = models.IntegerField(default=256,
             help_text="The height of one tile.")
     tile_source_type = models.IntegerField(default=1,
-            choices=TILE_SOURCE_TYPES,
+            choices=TILE_SOURCE_TYPE_CHOICES,
             help_text='This represents how the tile data is organized. '
             'See <a href="http://catmaid.org/page/tile_sources.html">tile source '
             'conventions documentation</a>.')

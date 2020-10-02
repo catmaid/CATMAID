@@ -30,7 +30,7 @@ from guardian.shortcuts import get_perms_for_model, assign_perm
 from catmaid.models import (BrokenSlice, Class, Relation, ClassClass,
         ClassInstance, Project, ClassInstanceClassInstance, Stack, StackGroup,
         StackStackGroup, ProjectStack, StackClassInstance, StackGroupClassInstance, StackGroupRelation,
-        StackMirror, TILE_SOURCE_TYPES)
+        StackMirror, TILE_SOURCE_TYPE_CHOICES)
 from catmaid.fields import Double3D
 from catmaid.control.common import urljoin, is_valid_host
 from catmaid.control.classification import get_classification_links_qs, \
@@ -901,7 +901,7 @@ class ProjectSelectionForm(forms.Form):
     )
     default_tile_source_type = forms.ChoiceField(
         initial=settings.IMPORTER_DEFAULT_TILE_SOURCE_TYPE,
-        choices=TILE_SOURCE_TYPES,
+        choices=TILE_SOURCE_TYPE_CHOICES,
         help_text="The default tile source type is used if there none defined for an imported stack. "
                   "It represents how the tile data is organized. "
                   "See <a href=\"http://catmaid.org/page/tile_sources.html\">tile source conventions documentation</a>."

@@ -11,7 +11,7 @@ from formtools.wizard.views import SessionWizardView
 
 from catmaid.models import (
     Stack, StackMirror, Project, ProjectStack, StackGroup,
-    StackStackGroup, StackGroupRelation,
+    StackStackGroup, StackGroupRelation, TileSourceTypes,
 )
 from catmaid.fields import (
     Double3DFormField, DownsampleFactorsField, DownsampleFactorsFormField,
@@ -23,8 +23,6 @@ TEMPLATES = {
     'container': 'catmaid/imageblocksourceimport/container.html',
     'stack': 'catmaid/imageblocksourceimport/stack.html',
 }
-
-TILE_SOURCE_TYPE = 11
 
 class ContainerForm(forms.Form):
     container = forms.URLField(label='N5 Root', widget=forms.TextInput(attrs={'size':80}),
@@ -100,7 +98,7 @@ class ImageBlockSourceImportWizard(SessionWizardView):
             file_extension='',
             tile_width=block_size.x,
             tile_height=block_size.y,
-            tile_source_type=TILE_SOURCE_TYPE)
+            tile_source_type=TileSourceTypes.N5)
 
         msg = 'A new stack was successfully created.'
 

@@ -11,7 +11,7 @@ import math
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse
 
-from catmaid.models import UserRole, TILE_SOURCE_TYPES
+from catmaid.models import UserRole, TileSourceTypes
 from catmaid.control.common import ConfigurationError, get_request_bool
 from catmaid.control.authentication import requires_user_role
 
@@ -271,9 +271,9 @@ class LargeDataTileSource(TileSource):
 
 
 tile_source_map = {
-    1: DefaultTileSource,
-    4: BackslashTileSource,
-    5: LargeDataTileSource
+    TileSourceTypes.FILE_BASED_STACK: DefaultTileSource,
+    TileSourceTypes.FILE_BASED_ZOOM_STACK: BackslashTileSource,
+    TileSourceTypes.DIRECTORY_BASED_STACK: LargeDataTileSource
 }
 
 def get_tile_source(type_id):

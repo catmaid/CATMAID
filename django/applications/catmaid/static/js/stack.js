@@ -554,6 +554,18 @@
       }
     };
 
+    /**
+     * Return the lowest zoom level fitting a square size of a linear size.
+     *
+     * @param {Number} size
+     */
+    self.zoomLevelFittingSlice = function (size) {
+      return self.downsample_factors.findIndex(factors => {
+        return (self.dimension.x / factors.x) <= size &&
+          (self.dimension.y / factors.y) <= size;
+      });
+    };
+
     self.createTileSourceForMirror = function (mirrorIdx) {
       var mirror = self.mirrors[mirrorIdx];
       if (!mirror) {

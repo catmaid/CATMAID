@@ -505,7 +505,7 @@
    * Source type: 10
    */
   CATMAID.H2N5TileSource = function () {
-    CATMAID.AbstractTileSource.apply(this, arguments);
+    CATMAID.AbstractTileSourceWithOverview.apply(this, arguments);
 
     // Scale levels are stored in difference N5 datasets. In the future, the
     // names of these datasets may be read from the attributes of the parent
@@ -517,7 +517,7 @@
     };
   };
 
-  CATMAID.H2N5TileSource.prototype = Object.create(CATMAID.AbstractTileSource.prototype);
+  CATMAID.H2N5TileSource.prototype = Object.create(CATMAID.AbstractTileSourceWithOverview.prototype);
 
   CATMAID.H2N5TileSource.prototype.getTileURL = function(
       project, stack, slicePixelPosition, col, row, zoomLevel) {
@@ -528,6 +528,17 @@
       .replace('%AXIS_1%', row * this.tileHeight)
       .replace('%AXIS_2%', slicePixelPosition[0])
       + '.' + this.fileExtension;
+  };
+
+  CATMAID.H2N5TileSource.prototype.getOverviewURL = function (stack, slicePixelPosition) {
+    let sliceSize = Math.max(this.tileWidth, this.tileHeight);
+    let zoomLevel = stack.zoomLevelFittingSlice(sliceSize);
+    // If the zoom level does not exist, return a URL that will trigger `onerror`
+    // for proper overview fallback.
+    if (zoomLevel < 0 || zoomLevel > 0 && !this.baseURL.includes('%SCALE_DATASET%'))
+      return 'data:,';
+    slicePixelPosition[0] = Math.round(slicePixelPosition[0] / stack.downsample_factors[zoomLevel].z);
+    return this.getTileURL(null, stack, slicePixelPosition, 0, 0, zoomLevel);
   };
 
 

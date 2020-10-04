@@ -673,7 +673,7 @@
         }
 
         let annotationIdSet = new Set();
-        for (let [sg, annotations] of subGroupMap.entries()) {
+        for (let annotations of subGroupMap.values()) {
           annotationIdSet = annotationIdSet.union(annotations);
         }
         let annotationIds = Array.from(annotationIdSet);
@@ -771,7 +771,6 @@
             // respective configurations.
             let completenessPromises = [];
             if (mainSkeletonIds.size > 0) {
-              let batches = [];
               let workingSet = Array.from(mainSkeletonIds);
               for (let i=0; i<mainSkeletonIds.size; i +=widget.completenessBatchSize) {
                 let batch = workingSet.slice(i, Math.min(workingSet.length, i + widget.completenessBatchSize));
@@ -782,7 +781,6 @@
                 }
             }
             if (extraSkeletonIds.size > 0) {
-              let batches = [];
               let workingSet = Array.from(extraSkeletonIds);
               for (let i=0; i<extraSkeletonIds.size; i +=widget.completenessBatchSize) {
                 let batch = workingSet.slice(i, Math.min(workingSet.length, i + widget.completenessBatchSize));
@@ -816,7 +814,7 @@
             // Remove incomple skeletons from annotation map.
             let incompleSkeletons = 0;
             if (widget.useOnlyCompleteSkeletons) {
-              for (let [k,v] of annotationMap.entries()) {
+              for (let v of annotationMap.values()) {
                 for (let skeletonId of v) {
                   let status = meta.completionStatus.get(skeletonId);
                   if (!status || !status.complete) {

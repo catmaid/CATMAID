@@ -20,6 +20,7 @@
   "scripts": {
     "lint:js": "jshint --config=.travis.jshintrc --exclude-path=.travis.jshintignore django/applications",
     "lint:js-diff": "npm run --silent lint:js | diff - .travis.jshintexpected",
+    "lint:js-bless": "npm run --silent lint:js > .travis.jshintexpected",
     "lint:css": "csslint --config=django/applications/catmaid/static/css/.csslintrc django/applications/catmaid/static/css",
     "lint": "npm-run-all lint:*",
     "jsdoc": "jsdoc -r django/applications/catmaid/static/js",

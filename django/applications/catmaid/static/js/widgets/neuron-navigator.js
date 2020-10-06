@@ -970,6 +970,29 @@
             });
           }
 
+          // FIXME, terrible hack: The back-end doesn't know about the selection
+          // column that is present if an unlink handler is provided.
+          if (unlink_handler) {
+            aoData.forEach(function(e) {
+              if (e.name == 'iSortCol_0') {
+                e.value = Number(e.value) - 1;
+              }
+            });
+          }
+
+          // FIXME, terribale hack: The back-end expects an annotator at index
+          // 4, rather than 3 (which is used in the UI.
+          if (display_annotator && !display_usage) {
+            aoData.forEach(function(e) {
+              if (e.name == 'iSortCol_0') {
+                let val = Number(e.value);
+                if (val === 3) {
+                  e.value = 4;
+                }
+              }
+            });
+          }
+
           // Validate regular expression and only send if it is valid
           var searchInput = this.parent().find('div.dataTables_filter input[type=search]');
           try {

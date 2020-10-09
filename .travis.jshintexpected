@@ -383,12 +383,7 @@ django/applications/catmaid/static/libs/catmaid/synapse_clustering.js: line 349,
 
 django/applications/catmaid/static/libs/catmaid/time-series.js: line 19, col 12, 'returnMaxTime' is defined but never used.
 
-django/applications/catmaid/static/libs/catmaid/utils.js: line 6, col 1, 'Arbor' is defined but never used.
-django/applications/catmaid/static/libs/catmaid/utils.js: line 6, col 1, 'msgpack' is defined but never used.
-django/applications/catmaid/static/libs/catmaid/utils.js: line 6, col 1, 'requestQueue' is defined but never used.
-django/applications/catmaid/static/libs/catmaid/utils.js: line 79, col 5, 'fetchSkeletons' is defined but never used.
-
 django/applications/catmaid/static/libs/catmaid/volumes.js: line 613, col 9, 'abs' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/volumes.js: line 805, col 15, 'dSimplicesT' is defined but never used.
 
-314 errors
+310 errors

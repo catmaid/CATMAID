@@ -1,8 +1,5 @@
 /* global
-  Arbor,
   CATMAID,
-  msgpack,
-  requestQueue
   */
 
 "use strict";
@@ -76,7 +73,7 @@ InstanceRegistry.prototype.getLastInstance = function() {
  *                               all requested skeletons or a function that
  *                               returns an API instance given a skeleton ID.
  */
-var fetchSkeletons = function(skeleton_ids, fnMakeURL, fnPost, fnLoadedOne,
+var fetchSkeletons = function(skeleton_ids, fnMakeURL, fnPost, fnLoadedOne, // jshint ignore:line
     fnFailedLoading, fnDone, method, binaryTransfer, api = undefined) {
   method = method || "POST";
   var i = 0,

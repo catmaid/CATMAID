@@ -220,10 +220,6 @@ django/applications/catmaid/static/js/widgets/neuron-history.js: line 241, col 1
 django/applications/catmaid/static/js/widgets/neuron-history.js: line 319, col 12, 'compareCompactTreenodes' is defined but never used.
 django/applications/catmaid/static/js/widgets/neuron-history.js: line 323, col 12, 'compareCompactConnectors' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/neuron-navigator.js: line 1676, col 9, 'datatable' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-navigator.js: line 2409, col 9, 'num_loaded' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-navigator.js: line 8, col 1, 'CATMAID   Arbor' is defined but never used.
-
 django/applications/catmaid/static/js/widgets/neuron-search.js: line 694, col 21, 'entity' is defined but never used.
 django/applications/catmaid/static/js/widgets/neuron-search.js: line 1197, col 9, Unreachable 'this' after 'return'.
 django/applications/catmaid/static/js/widgets/neuron-search.js: line 1467, col 13, 'path' is defined but never used.
@@ -395,4 +391,4 @@ django/applications/catmaid/static/libs/catmaid/utils.js: line 79, col 5, 'fetch
 django/applications/catmaid/static/libs/catmaid/volumes.js: line 613, col 9, 'abs' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/volumes.js: line 805, col 15, 'dSimplicesT' is defined but never used.
 
-317 errors
+314 errors

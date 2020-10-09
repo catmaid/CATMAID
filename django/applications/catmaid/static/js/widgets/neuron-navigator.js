@@ -1,10 +1,5 @@
 /* global
   CATMAID
-  Arbor,
-  InstanceRegistry,
-  project,
-  SkeletonAnnotations,
-  WindowMaker
 */
 
 (function(CATMAID) {
@@ -1696,7 +1691,7 @@
       function(container, filters)
   {
     var table_id = 'navigator_neuronlist_table' + this.navigator.widgetID;
-    var datatable = this.add_neuron_list_table(container, table_id, filters,
+    this.add_neuron_list_table(container, table_id, filters,
         this.post_process_fn(this.listed_neurons));
   };
 
@@ -2429,13 +2424,7 @@
         .catch(CATMAID.handleError);
     };
 
-    var num_loaded = this.skeleton_ids.reduce(function(o, sk_id) {
-      if (loader_fn(sk_id)) {
-        return o + 1;
-      } else {
-        return o;
-      }
-    }, 0);
+    this.skeleton_ids.forEach(loader_fn);
 
     // Add double click handler to skeleton to select it
     $('#' + skeleton_table_id).on('dblclick', ' tbody tr', function () {

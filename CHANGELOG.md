@@ -256,6 +256,9 @@ Miscellaneous:
 
 - Auto-completion should now be faster by displaying only 15 filtering results.
 
+- Volume widget: box volumes can now be created also based on the active
+  skeleton's bounding box.
+
 - Connector table: a search filter is now available for the table that allows
   filtering across all columns.
 

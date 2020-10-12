@@ -1953,6 +1953,58 @@
         $content.append(CATMAID.DOM.createLabeledControl("", cubeButton,
               "If an edge length has been defined, this will populate the min/max fields to define a cube at the current location"));
 
+        // Helper to create a bb for the bounding box of the current skeleton
+        var bbButton = document.createElement('button');
+        bbButton.onclick = function(e) {
+          // Get bounding box of active skeleton
+          let activeSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
+          if (!activeSkeletonId) {
+            CATMAID.warn('No skeleton selected');
+            return;
+          }
+          CATMAID.Skeletons.getArbors(project.id, [activeSkeletonId])
+            .then(arborParsers => {
+              let minX, minY, minZ, maxX, maxY, maxZ;
+              for (let [skeletonId, ap] of arborParsers) {
+                for (let nodeId in ap.positions) {
+                  let p = ap.positions[nodeId];
+                  if (minX === undefined || p.x < minX) {
+                    minX = p.x;
+                  }
+                  if (minY === undefined || p.y < minY) {
+                    minY = p.y;
+                  }
+                  if (minZ === undefined || p.z < minZ) {
+                    minZ = p.z;
+                  }
+                  if (maxX === undefined || p.x > maxX) {
+                    maxX = p.x;
+                  }
+                  if (maxY === undefined || p.y > maxY) {
+                    maxY = p.y;
+                  }
+                  if (maxZ === undefined || p.z > maxZ) {
+                    maxZ = p.z;
+                  }
+                }
+              }
+
+              // Fill input fields
+              inputMinX.find('input').val(minX).trigger("change");
+              inputMinY.find('input').val(minY).trigger("change");
+              inputMinZ.find('input').val(minZ).trigger("change");
+              inputMaxX.find('input').val(maxX).trigger("change");
+              inputMaxY.find('input').val(maxY).trigger("change");
+              inputMaxZ.find('input').val(maxZ).trigger("change");
+
+              CATMAID.msg("Success", "Defined bounding box for current skeleton");
+            })
+            .catch(CATMAID.handleError);
+        };
+        bbButton.appendChild(document.createTextNode('Bounding box of active skeleton'));
+        $content.append(CATMAID.DOM.createLabeledControl("", bbButton,
+              "Get the bounding box of the active skeleton."));
+
         $content.append(inputMinX);
         $content.append(inputMinY);
         $content.append(inputMinZ);

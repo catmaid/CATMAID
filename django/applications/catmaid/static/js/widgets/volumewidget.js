@@ -301,7 +301,6 @@
     var $addContent = $(document.createElement('div'));
     $addContent.addClass('settings-container volume-properties');
 
-    var vid = this.datatable ? this.datatable.length + 1 : 1;
     var volumeType, volumeHelper;
     if (volume) {
       volumeType = getVolumeType(volume);
@@ -438,7 +437,6 @@
    */
   VolumeManagerWidget.prototype.addVolumeFromFile = function(file) {
       return new Promise(function(resolve, reject) {
-        var self = this;
         var reader = new FileReader();
         reader.onload = function(e) {
             var volumes = JSON.parse(e.target.result);
@@ -453,6 +451,9 @@
                 return !volumeType;
               }
             });
+            if (invalidVolumes.length > 0) {
+              CATMAID.warn(`Could not load invalid ${invalidVolumes.length} volume(s)`);
+            }
         };
         reader.readAsText(file);
       });
@@ -517,8 +518,6 @@
       CATMAID.warn("No skeletons selected in source " + source.getName());
       return;
     }
-    let clientSideFiltering = this.innervationClientSideFiltering;
-    let self = this;
     CATMAID.Volumes.findSkeletonInnervations(project.id, skeletonIds, annotation)
       .then(function(result) {
         if (!result || result.length === 0) {
@@ -534,7 +533,6 @@
             o[s] = new CATMAID.SkeletonModel(s);
             return o;
           }, {});
-          let rules = [];
           let filterStrategy = CATMAID.SkeletonFilterStrategy['volume'];
 
           let volumeSkeletonMap = new Map();
@@ -1684,13 +1682,6 @@
     return {
       name: name,
       createSettings: function(volume) {
-        // TODO source is never used?
-        var source = function(e) {
-          var source = CATMAID.skeletonListSources.getSource(this.value);
-          volume.set("neuronSource", source);
-        };
-
-        var ruleType = function(e) { };
         var $settings = $('<div />');
         var $content = CATMAID.DOM.addSettingsContainer($settings,
             name + " rule settings", false);
@@ -1772,8 +1763,6 @@
         columns.forEach(function(c) {
           hrow.insertCell().appendChild(document.createTextNode(c));
         });
-
-        var self = this;
 
         var tableContainer = document.createElement('div');
         tableContainer.appendChild(table);
@@ -1965,7 +1954,7 @@
           CATMAID.Skeletons.getArbors(project.id, [activeSkeletonId])
             .then(arborParsers => {
               let minX, minY, minZ, maxX, maxY, maxZ;
-              for (let [skeletonId, ap] of arborParsers) {
+              for (let ap of arborParsers.values()) {
                 for (let nodeId in ap.positions) {
                   let p = ap.positions[nodeId];
                   if (minX === undefined || p.x < minX) {

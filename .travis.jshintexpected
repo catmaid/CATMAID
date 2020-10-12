@@ -319,15 +319,6 @@ django/applications/catmaid/static/js/widgets/treenode-table.js: line 171, col 4
 django/applications/catmaid/static/js/widgets/treenode-table.js: line 171, col 52, 'lastModified' is defined but never used.
 django/applications/catmaid/static/js/widgets/treenode-table.js: line 171, col 66, 'reviewer' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/volumewidget.js: line 304, col 9, 'vid' is defined but never used.
-django/applications/catmaid/static/js/widgets/volumewidget.js: line 446, col 17, 'invalidVolumes' is defined but never used.
-django/applications/catmaid/static/js/widgets/volumewidget.js: line 441, col 13, 'self' is defined but never used.
-django/applications/catmaid/static/js/widgets/volumewidget.js: line 537, col 15, 'rules' is defined but never used.
-django/applications/catmaid/static/js/widgets/volumewidget.js: line 520, col 9, 'clientSideFiltering' is defined but never used.
-django/applications/catmaid/static/js/widgets/volumewidget.js: line 1688, col 13, 'source' is defined but never used.
-django/applications/catmaid/static/js/widgets/volumewidget.js: line 1693, col 13, 'ruleType' is defined but never used.
-django/applications/catmaid/static/js/widgets/volumewidget.js: line 1776, col 13, 'self' is defined but never used.
-
 django/applications/catmaid/static/js/widgets/window-manager.js: line 345, col 7, 'f1' is defined but never used.
 django/applications/catmaid/static/js/widgets/window-manager.js: line 346, col 7, 'f2' is defined but never used.
 django/applications/catmaid/static/js/widgets/window-manager.js: line 558, col 7, 'f1' is defined but never used.
@@ -386,4 +377,4 @@ django/applications/catmaid/static/libs/catmaid/time-series.js: line 19, col 12,
 django/applications/catmaid/static/libs/catmaid/volumes.js: line 613, col 9, 'abs' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/volumes.js: line 805, col 15, 'dSimplicesT' is defined but never used.
 
-310 errors
+302 errors

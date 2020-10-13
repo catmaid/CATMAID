@@ -64,10 +64,10 @@ Inactive users
 **************
 
 Users who are marked as inactive won't be able to log into CATMAID. Once
-reactivated, these user accounts are fully functional agian. By default,
-users have to be marked inactive manually. It is howevere also possible to
-automatically deactivate user accounts after a specified time. If `Celery
-and Celery Beat<celery>` are set up, a periodic task will check every night if
+reactivated, these user accounts are fully functional agian. By default, users
+have to be marked inactive manually. It is howevere also possible to
+automatically deactivate user accounts after a specified time. If :doc:`Celery
+and Celery Beat <celery>` are set up, a periodic task will check every night if
 user accounts need deactivation.
 
 Which user accounts get deactivated is configured based on which user groups

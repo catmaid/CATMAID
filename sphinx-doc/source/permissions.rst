@@ -42,6 +42,24 @@ browse projects" setting has to be assigned. With this, the anonymous user acts
 just like a regular user and can be assigned project specific ``can-browse`` and
 ``can-annotate`` permissions.
 
+In total there are seven different permissions CATMAID understands with
+respect to projects:
+
+=========================== ======================================
+Permission                  Description
+=========================== ======================================
+``can_administer``          Edit various project wide settings and view user statistics.
+``can_annotate``            Write to a project by creating e.g. tracing data or annotations.
+``can_browse``              Read data from the project, needed see the project and look at it.
+``can_import``              New data can be imported into a project, either from files or remote sources.
+``can_queue_compute_task``  Tasks like large project data exports can be started.
+``can_annotate_with_token`` Write operations are allowed through the API.
+``can_fork``                Personal copies of projects (only stacks) can be created.
+=========================== ======================================
+
+By default, no permission is assigned. Aall of them can be assigned to users or
+groups like described above though.
+
 Inactive users
 **************
 

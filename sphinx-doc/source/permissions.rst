@@ -3,7 +3,7 @@
 Permissions and access control
 ==============================
 
-There are multiple levels of user permissons available in CATMAID. All of them
+There are multiple levels of user permissions available in CATMAID. All of them
 are configured from within the admin interface, reachable by appending
 ``/admin`` to your regular CATMAID URL and opening it in a browser.
 
@@ -31,7 +31,7 @@ users. However, for this another test comes into play as well and not every user
 can edit the data of all other users. See next section for more details.
 
 The ``can-administer`` permission provides access to additional group management
-and user ananlysis tools, mainly useful for group managers. It will add
+and user analysis tools, mainly useful for group managers. It will add
 additional tools to the statistics widget in the web-client.
 
 The anonymous user is with respect to project visibility a special case. If a
@@ -57,15 +57,15 @@ Permission                  Description
 ``can_fork``                Personal copies of projects (only stacks) can be created.
 =========================== ======================================
 
-By default, no permission is assigned. Aall of them can be assigned to users or
+By default, no permission is assigned. All of them can be assigned to users or
 groups like described above though.
 
 Inactive users
 **************
 
 Users who are marked as inactive won't be able to log into CATMAID. Once
-reactivated, these user accounts are fully functional agian. By default, users
-have to be marked inactive manually. It is howevere also possible to
+reactivated, these user accounts are fully functional again. By default, users
+have to be marked inactive manually. It is however also possible to
 automatically deactivate user accounts after a specified time. If :doc:`Celery
 and Celery Beat <celery>` are set up, a periodic task will check every night if
 user accounts need deactivation.
@@ -74,12 +74,12 @@ Which user accounts get deactivated is configured based on which user groups
 they are in. Group Inactivity Periods are objects that associate a user group
 with a maximum inactivity time as well as an optional message and (internal)
 comment. During activity check, the last login of a user is looked up and
-comparead against the specificied maximum inactivity time. If the last login
+compared against the specified maximum inactivity time. If the last login
 exceeds this interval, the user account is made inactive. These Group Inactivity
 Periods can be managed in the respective admin view.
 
 For each Group Inactivity Period contact, users can be specified, who are
-displayed to users whoe have been inactivated due to this mechanism try to
+displayed to users who have been inactivated due to this mechanism try to
 login. A message displayed to them explains the situation and how long the
 inactivity period is they violated.
 

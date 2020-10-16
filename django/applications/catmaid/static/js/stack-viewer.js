@@ -326,6 +326,10 @@
 
     title = title + " | " + CATMAID.Stack.ORIENTATION_NAMES[this.primaryStack.orientation];
 
+    if (CATMAID.StackViewer.Settings.session.show_project_title) {
+      title = `${project.title} | ${title}`;
+    }
+
     this._stackWindow.setTitle(title);
   };
 
@@ -1187,6 +1191,9 @@
             default: false
           },
           show_overview_by_default: {
+            default: true
+          },
+          show_project_title: {
             default: true
           },
         },

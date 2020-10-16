@@ -393,6 +393,26 @@
           'show_overview_by_default',
           SETTINGS_SCOPE));
 
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
+              "Show project name in Stack Viewer title bar",
+              CATMAID.StackViewer.Settings[SETTINGS_SCOPE].show_project_title,
+              "Whether or not the project name should be shown in the title bar of each stack viewer.",
+              function() {
+                let showProjectName = this.checked;
+                CATMAID.StackViewer.Settings
+                    .set(
+                      'show_project_title',
+                      showProjectName,
+                      SETTINGS_SCOPE)
+                    .then(function () {
+                      project.getStackViewers().forEach(s => s.updateTitle());
+                    });
+              }),
+          CATMAID.StackViewer.Settings,
+          'show_project_title',
+          SETTINGS_SCOPE));
+
       // Hide layers if nearest section is broken
       ds.append(wrapSettingsControl(
           CATMAID.DOM.createCheckboxSetting(

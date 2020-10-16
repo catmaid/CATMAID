@@ -736,6 +736,23 @@
     });
   };
 
+  /**
+   * Delete the current project.
+   *
+   * @param projectId {Integer} The project to delete.
+   * @returns {Promise} Resolves once the project is deleted.
+   */
+  Project.delete = function(projectId) {
+    if (!CATMAID.hasPermission(project.id, 'delete_project')) {
+      return Promise.reject(new CATMAID.PermissionError("Need deletion permission in this project"));
+    }
+    let result = CATMAID.fetch(`${project.id}/`, 'DELETE');
+    result.then(result => {
+      Project.trigger(Project.EVENT_PROJECT_DELETED, projectId);
+    });
+    return result;
+  };
+
   // Add event support to project and define some event constants
   CATMAID.asEventSource(Project.prototype);
   CATMAID.asEventSource(Project);
@@ -743,6 +760,7 @@
   Project.EVENT_STACKVIEW_CLOSED = 'project_stackview_closed';
   Project.EVENT_STACKVIEW_FOCUS_CHANGED = 'project_stackview_focus_changed';
   Project.EVENT_LOCATION_CHANGED = 'project_location_changed';
+  Project.EVENT_PROJECT_DELETED = 'project_deleted';
   Project.EVENT_PROJECT_DESTROYED = 'project_project_destroyed';
   Project.EVENT_TOOL_CHANGED = 'project_tool_changed';
 

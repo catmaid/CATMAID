@@ -110,6 +110,7 @@ urlpatterns += [
 urlpatterns += [
     url(r'^projects/$', project.projects),
     url(r'^projects/export$', project.export_projects),
+    url(r'^(?P<project_id>\d+)/$', project.ProjectDetail.as_view()),
     url(r'^(?P<project_id>\d+)/interpolatable-sections/$', project.interpolatable_sections),
     url(r'^(?P<project_id>\d+)/fork$', project.fork),
 ]

@@ -12,7 +12,7 @@
 
     // The current edit mode
     this.mode = 'permissions';
-    this.modes = ['permissions'];
+    this.modes = ['permissions', 'delete'];
 
     this.neuronNameService = CATMAID.NeuronNameService.getInstance();
   };
@@ -453,6 +453,67 @@
             .catch(CATMAID.handleError);
         });
       }
+    },
+    'delete': {
+      title: 'Delete data',
+      createControls: function(target) {
+        let infoPanel = document.createElement('p');
+        infoPanel.appendChild(document.createTextNode('Administrator users with "delete" permission can delete this project.'));
+        return [{
+          type: 'child',
+          element: infoPanel,
+        }];
+      },
+      createContent: function(content, widget) {
+        let missingPermissions = 0;
+        if (!CATMAID.hasPermission(project.id, 'can_administer')) {
+          content.appendChild(document.createTextNode('No administration permissions for this project'));
+          ++missingPermissions;
+        }
+        if (!CATMAID.hasPermission(project.id, 'delete_project')) {
+          content.appendChild(document.createTextNode('No deletion permissions for this project'));
+          ++missingPermissions;
+        }
+        if (missingPermissions > 0) {
+          return;
+        }
+
+        let infoParagraph1 = content.appendChild(document.createElement('p'));
+        infoParagraph1.appendChild(document.createTextNode('This view allows project admins to delete the current project. Deciding to delete a project can\'t be undone easily. However, history tracking is enabled by default and restoring a project might be possible in principle with manual work.'));
+
+        let infoParagraph2 = content.appendChild(document.createElement('p'));
+        infoParagraph2.appendChild(document.createTextNode('In order to delete a project, check the checkbox below and click the "Delete project" button.'));
+
+        let deletePanel1 = content.appendChild(document.createElement('p'));
+        let deleteCbLabel = deletePanel1.appendChild(document.createElement('label'));
+        let deleteCb = deleteCbLabel.appendChild(document.createElement('input'));
+        deleteCb.type = 'checkbox';
+        deleteCbLabel.appendChild(document.createTextNode('I confirm the deletion of all data associated with this project'));
+        let deletePanel2 = content.appendChild(document.createElement('p'));
+        let deleteB = deletePanel2.appendChild(document.createElement('button'));
+        deleteB.appendChild(document.createTextNode('Delete project'));
+
+        deleteB.addEventListener('click', function() {
+          if (!deleteCb.checked) {
+            CATMAID.warn('Please confirm project deletion');
+            return;
+          }
+
+          if (!confirm("Do you really want to delete this project and all associated data?")) {
+            return;
+          }
+
+          CATMAID.Project.delete(project.id)
+            .then(response => {
+              CATMAID.msg('Success', `Delete project "${project.title}" (ID: ${project.id})`);
+              project.destroy();
+              return CATMAID.client.updateProjects();
+            }).then(e => {
+              return CATMAID.client.load_default_dataview(false);
+            })
+            .catch(CATMAID.handleError);
+        });
+      },
     },
     'matching-pairs': {
       title: 'Matching pairs',

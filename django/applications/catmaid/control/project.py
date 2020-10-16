@@ -12,6 +12,7 @@ from django.db import connection
 from django.db.models import Exists, OuterRef
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
+from django.utils.decorators import method_decorator
 
 from catmaid.models import (BrokenSlice, Class, ClientDatastore,
         InterpolatableSection, Location, Project, ProjectStack, Relation, Stack,
@@ -19,7 +20,9 @@ from catmaid.models import (BrokenSlice, Class, ClientDatastore,
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.common import get_request_bool
 
+from rest_framework.request import Request
 from rest_framework.decorators import api_view
+from rest_framework.views import APIView
 
 
 # All classes needed by the tracing system alongside their
@@ -653,3 +656,18 @@ def fork(request:HttpRequest, project_id) -> JsonResponse:
         'new_project_id': new_p.id,
         'n_copied_stack_links': len(ps_links),
     })
+
+
+class ProjectDetail(APIView):
+
+    @method_decorator(requires_user_role('delete_projectt'))
+    @method_decorator(requires_user_role(UserRole.Admin))
+    def delete(self, request:Request, project_id:int) -> JsonResponse:
+        """Delete a project.
+
+        This requires <delete_project> permission on a project.
+        """
+        delete_projects([project_id])
+        return JsonResponse({
+            'deleted_project_id': project_id,
+        })

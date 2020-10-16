@@ -68,6 +68,11 @@ Project management widget:
 
 - Clicking any checkbox will store the value right away.
 
+- If a user has "can_administer" and "delete_project" permissions in a project,
+  the project management widget allows to delete the current project. This is
+  mainly useful for personal spaces, in which users typically have
+  delete_project permissions.
+
 Neuron renaming:
 
 - There is now a new neuron renaming dialog, which allows a search/replace

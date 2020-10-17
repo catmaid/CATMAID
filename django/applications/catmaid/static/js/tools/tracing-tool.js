@@ -2442,9 +2442,10 @@
    *
    * @param  {string} type       A 'neuron' or a 'skeleton'.
    * @param  {number} objectID   The ID of a neuron or a skeleton.
+   * @param  {API}    api        (optional) The API where this object is expected to be found.
    * @return {Promise}           A promise succeeding after the move and select.
    */
-  TracingTool.goToNearestInNeuronOrSkeleton = function(type, objectID) {
+  TracingTool.goToNearestInNeuronOrSkeleton = function(type, objectID, api) {
     var projectCoordinates = project.focusedStackViewer.projectCoordinates();
     return CATMAID.Nodes.nearestNode(project.id, projectCoordinates.x,
         projectCoordinates.y, projectCoordinates.z, objectID, type)

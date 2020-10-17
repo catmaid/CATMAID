@@ -30,6 +30,10 @@
     // Whether only connector nodes should be respected that hald a full
     // pre/post connection
     this.withHalfLinks = true;
+
+    // There is only limited functionality in this widget, remote support should
+    // be easy to maintain in its current form.
+    this.supportsRemoteSkeletons = true;
   };
 
   SkeletonMeasurementsTable.prototype = Object.create(CATMAID.SkeletonSource.prototype);
@@ -192,12 +196,17 @@
 
     if (0 === Object.keys(new_models).length) return;
 
-    CATMAID.NeuronNameService.getInstance().registerAll(this, new_models,
-      (function() {
-        this.load(new_models, this.sigma, (function(rows) {
+    let modelsByApi = CATMAID.API.splitByAPI(models);
+    let nameservices = Array.from(modelsByApi.keys()).map(api => {
+      return CATMAID.NeuronNameService.getInstance(api).registerAll(this, modelsByApi.get(api));
+    });
+    Promise.all(nameservices)
+      .then(() => {
+        this.load(new_models, this.sigma, rows => {
           this.table.rows.add(rows).draw();
-        }).bind(this));
-      }).bind(this));
+        });
+      })
+      .catch(CATMAID.handleError);
   };
 
   SkeletonMeasurementsTable.prototype.load = function(models, sigma, fnDone) {
@@ -220,7 +229,8 @@
           let ap = new CATMAID.ArborParser().init('compact-arbor', json),
               arbor = ap.arbor,
               positions = ap.positions,
-              name = CATMAID.NeuronNameService.getInstance().getName(skid);
+              api = models[skid].api,
+              name = CATMAID.NeuronNameService.getInstance(api).getName(skid);
 
           // If node filtering should be performed, create required information
           // for each fragment.
@@ -310,10 +320,14 @@
           if (unmatched.length > 0) {
             CATMAID.warn(`${unmatched.length} skeleton(s) are unmatched entirely by the active node filters`);
           }
-        });
+        },
+        'POST',
+        false,
+        (skeletonId => models[skeletonId].api));
   };
 
   SkeletonMeasurementsTable.prototype._makeStringLink = function(name, skid) {
+    // TODO: API support?
     return '<a href="#" onclick="CATMAID.TracingTool.goToNearestInNeuronOrSkeleton(\'skeleton\',' + skid + ');">' + name + '</a>';
   };
 
@@ -424,6 +438,7 @@
     let nodeFiltersInUse = this.applyFilterRules && this.filterRules.length > 0;
     let labels = this.getLabels(true);
     var n_labels = labels.length;
+    let self = this;
 
     this.table = $('table#skeleton_measurements_table' + this.widgetID).DataTable({
         destroy: true,
@@ -472,7 +487,8 @@
       var table = $(this).closest('table');
       var tr = $(this).closest('tr');
       var data =  $(table).DataTable().row(tr).data();
-      CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', data[1]);
+      let api = self.models[skeletonId].api;
+      CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', data[1], api);
     });
 
     this.table.column(2).visible(nodeFiltersInUse);

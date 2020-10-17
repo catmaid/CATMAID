@@ -489,13 +489,15 @@
      *                            node should be part of.
      * @param {string} targetType (optional) If <targetId> is provided,
      *                            specifies if it is a 'neuron' or 'skeleton'.
+     * @param  {API}   api        (optional) The API to use.
      * @returns Promise resolving in closest treenode.
      */
-    nearestNode: function(projectId, x, y, z, targetId, targetType = 'skeleton') {
+    nearestNode: function(projectId, x, y, z, targetId, targetType = 'skeleton', api = undefined) {
       let params = {
         x: x,
         y: y,
         z: z,
+        api: api,
       };
       if (targetId) {
         if (!targetType) {

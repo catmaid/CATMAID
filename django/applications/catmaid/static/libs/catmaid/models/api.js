@@ -88,10 +88,22 @@
           locals[o] = model;
         }
       }
-      apis.set(undefined, locals);
+      if (!CATMAID.tools.isEmpty(locals)) {
+        apis.set(undefined, locals);
+      }
     }
 
     return apis;
+  };
+
+  /**
+   * A predicate to test if a skeleton map object cotnains remote data.
+   */
+  API.hasRemoteData = function(obj) {
+    for (let s in obj) {
+      if (obj[s].api) return true;
+    }
+    return false;
   };
 
   /**

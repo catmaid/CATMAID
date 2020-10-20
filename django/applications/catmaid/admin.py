@@ -180,7 +180,7 @@ class MaxGroupCountFilter(admin.SimpleListFilter):
 
 
 class BrokenSliceModelForm(forms.ModelForm):
-    """ This model form for the BrokenSlide model, will add an optional "last
+    """ This model form for the BrokenSlice model, will add an optional "last
     index" field. BrokenSliceAdmin will deactivate it, when an existing
     instance is edited. Using it when adding, allows to add many broken slice
     entries at once.

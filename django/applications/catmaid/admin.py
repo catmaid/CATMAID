@@ -343,6 +343,7 @@ class StackAdmin(GuardedModelAdmin):
     inlines = [ProjectStackInline, StackStackGroupInline, StackMirrorInline]
     save_as = True
     actions = (duplicate_action,)
+    ordering = ('title',)
 
 
 class StackGroupAdmin(GuardedModelAdmin):

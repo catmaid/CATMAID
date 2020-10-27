@@ -34,6 +34,7 @@
                           <img class="lazy"
                               data-src="{{ mirror|get_overview:slice }}"
                               alt="Sample image for {{ stack.title }} on slice {{ slice }}"
+                              title="{{ stack.title }}"
                               {% if sample_width > -1 %} width="{{ sample_width }}" {% endif %}
                               {% if sample_height > -1 %} height="{{ sample_height }}" {% endif %} />
                         {% endwith %}

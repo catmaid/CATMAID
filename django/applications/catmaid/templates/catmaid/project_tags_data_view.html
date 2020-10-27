@@ -65,7 +65,7 @@
 									<img class="lazy"
 										data-src="{{ mirror|get_overview:slice }}"
 										alt="Sample image for {{ s.title }} on slice {{ slice }}"
-										title="{{ s.comment }}"
+										title="{{ s.title }}"
 										{% if sample_width > -1 %} width="{{ sample_width }}" {% endif %}
 										{% if sample_height > -1 %} height="{{ sample_height }}" {% endif %} />
 								{% endwith %}

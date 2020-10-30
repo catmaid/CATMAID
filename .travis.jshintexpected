@@ -68,7 +68,7 @@ django/applications/catmaid/static/js/tools/selector.js: line 48, col 13, 'yp' i
 django/applications/catmaid/static/js/tools/tagging-tool.js: line 1, col 10, 'TaggingTool' is defined but never used.
 
 django/applications/catmaid/static/js/tools/tracing-tool.js: line 400, col 13, 'activeLayer' is defined but never used.
-django/applications/catmaid/static/js/tools/tracing-tool.js: line 1939, col 17, 'layer' is defined but never used.
+django/applications/catmaid/static/js/tools/tracing-tool.js: line 1934, col 17, 'layer' is defined but never used.
 django/applications/catmaid/static/js/tools/tracing-tool.js: line 64, col 9, 'withPostUpdate' is defined but never used.
 
 django/applications/catmaid/static/js/ui.js: line 80, col 11, 'projectKeyPress' is defined but never used.
@@ -221,10 +221,10 @@ django/applications/catmaid/static/js/widgets/neuron-history.js: line 319, col 1
 django/applications/catmaid/static/js/widgets/neuron-history.js: line 323, col 12, 'compareCompactConnectors' is defined but never used.
 
 django/applications/catmaid/static/js/widgets/neuron-search.js: line 694, col 21, 'entity' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-search.js: line 1197, col 9, Unreachable 'this' after 'return'.
-django/applications/catmaid/static/js/widgets/neuron-search.js: line 1467, col 13, 'path' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-search.js: line 1386, col 11, 'key' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-search.js: line 1825, col 11, 'self' is defined but never used.
+django/applications/catmaid/static/js/widgets/neuron-search.js: line 1203, col 9, Unreachable 'this' after 'return'.
+django/applications/catmaid/static/js/widgets/neuron-search.js: line 1473, col 13, 'path' is defined but never used.
+django/applications/catmaid/static/js/widgets/neuron-search.js: line 1392, col 11, 'key' is defined but never used.
+django/applications/catmaid/static/js/widgets/neuron-search.js: line 1833, col 11, 'self' is defined but never used.
 
 django/applications/catmaid/static/js/widgets/neuron-similarity-detail-widget.js: line 113, col 13, 'refreshSimilarityList' is defined but never used.
 django/applications/catmaid/static/js/widgets/neuron-similarity-detail-widget.js: line 332, col 9, 'tbody' is defined but never used.
@@ -351,8 +351,8 @@ django/applications/catmaid/static/libs/catmaid/models/sampler.js: line 574, col
 django/applications/catmaid/static/libs/catmaid/models/sampler.js: line 662, col 9, 'edges' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/models/sampler.js: line 986, col 9, 'currentFragment' is defined but never used.
 
-django/applications/catmaid/static/libs/catmaid/neuron_name_service.js: line 490, col 19, 'skeleton' is defined but never used.
-django/applications/catmaid/static/libs/catmaid/neuron_name_service.js: line 693, col 19, 'queryModels' is defined but never used.
+django/applications/catmaid/static/libs/catmaid/neuron_name_service.js: line 499, col 19, 'skeleton' is defined but never used.
+django/applications/catmaid/static/libs/catmaid/neuron_name_service.js: line 702, col 19, 'queryModels' is defined but never used.
 
 django/applications/catmaid/static/libs/catmaid/skeleton-matching.js: line 38, col 21, 'subgroup' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/skeleton-matching.js: line 37, col 19, 'annotation' is defined but never used.

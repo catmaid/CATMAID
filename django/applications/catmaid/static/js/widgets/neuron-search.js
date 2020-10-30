@@ -792,8 +792,10 @@
   NeuronSearch.prototype.appendEntities = function(entities, appender, indent,
       expandedIds, sourceSlot, path = []) {
     // Mark entities as unselected and create result table rows
+    let activeSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
     entities.forEach(function(entity) {
-      var tr = this.add_result_table_row(entity, appender, indent, undefined, path);
+      let highlight = activeSkeletonId &&entity.type === 'neuron' && entity.skeleton_ids.indexOf(activeSkeletonId) !== -1;
+      var tr = this.add_result_table_row(entity, appender, indent, undefined, path, highlight);
       let newPath = [...path, entity.id];
       this.paths[newPath.join('-')] = newPath;
       // Add source information, if this entry resulted from expansion
@@ -822,7 +824,7 @@
    * steps that should be used.
    */
   NeuronSearch.prototype.add_result_table_row = function(entity, add_row_fn,
-      indent, selected, path=[])
+      indent, selected, path=[], highlight = false)
   {
     // Build table row
     var tr = document.createElement('tr');
@@ -951,6 +953,10 @@
       // Add annotation attribute to link
       a.dataset.annotation = entity.name;
       a.dataset.indent = indent;
+    }
+
+    if (highlight) {
+      tr.classList.add('highlight');
     }
 
     return tr;
@@ -1493,6 +1499,7 @@
               // Mark entities as selected if they are markes as such in the
               // widget.
               let path = self.paths[$(tr)[0].dataset.key];
+              let activeSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
               e.entities.filter(function(subEntity, i, a) {
                 let selected = !!self.entity_selection_map[subEntity.id];
                 self.entity_selection_map[subEntity.id] = selected;
@@ -1501,7 +1508,8 @@
                 }
                 let newPath = [...path, subEntity.id];
                 self.paths[newPath.join('-')] = newPath;
-                self.add_result_table_row(subEntity, appender, indent + 1, selected, newPath);
+                let highlight = activeSkeletonId && subEntity.type === 'neuron' && subEntity.skeleton_ids.indexOf(activeSkeletonId) !== -1;
+                self.add_result_table_row(subEntity, appender, indent + 1, selected, newPath, highlight);
               });
 
               // The order of the query result array doesn't matter.

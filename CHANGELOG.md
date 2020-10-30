@@ -324,6 +324,10 @@ Miscellaneous:
 - Neuron search: row highlighting for the active skeleton works now again for
   the whole row and registers deselection properly.
 
+- Neuron search: the active skeleton is now highlighted as soon as it part of
+  the result shown in the table. Before, the row of the active skeleton wouldn't
+  be highlighted after a search and only upon new selection of a skeleton.
+
 ## Maintenance updates
 
 - Volume widget: don't show removal options by default. It happens generally

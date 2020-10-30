@@ -257,6 +257,12 @@ Miscellaneous:
   distance will be displayed. Both the straight line distance and the path
   distance will be displayed for nodes of the same skeleton.
 
+- Client-side widget settings aren't stored by default anymore, if the widget is
+  closed. The former default caused a lot of confusion, especially with the 3D
+  Viewer. If widget settings should be stored, they have to be stored explicitly
+  using the "Store settings" button in the widget settings panel, available by
+  clicking the window icon right next to the widget title.
+
 - Auto-completion should now be faster by displaying only 15 filtering results.
 
 - Volume widget: box volumes can now be created also based on the active

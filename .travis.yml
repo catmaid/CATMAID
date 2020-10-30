@@ -9,6 +9,8 @@ python:
   - "3.8"
   - "nightly"
   - "pypy3.6-7.3.1"
+env:
+  - CRYPTOGRAPHY_ALLOW_OPENSSL_102=yes
 matrix:
   allow_failures:
   - python: "nightly"

@@ -76,8 +76,8 @@
       {
         // Make sure unsucessful requests are always treated as text response,
         // because we never expect binary data in this case.
-        if (request.status != 200) {
-           request.responseType = "text";
+        if (xmlHttp.status != 200) {
+           xmlHttp.responseType = "text";
         }
       }
       else if ( xmlHttp.readyState == 4 )

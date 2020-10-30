@@ -72,7 +72,15 @@
 
     var callback = function()
     {
-      if ( xmlHttp.readyState == 4 )
+      if ( xmlHttp.readyState == 2 )
+      {
+        // Make sure unsucessful requests are always treated as text response,
+        // because we never expect binary data in this case.
+        if (request.status != 200) {
+           request.responseType = "text";
+        }
+      }
+      else if ( xmlHttp.readyState == 4 )
       {
         var advance = true;
         RequestQueue.trigger(CATMAID.RequestQueue.EVENT_REQUEST_ENDED, self);
@@ -82,9 +90,10 @@
             throw new CATMAID.NetworkAccessError("Network unreachable",
                 "Please check your network connection");
           }
+          var isXMLResponse = (xmlHttp.responseType === '' || xmlHttp.responseType === 'document');
           var isTextResponse = (xmlHttp.responseType === '' || xmlHttp.responseType === 'text');
           var responseData = isTextResponse ? xmlHttp.responseText : xmlHttp.response;
-          var responseXML = isTextResponse ? xmlHttp.responseXML : null;
+          var responseXML = isXMLResponse ? xmlHttp.responseXML : null;
           var dataSize = xmlHttp.responseType === 'arraybuffer' ?
               responseData.byteLength : responseData.length;
           var contentType = xmlHttp.getResponseHeader('Content-Type');

@@ -136,11 +136,12 @@ var SkeletonAnnotations = {};
     var changed = false;
     var skeleton_changed = false;
 
-    if (project_id === undefined) {
-      project_id = project.id;
-    }
-
     if (node) {
+      // Get a reference project ID.
+      if (project_id === undefined) {
+        project_id = project.id;
+      }
+
       // Find out if there was a change
       skeleton_changed = (this.skeleton_id !== node.skeleton_id);
       changed = (this.id !== node.id) ||

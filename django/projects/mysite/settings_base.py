@@ -281,6 +281,51 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 8 * 1024**2
 # Specifies if user registration is allowed
 USER_REGISTRATION_ALLOWED = False
 
+# If newly registered useres need to confirm their email address.
+USER_REGISTRATION_EMAIL_CONFIRMATION_REQUIRED = False
+USER_REGISTRATION_EMAIL_WELCOME_EMAIL = True
+USER_REGISTRATION_EMAIL_REPLY_TO = None
+USER_REGISTRATION_EMAIL_CONFIRMATION_EMAIL_TEXT = """{% autoescape off %}Hi {{ user.first_name }},
+
+Please click on the following link to confirm your CATMAID registration:
+
+https://{{ domain }}{% url 'catmaid:activate' uidb64=uid token=token %}
+{% endautoescape %}
+"""
+USER_REGISTRATION_EMAIL_WELCOME_EMAIL_TEXT = """Hi {{ user.first_name }},
+
+here I send you the details about your new CATMAID login. You can find
+the training website here:
+
+https://{{ domain }}{% url 'catmaid:home' %}
+
+CATMAID support the Chrome and Firefox browsers, other browsers might or
+might not work. Once the actual website is loaded and you see the
+CATMAID logo, you can sign in using your CATMAID username and password
+you provided at the registration.
+
+Right next to your name there is a question mark icon, which you can use
+to toggle some context specific help to get you started.
+
+You should also see the visible projects listed in the main part of the
+page. Clicking on either an image or link will open main viewer at some
+central location. Clicking the neuron like structure in the top toolbar
+of that viewer will open the Tracing Tool, which gives access to tracing
+data and related tools.
+
+Note that by default you will be in a "select" interaction mode, i.e.
+you click on neurons in the 2D view, but you won't create and modify
+data. If you want to trace neurons or change existing data, you would
+need to switch to tracing mode, which you can do by clicking the left
+most icon in the second toolbar from the top (the one connecting dots).
+
+Don't hesitate to ask, if you run into problems or have questions and
+comments.
+
+Best,
+The CATMAID admins
+"""
+
 # A new user's defaul groups
 NEW_USER_DEFAULT_GROUPS = []
 

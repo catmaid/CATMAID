@@ -56,6 +56,8 @@ urlpatterns += [
     url(r'^permissions$', authentication.user_project_permissions),
     url(r'^classinstance/(?P<ci_id>\d+)/permissions$', authentication.get_object_permissions),
     url(r'^register$', authentication.register, name="register"),
+    url(r'^activate/(?P<uidb64>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]{1,20})/$',
+        authentication.activate, name='activate'),
 ]
 
 # Users

@@ -18,7 +18,7 @@ Administrator Documentation
    replication
    database
    docker
-   userprofiles
+   user_accounts
    additional_backends
    r_setup
    nblast

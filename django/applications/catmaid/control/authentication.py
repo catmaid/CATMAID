@@ -19,10 +19,15 @@ from django.conf import settings
 from django.urls import reverse
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import User, Group
+from django.contrib.sites.shortcuts import get_current_site
 from django.db import connection
-from django.http import HttpRequest, HttpResponseRedirect, JsonResponse
+from django.http import HttpRequest, HttpResponse, HttpResponseRedirect, JsonResponse
 from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import _get_queryset, render
+from django.template import Context, Template
+from django.utils.encoding import force_bytes, force_text
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.core.mail import EmailMessage
 
 from allauth.account.adapter import get_adapter
 
@@ -35,6 +40,7 @@ from catmaid.forms import RegisterForm
 from catmaid.control.common import get_request_list
 from catmaid.models import Project, UserRole, ClassInstance, \
         ClassInstanceClassInstance
+from ..tokens import account_activation_token
 
 
 class PermissionError(ClientError):
@@ -822,8 +828,49 @@ def register(request:HttpRequest) -> Union[HttpResponseRedirect, JsonResponse]:
     if request.method == 'POST':
         form = RegisterForm(request.POST)
         if form.is_valid():
+            headers = {}
+            if settings.USER_REGISTRATION_EMAIL_REPLY_TO:
+                headers['Reply-To'] = settings.USER_REGISTRATION_EMAIL_REPLY_TO
+
             new_user = form.save()
-            return HttpResponseRedirect(reverse("catmaid:home"))
+            if settings.USER_REGISTRATION_EMAIL_CONFIRMATION_REQUIRED:
+                new_user.is_active = False
+                new_user = form.save()
+
+                current_site = get_current_site(request)
+                mail_subject = 'Activate your CATMAID account'
+                msg_tempalte= Template(settings.USER_REGISTRATION_EMAIL_CONFIRMATION_EMAIL_TEXT)
+                msg = msg_tempalte.render(Context({
+                    'user': new_user,
+                    'domain': current_site.domain,
+                    'uid': urlsafe_base64_encode(force_bytes(new_user.pk)),
+                    'token': account_activation_token.make_token(new_user),
+                }))
+                to_email = form.cleaned_data.get('email')
+                email = EmailMessage(mail_subject, msg, to=[to_email], headers=headers)
+                email.send()
+                msg = 'Your account has been created. Please check your email for a confirmation link.'
+            elif settings.USER_REGISTRATION_EMAIL_WELCOME_EMAIL:
+                adapter = get_adapter()
+                adapter.login(request, new_user)
+                current_site = get_current_site(request)
+                mail_subject = 'Welcome to CATMAID'
+                msg_tempalte= Template(settings.USER_REGISTRATION_EMAIL_WELCOME_EMAIL_TEXT)
+                msg = msg_tempalte.render(Context({
+                    'user': new_user,
+                    'domain': current_site.domain,
+                }))
+                to_email = form.cleaned_data.get('email')
+                email = EmailMessage(mail_subject, msg, to=[to_email], headers=headers)
+                email.send()
+                msg = 'Your account has been created. Please check your email for a welcome email.'
+            else:
+                msg = 'Your account has been created and you can log in now.'
+
+            return render(request, 'catmaid/redirect_home.html', {
+                'message': msg,
+                'timeout': 3000,
+            })
     else:
         form = RegisterForm()
     return render(request, "catmaid/registration/register.html", {
@@ -831,6 +878,41 @@ def register(request:HttpRequest) -> Union[HttpResponseRedirect, JsonResponse]:
         'CATMAID_URL': settings.CATMAID_URL,
         'STYLESHEET_IDS': settings.STYLESHEET_IDS,
     })
+
+
+def activate(request:HttpRequest, uidb64, token):
+    try:
+        uid = force_text(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+    except(TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+    if user is not None and account_activation_token.check_token(user, token):
+        user.is_active = True
+        user.save()
+        adapter = get_adapter()
+        adapter.login(request, user)
+        if settings.USER_REGISTRATION_EMAIL_WELCOME_EMAIL:
+            headers = {}
+            if settings.USER_REGISTRATION_EMAIL_REPLY_TO:
+                headers['Reply-To'] = settings.USER_REGISTRATION_EMAIL_REPLY_TO
+            current_site = get_current_site(request)
+            mail_subject = 'Welcome to CATMAID'
+            msg_tempalte= Template(settings.USER_REGISTRATION_EMAIL_WELCOME_EMAIL_TEXT)
+            msg = msg_tempalte.render(Context({
+                'user': user,
+                'domain': current_site.domain,
+            }))
+            email = EmailMessage(mail_subject, msg, to=[user.email], headers=headers)
+            email.send()
+        return render(request, 'catmaid/redirect_home.html', {
+            'message': 'Thank you for your email confirmation. Now you can sign-in to your account.',
+            'timeout': 3000,
+        })
+    else:
+        return render(request, 'catmaid/redirect_home.html', {
+            'message': 'Activation link is invalid!',
+            'timeout': 3000,
+        })
 
 
 class ObtainAuthToken(auth_views.ObtainAuthToken):

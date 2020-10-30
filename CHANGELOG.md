@@ -218,6 +218,9 @@ Administration:
 - System check widget: more information regarding a potential transaction ID
   wraparound has been added to the database section.
 
+- User account creation now supports confirmation emails and welcome emails. The
+  User Accounts section of the manual has more details on this.
+
 Tracing data export
 
 - The management command catmaid_export_data supports now the sepcification of

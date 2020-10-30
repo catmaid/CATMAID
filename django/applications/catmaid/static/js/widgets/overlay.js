@@ -775,6 +775,10 @@ var SkeletonAnnotations = {};
   SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED = "tracing_active_node_changed";
   SkeletonAnnotations.EVENT_INTERACTION_MODE_CHANGED = "interaction_mode_changed";
 
+  // If the current project is destroyed, we want to unset the active node.
+  CATMAID.Project.on(CATMAID.Project.EVENT_PROJECT_DESTROYED,
+      () => SkeletonAnnotations.atn.set(null), CATMAID.SkeletonAnnotations);
+
 
   /**
    * Maintain a skeleton source for the active skeleton. Widgets can register to

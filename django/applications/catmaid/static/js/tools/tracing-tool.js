@@ -448,7 +448,9 @@
 
     /**
      * unregister all project related GUI control connections and event
-     * handlers, toggle off tool activity signals (like buttons)
+     * handlers, toggle off tool activity signals (like buttons). Note that a
+     * call of this function doesn't imply the destruction of the current
+     * project.
      */
     this.destroy = function() {
       project.off(CATMAID.Project.EVENT_STACKVIEW_ADDED, prepareAndUpdateStackViewer, this);
@@ -474,13 +476,6 @@
 
       // Forget the current stack viewer
       activeStackViewer = null;
-
-      // Neurons from the closed project shouldn't need a front-end name
-      // anymore.
-      CATMAID.NeuronNameService.getInstance().clear();
-
-      // Forget the active node
-      SkeletonAnnotations.atn.set(null);
 
       this.autoCacheUpdate = false;
       if (this.autoCacheUpdateInterval) {

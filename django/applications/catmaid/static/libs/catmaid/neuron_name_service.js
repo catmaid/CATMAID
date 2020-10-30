@@ -393,6 +393,15 @@
         },
 
         /**
+         * When the current is destroyed, we clear this name service to prevent
+         * leaking of information and for consistency.
+         */
+        handleProjectDestruction: function()
+        {
+          this.clear();
+        },
+
+        /**
          * Unregister all clients and remove all managed skeletons.
          */
         clear: function() {
@@ -767,6 +776,8 @@
               this.handleNeuronNameChange, instance);
           CATMAID.Init.on(CATMAID.Init.EVENT_PROJECT_CHANGED,
               this.loadConfigurationFromSettings, instance);
+          CATMAID.Project.on(CATMAID.Project.EVENT_PROJECT_DESTROYED,
+              this.handleProjectDestruction, instance);
         },
 
         /**
@@ -786,6 +797,8 @@
               this.handleNeuronNameChange, instance);
           CATMAID.Init.off(CATMAID.Init.EVENT_PROJECT_CHANGED,
               this.loadConfigurationFromSettings, instance);
+          CATMAID.Project.off(CATMAID.Project.EVENT_PROJECT_DESTROYED,
+              this.handleProjectDestruction, instance);
         },
 
         /*

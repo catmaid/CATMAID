@@ -246,7 +246,12 @@ def test_environment() -> JsonResponse:
 
         if(!require("devtools")) install.packages("devtools")
         devtools::install_github(c("natverse/nat", "natverse/nat.nblast",
-                "natverse/rcatmaid", "natverse/elmr"))
+                "natverse/rcatmaid", "natverse/fafbseg", "natverse/elmr",
+                "natverse/nat.templatebrains", "natverse/nat.flybrains",
+                "natverse/nat.jrcbrains"))
+
+        nat.jrcbrains::download_saalfeldlab_registrations()
+        nat.flybrains::download_jefferislab_registrations()
 
         This is required to let CATMAID compute NBLAST scores.
         """)
@@ -257,13 +262,20 @@ def test_environment() -> JsonResponse:
 
 
 def setup_environment() -> None:
-    """Install all R dependencies that are needed for NBLAST."""
+    """Install all R dependencies that are needed for NBLAST along with some
+    common Drosophila template brains."""
     robjects.r("""
-        if(!require("devtools")) install.packages("devtools")
-        devtools::install_github(c("natverse/nat", "natverse/nat.nblast",
-                "natverse/rcatmaid", "natverse/elmr"))
         install.packages("doMC")
         install.packages(c("curl", "httr", "R.utils"))
+
+        if(!require("devtools")) install.packages("devtools")
+        devtools::install_github(c("natverse/nat", "natverse/nat.nblast",
+                "natverse/rcatmaid", "natverse/fafbseg", "natverse/elmr",
+                "natverse/nat.templatebrains", "natverse/nat.flybrains",
+                "natverse/nat.jrcbrains"))
+
+        nat.jrcbrains::download_saalfeldlab_registrations()
+        nat.flybrains::download_jefferislab_registrations()
     """)
 
 

@@ -372,7 +372,7 @@ def is_reachable(url:str, auth=None) -> Tuple[bool, str]:
     """Test if an URL is reachable. Returns a tuple of a boolean and an explanation.
     """
     try:
-        r = requests.head(url, auth=auth)
+        r = requests.head(url, auth=auth, timeout=1)
         if r.status_code >= 200 and r.status_code < 400:
             return (True, 'URL accessible')
         else:

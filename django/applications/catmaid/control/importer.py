@@ -325,7 +325,7 @@ def get_projects_from_url(url, filter_term, headers=None, auth=None,
     not_readable:List = []
 
     # Ask remote server for data
-    r = requests.get(url, headers=headers, auth=auth)
+    r = requests.get(url, headers=headers, auth=auth, timeout=1)
     content_type = r.headers['content-type']
     # Both YAML and JSON should end up in the same directories of directories
     # structure.

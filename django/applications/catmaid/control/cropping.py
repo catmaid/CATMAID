@@ -199,7 +199,7 @@ class ImagePart:
     def get_image(self):
         # Open the image
         try:
-            r = requests.get(self.path, allow_redirects=True, verify=verify_ssl)
+            r = requests.get(self.path, allow_redirects=True, verify=verify_ssl, timeout=1)
             if not r:
                 raise ValueError(f"Could not get {self.path}")
             if r.status_code != 200:
@@ -664,7 +664,7 @@ def crop(request:HttpRequest, project_id=None) -> JsonResponse:
             tile_source = get_tile_source(sm.tile_source_type)
             try:
                 req = requests.head(tile_source.get_canary_url(sm),
-                        allow_redirects=True, verify=verify_ssl)
+                        allow_redirects=True, verify=verify_ssl, , timeout=0.1)
                 reachable = req.status_code == 200
             except Exception as e:
                 logger.error(e)

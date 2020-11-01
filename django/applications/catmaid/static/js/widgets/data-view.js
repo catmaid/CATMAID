@@ -339,6 +339,12 @@
     // Detach container from parent to have quicker updates
     container.removeChild(pp);
 
+    // A one-time error handler for the image previews.
+    let showErrorImage = function() {
+      this.onerror = null;
+      this.src = CATMAID.makeStaticURL('/images/overview-placeholder.png');
+    };
+
     // remove all the projects
     while (pp.firstChild) pp.removeChild(pp.firstChild);
     $('[data-role=filter-message]', this.container).text('');
@@ -377,7 +383,13 @@
               link.dataset.sid = p.stacks[0].id;
               // Use overview image
               let img = link.appendChild(document.createElement('img'));
-              img.src = tileSource.getOverviewURL(null, [this.sample_slice]);
+              img.onerror = showErrorImage;
+              try {
+                img.src = tileSource.getOverviewURL(null, [this.sample_slice]);
+              } catch {
+                // Show placeholder if overview is unavailable
+                img.src = CATMAID.makeStaticURL('/images/overview-placeholder.png');
+              }
             }
           }
         }

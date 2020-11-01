@@ -664,7 +664,7 @@ def crop(request:HttpRequest, project_id=None) -> JsonResponse:
             tile_source = get_tile_source(sm.tile_source_type)
             try:
                 req = requests.head(tile_source.get_canary_url(sm),
-                        allow_redirects=True, verify=verify_ssl, , timeout=0.1)
+                        allow_redirects=True, verify=verify_ssl, timeout=0.1)
                 reachable = req.status_code == 200
             except Exception as e:
                 logger.error(e)

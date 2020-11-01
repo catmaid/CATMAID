@@ -16,7 +16,7 @@ from catmaid.control.common import urljoin
 from catmaid.models import UserRole, RegionOfInterest, Project, Relation, \
         Stack, ClassInstance, RegionOfInterestClassInstance
 
-from celery.task import task
+from celery import shared_task
 from celery.utils.log import get_task_logger
 
 User = get_user_model()
@@ -200,7 +200,7 @@ def create_roi_image(user, project_id, roi_id, file_path) -> bool:
         create_roi_image_task.delay(user, project_id, roi_id, file_path)
         return True
 
-@task(name='catmaid.create_roi_image')
+@shared_task(name='catmaid.create_roi_image')
 def create_roi_image_task(user, project_id, roi_id, file_path) -> str:
     lock_id = create_lock_name(roi_id)
     # memcache delete is very slow, but we have to use it to take

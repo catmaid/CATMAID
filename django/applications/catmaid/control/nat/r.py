@@ -23,7 +23,7 @@ from catmaid.models import (Message, User, UserRole, NblastConfig,
         NblastConfigDefaultDistanceBreaks, NblastConfigDefaultDotBreaks,
         PointCloud, PointSet)
 
-from celery.task import task
+from celery import shared_task
 from celery.utils.log import get_task_logger
 
 from rest_framework.authtoken.models import Token
@@ -118,7 +118,7 @@ def export_nrrd(request:HttpRequest, project_id, skeleton_id) -> HttpResponse:
         return CleanUpHTTPResponse(result['nrrd_path'], result['nrrd_name'],
                 content_type='application/octet-stream')
 
-@task()
+@shared_task()
 def export_skeleton_as_nrrd_async(project_id, skeleton_id, source_ref,
         target_ref, user_id, mirror=True, create_message=True) -> str:
 

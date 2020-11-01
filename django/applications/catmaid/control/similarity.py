@@ -6,7 +6,7 @@ import logging
 from timeit import default_timer as timer
 from typing import Any, Dict, List
 
-from celery.task import task
+from celery import shared_task
 from celery.utils.log import get_task_logger
 from django.contrib.gis.db import models as spatial_models
 from django.db import connection, transaction
@@ -570,7 +570,7 @@ def recompute_config(request:HttpRequest, project_id, config_id) -> JsonResponse
     })
 
 
-@task()
+@shared_task()
 def compute_nblast_config(config_id, user_id, use_cache=True) -> str:
     """Recompute the scoring information for a particular configuration,
     including both the matching skeleton set and the random skeleton set.
@@ -668,7 +668,7 @@ def get_all_object_ids(project_id, user_id, object_type, min_nodes=500,
                 "isn't supported yet")
 
 
-@task()
+@shared_task()
 def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
         simplify=True, required_branches=10, use_cache=True, use_http=False) -> str:
     start_time = timer()

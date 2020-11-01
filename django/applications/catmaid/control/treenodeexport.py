@@ -17,7 +17,7 @@ from catmaid.control.cropping import CropJob, extract_substack, ImageRetrievalEr
 from catmaid.models import ClassInstanceClassInstance, TreenodeConnector, \
         Message, User, UserRole, Treenode
 
-from celery.task import task
+from celery import shared_task
 
 
 # The path were archive files get stored in
@@ -354,7 +354,7 @@ class ConnectorExporter(TreenodeExporter):
     def post_process(self, nodes) -> None:
         pass
 
-@task()
+@shared_task()
 def process_export_job(exporter) -> str:
     """ This method does the actual archive creation. It controls the data
     extraction and the creation of all sub-stacks. It can be executed as Celery

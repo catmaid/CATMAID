@@ -541,6 +541,20 @@
     return this.getTileURL(null, stack, slicePixelPosition, 0, 0, zoomLevel);
   };
 
+  CATMAID.H2N5TileSource.prototype.getOverviewLayer = function (layer) {
+    let sliceSize = Math.max(this.tileWidth, this.tileHeight);
+    let stack = layer.getStack();
+    let zoomLevel = stack.zoomLevelFittingSlice(sliceSize);
+    // If the zoom level does not exist, return empty overview layer.
+    if (zoomLevel < 0 || zoomLevel > 0 && !this.baseURL.includes('%SCALE_DATASET%'))
+      return new CATMAID.ArtificialOverviewLayer(layer);
+
+    let cropWidth = stack.dimension.x / stack.downsample_factors[zoomLevel].x;
+    let cropHeight = stack.dimension.y / stack.downsample_factors[zoomLevel].y;
+    return new CATMAID.GenericOverviewLayer(layer, this.baseURL, this.fileExtension,
+        this.getOverviewURL.bind(this), cropWidth, cropHeight);
+  };
+
 
   CATMAID.AbstractImageBlockSource = class AbstractImageBlockSource
       extends CATMAID.AbstractTileSource {
@@ -1033,7 +1047,7 @@
    * This is an overview layer that displays a small overview map.
    */
   CATMAID.GenericOverviewLayer = function(layer, baseURL, fileExtension,
-                                          getOverviewURL) {
+                                          getOverviewURL, cropWidth, cropHeight) {
     // Initialize prototype
     CATMAID.ArtificialOverviewLayer.call(this, layer);
 
@@ -1056,9 +1070,11 @@
     img.onload = (function() {
       if (this.canvas) {
         var ctx = this.canvas.getContext("2d");
-        ctx.width = img.width;
-        ctx.height = img.height;
-        ctx.drawImage(img, 0, 0);
+        if (cropWidth && cropHeight) {
+          ctx.drawImage(img, 0, 0, cropWidth, cropHeight, 0, 0, this.canvas.width, this.canvas.height);
+        } else {
+          ctx.drawImage(img, 0, 0);
+        }
       }
     }).bind(this);
 

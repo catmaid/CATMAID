@@ -703,26 +703,26 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--source', dest='source', default=None,
-            help='The ID of the source project or the path to a file to import')
+                help='The ID of the source project or the path to a file to import')
         parser.add_argument('--target', dest='target', default=None,
-            help='The ID of the target project')
+                help='The ID of the target project')
         parser.add_argument('--user', dest='user', default=None,
-            help='The ID of the owner of all created objects')
+                help='The ID of the owner of all created objects')
         parser.add_argument('--treenodes', dest='import_treenodes',
-            type=str2bool, nargs='?', const=True, default=True,
-            help='Import treenodes from source')
+                type=str2bool, nargs='?', const=True, default=True,
+                help='Import treenodes from source')
         parser.add_argument('--connectors', dest='import_connectors',
-            type=str2bool, nargs='?', const=True, default=True,
-            help='Import connectors from source')
+                type=str2bool, nargs='?', const=True, default=True,
+                help='Import connectors from source')
         parser.add_argument('--annotations', dest='import_annotations',
-            type=str2bool, nargs='?', const=True, default=True,
-            help='Import annotations from source')
+                type=str2bool, nargs='?', const=True, default=True,
+                help='Import annotations from source')
         parser.add_argument('--tags', dest='import_tags',
-            type=str2bool, nargs='?', const=True, default=True,
-            help='Import tags from source')
+                type=str2bool, nargs='?', const=True, default=True,
+                help='Import tags from source')
         parser.add_argument('--volumes', dest='import_volumes',
-            type=str2bool, nargs='?', const=True, default=True,
-            help='Import volumes from source')
+                type=str2bool, nargs='?', const=True, default=True,
+                help='Import volumes from source')
         parser.add_argument('--map-users', dest='map_users', default=True,
                 const=True, type=lambda x: (str(x).lower() == 'true'), nargs='?',
                 help='Use existing user if username matches')
@@ -733,9 +733,9 @@ class Command(BaseCommand):
                 type=str2tuple, action='append',
                 help='Map an import username to a target instance username. Maps referenced users regardless of --map-users. The expected format is "import-user=existing-user", e.g. --username-mapping="AnonymousUser=AnonymousUser".')
         parser.add_argument('--create-unknown-users', dest='create_unknown_users', default=True,
-            action='store_true', help='Create new inactive users for unmapped or unknown users referenced in inport data.')
+                action='store_true', help='Create new inactive users for unmapped or unknown users referenced in inport data.')
         parser.add_argument('--auto-name-unknown-users', dest='auto_name_unknown_users', default=False,
-            action='store_true', help='If enabled, newly created unknown users will be named "User <n>" where <n> is an increasing number. Requires --create-unknown-users')
+                action='store_true', help='If enabled, newly created unknown users will be named "User <n>" where <n> is an increasing number. Requires --create-unknown-users')
         parser.add_argument('--preserve-ids', dest='preserve_ids', default=False,
                 action='store_true', help='Use IDs provided in import data. Warning: this can cause changes in existing data.')
         parser.add_argument('--no-analyze', dest='analyze_db', default=True,

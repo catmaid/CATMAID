@@ -386,7 +386,7 @@
               img.onerror = showErrorImage;
               try {
                 img.src = tileSource.getOverviewURL(null, [this.sample_slice]);
-              } catch {
+              } catch (error) {
                 // Show placeholder if overview is unavailable
                 img.src = CATMAID.makeStaticURL('/images/overview-placeholder.png');
               }

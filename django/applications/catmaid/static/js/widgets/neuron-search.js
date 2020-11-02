@@ -1198,10 +1198,10 @@
           } else {
             this.refresh();
           }
-        });
 
-        this.triggerRemove(removedModels);
-        this.triggerAdd(addedModels);
+          this.triggerRemove(removedModels);
+          this.triggerAdd(addedModels);
+        });
       })
       .catch(CATMAID.handleError);
   };

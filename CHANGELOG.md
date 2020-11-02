@@ -250,6 +250,10 @@ Tracing data export
   to nerve). Alternatively, such a list can be provided as argument to this
   parameter.
 
+- In case all (minus exclusions) skeletons should be exported, now also all
+  annotations are exported if requested by the user. This wasn't the case so far
+  and in this mode no annotations were exported before.
+
 Miscellaneous:
 
 - Node distance measurements (icon in tracing tool bar) are now allowed also

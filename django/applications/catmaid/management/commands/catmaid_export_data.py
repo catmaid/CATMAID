@@ -13,8 +13,9 @@ from catmaid.control.annotation import (get_annotated_entities,
 from catmaid.control.tracing import check_tracing_setup, known_tags
 from catmaid.control.volume import find_volumes
 from catmaid.models import (Class, ClassInstance, ClassInstanceClassInstance,
-        Relation, Connector, Project, Treenode, TreenodeClassInstance,
-        TreenodeConnector, User, ReducedInfoUser, ExportUser, Volume)
+        ConnectorClassInstance, Relation, Connector, Project, Treenode,
+        TreenodeClassInstance, TreenodeConnector, User, ReducedInfoUser,
+        ExportUser, Volume)
 from catmaid.util import str2bool, str2list
 from django.db import connection
 from django.core import serializers
@@ -734,6 +735,32 @@ class Exporter():
 
                 self.to_serialize.append(tags)
                 self.to_serialize.append(tag_links)
+
+            # Export all annotations
+            if self.export_annotations:
+                annotation_targets = [classes['annotation'], classes['neuron']]
+                if self.export_volumes:
+                    annotation_targets.append(classes['volume'])
+                annotations = ClassInstance.objects.filter(project=self.project,
+                        class_column=classes['annotation'])
+                annotation_links = ClassInstanceClassInstance.objects.filter(project=self.project,
+                        class_instance_a__class_column__in=annotation_targets,
+                        relation_id=relations['annotated_with'])
+                if exclude_skeleton_id_constraints:
+                    exclude_neuron_ids = ClassInstanceClassInstance.objects \
+                            .filter(project=self.project, class_instance_a__in=exclude_skeleton_id_constraints, \
+                                   relation=relations.get('model_of')).values_list('class_instance_b', flat=True)
+                    annotation_links = annotation_links.exclude(class_instance_a__in=exclude_neuron_ids)
+
+                logger.info('Exporting all annotations')
+
+                self.to_serialize.append(annotations)
+                self.to_serialize.append(annotation_links)
+
+                if self.connector_mode != ConnectorMode.NoConnectors:
+                    self.to_serialize.append(ConnectorClassInstance.objects.filter(project=self.project,
+                        relation_id=relations['annotated_with']))
+
 
             # TODO: Export reviews
 

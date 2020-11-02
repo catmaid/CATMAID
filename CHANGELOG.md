@@ -341,6 +341,10 @@ Miscellaneous:
   the result shown in the table. Before, the row of the active skeleton wouldn't
   be highlighted after a search and only upon new selection of a skeleton.
 
+- Tracing data importer: The catmaid_import_data management command was not
+  update edge data for project-wide materialization updates if there were no
+  connectors imported. This if fixed now.
+
 ## Maintenance updates
 
 - Volume widget: don't show removal options by default. It happens generally

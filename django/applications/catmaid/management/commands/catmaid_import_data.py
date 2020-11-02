@@ -609,7 +609,7 @@ class FileImporter(AbstractImporter):
         n_imported_connectors = len(import_objects_by_type_and_id.get(Connector, []))
 
         if self.options.get('update_project_materializations'):
-            if n_imported_connectors or n_imported_connectors:
+            if n_imported_treenodes or n_imported_connectors:
                 logger.info(f"Updating edge tables for project {self.target.id}")
                 rebuild_edge_tables(project_ids=[self.target.id], log=lambda msg: logger.info(msg))
             else:

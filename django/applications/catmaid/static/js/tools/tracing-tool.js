@@ -56,20 +56,6 @@
     };
 
     /**
-     * Set postAction option of a command to update of the active tracing layer,
-     * if it is available.
-     *
-     * @returns input command
-     */
-    var withPostUpdate = function(command) {
-      if (activeTracingLayer) {
-        var overlay = activeTracingLayer.tracingOverlay;
-        command.postAction = overlay.updateNodes.bind(overlay, undefined, undefined, undefined);
-      }
-      return command;
-    };
-
-    /**
      * Get the node closest to the last cursor position in the active stack
      * viewer. All layers are respected and the closest node ID is returned,
      * limited by a maximum distance in pixels.
@@ -397,7 +383,7 @@
         activeStackViewer = parentStackViewer;
         // The active tracing layer however is whichever contains the active node
         // and its API.
-        let activeLayer = setActiveTracingLayer(true);
+        setActiveTracingLayer(true);
       }
     };
 
@@ -1927,12 +1913,10 @@
 
       // Make sure all required initial data is available.
       return  CATMAID.fetch(project.id + '/tracing/setup/validate')
-        .then(function() {
+        .then(() => {
           // Initialize a tracing layer in all available stack viewers, but let
           // register() take care of bindings.
-          project.getStackViewers().forEach(function(s) {
-            var layer = prepareAndUpdateStackViewer(s);
-          }, this);
+          project.getStackViewers().forEach(s => prepareAndUpdateStackViewer(s));
         });
     };
 

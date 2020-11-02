@@ -88,7 +88,6 @@
   let nonZeroDigits = new Set([1,2,3,4,5,6,7,8,9]);
 
   DataView.prototype.handleKeyPress = function(e) {
-    let projects = CATMAID.client.projects;
     let asNumber = parseInt(e.key);
     if (nonZeroDigits.has(asNumber)) {
       let stackGroupAnchors = $('a[data-type=stackgroup]');
@@ -330,9 +329,8 @@
     var matchingProjects = 0,
         title,
         toappend,
-        dt, dd, a, ddc,
+        dt,
         p,
-        catalogueElement, catalogueElementLink,
         pp = this.container.querySelector("[data-role=project-display]"),
         container = pp.parentElement;
 

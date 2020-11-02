@@ -691,7 +691,6 @@
                 if (!entityIdMatch || !entityIdMatch[1]) return data;
                 let entityId = entityIdMatch[1];
                 let name = asName(entityId);
-                let entity = widget.entityMap[entityId];
                 if (type === "sort") {
                   let path = widget.paths[key];
                   return [path, path.map(asName)];
@@ -1389,8 +1388,6 @@
       var aID = CATMAID.annotations.getID(annotation);
       var tr = $(this).closest('tr');
       var entity = $(tr)[0].entity;
-      var key = $(tr)[0].dataset.key;
-
 
       // If expanded, collapse it. Expand it otherwise.
       if (tr.is('[expanded]')) {
@@ -1470,7 +1467,6 @@
           'annotated_with': aID,
           'with_annotations': self.displayAnnotations
         };
-        let path = [];
         CATMAID.fetch(project.id + '/annotations/query-targets', 'POST', query_data)
           .then(function(e) {
             // Register search results with neuron name service and rebuild
@@ -1830,7 +1826,6 @@
     };
 
     if (entitiesToQuery.length > 0) {
-      var self = this;
       return CATMAID.Annotations.forTarget(project.id, entityIdsToQuery)
         .then(function(json) {
           // Create mapping from skeleton ID to result object

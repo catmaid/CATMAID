@@ -496,8 +496,6 @@
                   return null;
               };
 
-              var skeleton = managedSkeletons[skid];
-
               // Find values for component in the list, each component is a list
               // of strings, or null if no value is available.
               var componentValues = componentList.map(function (l) {
@@ -698,8 +696,6 @@
               var needsNeueonNames = componentList.some(function(l) {
                   return 'neuronname' === l.id;
               });
-
-              let queryModels = querySkids.map(skid => managedSkeletons[skid].model);
 
               // Sort queries by API
               let querySkidsByAPI = querySkids.reduce((o, s) => {

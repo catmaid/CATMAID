@@ -221,7 +221,7 @@ Administration:
 - User account creation now supports confirmation emails and welcome emails. The
   User Accounts section of the manual has more details on this.
 
-Tracing data export
+Tracing data export:
 
 - The management command catmaid_export_data supports now the sepcification of
   export options for tags, annotations and connectors per publication. To tell
@@ -253,6 +253,16 @@ Tracing data export
 - In case all (minus exclusions) skeletons should be exported, now also all
   annotations are exported if requested by the user. This wasn't the case so far
   and in this mode no annotations were exported before.
+
+Tracing data import:
+
+- The catmaid_import_data management command will now truly update only project
+  wide data if --update-project-materializations is provided (as opposed to
+  selective updates for the imported data). Before, the summary information was
+  still computed instance wide.
+
+- The new option --update-instance-materializations can now be used to update
+  the summary table information instance wide.
 
 Miscellaneous:
 

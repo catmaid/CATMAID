@@ -296,7 +296,7 @@ class FileImporter(AbstractImporter):
                         else:
                             unchanged_fk_ids += 1
 
-                # Save objects if they should either be imported or have change
+                # Save objects if they should either be imported or have changed
                 # foreign key fields
                 if save and (updated_fk_ids or obj.id is None):
                     obj.save()
@@ -616,19 +616,31 @@ class FileImporter(AbstractImporter):
                 logger.info("No edge table update needed")
 
             if n_imported_treenodes:
-                logger.info("Updated skeleton summary tables")
+                logger.info("Updating skeleton summary tables")
                 cursor.execute("""
-                    DELETE FROM catmaid_skeleton_summary;
-                    SELECT refresh_skeleton_summary_table();
-                """)
-
-                logger.info('Recreating skeleton summary table')
-                cursor.execute("""
-                    TRUNCATE catmaid_skeleton_summary;
-                    SELECT refresh_skeleton_summary_table();
-                """)
+                    SELECT refresh_skeleton_summary_table_for_project(%(project_id)s);
+                """, {
+                    "project_id": self.target.id,
+                })
             else:
                 logger.info("No skeleton summary update needed")
+
+        elif self.options.get('update_instance_materializations'):
+            if n_imported_treenodes or n_imported_connectors:
+                logger.info(f"Updating edge tables for project {self.target.id}")
+                rebuild_edge_tables(project_ids=[self.target.id], log=lambda msg: logger.info(msg))
+            else:
+                logger.info("No edge table update needed")
+
+            logger.info('Recreating skeleton summary table for entire CATMAID instance')
+            cursor.execute("""
+                -- Will TRUNCATE the catmaid_skeleton_summary table and
+                -- require an exclusive table lock, make sure we can get it by
+                -- committing at least our previous changes to prevent pending
+                -- trigger events on this table.
+                COMMIT;
+                SELECT refresh_skeleton_summary_table();
+            """)
         else:
             logger.info("Finding imported skeleton IDs and connector IDs")
 
@@ -742,6 +754,8 @@ class Command(BaseCommand):
                 action='store_false', help='If ANALYZE to update database statistics should not be called after the import.')
         parser.add_argument('--update-project-materializations', dest='update_project_materializations', default=False,
                 action='store_true', help='Whether all materializations (edges, summary) of the current project should be updated or only the ones of imported skeletons.')
+        parser.add_argument('--update-instance-materializations', dest='update_instance_materializations', default=False,
+                action='store_true', help='Whether all materializations (edges, summary) of this CATMAID instance should be updated. This is faster when a majority of the data changed.')
 
     def ask_for_project(self, title):
         """ Return a valid project object.
@@ -771,6 +785,10 @@ class Command(BaseCommand):
         if options['map_users'] and options['user']:
             raise CommandError("Can't override users and map users at the " +
                     "same time, use --user or --map-users.")
+
+        if options.get('update_project_materializations') and \
+                options.get('update_instance_materializations'):
+            raise CommandError("Use project OR instance materialiation")
 
         # Give some information about the import
         will_import = []

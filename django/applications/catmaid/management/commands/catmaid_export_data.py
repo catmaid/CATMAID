@@ -1001,7 +1001,7 @@ class ConnectorMode(Enum):
     IntraConnectorsAndOriginalPlaceholders = 'intra_connectors_and_original_placeholders' # 3
 
     def __str__(self):
-        return self.name
+        return self.value
 
     @staticmethod
     def from_string(s):

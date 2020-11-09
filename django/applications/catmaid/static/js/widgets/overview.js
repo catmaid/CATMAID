@@ -56,14 +56,14 @@
 
     this.redraw = function()
     {
-      var $view = $( view );
       // If it is minimized, don't redraw. Avoids fetching and decoding an extra jpeg
-      if ( $view.hasClass( 'smallMapView_hidden' ) ) return;
+      if ( view.classList.contains( 'smallMapView_hidden' ) ) return;
 
       if ( typeof scale === "undefined" )
       {
-        var scaleY = parseInt( $view.css( 'max-height' ) ) / maxY;
-        var scaleX = parseInt( $view.css( 'max-width' ) ) / maxX;
+        let style = window.getComputedStyle(view);
+        var scaleY = parseInt(style['max-height']) / maxY;
+        var scaleX = parseInt(style['max-width']) / maxX;
         scale = Math.min( scaleX, scaleY );
       }
 
@@ -76,8 +76,6 @@
 
       for ( var layer in layers )
         layers[ layer ].redraw();
-
-      return;
     };
 
     /**
@@ -92,7 +90,6 @@
       if ( layers[ key ] )
         layers[ key ].unregister();
       layers[ key ] = layer;
-      return;
     };
 
     /**

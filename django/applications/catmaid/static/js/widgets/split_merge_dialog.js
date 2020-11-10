@@ -322,7 +322,9 @@
                 smallerSkeletonAnnotations.has(stableJoinDirAnnotation)) {
               CATMAID.warn('Both skeletons are marked as "stable". Won\'t be able to join');
             } else if (largerSkeletonAnnotations.has(stableJoinDirAnnotation)) {
-              CATMAID.warn(`Skeleton "${losingModel.baseName}" is marked as stable, it will win the merge even if not set as target like now.`);
+              CATMAID.warn(`Skeleton "${winningModel.baseName}" is marked as stable and will win the merge, regardless of chosen direction`);
+            } else if (smallerSkeletonAnnotations.has(stableJoinDirAnnotation)) {
+              CATMAID.warn(`Skeleton "${losingModel.baseName}" is marked as stable and will will win the merge, regardless of chosen direction.`);
             }
           }
         });

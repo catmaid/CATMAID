@@ -364,6 +364,9 @@ Miscellaneous:
   update edge data for project-wide materialization updates if there were no
   connectors imported. This if fixed now.
 
+- Tracing tool: a tracing data mirror server can now also be used with
+  authentication.
+
 ## Maintenance updates
 
 - Volume widget: don't show removal options by default. It happens generally

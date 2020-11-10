@@ -25,6 +25,7 @@ addons:
 before_install:
   - mkdir tmp
   - travis_retry sudo apt-get update -y -qq
+  - sudo apt-get install -qq openssl
   - bash scripts/travis/install_postgres.sh
   - bash scripts/travis/install_python.sh
   - bash scripts/travis/install_gdal.sh

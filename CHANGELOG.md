@@ -271,6 +271,10 @@ Tracing data import:
 
 Miscellaneous:
 
+- Each stack viewer will now show the project name by default along with the
+  stack and mirror name in its title bar. This can be adjusted in the "Stack
+  view" settings of the Settings Manager.
+
 - Node distance measurements (icon in tracing tool bar) are now allowed also
   between nodes of different skeletons. In this case only the straight line
   distance will be displayed. Both the straight line distance and the path

@@ -23,8 +23,6 @@
       this.dataSourceId = undefined;
       this.type = apiType || 'catmaid';
     }
-
-
   }
 
   /**

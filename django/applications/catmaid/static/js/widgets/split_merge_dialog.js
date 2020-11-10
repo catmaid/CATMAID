@@ -337,7 +337,6 @@
         // arbor data structure to measure each segment's length.
         if (!SkeletonAnnotations.isRealNode(this.splitNodeId)) {
           var childId = SkeletonAnnotations.getChildOfVirtualNode(this.splitNodeId);
-          var parentId = SkeletonAnnotations.getParentOfVirtualNode(this.splitNodeId);
           var x = Number(SkeletonAnnotations.getXOfVirtualNode(this.splitNodeId));
           var y = Number(SkeletonAnnotations.getYOfVirtualNode(this.splitNodeId));
           var z = Number(SkeletonAnnotations.getZOfVirtualNode(this.splitNodeId));
@@ -369,7 +368,7 @@
         }
         // Update dialog title
         var title = 'Split skeleton "' + model_name + '"';
-        var $dialog = $(this.dialog).dialog('option', 'title', title);
+        $(this.dialog).dialog('option', 'title', title);
 
         // Add select-all checkoxes for annotations
         var selectAllBig = colorBig.appendChild(document.createElement('input'));
@@ -515,7 +514,6 @@
       }
     }).bind(this), this.nodeProvider);
 
-    var self = this;
     var firstButton = this.customOptions.firstChild;
 
     if (this.in_merge_mode) {

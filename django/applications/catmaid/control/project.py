@@ -626,6 +626,9 @@ def fork(request:HttpRequest, project_id) -> JsonResponse:
     assign_perm('can_browse', request.user, new_p)
     assign_perm('can_annotate', request.user, new_p)
     assign_perm('can_import', request.user, new_p)
+    assign_perm('can_fork', request.user, new_p)
+    assign_perm('can_administer', request.user, new_p)
+    assign_perm('delete_project', request.user, new_p)
 
     # Creat basic classes and relations
     validate_project_setup(new_p.id, request.user.id, fix=True)

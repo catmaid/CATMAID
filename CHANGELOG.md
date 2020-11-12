@@ -269,6 +269,15 @@ Tracing data import:
 - The new option --update-instance-materializations can now be used to update
   the summary table information instance wide.
 
+Import/export widget:
+
+- So far, if no name was provided in the UI, the imported neuron would just have
+  no name. Now the user is asked whether the import should be canceled or if the
+  file name should be used as default name, if no name was provided by the user.
+
+- If multiple SWC files are imported and a name is provided, an incrementing
+  numeric suffic will be added to each name.
+
 Miscellaneous:
 
 - Each stack viewer will now show the project name by default along with the

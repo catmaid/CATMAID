@@ -248,7 +248,9 @@ annotations, neuron name, connectors or partner neurons.
         return [
           {
             type: 'text',
-            label: 'Name',
+            label: 'Name of imported Neuron(s)',
+            title: 'By default the file name is is used if empty. If multiple SWC files are imported, a numeric suffic is added to each neuron import',
+            placeholder: 'Name',
             onchange: e => {
               widget.csvImportNewNeuronName = e.target.value.trim();
             },
@@ -261,13 +263,22 @@ annotations, neuron name, connectors or partner neurons.
         // Add some bindings
         var $importContainer = $(container);
         $importContainer.find('button[data-role=import-swc]').click(function() {
-          var button = $(this);
-          button.prop('disabled', true);
           var fileInput = $importContainer.find('input[data-role=swc-import-file]');
           if (fileInput.length === 0) {
             CATMAID.warn("No SWC file input found");
             return;
           }
+
+          let neuronName = widget.csvImportNewNeuronName.trim();
+          if (!neuronName || neuronName.length == 0) {
+            if (!confirm("You have provided no name for the imported neuron. Use file name(s) instead?")) {
+              return;
+            }
+          }
+
+          var button = $(this);
+          button.prop('disabled', true);
+
           var files = fileInput[0].files;
           var importedFiles = new Map();
           var failedImports = new Map();
@@ -276,7 +287,11 @@ annotations, neuron name, connectors or partner neurons.
             let file = files[i];
             importQueue = importQueue
               .then(function() {
-                return import_swc(file, false, widget.csvImportNewNeuronName)
+                // Default neuron name, if not specified: file name
+                let name = neuronName ? (files.lengh > 1 ? `${neuronName} ${i+1}` : neuronName)
+                    : file.name.replace(/\.swc$/, '');
+
+                return import_swc(file, false, name)
                   .then(function(data) {
                     CATMAID.msg("SWC successfully imported", "Neuron ID:" +
                         data.neuron_id + " Skeleton ID: " + data.skeleton_id);

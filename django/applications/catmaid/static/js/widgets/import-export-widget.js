@@ -781,25 +781,7 @@ annotations, neuron name, connectors or partner neurons.
     if (!file) {
       return Promise.reject(new CATMAID.ValueError("Need file"));
     }
-
-    var data = new FormData();
-    data.append('name', name);
-    data.append('file', file);
-    return new Promise(function(resolve, reject) {
-      $.ajax({
-          url : CATMAID.makeURL(project.id + "/skeletons/import"),
-          processData : false,
-          contentType : false,
-          type : 'POST',
-          data : data,
-      }).done(function(data) {
-          if (data.skeleton_id) {
-            resolve(data);
-          } else {
-            reject(data);
-          }
-      });
-    });
+    return CATMAID.Neurons.importFromSWC(project.id, file, name);
   }
 
   function export_swc() {

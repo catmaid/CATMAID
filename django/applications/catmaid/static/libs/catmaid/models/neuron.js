@@ -91,6 +91,29 @@
       getSkeletons: function(projectId, neuronId) {
         return CATMAID.fetch(`${projectId}/neuron/${neuronId}/get-all-skeletons`);
       },
+
+      /**
+       * Import from an SWC file and a name.
+       *
+       * @param {numer}  projectId The current project ID.
+       * @param {File}   swcFile   The opened SWC File object.
+       * @param {String} name      (Optional) Name of the new neuron. If not
+       *                           provided, a default name is used.
+       *
+       * @returns {Promise} Resolves once imported.
+       */
+        importFromSWC: function(projectId, swcFile, name) {
+          if (!swcFile) {
+            return Promise.reject(new CATMAID.ValueError("Need SWC file"));
+          }
+
+          var data = new FormData();
+          data.append('name', name);
+          data.append('file', swcFile);
+
+          return CATMAID.fetch(`${project.id}/skeletons/import`, "POST", data,
+              undefined, undefined, undefined, undefined, {"Content-type" : null});
+        },
   };
 
   // Provide some basic events

@@ -278,6 +278,10 @@ Import/export widget:
 - If multiple SWC files are imported and a name is provided, an incrementing
   numeric suffic will be added to each name.
 
+- After one or more SWC files have been imported, there is now a list of links
+  displayed at the bottom of the widget. Each link is a successful import and,
+  when clicked, selects and moves to the respective skeleton.
+
 Miscellaneous:
 
 - Each stack viewer will now show the project name by default along with the

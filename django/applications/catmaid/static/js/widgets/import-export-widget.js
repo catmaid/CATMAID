@@ -107,7 +107,13 @@ annotations, neuron name, connectors or partner neurons.
 </p>
 <p>
 <button data-role="import-swc">Import SWC file(s)</button>
+<div id='swc-import-results' style='display: none'>
+<p>
+<h4>Import results</h4>
+<ul>
+</ul>
 </p>
+</div>
  `;
 
   ImportExportWidget.prototype.getName = function() {
@@ -256,9 +262,12 @@ annotations, neuron name, connectors or partner neurons.
       },
       createContent: function(container, widget) {
         container.innerHTML = ImportExportWidget.importContentTemplate;
+        let $importContainer = $(container);
+
+        let resultSection = $importContainer.find('div#swc-import-results')[0];
+        let resultList = $importContainer.find('div#swc-import-results ul')[0];
 
         // Add some bindings
-        var $importContainer = $(container);
         $importContainer.find('button[data-role=import-swc]').click(function() {
           var fileInput = $importContainer.find('input[data-role=swc-import-file]');
           if (fileInput.length === 0) {
@@ -305,8 +314,23 @@ annotations, neuron name, connectors or partner neurons.
               });
           }
 
+          let selectSkeleton = (e) => {
+            CATMAID.TracingTool.goToNearestInNeuronOrSkeleton(
+              'skeleton', e.target.dataset.skeletonId);
+          };
+
           importQueue
             .then(function() {
+              resultSection.style.display = 'block';
+              for (let [fileName, data] of importedFiles) {
+                let li = resultList.appendChild(document.createElement('li'));
+                let a = li.appendChild(document.createElement('a'));
+                a.href = '#';
+                a.dataset.skeletonId = data.skeleton_id;
+                a.addEventListener('click', selectSkeleton);
+                a.appendChild(document.createTextNode(`Skeleton ${data.skeleton_id} (File name: ${fileName})`));
+              }
+
               if (failedImports.size === 0) {
                 CATMAID.msg("Success", "Imported " + importedFiles.size + " neurons");
               } else {

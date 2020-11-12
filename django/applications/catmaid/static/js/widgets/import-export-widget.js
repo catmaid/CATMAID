@@ -135,7 +135,7 @@ annotations, neuron name, connectors or partner neurons.
 
         // Initialize tabs
         var self = this;
-        let tabControls = $(controls).tabs({
+        $(controls).tabs({
           activate: function(event, ui) {
             var mode = ui.newPanel.attr('data-mode');
             if (self.modes.indexOf(mode) !== -1) {
@@ -148,8 +148,6 @@ annotations, neuron name, connectors or partner neurons.
         });
       },
       createContent: function(container) {
-        var $container = $(container);
-
         this.modes.forEach(m => {
           let mode = ImportExportWidget.Modes[m];
           this.containers[m] = container.appendChild(document.createElement('div'));
@@ -198,7 +196,6 @@ annotations, neuron name, connectors or partner neurons.
       }
       return o;
     }, {});
-    let sourceProjectId = this.sourceProject;
 
     return CATMAID.Remote.importRemoteSkeletonsWithPreview(api,
         this.sourceProject, skeletonIds, annotations, entityMap,
@@ -341,7 +338,6 @@ annotations, neuron name, connectors or partner neurons.
         // The currently selected source CATMAID instance, for CATMAID based import.
         widget.sourceRemote = '';
         widget.sourceProject = project.id;
-        let sourceNeuronAnnotation = '';
 
         let searchSection = document.createElement('span');
         searchSection.classList.add('section-header');
@@ -372,9 +368,10 @@ annotations, neuron name, connectors or partner neurons.
               widget.sourceProject, undefined, e => {
                 widget.sourceProject = parseInt(e.target.value, 10);
 
-                // If the source project is the current project, the regular source
-                // select and source group select are shown. Otherwise hidden.
-                let currentProjectMode = widget.sourceProject == project.id ? 'block' : 'none';
+                // TODO: If the source project is the current project, the
+                // regular source select and source group select are shown.
+                // Otherwise hidden.
+                //let currentProjectMode = widget.sourceProject == project.id ? 'block' : 'none';
               });
           let projectSelect = CATMAID.DOM.createAsyncPlaceholder(asyncProjectList);
           let projectSelectWrapper = CATMAID.DOM.wrapInLabel("Source project",
@@ -396,8 +393,6 @@ annotations, neuron name, connectors or partner neurons.
         let nameFilter = '';
         let annotationFilter = '';
         let withSubAnnotations = false;
-
-        let user = CATMAID.User.safe_get(CATMAID.session.userid);
 
         let getAnnotationTitle = function() {
           let annotations = widget.getEffectiveAnnotations().join(', ');
@@ -848,8 +843,6 @@ annotations, neuron name, connectors or partner neurons.
 
     // Add handler for initiating the export
     dialog.onOK = function() {
-      // Collected objects for all skeletons
-      var result = {skeletons: {}};
       // Get all selected skeletons from the selected source
       var source = CATMAID.skeletonListSources.getSource($(select).val());
       var skids = source.getSelectedSkeletons();
@@ -950,8 +943,6 @@ annotations, neuron name, connectors or partner neurons.
 
     // Add handler for initiating the export
     dialog.onOK = function() {
-      // Collected objects for all skeletons
-      var result = {skeletons: {}};
       // Get all selected skeletons from the selected source
       var source = CATMAID.skeletonListSources.getSource($(select).val());
       var skids = source.getSelectedSkeletons();

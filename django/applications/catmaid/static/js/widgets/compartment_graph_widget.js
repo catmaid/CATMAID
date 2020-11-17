@@ -16,6 +16,9 @@
     this.widgetID = this.registerInstance();
     CATMAID.SkeletonSource.call(this, true);
 
+    // Basic functionality of this widget works with remote skeletons.
+    this.supportsRemoteSkeletons = true;
+
     this.label_valign = 'top';
     this.label_halign = 'center';
     this.show_node_labels = true;
@@ -1517,7 +1520,10 @@
           function(skid) { return {}; },
           function(skid, json) { morphologies[skid] = json; },
           (function(skid) { delete this.subgraphs[skid]; }).bind(this), // failed loading
-          (function() { this.updateGraph(json, models, morphologies, pos, sizes); }).bind(this));
+          (function() { this.updateGraph(json, models, morphologies, pos, sizes); }).bind(this),
+          'POST',
+          false,
+          (skeletonId => models[skeletonId].api));
       return;
     }
 
@@ -2086,11 +2092,12 @@
     var with_overall_counts = edgeLabelStrategy.requires &&
         edgeLabelStrategy.requires.has('originIndex');
 
-    CATMAID.fetch({
-        url: project.id + "/skeletons/confidence-compartment-subgraph",
+    let modelCollections = CATMAID.API.getModelCollections(models, project.id);
+    return Promise.all(modelCollections.map(mc => CATMAID.fetch({
+        url: `${mc.projectId}/skeletons/confidence-compartment-subgraph`,
         method: "POST",
         data: {
-            skeleton_ids: skeleton_ids,
+            skeleton_ids: mc.skeletonIds,
             with_overall_counts: with_overall_counts,
             link_types: Array.from(this.selectedLinkTypes),
             allowed_connector_ids: this.applyFilterRules ?
@@ -2098,7 +2105,9 @@
         },
         replace: true,
         id: 'graph_widget_request',
-      })
+        api: mc.api,
+      })))
+      // TODO: merge sources
       .then(json => this.updateGraph(json, models, undefined, positions, sizes))
       .then(() => {
         this.triggerAdd(models);

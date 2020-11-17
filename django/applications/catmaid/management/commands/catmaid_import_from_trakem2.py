@@ -12,6 +12,7 @@ import math
 from itertools import chain
 from trimesh.exchange.obj import export_obj
 import tempfile
+from typing import Any, List, Iterator
 
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
@@ -41,6 +42,7 @@ class TrakEM2():
     Tree = None
     Treeline = None
     AreaTree = None
+    AreaList = None
     Connector = None
     Process = None
     TaskFactory = None
@@ -99,8 +101,8 @@ class SkeletonizationMethod:
 
 class ConnectorNode:
 
-    def __init__(self,t,r, transformer, side:SynapseSides, parent_neuron_id:int,
-            displayables):
+    def __init__(self, t, r, transformer, side:SynapseSides, parent_neuron_id:int,
+            displayables:List[Any]):
         self.x, self.y, self.z = t
         self.r = r
         self.transformer = transformer
@@ -384,7 +386,7 @@ class Command(BaseCommand):
         if options.get('imagej'):
             ij = imagej.init(options['imagej'], headless=options['headless'])
         else:
-            ij = imagej.init(headless=args['headless'])
+            ij = imagej.init(headless=options['headless'])
         self.stdout.write('Done')
         log(f'ImageJ version: {ij.getInfo(True)}')
 
@@ -474,7 +476,7 @@ class TrakEM2ToCATMAIDTransformer():
         self.user_id = user_id
         self.user = User.objects.get(id=user_id)
         self.project_id = int(catmaid_project_id)
-        self.p = TrakEM2.Project.openFSProject(Java.String(xml_path), False)
+        self.p = TrakEM2.Project.openFSProject(Java.String(xml_path), False) #type: ignore
         if not self.p:
             raise ValueError("Could not open project")
 
@@ -678,7 +680,7 @@ class TrakEM2ToCATMAIDTransformer():
     def add_synapse(self, name, connector, pre_nodes, post_nodes):
         # Find the centroid of those points:
         all_nodes = pre_nodes + post_nodes
-        summed_tuple = map(sum,zip(*[(n.x, n.y, n.z) for n in all_nodes]))
+        summed_tuple:Iterator[float] = map(sum,zip(*[(n.x, n.y, n.z) for n in all_nodes]))
         centroid = list(map(lambda x: x / len(all_nodes), summed_tuple))
         # create a connector at the centroid
         # create a synapse
@@ -788,13 +790,13 @@ class TrakEM2ToCATMAIDTransformer():
                 log(f"Origin neuron ID: {originNeuronId} Query ID: {name_with_id}")
                 originNode = ConnectorNode(self.node_to_coordinates(aff, c.root),
                         c.root.getData() * self.res_x, self,
-                        SynapseSides.PRE, originNeuronId, c.getOrigins())
+                        SynapseSides.PRE, originNeuronId, c.getOrigins()) # type: ignore
                 targetDisplayables = c.getTargets()
                 targetNodes = [ConnectorNode(self.node_to_coordinates(aff, x),
-                        x.getData() * self.res_x, self, SynapseSides.POST,
+                        x.getData() * self.res_x, self, SynapseSides.POST, # type: ignore
                         # It is okay to use originNeuronId here,
                         # because it is in fact correct for the XML hierarchy.
-                        originNeuronId, targetDisplayables[i])
+                        originNeuronId, targetDisplayables[i]) # type: ignore
                         for i, x in enumerate(connector_target_nodes)]
                 log(f"{prefix}Got originNode: {originNode}")
                 for t in targetNodes:
@@ -860,7 +862,7 @@ class TrakEM2ToCATMAIDTransformer():
         if root is None:
             return None
         aff = tree.getAffineTransform()
-        table = {}
+        table = {} # type: ignore
         log('number of subtreenodes is:' + " " + str(len(tree.getRoot().getSubtreeNodes())) + " " + 'for TrakEM2 treeline' + " " + str(tree.getId()))
         for nd in tree.getRoot().getSubtreeNodes():
             x, y, z = self.node_to_coordinates(aff,nd)

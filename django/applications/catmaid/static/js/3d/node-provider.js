@@ -12,7 +12,7 @@
   };
 
   RegularNodeProvider.prototype.get = function(projectId, skeletonIds, options,
-      progressCallback, errorCallback) {
+      progressCallback, errorCallback, api) {
     progressCallback = progressCallback || CATMAID.noop;
     errorCallback = errorCallback || CATMAID.noop;
     options = options || {};
@@ -38,7 +38,7 @@
         },
         'GET',
         binaryTransfer,
-        this.api);
+        api || this.api);
     });
   };
 

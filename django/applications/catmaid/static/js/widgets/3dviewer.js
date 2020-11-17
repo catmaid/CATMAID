@@ -54,6 +54,9 @@
 
     this.options = this.getInitialOptions();
 
+    // The basic functionality of this widget can work with remote skeletons.
+    this.supportsRemoteSkeletons = true;
+
     // Listen to changes of the active node
     SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
       this.updateActiveNode, this);
@@ -2100,24 +2103,30 @@
         }
 
         // Register with the neuron name service and fetch the skeleton data
-        return CATMAID.NeuronNameService.registerAll(this, models)
-          .then(function() {
+        let modelCollections = CATMAID.API.getModelCollections(models, project.id);
+        let nameservices = modelCollections.map(mc => {
+          return CATMAID.NeuronNameService.getInstance(mc.api).registerAll(this, mc.models);
+        });
+        Promise.all(nameservices)
+          .then(() => {
             if (self.hasActiveFilters()) {
               return self.insertIntoNodeWhitelist(models);
             }
           })
           .then(function() {
-            return nodeProvider.get(projectId, missingSkeletonIds, {
-                with_tags: !lean,
-                with_connectors: !lean,
-                with_history: false
-            }, function(skeletonId, json) {
-              if (self.space) {
-                var sk = self.space.updateSkeleton(models[skeletonId], json,
-                   options, undefined, self.getActivesNodeWhitelist());
-                if (sk) sk.show(options);
-              }
-            });
+            return Promise.all(modelCollections.map(mc => {
+              return nodeProvider.get(mc.projectId, mc.skeletonIds, {
+                  with_tags: !lean,
+                  with_connectors: !lean,
+                  with_history: false
+              }, function(skeletonId, json) {
+                if (self.space) {
+                  var sk = self.space.updateSkeleton(models[skeletonId], json,
+                     options, undefined, self.getActivesNodeWhitelist());
+                  if (sk) sk.show(options);
+                }
+              }, undefined, mc.api);
+            }));
           })
           .catch(CATMAID.handleError);
       }
@@ -2152,6 +2161,7 @@
           skeleton.setMetaVisibility(model.meta_visible);
           skeleton.actorColor = model.color.clone();
           skeleton.opacity = model.opacity;
+          skeleton.api = model.api;
           skeleton.updateSkeletonColor(colorizer);
           updatedSkeletons.push(skeleton);
         }

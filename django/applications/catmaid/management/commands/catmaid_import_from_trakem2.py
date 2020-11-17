@@ -134,7 +134,7 @@ class ConnectorNode:
 
 
     def __str__(self):
-        return "(%f,%f,%f) radius: %f"%(self.x,self.y,self.z,self.r)
+        return f'({self.x},{self.y},{self.z}) radius: {self.r}'
 
     def treenode_within_radius(self, treenode):
         if abs(self.z - treenode.z) > (self.transformer.res_z / 2):
@@ -267,11 +267,11 @@ class ConnectorNode:
 
 
 class TreeNode:
-  def __init__(self, treenode_id, x, y, z):
-    self.treenode_id = treenode_id
-    self.x = x
-    self.y = y
-    self.z = z
+    def __init__(self, treenode_id, x, y, z):
+        self.treenode_id = treenode_id
+        self.x = x
+        self.y = y
+        self.z = z
 
 
 descent_into = ["pn", "osn", "ln", "n"]
@@ -401,7 +401,7 @@ class Command(BaseCommand):
                 os.environ['PYJNIUS_JAR'] = options['pyjnius']
                 log(f'Setting PYJNIUS_JAR environment variable to "{options["pyjnius"]}')
         else:
-                log(f'PYJNIUS_JAR environment variable is set to "{os.environ["PYJNIUS_JAR"]}')
+            log(f'PYJNIUS_JAR environment variable is set to "{os.environ["PYJNIUS_JAR"]}')
 
         if 'JAVA_HOME' not in os.environ:
             if 'java_home' not in options:
@@ -410,7 +410,7 @@ class Command(BaseCommand):
                 os.environ['JAVA_HOME'] = options['java_home']
                 log(f'Setting JAVA_HOME environment variable to "{options["java_home"]}"')
         else:
-                log(f'JAVA_HOME environment variable is set to "{os.environ["JAVA_HOME"]}"')
+            log(f'JAVA_HOME environment variable is set to "{os.environ["JAVA_HOME"]}"')
 
         # Update default groups
         if options['descent_into']:
@@ -454,7 +454,7 @@ class Command(BaseCommand):
 
 
 class AbstractNode:
-  pass
+    pass
 
 
 class TrakEM2ToCATMAIDTransformer():
@@ -573,9 +573,11 @@ class TrakEM2ToCATMAIDTransformer():
         is_neuron = False
         descent = False
         new_id = None
+        # FIXME: All of this should be more consistent and use the shared keyword
+        # categories.
         if not parent_id:
             # Then this should be the root:
-            #new_id = insert_project_root_node(name_with_id)
+            # new_id = insert_project_root_node(name_with_id)
             new_id = self.projectRoot
             log(pad + "Ignoring project root")
         elif pt_type == "neuropil":
@@ -584,14 +586,14 @@ class TrakEM2ToCATMAIDTransformer():
             log(pad + "Descending into neuropil")
         elif pt_type in ignore_groups:
             # Just create all of these as groups for the moment:
-            #new_id = insert_group(parent_id,name_with_id)
+            # new_id = insert_group(parent_id,name_with_id)
             log(pad + "Ignoring group: " + pt_type)
         elif pt_type == "nucleus":
             log(pad + "Ignoring nucleus")
         elif pt_type in ("pre", "post"):
             log(pad + "Ignoring pre/post object")
         elif pt_type == "neuron":
-            #is_neuron = True
+            # is_neuron = True
             ignore = False
             descent = True
             new_id = self.insert_neuron(name_with_id)
@@ -670,7 +672,7 @@ class TrakEM2ToCATMAIDTransformer():
                 all_ignored = self.add_recursively(c, new_id, depth+1, annotations.copy()) and all_ignored
             if is_neuron and all_ignored:
                 log(pad + "Deleted empty neuron {}".format(new_id))
-                delete_neuron(new_id)
+                self.delete_neuron(new_id)
         return ignore
 
     def add_synapse(self, name, connector, pre_nodes, post_nodes):
@@ -703,7 +705,7 @@ class TrakEM2ToCATMAIDTransformer():
             for node in (pre_nodes if side == SynapseSides.PRE else post_nodes):
                 # * find if there is a treenode in the same layer
                 #   and within the right distance
-                #treenodes = node.find_treenodes_under()
+                # treenodes = node.find_treenodes_under()
                 closest_treenode_id, distance = node.find_closest_treenode_in_linked_skeleton()
                 neuron_id, skeleton_id = node.get_import_neuron_and_skeleton()
                 # * if not:
@@ -713,8 +715,8 @@ class TrakEM2ToCATMAIDTransformer():
                     if closest_treenode_id:
                         self.n_closest_node_matches += 1
                     else:
-                        #treenodes.append(TreeNode(treenode_id, node.x, node.y, node.z))
-                        # * create a skeleton, a neuron and make this part of the 'Fragments' group
+                        # treenodes.append(TreeNode(treenode_id, node.x, node.y, node.z))
+                        # Create a skeleton, a neuron and make this part of the 'Fragments' group
                         neuron_id = self.insert_neuron('orphaned ' + side_string)
                         skeleton_id = self.insert_skeleton(neuron_id, 'orphaned ' + side_string)
                         log(f'orphaned {side_string}')
@@ -745,68 +747,68 @@ class TrakEM2ToCATMAIDTransformer():
                 self.new_treenode_connector(terminal_relationship, treenode_id,
                         connector_id, treenode_id)
 
-                # * for each of treenodes:
-                #for tn in treenodes:
-                #     * create a new pre/post synaptic terminal
-                #    terminal_relationship = side_string + "synaptic_to"
-                #     * make the treenode pre/postsynaptic_to the connector
-                #    new_treenode_connector(terminal_relationship, tn.treenode_id, connector_id)
-                #    terminal_class_name = side_string + "synaptic terminal"
-                #    terminal_id = self.new_class_instance(terminal_class_name, terminal_class_name)
-                #     * make the treenode a model_of the pre/postsynaptic terminal
-                #    new_treenode_class_instance('model_of',tn.treenode_id,terminal_id)
-                #     * make the terminal pre/postsynaptic_to the synapse
-                #    new_class_instance_class_instance(terminal_relationship,terminal_id,synapse_id)
-                #     * make the pre/postsynaptic terminal a part_of the skeleton
-                #     * find the skeleton ID
-                #    skeleton_id = get_class_instance_from_treenode(tn.treenode_id,'element_of')
-                #    new_class_instance_class_instance('part_of',terminal_id,skeleton_id)
+                #  * for each of treenodes:
+                # for tn in treenodes:
+                #      * create a new pre/post synaptic terminal
+                #     terminal_relationship = side_string + "synaptic_to"
+                #      * make the treenode pre/postsynaptic_to the connector
+                #     new_treenode_connector(terminal_relationship, tn.treenode_id, connector_id)
+                #     terminal_class_name = side_string + "synaptic terminal"
+                #     terminal_id = self.new_class_instance(terminal_class_name, terminal_class_name)
+                #      * make the treenode a model_of the pre/postsynaptic terminal
+                #     new_treenode_class_instance('model_of',tn.treenode_id,terminal_id)
+                #      * make the terminal pre/postsynaptic_to the synapse
+                #     new_class_instance_class_instance(terminal_relationship,terminal_id,synapse_id)
+                #      * make the pre/postsynaptic terminal a part_of the skeleton
+                #      * find the skeleton ID
+                #     skeleton_id = get_class_instance_from_treenode(tn.treenode_id,'element_of')
+                #     new_class_instance_class_instance('part_of',terminal_id,skeleton_id)
 
     def add_connectors_recursively(self, pt, depth=0):
-      name_with_id = self.get_project_thing_name(pt)
-      pt_type = pt.getType()
-      prefix = " "*depth
-      log(f'{prefix} {pt} {name_with_id} :: {pt_type}')
-      if pt_type == "connector":
-          c = pt.getObject()
-          log(f'{prefix}#########################################')
-          log(f'{prefix}Got connector: {c} of type {type(c)}')
-          aff = None
-          try:
-              aff = c.getAffineTransform()
-          except AttributeError:
-              pass
-          if not aff:
-              log(f"Connector didn't have getAffineTransform(), probably the type is wrong: {type(c)}")
-          elif not c.root:
-              log("Connector had no origin node")
-          else:
-              connector_target_nodes = c.root.getChildrenNodes()
-              originNeuronId = self.connector_pre_neuron_map.get(name_with_id)
-              log(f"Origin neuron ID: {originNeuronId} Query ID: {name_with_id}")
-              originNode = ConnectorNode(self.node_to_coordinates(aff, c.root),
-                      c.root.getData() * self.res_x, self,
-                      SynapseSides.PRE, originNeuronId, c.getOrigins())
-              targetDisplayables = c.getTargets();
-              targetNodes = [ConnectorNode(self.node_to_coordinates(aff, x),
-                      x.getData() * self.res_x, self, SynapseSides.POST,
-                      # It is okay to use originNeuronId here,
-                      # because it is in fact correct for the XML hierarchy.
-                      originNeuronId, targetDisplayables[i])
-                      for i, x in enumerate(connector_target_nodes)]
-              log(f"{prefix}Got originNode: {originNode}")
-              for t in targetNodes:
-                  log(f"{prefix}Got targetNode: {t}")
-              self.add_synapse(name_with_id, c, [ originNode ], targetNodes)
-      else:
-          if pt_type in ("pnx", "osnx", "lnx", "nx"):
-              if self.name_filters and not any([x in name_with_id for x in self.name_filters]):
-                  log(f'{prefix}Ignoring {name_with_id}, because of no matching name filter')
-                  return
-          children = pt.getChildren()
-          if children:
-              for c in children:
-                  self.add_connectors_recursively(c, depth + 1)
+        name_with_id = self.get_project_thing_name(pt)
+        pt_type = pt.getType()
+        prefix = " "*depth
+        log(f'{prefix} {pt} {name_with_id} :: {pt_type}')
+        if pt_type == "connector":
+            c = pt.getObject()
+            log(f'{prefix}#########################################')
+            log(f'{prefix}Got connector: {c} of type {type(c)}')
+            aff = None
+            try:
+                aff = c.getAffineTransform()
+            except AttributeError:
+                pass
+            if not aff:
+                log(f"Connector didn't have getAffineTransform(), probably the type is wrong: {type(c)}")
+            elif not c.root:
+                log("Connector had no origin node")
+            else:
+                connector_target_nodes = c.root.getChildrenNodes()
+                originNeuronId = self.connector_pre_neuron_map.get(name_with_id)
+                log(f"Origin neuron ID: {originNeuronId} Query ID: {name_with_id}")
+                originNode = ConnectorNode(self.node_to_coordinates(aff, c.root),
+                        c.root.getData() * self.res_x, self,
+                        SynapseSides.PRE, originNeuronId, c.getOrigins())
+                targetDisplayables = c.getTargets()
+                targetNodes = [ConnectorNode(self.node_to_coordinates(aff, x),
+                        x.getData() * self.res_x, self, SynapseSides.POST,
+                        # It is okay to use originNeuronId here,
+                        # because it is in fact correct for the XML hierarchy.
+                        originNeuronId, targetDisplayables[i])
+                        for i, x in enumerate(connector_target_nodes)]
+                log(f"{prefix}Got originNode: {originNode}")
+                for t in targetNodes:
+                    log(f"{prefix}Got targetNode: {t}")
+                self.add_synapse(name_with_id, c, [ originNode ], targetNodes)
+        else:
+            if pt_type in ("pnx", "osnx", "lnx", "nx"):
+                if self.name_filters and not any([x in name_with_id for x in self.name_filters]):
+                    log(f'{prefix}Ignoring {name_with_id}, because of no matching name filter')
+                    return
+            children = pt.getChildren()
+            if children:
+                for c in children:
+                    self.add_connectors_recursively(c, depth + 1)
 
     def get_imported_neuron_under(self, displayables, x, y, z):
         if len(displayables) > 1:
@@ -829,7 +831,7 @@ class TrakEM2ToCATMAIDTransformer():
         return f'{o if type(o) == str else o.toString()} #{str(pt.getId())}'
 
     def node_to_coordinates(self, aff, nd):
-        #fp = self.ij.py.to_java([nd.x, nd.y], 'f')
+        # fp = self.ij.py.to_java([nd.x, nd.y], 'f')
         fp = [nd.x, nd.y]
         aff.transform(fp, 0, fp, 0, 1)
         x = fp[0] * self.pw
@@ -841,6 +843,9 @@ class TrakEM2ToCATMAIDTransformer():
         new_id = self.new_class_instance('neuron', name)
         log(f'insert neuron {new_id} name: {name}')
         return new_id
+
+    def delete_neuron(self, part_of_group_id):
+        self.delete_class_instance(part_of_group_id)
 
     def insert_skeleton(self, model_of_neuron_id, name):
         new_id = self.new_class_instance('skeleton', name)
@@ -871,7 +876,6 @@ class TrakEM2ToCATMAIDTransformer():
                     raise
             radius = -1
             log(f'Classes {nd.hashCode()} {TrakEM2.RadiusNode} {nd.getClass() == TrakEM2.RadiusNode}')
-            #import ipdb; ipdb.set_trace()
             if nd.getClass() == TrakEM2.RadiusNode:
                 radius = nd.getData()
             # In TrakEM2, 0 is "unset" as well as "radius 0" - in CATMAID,
@@ -988,13 +992,14 @@ class TrakEM2ToCATMAIDTransformer():
                 v = np.array(mesh.vertices)
                 f = np.array(mesh.faces)
                 vclean, fclean = _meshfix.clean_from_arrays(v, f, True, False, False)
-                #meshfix = pymeshfix.MeshFix(v, f)
-                #meshfix.repair(True, True, False)
+                meshfix = pymeshfix.MeshFix(v, f)
+                meshfix.repair(True, True, False)
                 log(f'Cleaned mesh using MeshFix, vertices/faces before {len(v)}/{len(f)}, after: {len(vclean)}/{len(fclean)}')
                 mesh = trimesh.Trimesh(vclean, fclean)
 
             if self.pygamer_mesh_repair:
                 log('Using PyGamer to repair defects in the generated mesh')
+                import pygamer
                 # TODO: Does't currently work due to a problem in pygamer
                 obj_str = export_obj(mesh)
                 with open('tmp.obj', 'w') as f:
@@ -1025,8 +1030,9 @@ class TrakEM2ToCATMAIDTransformer():
             # Use skeletor for skeletonization
             # Contract the mesh
             if self.skeletonization_method == SkeletonizationMethod.Skeletor:
+                # Optionally add umbrella operator: operator='umbrella')
                 cont = sk.contract(mesh, SL=40, WH0=1, iter_lim=20, epsilon=0.001,
-                        precision=1e-6, progress=True, validate=False)#, operator='umbrella')
+                        precision=1e-6, progress=True, validate=False)
                 post_contract_time = time.time()
                 log(f'Skeleton contract time: {str(post_contract_time - post_mesh_time)}s')
 
@@ -1048,10 +1054,12 @@ class TrakEM2ToCATMAIDTransformer():
 
 
                 # Extract the skeleton from the contracted mesh
-                swc = sk.skeletonize(cont, output='swc', method='edge_collapse')#,
-                        #shape_weight=0.5, sample_weight=0.05)
-                #swc = sk.skeletonize(cont, output='swc', method='vertex_clusters',
-                #        sampling_dist=self.skeleton_sampling_dist)
+                swc = sk.skeletonize(cont, output='swc', method='edge_collapse')
+                # Optionally with parameters:
+                #         shape_weight=0.5, sample_weight=0.05)
+                # Alternatively:
+                # swc = sk.skeletonize(cont, output='swc', method='vertex_clusters',
+                #         sampling_dist=self.skeleton_sampling_dist)
                 post_skeletonize_time = time.time()
                 log(f'Skeletonization time (sample dist: {self.skeleton_sampling_dist}): '
                         f'{str(post_skeletonize_time - post_contract_time)}s')
@@ -1091,7 +1099,7 @@ class TrakEM2ToCATMAIDTransformer():
                     log(str(stdout))
                     log(str(stderr))
                     with open(out_path) as f:
-                        lines = [list(map(lambda x: float(x), l.replace('\n', '').split(' '))) for l in f]
+                        lines = [list(map(lambda x: float(x), line.replace('\n', '').split(' '))) for line in f]
                     os.chdir(pwd)
                 finally:
                     os.remove(in_path)
@@ -1113,7 +1121,8 @@ class TrakEM2ToCATMAIDTransformer():
             if not self.only_largest_fragment:
                 max_healing_dist = self.skeleton_max_join_dist
                 nv_neuron = ns.TreeNeuron(swc, units='nm')
-                #nv_neuron.tags = {}
+                # To add tags:
+                # nv_neuron.tags = {}
                 n_roots = len(nv_neuron.root)
                 if n_roots > 1:
                     healed_neurons = ns.heal_fragmented_neuron(ns.NeuronList(nv_neuron),
@@ -1124,7 +1133,6 @@ class TrakEM2ToCATMAIDTransformer():
                             f'{max_healing_dist}. It had {n_roots} roots before and '
                             f'now has {len(healed_neurons.n_trees)}.')
 
-                    #import ipdb; ipdb.set_trace()
                     healed_neuron = healed_neurons[0]
                     n_roots_new = len(healed_neuron.root)
                     n_init_skeleton_nodes = len(swc)
@@ -1198,6 +1206,20 @@ class TrakEM2ToCATMAIDTransformer():
         new_id = cursor.fetchone()[0]
         return new_id
 
+    def delete_class_instance(self, obj_id):
+        cursor = connection.cursor()
+        cursor.execute("""
+            DELETE FROM class_instance
+            WHERE id = %(id)s
+            RETURNING id
+        """, {
+            'id': obj_id,
+        })
+        old_id = cursor.fetchone()
+        if obj_id:
+            obj_id = obj_id[0]
+        return old_id
+
     def new_class_instance_class_instance(self, relation_name, ci1, ci2):
         cursor = connection.cursor()
         cursor.execute("""
@@ -1216,30 +1238,30 @@ class TrakEM2ToCATMAIDTransformer():
         return new_id
 
     def insert_treenode(self, parent_id, x, y, z, radius, confidence, skeleton_id=None):
-      cursor = connection.cursor()
-      cursor.execute("""
-        INSERT INTO treenode (user_id, editor_id, project_id, parent_id,
-            location_x,location_y,location_z, radius, confidence, skeleton_id)
-        VALUES (%(user_id)s, %(editor_id)s, %(project_id)s, %(parent_id)s,
-            %(location_x)s, %(location_y)s, %(location_z)s,%(radius)s,
-            %(confidence)s, %(skeleton_id)s)
-        RETURNING id
-      """, {
-            'project_id': self.project_id,
-            'user_id': self.user_id,
-            'editor_id': self.user_id,
-            'parent_id': parent_id, # Can be None
-            'location_x': x,
-            'location_y': y,
-            'location_z': z,
-            'radius': radius,
-            'confidence': confidence,
-            'skeleton_id': skeleton_id,
-      })
-      #if skeleton_id:
-      #  new_treenode_class_instance('element_of',new_id,skeleton)
-      new_id = cursor.fetchone()[0]
-      return new_id
+        cursor = connection.cursor()
+        cursor.execute("""
+          INSERT INTO treenode (user_id, editor_id, project_id, parent_id,
+              location_x,location_y,location_z, radius, confidence, skeleton_id)
+          VALUES (%(user_id)s, %(editor_id)s, %(project_id)s, %(parent_id)s,
+              %(location_x)s, %(location_y)s, %(location_z)s,%(radius)s,
+              %(confidence)s, %(skeleton_id)s)
+          RETURNING id
+        """, {
+              'project_id': self.project_id,
+              'user_id': self.user_id,
+              'editor_id': self.user_id,
+              'parent_id': parent_id, # Can be None
+              'location_x': x,
+              'location_y': y,
+              'location_z': z,
+              'radius': radius,
+              'confidence': confidence,
+              'skeleton_id': skeleton_id,
+        })
+        # if skeleton_id:
+        #   new_treenode_class_instance('element_of',new_id,skeleton)
+        new_id = cursor.fetchone()[0]
+        return new_id
 
     def insert_connector_and_synapse(self, x, y, z):
         cursor = connection.cursor()
@@ -1320,7 +1342,6 @@ def render_trimesh(mesh):
 def neuron_to_swc(x):
     # Make copy of nodes and reorder such that the parent comes always before
     # its child(s)
-    #import ipdb; ipdb.set_trace()
     nodes_ordered = [n for seg in x.segments for n in seg[::-1]]
     this_tn = x.nodes.set_index('node_id', inplace=False).loc[nodes_ordered]
 
@@ -1349,12 +1370,12 @@ def neuron_to_swc(x):
         this_tn.loc[this_tn.type == 'branch', 'label'] = 5
         this_tn.loc[this_tn.type == 'end', 'label'] = 6
         # Add soma label
-        #if x.soma:
-        #    this_tn.loc[x.soma, 'label'] = 1
-        #if export_synapses:
-        #    # Add synapse label
-        #    this_tn.loc[x.presynapses.node_id.values, 'label'] = 7
-        #    this_tn.loc[x.postsynapses.node_id.values, 'label'] = 8
+        # if x.soma:
+        #     this_tn.loc[x.soma, 'label'] = 1
+        # if export_synapses:
+        #     # Add synapse label
+        #     this_tn.loc[x.presynapses.node_id.values, 'label'] = 7
+        #     this_tn.loc[x.postsynapses.node_id.values, 'label'] = 8
 
     # Generate table consisting of PointNo Label X Y Z Radius Parent
     # .copy() is to prevent pandas' chaining warnings

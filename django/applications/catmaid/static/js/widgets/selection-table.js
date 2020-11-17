@@ -33,6 +33,9 @@
     this.orderLocked = false;
     this.linkVisibilities = true;
 
+    // Basic functionality of this widget works with remote skeletons.
+    this.supportsRemoteSkeletons = true;
+
     // Listen to change events of the active node and skeletons
     SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
         this.selectActiveNode, this);
@@ -757,26 +760,33 @@
       skeleton_ids = orderedSkeletonIds;
     }
 
-    // Retrieve review status before doing anything else
-    var postData = {
-        skeleton_ids: skeleton_ids,
-        whitelist: this.review_filter === 'Team'};
-    if (this.review_filter === 'Self') postData.user_ids = [CATMAID.session.userid];
-    CATMAID.fetch(project.id + '/skeletons/review-status', 'POST', postData)
-      .then((function(json) {
-        var noReviewInfoSkeletonIds = skeleton_ids.filter(function(skid) {
-          return !this[skid];
-        }, json);
+    let modelCollections = CATMAID.API.getModelCollections(models, project.id);
+    let nameservices = modelCollections.map(mc => {
+      // Retrieve review status before doing anything else
+      var postData = {
+          skeleton_ids: mc.skeletonIds,
+          whitelist: this.review_filter === 'Team'};
+      if (this.review_filter === 'Self') {
+        postData.user_ids = [CATMAID.session.userid];
+      }
+      return CATMAID.fetch({
+          url: `${mc.projectId}/skeletons/review-status`,
+          method: 'POST',
+          data: postData,
+          api: mc.api,
+        })
+        .then(json => {
+          var noReviewInfoSkeletonIds = mc.skeletonIds.filter(function(skid) {
+            return !this[skid];
+          }, json);
 
-        var valid_skeletons = skeleton_ids;
+          var addedModels = {};
+          var updatedModels = {};
 
-        var addedModels = {};
-        var updatedModels = {};
-
-        valid_skeletons.forEach(function(skeleton_id) {
-          // Make sure existing widget settings are respected
-          var model = models[skeleton_id];
-          if (!forceProperties) {
+          mc.skeletonIds.forEach(function(skeleton_id) {
+            // Make sure existing widget settings are respected
+            var model = models[skeleton_id];
+            //if (!forceProperties) {
             model.meta_visible = this.all_items_visible['meta'];
             model.text_visible = this.all_items_visible['text'];
             model.pre_visible = this.all_items_visible['pre'];
@@ -786,47 +796,51 @@
               model.color.setStyle(this.batchColor);
               model.opacity = this.batchOpacity;
             }
+
+            if (skeleton_id in this.skeleton_ids) {
+              // Update skeleton
+              this.skeletons[this.skeleton_ids[skeleton_id]] = model;
+              updatedModels[skeleton_id] = model;
+              return;
+            }
+            this.skeletons.push(model);
+            var counts = json[skeleton_id] || [1, 0];
+            this.reviews[skeleton_id] = parseInt(Math.floor(100 * counts[1] / counts[0]));
+            this.skeleton_ids[skeleton_id] = this.skeletons.length -1;
+            addedModels[skeleton_id] = model;
+            // Force update of annotations as soon as they are used
+            this.annotationMapping = null;
+          }, this);
+
+          let nns = CATMAID.NeuronNameService.getInstance(mc.api).registerAll(this, mc.models);
+
+          if (!CATMAID.tools.isEmpty(addedModels)) {
+            this.triggerAdd(addedModels);
           }
 
-          if (skeleton_id in this.skeleton_ids) {
-            // Update skeleton
-            this.skeletons[this.skeleton_ids[skeleton_id]] = model;
-            updatedModels[skeleton_id] = model;
-            return;
+          if (!CATMAID.tools.isEmpty(updatedModels)) {
+            this.triggerChange(updatedModels);
           }
-          this.skeletons.push(model);
-          var counts = json[skeleton_id] || [1, 0];
-          this.reviews[skeleton_id] = parseInt(Math.floor(100 * counts[1] / counts[0]));
-          this.skeleton_ids[skeleton_id] = this.skeletons.length -1;
-          addedModels[skeleton_id] = model;
-          // Force update of annotations as soon as they are used
-          this.annotationMapping = null;
-        }, this);
 
-        // Add skeletons
-        CATMAID.NeuronNameService.getInstance().registerAll(this, models,
-            (function () {
-              // Make sure current sorting is applied
-              this.reapplyOrder();
-              this.gui.update();
-            }).bind(this));
+          // Notify user if not all skeletons are valid
+          if (0 !== noReviewInfoSkeletonIds.length) {
+            var msg = 'Could not find review summary for ' + noReviewInfoSkeletonIds.length +
+                ' skeletons: ' + noReviewInfoSkeletonIds.join(', ');
+            CATMAID.warn(msg);
+            console.log(msg);
+          }
 
-        if (!CATMAID.tools.isEmpty(addedModels)) {
-          this.triggerAdd(addedModels);
-        }
+          return nns;
+        });
+      });
 
-        if (!CATMAID.tools.isEmpty(updatedModels)) {
-          this.triggerChange(updatedModels);
-        }
-
-        // Notify user if not all skeletons are valid
-        if (0 !== noReviewInfoSkeletonIds.length) {
-          var msg = 'Could not find review summary for ' + noReviewInfoSkeletonIds.length +
-              ' skeletons: ' + noReviewInfoSkeletonIds.join(', ');
-          CATMAID.warn(msg);
-          console.log(msg);
-        }
-      }).bind(this));
+    Promise.all(nameservices)
+      .then(() => {
+        // Make sure current sorting is applied
+        this.reapplyOrder();
+        this.gui.update();
+      })
+    .catch(CATMAID.handleError);
   };
 
   /**
@@ -974,69 +988,86 @@
     var indices = this.skeleton_ids;
     var prev_skeleton_ids = Object.keys(models);
 
-    CATMAID.fetch(project.id + '/skeleton/neuronnames', 'POST',
-        {skids: Object.keys(models)})
-      .then(function(json) {
-        var o = {};
-        Object.keys(json).forEach(function(skid) {
-          o[indices[skid]] = skid;
-        });
+    self.skeletons = [];
+    self.skeleton_ids = {};
 
-        self.skeletons = [];
-        self.skeleton_ids = {};
+    let modelCollections = CATMAID.API.getModelCollections(models, project.id);
+    return Promise.all(modelCollections.map(mc => {
+      return CATMAID.fetch({
+          url: `${mc.projectId}/skeleton/neuronnames`,
+          method: 'POST',
+          data: {skids: mc.skeletonIds},
+          api: mc.api,
+        })
+        .then(function(json) {
+          var o = {};
+          Object.keys(json).forEach(function(skid) {
+            o[indices[skid]] = skid;
+          });
 
-        var updated_models = {};
-        Object.keys(o).map(Number).sort(function(a, b) { return a - b; }).forEach(function(index) {
-          var skid = o[index],
-              model = models[skid];
-          if (model.baseName !== json[skid]) {
-            model.baseName = json[skid];
-            updated_models[skid] = model;
+          var updated_models = {};
+          let addedModels = Object.keys(o).map(Number).sort(function(a, b) { return a - b; }).map(function(index) {
+            var skid = o[index],
+                model = models[skid];
+            if (model.baseName !== json[skid]) {
+              model.baseName = json[skid];
+              updated_models[skid] = model;
+            }
+            self.skeletons.push(models[skid]);
+            self.skeleton_ids[skid] = self.skeletons.length -1;
+
+            return models[skid];
+          });
+
+          // Let the user know, if there are now less skeletons than before.
+          var removedNeurons = prev_skeleton_ids.length - self.skeletons.length;
+          var removed_models;
+          if (removedNeurons > 0) {
+            removed_models = prev_skeleton_ids.reduce(function(o, skid) {
+              var s = models[skid]; if (s) { o[skid] = s; } return o;
+            }, {});
+            CATMAID.warn(removedNeurons + " neuron(s) were removed");
           }
-          self.skeletons.push(models[skid]);
-          self.skeleton_ids[skid] = self.skeletons.length -1;
+
+          // Retrieve review status, if there are any skeletons
+          if (addedModels.length > 0 ) {
+            var skeleton_ids = addedModels.map(m => m.skeletonId);
+            var postData = {
+                skeleton_ids: skeleton_ids,
+                whitelist: self.review_filter === 'Team'};
+            if (self.review_filter === 'Self') postData.user_ids = [CATMAID.session.userid];
+            return CATMAID.fetch({
+                url: `${mc.projectId}/skeletons/review-status`,
+                method: 'POST',
+                data: postData,
+                api: mc.api,
+              })
+              .then(function(json) {
+                // Update review information
+                skeleton_ids.forEach(function(skeleton_id) {
+                  var counts = json[skeleton_id];
+                  self.reviews[skeleton_id] = parseInt(Math.floor(100 * counts[1] / counts[0]));
+                }, this);
+                // Update user interface
+                self.gui.update();
+              });
+          } else {
+            // Update user interface
+            self.gui.update();
+          }
+
+          if (!CATMAID.tools.isEmpty(updated_models)) {
+            self.triggerChange(updated_models);
+          }
+
+          if (!CATMAID.tools.isEmpty(removed_models)) {
+            self.triggerRemove(removed_models);
+          }
+        })
+        .then(() => {
+          return CATMAID.NeuronNameService.getInstance(mc.api).registerAll(this, mc.models);
         });
-
-        // Let the user know, if there are now less skeletons than before.
-        var removedNeurons = prev_skeleton_ids.length - self.skeletons.length;
-        var removed_models;
-        if (removedNeurons > 0) {
-          removed_models = prev_skeleton_ids.reduce(function(o, skid) {
-            var s = models[skid]; if (s) { o[skid] = s; } return o;
-          }, {});
-          CATMAID.warn(removedNeurons + " neuron(s) were removed");
-        }
-
-        // Retrieve review status, if there are any skeletons
-        if (self.skeletons.length > 0 ) {
-          var skeleton_ids = Object.keys(self.skeleton_ids);
-          var postData = {
-              skeleton_ids: skeleton_ids,
-              whitelist: self.review_filter === 'Team'};
-          if (self.review_filter === 'Self') postData.user_ids = [CATMAID.session.userid];
-          CATMAID.fetch(project.id + '/skeletons/review-status', 'POST', postData)
-            .then(function(json) {
-              // Update review information
-              skeleton_ids.forEach(function(skeleton_id) {
-                var counts = json[skeleton_id];
-                self.reviews[skeleton_id] = parseInt(Math.floor(100 * counts[1] / counts[0]));
-              }, this);
-              // Update user interface
-              self.gui.update();
-            });
-        } else {
-          // Update user interface
-          self.gui.update();
-        }
-
-        if (!CATMAID.tools.isEmpty(updated_models)) {
-          self.triggerChange(updated_models);
-        }
-
-        if (!CATMAID.tools.isEmpty(removed_models)) {
-          self.triggerRemove(removed_models);
-        }
-      });
+      }));
   };
 
   SelectionTable.prototype.getSkeletonColor = function( id ) {
@@ -1286,13 +1317,13 @@
         {
           "type": "text",
           "render": {
-            "display": function(data, type, row, meta) {
-              var name = CATMAID.NeuronNameService.getInstance().getName(row.skeleton.id);
+            "display": (data, type, row, meta) => {
+              var name = CATMAID.NeuronNameService.getInstance(row.skeleton.api).getName(row.skeleton.id);
               return '<a href="#" class="neuron-selection-link action-select">' +
                 (name ? name : "undefined") + '</a>';
             },
             "_": function(data, type, row, meta) {
-              var name = CATMAID.NeuronNameService.getInstance().getName(row.skeleton.id);
+              var name = CATMAID.NeuronNameService.getInstance(row.skeleton.api).getName(row.skeleton.id);
               return name ? name : "undefined";
             }
           }
@@ -1445,25 +1476,30 @@
   SelectionTable.prototype._updateAnnotationMap = function(force) {
     var get;
     if (!this.annotationMapping || force) {
-      // Get all data that is needed for the fallback list
-      get = CATMAID.fetch(project.id + '/skeleton/annotationlist', 'POST', {
-            skeleton_ids: Object.keys(this.skeleton_ids),
-            metaannotations: 0,
-            neuronnames: 0,
-          })
-        .then((function(json) {
-          // Store mapping and update UI
-          this.annotationMapping = new Map();
-          for (var skeletonID in json.skeletons) {
-            // We know that we want to use this for filtering, so we can store
-            // the annotation names directly.
-            var annotations = json.skeletons[skeletonID].annotations.map(function(a) {
-              return json.annotations[a.id];
-            });
-            this.annotationMapping.set(parseInt(skeletonID, 10), annotations);
-          }
-          return this.annotationMapping;
-        }).bind(this));
+      let modelCollections = CATMAID.API.getModelCollections(models, project.id);
+
+      get = Promise.all(modelCollections.map(mc => {
+        // Get all data that is needed for the fallback list
+        return CATMAID.fetch(`${mc.projectId}/skeleton/annotationlist`, 'POST', {
+              skeleton_ids: mc.skeletonIds,
+              metaannotations: 0,
+              neuronnames: 0,
+              api: mc.api,
+            })
+          .then((function(json) {
+            // Store mapping and update UI
+            this.annotationMapping = new Map();
+            for (var skeletonID in json.skeletons) {
+              // We know that we want to use this for filtering, so we can store
+              // the annotation names directly.
+              var annotations = json.skeletons[skeletonID].annotations.map(function(a) {
+                return json.annotations[a.id];
+              });
+              this.annotationMapping.set(parseInt(skeletonID, 10), annotations);
+            }
+            return this.annotationMapping;
+          }).bind(this));
+      }));
     } else {
       get = Promise.resolve(this.annotationMapping);
     }

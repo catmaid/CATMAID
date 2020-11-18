@@ -351,7 +351,6 @@
               result.parent_id);
           // Emit deletion event, if the last node was removed and the neuron
           // deleted. Otherwise, trigger a change event for the neuron.
-          var neuron_id = null;
           if (result.deleted_neuron) {
             CATMAID.Skeletons.trigger(CATMAID.Skeletons.EVENT_SKELETON_DELETED,
                 result.skeleton_id);
@@ -865,7 +864,6 @@
         create = CATMAID.Nodes.create(undoState, projectId, x, y, z,
             mParentId, radius, confidence, undefined, undefined, mLinks, api);
       } else {
-        var parentEditionTime = "";
         var undoState = new CATMAID.LocalState([mParentId, mParentEditTime], undefined,
             mChildren.map(function(c) { return [c.value, c.timestamp]; }), links);
         var mPrimaryChildId = mChildren[0].value;

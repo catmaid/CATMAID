@@ -76,32 +76,6 @@ django/applications/catmaid/static/js/ui.js: line 19, col 9, 'altKeyDown' is def
 django/applications/catmaid/static/js/ui.js: line 24, col 9, 'x' is defined but never used.
 django/applications/catmaid/static/js/ui.js: line 25, col 9, 'y' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 744, col 11, 'name' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 877, col 13, 'skeletonData' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 1062, col 21, 'names' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 1729, col 9, 'source1' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 1729, col 18, 'source2' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 2626, col 13, 'initPromise' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 2882, col 11, 'color' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 3952, col 11, 'tileVertices' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 3967, col 15, 'ul' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 3970, col 15, 'll' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 3973, col 15, 'lr' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 3976, col 15, 'ur' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 4155, col 15, 'name' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 5592, col 11, 'projector' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 6092, col 9, 'intersectionFound' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 7391, col 13, 'fnMakeColorFromRange' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 7813, col 9, 'history' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 8812, col 21, 'start' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 9036, col 13, 'visType' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 9039, col 13, 'visOpts' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 9087, col 13, 'now' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 9342, col 11, 'historyVisibility' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 9384, col 11, 'visMap' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 9759, col 11, 'rows' is defined but never used.
-django/applications/catmaid/static/js/widgets/3dviewer.js: line 11, col 1, 'SkeletonRegistry' is defined but never used.
-
 django/applications/catmaid/static/js/widgets/analyze_arbor.js: line 586, col 9, 'pie_cable' is defined but never used.
 django/applications/catmaid/static/js/widgets/analyze_arbor.js: line 587, col 9, 'pie_inputs' is defined but never used.
 django/applications/catmaid/static/js/widgets/analyze_arbor.js: line 588, col 9, 'pie_outputs' is defined but never used.
@@ -333,4 +307,4 @@ django/applications/catmaid/static/libs/catmaid/time-series.js: line 19, col 12,
 django/applications/catmaid/static/libs/catmaid/volumes.js: line 613, col 9, 'abs' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/volumes.js: line 805, col 15, 'dSimplicesT' is defined but never used.
 
-267 errors
+242 errors

@@ -5,7 +5,6 @@
   InstanceRegistry,
   project,
   SkeletonAnnotations,
-  SkeletonRegistry,
   SynapseClustering,
   WindowMaker
  */
@@ -747,7 +746,6 @@
 
   WebGLApplication.prototype.exportSkeletonsAsCSV = function() {
     var sks = this.space.content.skeletons,
-        getName = CATMAID.NeuronNameService.getInstance().getName,
         header = "skeleton_id, treenode_id, parent_treenode_id, x, y, z, r\n",
         exporter = CATMAID.FileExporter.export(header, "skeleton_coordinates.csv", 'text/csv');
     Object.keys(sks).forEach(function(skid) {
@@ -755,8 +753,7 @@
       if (!sk.visible) return;
       var vs = sk.getPositions(),
           arbor = sk.createArbor(),
-          edges = arbor.edges,
-          name = getName(skid);
+          edges = arbor.edges;
       edges[arbor.root] = ''; // rather than null
       Object.keys(vs).forEach(function(tnid) {
         var v = vs[tnid];
@@ -889,7 +886,6 @@
         let mesh = skeleton.actor['neurite'];
         let material = mesh.material;
 
-        let skeletonData;
         if (asLines) {
           scene.add(mesh);
           meshesToReAdd.push(mesh);
@@ -1074,7 +1070,7 @@
               function() {
                 let nameExporter = CATMAID.FileExporter.export('"Skeleton ID", "Neuron name"\n',
                     "neuron_name_vs_skeleton_id.csv", 'text/csv');
-                var names = Object.keys(unique).forEach(function(skid) {
+                Object.keys(unique).forEach(function(skid) {
                   nameExporter.write(`${skid}, ${nns.getName(skid)}\n`);
                 });
                 nameExporter.save();
@@ -1741,8 +1737,6 @@
    * allowed.
    */
   WebGLApplication.makeGroupShareConnectorFilter = function(callback) {
-    var source1, source2;
-
     // Add skeleton source message and controls
     var dialog = new CATMAID.OptionsDialog('Select groups');
 
@@ -2638,7 +2632,7 @@
       for (let i=0, imax=landmarkTransform.skeletons.length; i<imax; ++i) {
         let skeletonModel = landmarkTransform.skeletons[i];
         // Create transformed skeleton mesh and add it to scene
-        let initPromise = landmarkTransform.nodeProvider.get(skeletonModel.id)
+        landmarkTransform.nodeProvider.get(skeletonModel.id)
           .then((function(json) {
             let transform = this.loadedLandmarkTransforms[landmarkTransformId];
 
@@ -2894,7 +2888,6 @@
     }
 
     if (visible) {
-      var color = this.options.meshes_boundingbox_color;
       if (!landmarkGroup.boundingBoxMeshes) {
         landmarkGroup.boundingBoxMeshes = [];
       }
@@ -3966,7 +3959,6 @@
 
       // This will become the z plane.
       geometry = new THREE.PlaneGeometry(tilePlaneWidth, tilePlaneHeight, nHTiles, nVTiles);
-      var tileVertices = new Array(4);
       for (var r=0; r<nVTiles; ++r) {
         for (var c=0; c<nHTiles; ++c) {
           var tileIndex = r * nHTiles + c;
@@ -3981,16 +3973,20 @@
           // Move vertices to actual positions and clamp last row as well as
           // last column to stack bounds.
           var vertices = geometry.vertices;
-          var ul = vertices[face1.a].copy(planeVertices[0])
+          // ul
+          vertices[face1.a].copy(planeVertices[0])
               .addScaledVector(hTileStep, c)
               .addScaledVector(vTileStep,  -r);
-          var ll = vertices[face1.b].copy(planeVertices[0])
+          // ll
+          vertices[face1.b].copy(planeVertices[0])
               .addScaledVector(hTileStep, c)
               .addScaledVector(vTileStep, -r - vTileFrac);
-          var lr = vertices[face2.b].copy(planeVertices[0])
+          // lr
+          vertices[face2.b].copy(planeVertices[0])
               .addScaledVector(hTileStep, c + hTileFrac)
               .addScaledVector(vTileStep, -r - vTileFrac);
-          var ur = vertices[face2.c].copy(planeVertices[0])
+          // ur
+          vertices[face2.c].copy(planeVertices[0])
               .addScaledVector(hTileStep, c + hTileFrac)
               .addScaledVector(vTileStep, -r);
 
@@ -4169,7 +4165,7 @@
     let p = stack.createStackToProjectBox(stack.createStackExtentsBox());
 
     // Find reference stack position, add set location of current layer.
-    for (let [name, details] of this.orthoPlanes.entries()) {
+    for (let details of this.orthoPlanes.values()) {
       let planeCenter = {
         x: p.min.x + (p.max.x - p.min.x) * (1.0 - details.coverage.x) * 0.5,
         y: p.min.y + (p.max.y - p.min.y) * (1.0 - details.coverage.y) * 0.5,
@@ -5612,8 +5608,7 @@
     this.MouseDown = function(ev) {
       var mouse = this.CATMAID_view.mouse,
           space = this.CATMAID_view.space,
-          camera = this.CATMAID_view.camera,
-          projector = this.CATMAID_view.projector;
+          camera = this.CATMAID_view.camera;
       if (!space.options.lock_view) {
         mouse.is_mouse_down = true;
       }
@@ -6113,7 +6108,7 @@
 
     // Iterate over all objects and find the ones that are intersected
     var intersection = null;
-    var intersectionFound = objects.some(function(object) {
+    objects.some(function(object) {
       if (!object.visible) return false;
       intersection = intersect([object], x, y, step, increments, raycaster, setupRay);
       return intersection !== null;
@@ -7384,19 +7379,16 @@
         this._colorConnectorsBy(type, fnConnectorValue, fnMakeColor);
       }, this);
     } else if ('global-polyadicity' === options.connector_color) {
-      var range = function(ratio) {
-        return 0.66 + 0.34 * ratio; // 0.66 (blue) to 1 (red)
-      };
-
       // Iterate over all supported synapse types
       this.CTYPES.slice(1).forEach(function(type) {
         if (!json) return;
         let polyadicities = json[type];
         if (!polyadicities) return;
 
-        let max = Object.keys(polyadicities).reduce(function(m, connectorId) {
-              return Math.max(m, polyadicities[connectorId]);
-            }, 0);
+        // The maximum polyadicity
+        // let max = Object.keys(polyadicities).reduce(function(m, connectorId) {
+        //   return Math.max(m, polyadicities[connectorId]);
+        // }, 0);
         let maxColorIndex = Object.keys(options.polyadicity_colors).reduce((m, idx) => {
           let iidx = parseInt(idx, 10);
           return iidx > m ? iidx : m;
@@ -7410,10 +7402,6 @@
           var value = polyadicities[connectorId];
           if (!value) value = 0; // connector without partner skeleton
           return value;
-        };
-
-        var fnMakeColorFromRange = function(value) {
-          return new THREE.Color().setHSL(1 === max ? range(0) : range((value -1) / (max -1)), 1, 0.5);
         };
 
         var fnMakeColor = function(value) {
@@ -7834,7 +7822,6 @@
     var nodes = json[0];
     var connectors = json[1];
     var tags = json[2];
-    var history;
     var silent = false;
 
     // For section interpolation, the JSON data is updated so that the
@@ -8833,7 +8820,7 @@
    * Render loop for the given animation.
    */
   WebGLApplication.prototype.renderAnimation = (function() {
-    let delta, now, start, then = Date.now();
+    let delta, now, then = Date.now();
     return function(animation, t, singleFrame, options, state={}) {
       let interval = 1000 / this.options.animation_fps;
 
@@ -9057,10 +9044,9 @@
         // mode to 'history'. This makes skeletons appear with the creation time
         // of their oldest node. Individual nodes and edges of the
         // representation may also be hidden by a location on a time line.
-        var visType = 'history';
+
         // Create notify handler
         var visMap = this.space.getVisibilityMap();
-        var visOpts = this.options.animation_stepwise_visibility_options;
 
         var widget = this;
         let isDone = false;
@@ -9108,7 +9094,6 @@
         let lean = this.options.lean_mode;
         // Get historic data of current skeletons. Create a map of events, Which
         // are consumed if their time is ready.
-        var now = new Date();
         var include_merges = this.options.animation_history_include_merges;
 
         fetchSkeletons.call(this,
@@ -9363,7 +9348,6 @@
 
     historyField.onchange = function() {
       let rotationVisibility = this.checked ? 'none' : 'block';
-      let historyVisibility = this.checked ? 'block' : 'none';
       rotationsField.field.parentNode.style.display = rotationVisibility;
       rotationtimeField.parentNode.style.display = rotationVisibility;
       backforthField.parentNode.style.display = rotationVisibility;
@@ -9403,9 +9387,6 @@
       }).bind(this));
 
       var originalCameraView = this.space.view.getView();
-
-      // Get current visibility
-      var visMap = this.space.getVisibilityMap();
 
       createAnimation.call(this);
 
@@ -9780,7 +9761,6 @@
         origin = new THREE.Vector3d(p.x, p.y, p.z);
       }
 
-      var rows = [];
       var exporter = CATMAID.FileExporter.export('"Skeleton ID", "Name", "Count"\n',
           'catmaid-object-count.csv', 'text/csv');
 

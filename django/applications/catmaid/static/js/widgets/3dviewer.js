@@ -336,17 +336,23 @@
    * new dimensions,execute the given function and return to the original
    * dimension afterwards.
    */
-  WebGLApplication.prototype.askForDimensions = function(title, defaultFileName, fn, block) {
+  WebGLApplication.prototype.askForDimensions = function(title, defaultFileName,
+      askForTransparency, fn, block) {
     if (!defaultFileName) {
       defaultFileName = "catmaid-3d-viewer.png";
     }
     var dialog = new CATMAID.OptionsDialog(title);
-    dialog.appendMessage("Please adjust the dimensions to your liking. They " +
-        "default to the current size of the 3D viewer");
+    if (askForTransparency) {
+      dialog.appendMessage("You can adjust the size and the background transparency before the export is generated.");
+    } else {
+      dialog.appendMessage("You can adjust the size the export is generated.");
+    }
     var imageWidthField = dialog.appendField("Image width (px): ",
         "image-width", this.space.canvasWidth);
     var imageHeightField = dialog.appendField("Image height (px): ",
         "image-height", this.space.canvasHeight);
+    var backgroundTransparency = askForTransparency ?
+        dialog.appendCheckbox("Transparent background", 'background-transparency', true) : null;
     var fileNameField = dialog.appendField("File name: ",
         "filename", defaultFileName);
 
@@ -356,10 +362,11 @@
     function handleOK() {
       /* jshint validthis: true */ // `this` is bound to this WebGLApplication
       if (block) {
-        $.blockUI({message: '<img src="' + CATMAID.staticURL +
-            'images/busy.gif" /> <span>Please wait</span>'});
+        $.blockUI({message: `<img src="${CATMAID.makeStaticURL('images/busy.gif')}" /> <span>Please wait</span>`});
       }
 
+      let clearColor = this.space.view.renderer.getClearColor();
+      let transparentBackground = false;
       var originalWidth, originalHeight;
       try {
         var width = parseInt(imageWidthField.value);
@@ -368,6 +375,11 @@
 
         if (!width || !height) {
           throw new CATMAID.ValueError("Please use valid width and height values");
+        }
+
+        transparentBackground = askForTransparency && backgroundTransparency.checked;
+        if (transparentBackground) {
+          this.space.view.renderer.setClearColor(this.options.background_color, 0);
         }
 
         // Save current dimensions and set new ones, if available
@@ -387,6 +399,9 @@
 
       // Restore original dimensions
       if (originalWidth && originalHeight) {
+        if (transparentBackground) {
+          this.space.view.renderer.setClearColor(clearColor, 1);
+        }
         this.resizeView(originalWidth, originalHeight);
       }
 
@@ -401,7 +416,7 @@
    * Store the current view as PNG image.
    */
   WebGLApplication.prototype.exportPNG = function() {
-    this.askForDimensions("PNG export", "catmaid-3d-viewer.png", (function(fileName) {
+    this.askForDimensions("PNG export", "catmaid-3d-viewer.png", true, (function(fileName) {
       try {
         /* jshint validthis: true */ // `this` is bound to this WebGLApplication
         var imageData = this.space.view.getImageData();
@@ -422,7 +437,7 @@
     if (this.options.triangulated_lines) {
       CATMAID.warn('Volumetric lines (View settings) need to be disabled for the SVG export to work. Try switching them off for the export.');
     }
-    this.askForDimensions("SVG export", "catmid-3d-viewer.svg", (function(fileName) {
+    this.askForDimensions("SVG export", "catmid-3d-viewer.svg", false, (function(fileName) {
       $.blockUI({message: '<img src="' + CATMAID.staticURL +
           'images/busy.gif" /> <span id="block-export-svg">Please wait</span>'});
       var label = $('#block-export-svg');
@@ -4696,6 +4711,8 @@
         antialias: true,
         logarithmicDepthBuffer: this.logDepthBuffer,
         checkShaderErrors: true,
+        preserveDrawingBuffer: true,
+        alpha: true,
       });
       // Set pixel ratio, needed for HiDPI displays, if enabled
       if (this.space.options.use_native_resolution) {

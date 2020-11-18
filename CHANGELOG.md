@@ -163,6 +163,9 @@ Graph widget:
   scaling factor can be adjusted in the Shading parameters tab. This is mainly
   useful for visualization.
 
+- The PNG export dialog allows now to select whether the background should be
+  transparent.
+
 Skeleton history widget:
 
 - Skeletons to query can now also be appened through the common skeleton source
@@ -359,6 +362,8 @@ Miscellaneous:
   now also location triplets that are delimited by space or tabs.
 
 ### Bug fixes
+
+- 3D viewer: PNG exports can now be transparent again.
 
 - 3D viewer: the default settings for orthographic mode and control lock are no
   correct (i.e. in accordance with what has been saved as default).

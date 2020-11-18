@@ -3201,6 +3201,8 @@
 
     this.axesScene = new THREE.Scene();
     this.axesScene.add(axisHelper);
+
+    this.updateScaleBar();
   };
 
   WebGLApplication.prototype.Space.prototype = {};
@@ -4612,6 +4614,9 @@
     // Create controls after the renderer's DOM element has been added, so they
     // are initialized with the correct dimensions right from the start.
     this.controls = this.createControls();
+
+    // Make sure camera is in correct mode.
+    this.setCameraMode(this.space.options.camera_view === 'orthographic');
   };
 
   var renderContextLost = function(e) {

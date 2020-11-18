@@ -2284,7 +2284,11 @@
       };
       let activeStackViewer = this.getActiveStackViewer();
       let i = 0;
-      let sortedRemoteProjects = Array.from(this.remoteTracingProjcts.keys()).sort(CATMAID.tools.compareStrings);
+      let sortedRemoteProjects = Array.from(this.remoteTracingProjcts.keys()).sort((a, b) => {
+        if (a === CATMAID.Remote.Settings.session.local_server_name) return -1;
+        if (b === CATMAID.Remote.Settings.session.local_server_name) return 1;
+        return CATMAID.tools.compareStrings(a, b);
+      });
       for (let key of sortedRemoteProjects) {
         let entry = this.remoteTracingProjcts.get(key);
         if (entry && entry.projects.length > 0) {

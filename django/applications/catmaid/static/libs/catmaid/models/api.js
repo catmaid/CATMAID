@@ -22,6 +22,7 @@
       this.httpAuthPass = httpAuthPass;
       this.dataSourceId = undefined;
       this.type = apiType || 'catmaid';
+      this.isLocal = !url;
     }
   }
 
@@ -29,13 +30,21 @@
    * Information on local environment.
    */
   API.LocalAPI = Object.freeze({
-    name: 'Local CATMAID',
+    name: 'This server',
     url: '',
     apiKey: undefined,
     httpAuthUser: undefined,
     httpAuthPass: undefined,
     dataSourceId: undefined,
   });
+
+  /**
+   * Get the most simple API there is. It doesn't contain any particular
+   * parameters and is treated as the local CATMAID instance.
+   */
+  API.getLocalAPI = function(name = "This CATMAID") {
+    return new API(name);
+  };
 
   /**
    * Create a new API object based on a Client class setting. It is expected to
@@ -111,6 +120,9 @@
    * definition.
    */
   API.linkDataSource = function(projectId, queryApi, queryProjectId) {
+    if (queryApi.isLocal) {
+      return Promise.resolve(true);
+    }
     return CATMAID.fetch(`${projectId}/origins/`)
       .then(datasources => {
         let normalizeUrl = /^(\w+:\/\/)?(.*)/;

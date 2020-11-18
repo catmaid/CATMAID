@@ -663,7 +663,9 @@ Tracing tool:
 
 - Tracing data from other CATMAID instances (or other local projects) can now be
   added to the active stack viewer by selecting the respective remote project
-  from the "More tools" menu item "Remote data".
+  from the "More tools" menu item "Remote data". Without any remote server added
+  through the Settings Widget, the current CATMAID instance will be available
+  from this menu as "This server".
 
 - To open a remote CATMAID instance at the same location as the current view,
   find the remote project in the "Remote data" section of the "More tools" menu,

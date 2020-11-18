@@ -2206,7 +2206,21 @@
    */
   TracingTool.prototype.updateRemoteTracingInfo = function() {
     this.remoteTracingProjcts.clear();
-    let work = [];
+
+    let work = [
+        CATMAID.Project.list(true, true, false)
+          .then(projects => {
+            this.remoteTracingProjcts.set('This server', {
+              api: CATMAID.API.getLocalAPI(),
+              name: CATMAID.Remote.Settings.session.local_server_name,
+              projects: projects,
+            });
+          })
+          .catch(e => {
+            CATMAID.warn(e.message);
+          })
+    ];
+
     for (let ri of CATMAID.Client.Settings.session.remote_servers) {
       try {
         let api = CATMAID.Remote.getAPI(ri.name);

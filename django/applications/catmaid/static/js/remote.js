@@ -259,6 +259,12 @@
    * returned.
    */
   Remote.getAPI = function(remoteHandle) {
+    // First, check if the local server is referenced and return it if that's
+    // the case.
+    if (remoteHandle === CATMAID.Remote.Settings.session.local_server_name) {
+      return CATMAID.API.getLocalAPI(remoteHandle);
+    }
+
     let remoteConfigs = CATMAID.Client.Settings.session.remote_servers;
     if (!remoteConfigs) {
       CATMAID.warn("No configured remote instances found");
@@ -572,6 +578,17 @@
     return Promise.reject(new CATMAID.ValueError("Can't find new active node ID after import"));
   };
 
+  Remote.Settings = new CATMAID.Settings(
+      'remote',
+    {
+      version: 0,
+      entries: {
+        local_server_name: {
+          default: 'This server'
+        },
+      },
+      migrations: {}
+    });
 
   // Export into CATMAID namespace.
   CATMAID.Remote = Remote;

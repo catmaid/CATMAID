@@ -492,8 +492,8 @@ var WindowMaker = new function()
           [vrGroup],
           [connectorRestrictions],
           ['Refresh active skeleton', function() { WA.updateActiveSkeleton(); }],
-          ['Orthographic mode', false, function() { WA.updateCameraView(this.checked); }, false],
-          ['Lock view', false, function() { WA.options.lock_view = this.checked;  }, false],
+          ['Orthographic mode', o.camera_view === 'orthographic', function() { WA.updateCameraView(this.checked); }, false],
+          ['Lock view', o.lock_view, function() { WA.options.lock_view = this.checked;  }, false],
         ]);
 
     // Wait for the 3D viewer to have initialized to get existing views

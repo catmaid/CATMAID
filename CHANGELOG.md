@@ -360,6 +360,9 @@ Miscellaneous:
 
 ### Bug fixes
 
+- 3D viewer: the default settings for orthographic mode and control lock are no
+  correct (i.e. in accordance with what has been saved as default).
+
 - Volume lists (drop down menus) are now automatically refreshed if a volume is
   added, updated or removed.
 

@@ -294,7 +294,7 @@
     };
 
     let swcReadApi = extendedInfo ? CATMAID.Skeletons.getESWC : CATMAID.Skeletons.getSWC;
-    let swcWriteApit = extendedInfo ? CATMAID.Skeletons.importESWC : CATMAID.Skeletons.importSWC;
+    let swcWriteApi = extendedInfo ? CATMAID.Skeletons.importESWC : CATMAID.Skeletons.importSWC;
 
     // Get SWC for each skeleton ID
     return swcReadApi(sourceProjectId, skeletonIds, false, true, options.api)
@@ -306,8 +306,8 @@
               throw new CATMAID.ValueError(`Could not find ${extendedInfo ? 'e' : ''}SWC data for remote skeleton ${skeletonId}`);
             }
             let meta = getMeta(skeletonId);
-            let sourceUrl = options.api ? options.api.url : undefined;
-            return swcWriteApit(targetProjectId, data, meta.name,
+            let sourceUrl = (options.api ? options.api.url : null) || CATMAID.getAbsoluteURL();
+            return swcWriteApi(targetProjectId, data, meta.name,
                 meta.annotations, sourceUrl, skeletonId, sourceProjectId);
           });
         return Promise.all(importPromises);

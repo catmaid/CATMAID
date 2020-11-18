@@ -2231,4 +2231,8 @@ var project;
     return CATMAID.hasPermission(project.getId(), p);
   }
 
+  CATMAID.getAbsoluteURL = function() {
+    return CATMAID.tools.urlJoin(window.location.origin, CATMAID.makeURL('/'));
+  };
+
 })(CATMAID);

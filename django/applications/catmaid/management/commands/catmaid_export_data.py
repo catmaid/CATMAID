@@ -687,6 +687,15 @@ class Exporter():
                 # links to get only the used tags.
                 tags = set(t.class_instance for t in tag_links)
 
+                tag_filter_params = {
+                    'project': self.project,
+                    'class_instance__class_column': classes['label'],
+                    'relation_id': relations['labeled_as'],
+                }
+
+                tag_links_connectors = ConnectorClassInstance.objects.select_related('class_instance') \
+                        .filter(**tag_filter_params)
+
             if tags:
                 tag_names = sorted(set(t.name for t in tags))
                 if self.allowed_tags is None:
@@ -697,9 +706,9 @@ class Exporter():
 
                 self.to_serialize.append(tags)
                 self.to_serialize.append(tag_links)
+                self.to_serialize.append(tag_links_connectors)
             else:
-                logger.info(f"Exporting {len(tags)} tags and {tag_links.count()} tag links")
-
+                logger.info(f"Exporting {len(tags)} tags and {tag_links.count()} (skeleton) and {tag_links_connectors.count()} (connector) tag links")
 
             # TODO: Export reviews
         else:
@@ -733,8 +742,18 @@ class Exporter():
                 if exclude_skeleton_id_constraints:
                     tag_links = tag_links.exclude(skeleton_id=exclude_skeleton_id_constraints)
 
+                tag_filter_params = {
+                    'project': self.project,
+                    'class_instance__class_column': classes['label'],
+                    'relation_id': relations['labeled_as'],
+                }
+
+                tag_links_connectors = ConnectorClassInstance.objects.select_related('class_instance') \
+                        .filter(**tag_filter_params)
+
                 self.to_serialize.append(tags)
                 self.to_serialize.append(tag_links)
+                self.to_serialize.append(tag_links_connectors)
 
             # Export all annotations
             if self.export_annotations:

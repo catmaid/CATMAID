@@ -179,10 +179,6 @@ django/applications/catmaid/static/js/widgets/landmark-widget.js: line 3579, col
 django/applications/catmaid/static/js/widgets/landmark-widget.js: line 3617, col 13, 'mirrorAxisSetting' is defined but never used.
 django/applications/catmaid/static/js/widgets/landmark-widget.js: line 990, col 12, 'getId' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/measurements-table.js: line 426, col 9, 'n_labels' is defined but never used.
-django/applications/catmaid/static/js/widgets/measurements-table.js: line 515, col 9, 'nns' is defined but never used.
-django/applications/catmaid/static/js/widgets/measurements-table.js: line 539, col 9, 'nns' is defined but never used.
-
 django/applications/catmaid/static/js/widgets/menu.js: line 130, col 7, 'self' is defined but never used.
 
 django/applications/catmaid/static/js/widgets/morphology-plot.js: line 559, col 15, 'centerNodeId' is defined but never used.
@@ -340,4 +336,4 @@ django/applications/catmaid/static/libs/catmaid/time-series.js: line 19, col 12,
 django/applications/catmaid/static/libs/catmaid/volumes.js: line 613, col 9, 'abs' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/volumes.js: line 805, col 15, 'dSimplicesT' is defined but never used.
 
-272 errors
+269 errors

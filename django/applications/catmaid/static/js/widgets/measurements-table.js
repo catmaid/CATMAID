@@ -437,7 +437,6 @@
 
     let nodeFiltersInUse = this.applyFilterRules && this.filterRules.length > 0;
     let labels = this.getLabels(true);
-    var n_labels = labels.length;
     let self = this;
 
     this.table = $('table#skeleton_measurements_table' + this.widgetID).DataTable({
@@ -528,7 +527,6 @@
 
     var skeletonRows = [];
     let table = this.table;
-    let nns = CATMAID.NeuronNameService.getInstance();
     this.table.rows({search: 'applied'}).every(function (rowIdx) {
       skeletonRows.push(table.cells(this.node(), ':visible').data().toArray());
     });
@@ -552,7 +550,6 @@
   SkeletonMeasurementsTable.prototype.exportXLSX = function() {
     var data = [];
     let table = this.table;
-    let nns = CATMAID.NeuronNameService.getInstance();
     this.table.rows({search: 'applied'}).every(function (rowIdx) {
       data.push(table.cells(this.node(), ':visible').data().toArray());
     });

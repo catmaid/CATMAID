@@ -322,7 +322,6 @@
       skeletonIds, annotations, entityMap, callback, previewOptions = {}) {
     let plural = skeletonIds.length > 0 ? 's' : '';
     let title = `Please confirm the import of the following skeleton${plural}`;
-    let self = this;
     return new Promise((resolve, reject) => {
       CATMAID.Remote.previewSkeletons(sourceProjectId, skeletonIds, {
         api: api,
@@ -364,7 +363,6 @@
       skeletonId, losingLocation, annotations, entityMap, winningProjectId,
       winningSkeletonId, winningNodeId, winningOverlay) {
     let title = `Please confirm the import and subsequent merge of skeleton ${skeletonId} from remote instance ${api.name}`;
-    let self = this;
     return new Promise((resolve, reject) => {
       let options = {
         api: api,
@@ -472,7 +470,7 @@
               winningSkeletonId, winningNodeId, winningApi, winningOverlay, options);
         }
       })
-      .catch(CATMAID.handleError);  
+      .catch(CATMAID.handleError);
   };
 
   /**
@@ -497,7 +495,7 @@
         // Find new node ID and skeleton ID after import and merge it into the
         // winning node.
         let newLosingNodeId = result.node_id_map[losingNodeId];
-        let newLosingSkeletonId = result.skeleton_id;
+        // let newLosingSkeletonId = result.skeleton_id;
 
         // This merge will happen only on the winning API side. To reuse the
         // existing logic, we defer to the tracing overlay for the actual merge.

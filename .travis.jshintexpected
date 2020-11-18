@@ -37,10 +37,6 @@ django/applications/catmaid/static/js/layout.js: line 542, col 12, 'layout' is d
 django/applications/catmaid/static/js/network-api.js: line 395, col 9, 'q' is defined but never used.
 django/applications/catmaid/static/js/network-api.js: line 49, col 5, 'CM' is defined but never used.
 
-django/applications/catmaid/static/js/remote.js: line 325, col 9, 'self' is defined but never used.
-django/applications/catmaid/static/js/remote.js: line 367, col 9, 'self' is defined but never used.
-django/applications/catmaid/static/js/remote.js: line 500, col 13, 'newLosingSkeletonId' is defined but never used.
-
 django/applications/catmaid/static/js/tests/test-command-history.js: line 65, col 9, 'resultDo' is defined but never used.
 django/applications/catmaid/static/js/tests/test-command-history.js: line 23, col 7, 'noop1' is defined but never used.
 
@@ -344,4 +340,4 @@ django/applications/catmaid/static/libs/catmaid/time-series.js: line 19, col 12,
 django/applications/catmaid/static/libs/catmaid/volumes.js: line 613, col 9, 'abs' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/volumes.js: line 805, col 15, 'dSimplicesT' is defined but never used.
 
-275 errors
+272 errors

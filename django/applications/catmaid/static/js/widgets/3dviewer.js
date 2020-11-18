@@ -5482,13 +5482,15 @@
       // And cancel the location update if we are closer than ten units
       // (arbitary close distance).
       if (camTargetDistance - absUpdateDistance < 10) {
-        return;
+        return change;
       }
     }
 
     // Scale change vector into usable range
     change.normalize().multiplyScalar(distance);
     camera.position.add(change);
+
+    return change;
   };
 
   /** Construct mouse controls as objects, so that no context is retained. */
@@ -5532,7 +5534,7 @@
         var distance = absUpdateDistance * dirFactor;
         var controls = this.CATMAID_view.controls;
 
-        this.CATMAID_view.moveToAim(distance, controls);
+        let change = this.CATMAID_view.moveToAim(distance, controls);
 
         // Move the target only if Alt was pressed
         if (ev.altKey) {

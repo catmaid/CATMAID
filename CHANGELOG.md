@@ -366,6 +366,8 @@ Miscellaneous:
 - 3D viewer: the scale bar is now properly initialized if orthographic mode is
   stored as default view.
 
+- 3D viewer: fix camera movement using the mouse wheel.
+
 - Volume lists (drop down menus) are now automatically refreshed if a volume is
   added, updated or removed.
 

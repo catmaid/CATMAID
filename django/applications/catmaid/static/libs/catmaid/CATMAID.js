@@ -484,7 +484,7 @@ var requestQueue = new CATMAID.RequestQueue();
     // absolute URL at the target host and additional request parameters like
     // API keys and HTTP authentication are added.
     let url;
-    if (api) {
+    if (api && !api.isLocal) {
       if (!headers) headers = {};
       if (api.apiKey && api.apiKey.length > 0) {
         headers['X-Authorization'] = 'Token ' + api.apiKey;

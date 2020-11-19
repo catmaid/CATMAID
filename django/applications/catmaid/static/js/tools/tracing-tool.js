@@ -2333,7 +2333,7 @@
             }
 
             submenu.push({
-              title: "Open remote view",
+              title: "Open in remote CATMAID",
               action: () => {
                 let api = CATMAID.Remote.getAPI(key);
                 // Construct link for current view on remote CATMAID instance.

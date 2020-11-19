@@ -411,6 +411,10 @@ Miscellaneous:
 - Tracing tool: the "More tools" menu is now properly closed when a remote data
   source is selected.
 
+- Remote tracing layers: mouse bindings are now correctly updated when a remote
+  layer is added. Before this could sometimes lead to mouse clicks not been
+  caught in the remote tracing layer.
+
 ## Maintenance updates
 
 - Volume widget: don't show removal options by default. It happens generally

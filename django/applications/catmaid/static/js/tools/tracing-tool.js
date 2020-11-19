@@ -1953,6 +1953,10 @@
           stackViewer.moveLayer(layerName, getTracingLayerName(stackViewer));
           stackViewer.update(undefined, true);
           layer.forceRedraw();
+
+          // Make sure all bindings are up to date, otherwise we might not be
+          // able to catch mouse clicks with the new tracing layer.
+          setActiveTracingLayer(true);
         })
         .catch(CATMAID.handleError);
     };

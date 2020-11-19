@@ -2055,10 +2055,11 @@ def update_grid_cache(project_id, data_type, orientations,
                         bar.update(counter)
 
                     added = update_grid_cell(project_id, grid_id, w_i, h_i, d_i,
-                            cell_width, cell_height, cell_depth, provider,
-                            params, allow_empty, lod_levels, lod_bucket_size,
+                            cell_width, cell_height, cell_depth, params,
+                            allow_empty, lod_levels, lod_bucket_size,
                             lod_strategy, update_json_cache,
-                            update_json_text_cache, update_msgpack_cache, cursor)
+                            update_json_text_cache, update_msgpack_cache,
+                            provider=provider, cursor=cursor)
                     if added:
                         created += 1
 

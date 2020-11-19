@@ -261,8 +261,8 @@
   Remote.getAPI = function(remoteHandle) {
     // First, check if the local server is referenced and return it if that's
     // the case.
-    if (remoteHandle === CATMAID.Remote.Settings.session.local_server_name) {
-      return CATMAID.API.getLocalAPI(remoteHandle);
+    if (!remoteHandle || remoteHandle === CATMAID.Remote.Settings.session.local_server_name) {
+      return CATMAID.API.getLocalAPI(CATMAID.Remote.Settings.session.local_server_name);
     }
 
     let remoteConfigs = CATMAID.Client.Settings.session.remote_servers;

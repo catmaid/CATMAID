@@ -1908,7 +1908,6 @@
     this.init = function() {
 
       // Init extra menus
-      this._updateMoreToolsMenu();
       this.updateRemoteTracingInfo();
 
       // Make sure all required initial data is available.

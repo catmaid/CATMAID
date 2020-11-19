@@ -2256,7 +2256,7 @@
    * Recreate the "More tools" menu, including remtoe tracing data options (if
    * any available).
    */
-  TracingTool.prototype._updateMoreToolsMenu = function() {
+  TracingTool.prototype._updateMoreToolsMenu = function(hidden = false) {
     let items = {
       'cache-refresh': {
         title: 'Refresh caches',
@@ -2303,7 +2303,7 @@
                 CATMAID.openProjectStack(project.id, activeStackViewer.primaryStack.id)
                   .then((stackViewer) => {
                     this.openAdditionalTracinData(key, p, stackViewer);
-                    this._updateMoreToolsMenu();
+                    this._updateMoreToolsMenu(true);
                   });
               },
             }];
@@ -2314,7 +2314,7 @@
                 action: () => {
                   activeStackViewer.removeLayer(layerName);
                   activeStackViewer.update();
-                  this._updateMoreToolsMenu();
+                  this._updateMoreToolsMenu(true);
                 },
               });
             } else {
@@ -2322,7 +2322,7 @@
                 title: "Add to focused viewer",
                 action: () => {
                   this.openAdditionalTracinData(key, p);
-                  this._updateMoreToolsMenu();
+                  this._updateMoreToolsMenu(true);
                 },
               });
             }
@@ -2350,7 +2350,7 @@
                 } else {
                   this.openAdditionalTracinData(key, p);
                 }
-                this._updateMoreToolsMenu();
+                this._updateMoreToolsMenu(true);
               },
             };
             return po;
@@ -2432,6 +2432,16 @@
 
     // Update menu
     this.moreToolsMenu.update(items);
+
+    if (hidden) {
+      // Enforce a hidden menu
+      let menuView = this.moreToolsMenu.getView();
+      let menuParent = menuView.parentNode;
+      // Handle the case where
+      if (menuParent) {
+        menuParent.style.display = 'none';
+      }
+    }
   };
 
   /**

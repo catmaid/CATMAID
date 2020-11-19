@@ -408,6 +408,9 @@ Miscellaneous:
 - Tracing tool: a tracing data mirror server can now also be used with
   authentication.
 
+- Tracing tool: the "More tools" menu is now properly closed when a remote data
+  source is selected.
+
 ## Maintenance updates
 
 - Volume widget: don't show removal options by default. It happens generally

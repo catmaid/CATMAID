@@ -2300,11 +2300,16 @@
             let submenu = [{
               title: "Open in new viewer",
               action: () => {
-                CATMAID.openProjectStack(project.id, activeStackViewer.primaryStack.id)
-                  .then((stackViewer) => {
-                    this.openAdditionalTracinData(key, p, stackViewer)
-                      .then(() => this._updateMoreToolsMenu(true));
-                  });
+                let currentActiveStackViewer = this.getActiveStackViewer();
+                if (currentActiveStackViewer) {
+                  CATMAID.openProjectStack(project.id, currentActiveStackViewer.primaryStack.id)
+                    .then((stackViewer) => {
+                      this.openAdditionalTracinData(key, p, stackViewer)
+                        .then(() => this._updateMoreToolsMenu(true));
+                    });
+                } else {
+                    CATMAID.warn('Need existing stack viewer');
+                }
               },
             }];
 

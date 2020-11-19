@@ -311,7 +311,13 @@
           })
           .on("click", "td .action-select", this, function(e) {
             var skeletonID = rowToSkeletonID(this);
-            CATMAID.TracingTool.goToNearestInNeuronOrSkeleton( 'skeleton', skeletonID );
+            let model = self.skeletons[self.skeleton_ids[skeletonID]];
+            if (!model) {
+              CATMAID.warn(`Could not find model for skeleton ${skeletonID}`);
+              return;
+            }
+            CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeletonID,
+                model.api, model.projectId);
           })
           .on("click", "td .action-annotate", function() {
             var skeletonID = rowToSkeletonID(this);

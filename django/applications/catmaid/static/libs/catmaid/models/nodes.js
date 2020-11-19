@@ -504,7 +504,12 @@
         }
         params[`${targetType}_id`] = targetId;
       }
-      return CATMAID.fetch(projectId + "/nodes/nearest", "GET", params);
+      return CATMAID.fetch({
+        url: `${projectId}/nodes/nearest`,
+        method: "GET",
+        data: params,
+        api: api,
+       });
     },
 
     /**

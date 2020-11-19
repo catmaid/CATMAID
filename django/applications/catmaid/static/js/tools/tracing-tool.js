@@ -2484,17 +2484,19 @@
    * @param  {string} type       A 'neuron' or a 'skeleton'.
    * @param  {number} objectID   The ID of a neuron or a skeleton.
    * @param  {API}    api        (optional) The API where this object is expected to be found.
+   * @param  {number} projectId  (optional) The project ID to be used. If not
+   *                             provided, the global project will be used.
    * @return {Promise}           A promise succeeding after the move and select.
    */
-  TracingTool.goToNearestInNeuronOrSkeleton = function(type, objectID, api) {
+  TracingTool.goToNearestInNeuronOrSkeleton = function(type, objectID, api, projectId) {
     var projectCoordinates = project.focusedStackViewer.projectCoordinates();
-    return CATMAID.Nodes.nearestNode(project.id, projectCoordinates.x,
-        projectCoordinates.y, projectCoordinates.z, objectID, type)
+    return CATMAID.Nodes.nearestNode(projectId === undefined ? project.id : projectId,
+        projectCoordinates.x, projectCoordinates.y, projectCoordinates.z, objectID, type, api)
       .then(function (data) {
         var nodeIDToSelect = data.treenode_id;
         return SkeletonAnnotations.staticMoveTo(data.z, data.y, data.x)
             .then(function () {
-              return SkeletonAnnotations.staticSelectNode(nodeIDToSelect);
+              return SkeletonAnnotations.staticSelectNode(nodeIDToSelect, undefined, undefined, api);
             });
       })
       .catch(function () {

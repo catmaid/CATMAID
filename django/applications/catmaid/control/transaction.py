@@ -32,6 +32,14 @@ def transaction_collection(request:Request, project_id) -> Response:
         type: integer
         paramType: form
         required: false
+      - name: user_id
+        description: The user ID to retrieve transactions for.
+        type: integer
+        required: false
+      - name: type
+        description: The type of log entry to retriee.
+        type: string
+        required: false
     models:
       transaction_entity:
         id: transaction_entity
@@ -76,24 +84,36 @@ def transaction_collection(request:Request, project_id) -> Response:
     if request.method == 'GET':
         range_start = request.GET.get('range_start', None)
         range_length = request.GET.get('range_length', None)
-        params = [project_id]
+        user_id = request.GET.get('user_id', None)
+        label = request.GET.get('type', None)
         constraints = []
+        where = ['project_id = %(project_id)s']
 
         if range_start:
-            constraints.append("OFFSET %s")
-            params.append(range_start)
+            constraints.append("OFFSET %(range_start)s")
 
         if range_length:
-            constraints.append("LIMIT %s")
-            params.append(range_length)
+            constraints.append("LIMIT %(range_length)s")
+
+        if user_id:
+            where.append('user_id = %(user_id)s')
+
+        if label:
+            where.append('label = %(label)s')
 
         cursor = connection.cursor()
         cursor.execute(f"""
             SELECT row_to_json(cti), COUNT(*) OVER() AS full_count
             FROM catmaid_transaction_info cti
-            WHERE project_id = %s
+            WHERE {' AND '.join(where)}
             ORDER BY execution_time DESC {" ".join(constraints)}
-        """, params)
+        """, {
+            'project_id': project_id,
+            'user_id': user_id,
+            'label': label,
+            'range_start': range_start,
+            'range_length': range_length,
+        })
         result = cursor.fetchall()
         json_data = [row[0] for row in result]
         total_count = result[0][1] if len(json_data) > 0 else 0
@@ -314,6 +334,13 @@ location_queries.update({
         FROM location{history}
         WHERE {txid} = %s
         LIMIT 1
+    """),
+    'skeletons.import': LocationQuery("""
+        SELECT location_x, location_y, location_z
+        FROM skeleton_origin__with_history so, treenode{history} t
+        WHERE so.{txid} = %s AND t.skeleton_id = so.skeleton_id
+        ORDER BY t.edition_time DESC
+        LIMIT 1;
     """),
     'textlabels.create': LocationQuery("""
         SELECT t.location_x, t.location_y, t.location_z

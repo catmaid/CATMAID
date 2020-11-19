@@ -274,6 +274,9 @@ Tracing data import:
 
 Import/export widget:
 
+- A new 'Import log' tab will show users with import permission a list of their
+  imports. Double clicking entries moves the few to a representative location.
+
 - So far, if no name was provided in the UI, the imported neuron would just have
   no name. Now the user is asked whether the import should be canceled or if the
   file name should be used as default name, if no name was provided by the user.

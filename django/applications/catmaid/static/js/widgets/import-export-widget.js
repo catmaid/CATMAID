@@ -14,6 +14,7 @@
 
     this.modes = ['export'];
     if (this.showImports) {
+      this.modes.push('import-log');
       this.modes.push('import-files');
       this.modes.push('import-catmaid');
       this.modes.push('import-tracing-layer');
@@ -25,6 +26,8 @@
     this.sourceProject = project.id;
     this.importCatmaidResult = null;
     this.importAnnotations = CATMAID.TracingTool.getDefaultImportAnnotations();
+
+    this.importLogHighlightLocation = true;
   };
 
   ImportExportWidget.exportContentTemplate = `
@@ -244,7 +247,143 @@ annotations, neuron name, connectors or partner neurons.
         });
       },
     },
+    'import-log': {
+      title: 'Import log',
+      createControls: widget => {
+        return [
+          {
+            type: 'button',
+            label: 'Refresh',
+            title: 'Refresh the import log',
+            onclick: e => {
+              if (widget.historyTable) {
+                widget.historyTable.rows().invalidate().draw();
+              }
+            },
+          },
+          {
+            type: 'checkbox',
+            label: 'Highlight location on double click',
+            title: 'Whether or not to highlight the location when double clicking an import entry',
+            value: widget.importLogHighlightLocation,
+            onclick: e => {
+              widget.importLogHighlightLocation = e.target.checked;
+            },
+          },
+        ];
+      },
+      createContent: (container, widget) => {
+        // History content
+        widget.historyContainer = document.createElement('div');
+        var historyTable = document.createElement('table');
+        historyTable.style.width = '100%';
+        widget.historyContainer.appendChild(historyTable);
+        container.appendChild(widget.historyContainer);
 
+        // A handler for location change
+        var locationChange = function(x, y, z) {
+          // Briefly flash new location, if requested
+          if (widget.importLogHighlightLocation) {
+            var nFlashes = 3;
+            var delay = 100;
+            project.getStackViewers().forEach(function(s) {
+              s.pulseateReferenceLines(nFlashes, delay);
+            });
+          }
+        };
+
+        widget.historyTable = $(historyTable).DataTable({
+          dom: "lrhftip",
+          paging: true,
+          lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
+          serverSide: true,
+          ajax: function(data, callback, settings) {
+            var params = -1 === data.length ? undefined : {
+              range_start: data.start,
+              range_length: data.length,
+              user_id: CATMAID.session.userid,
+              type: 'skeletons.import',
+            };
+            CATMAID.fetch({
+              url: project.id +  "/transactions/",
+              method: "GET",
+              data: params,
+              parallel: true,
+            })
+            .then(result => {
+              callback({
+                draw: data.draw,
+                recordsTotal: result.total_count,
+                recordsFiltered: result.total_count,
+                data: result.transactions
+              });
+            })
+            .catch(CATMAID.handleError);
+          },
+          order: [[2, 'desc']],
+          columns: [
+            {
+              data: "user_id",
+              title: "User",
+              orderable: false,
+              render: function(data, type, row, meta) {
+                return CATMAID.User.safe_get(row.user_id).login;
+              }
+            },
+            {
+              data: "label",
+              title: "Operation",
+              searchable: true,
+              orderable: false,
+              render: function(data, type, row, meta) {
+                return CATMAID.TransactionOperations[data] || ("Unknown (" + data + ")");
+              }
+            },
+            {
+              data: "execution_time",
+              title: "Time",
+              orderable: true,
+              searchable: true,
+              render: function(data, type, row, meta) {
+                return new Date(row.execution_time);
+              }
+            },
+            {data: "transaction_id", title: "Transaction", orderable: false, searchable: true},
+            {data: "change_type", title: "Type", orderable: false, searchable: true}
+          ],
+        }).on('dblclick', 'tr', function() {
+          var data = widget.historyTable.row(this).data();
+          if (data) {
+            var params = {
+              'transaction_id': data.transaction_id,
+              'execution_time': data.execution_time
+            };
+            CATMAID.fetch({
+                url: project.id + '/transactions/location',
+                method: 'GET',
+                data: params,
+                parallel: true,
+              })
+              .then(function(result) {
+                  var x = parseFloat(result.x);
+                  var y = parseFloat(result.y);
+                  var z = parseFloat(result.z);
+                  project.moveTo(z, y, x, undefined,
+                      locationChange.bind(window, x, y, z));
+              })
+              .catch(function(error) {
+                if (error instanceof CATMAID.LocationLookupError) {
+                  CATMAID.warn(error.message);
+                } else {
+                  // Re-throw exception
+                  throw error;
+                }
+              })
+              .catch(CATMAID.handleError);
+          }
+        });
+      },
+    },
     'import-files': {
       title: 'Import from files',
       createControls: widget => {

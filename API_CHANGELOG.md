@@ -20,7 +20,9 @@ included in this changelog.
 
 ### Modifications
 
-None.
+- `GET /{project_id}/transactions/`:
+  Now accepts the optional parameters user_id and type to further constrain the
+  result. Type is a transaction label string, e.g. 'skeletons.import'.
 
 ### Deprecations
 

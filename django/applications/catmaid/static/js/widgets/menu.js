@@ -137,7 +137,6 @@ Menu = function () {
   };
 
   // initialise
-  var self = this;
   var view = document.createElement("div");
   view.className = "menu_text";
 

@@ -42,7 +42,11 @@ Menu = function () {
 
     for (var element of elements) {
       var row = table.insertRow(-1);
-      row.className = "menu_item";
+      row.classList.add("menu_item");
+
+      if (element.active) {
+        row.classList.add('active_item');
+      }
 
       let hasSubMenuAction = typeof element.action === "object" || element.action instanceof Array;
       let hasSubMenuField = typeof element.submenu === "object" || element.submenu instanceof Array;
@@ -52,12 +56,18 @@ Menu = function () {
       }
 
       row.onpointerover = function (e) {
-        if (this.className == "menu_item") this.className = "menu_item_hover";
+        if (this.classList.contains("menu_item")) {
+          this.classList.remove("menu_item");
+          this.classList.add("menu_item_hover");
+        }
         if (hasSubMenu) this.cells[0].firstChild.lastChild.style.display = "block";
         return false;
       };
       row.onpointerout = function (e) {
-        if (this.className == "menu_item_hover") this.className = "menu_item";
+        if (this.classList.contains("menu_item_hover")) {
+          this.classList.remove("menu_item_hover");
+          this.classList.add("menu_item");
+        }
         if (hasSubMenu) this.cells[0].firstChild.lastChild.style.display = "none";
         return false;
       };

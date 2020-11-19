@@ -170,6 +170,11 @@ div.menu_item tr.menu_item {
   color: #000000;
 }
 
+div.menu_item tr.menu_item.active_item {
+  background: #ccfc89;
+  color: #000000;
+}
+
 div.menu_item tr.menu_item_hover,
 div.menu_item tr.menu_item_selected {
   background: #0000FF;

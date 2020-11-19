@@ -2341,6 +2341,7 @@
             po.action[`project-${j}`] = {
               title: p.title,
               state: isEnabled ? '*' : '',
+              active: isEnabled,
               note: 'tracing data',
               submenu: submenu,
               action: e => {

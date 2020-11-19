@@ -47,7 +47,8 @@
     if (!active) return null;
     var name = CATMAID.NeuronNameService.getInstance().getName(active);
     let api = SkeletonAnnotations.getActiveSkeletonAPI();
-    return new CATMAID.SkeletonModel(active, name, new THREE.Color(1, 1, 0), api);
+    return new CATMAID.SkeletonModel(active, name, new THREE.Color(1, 1, 0), api,
+        SkeletonAnnotations.getActiveProjectId());
   };
 
   ActiveSkeleton.prototype.getSkeletonModel = function(skeletonId) {
@@ -55,7 +56,8 @@
     if (!active || active != skeletonId) return null;
     var name = CATMAID.NeuronNameService.getInstance().getName(active);
     let api = SkeletonAnnotations.getActiveSkeletonAPI();
-    return new CATMAID.SkeletonModel(active, name, new THREE.Color(1, 1, 0), api);
+    return new CATMAID.SkeletonModel(active, name, new THREE.Color(1, 1, 0), api,
+        SkeletonAnnotations.getActiveProjectId());
   };
 
   ActiveSkeleton.prototype.getSelectedSkeletonModels = function() {

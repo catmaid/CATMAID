@@ -1934,7 +1934,7 @@
 
       let api = CATMAID.Remote.getAPI(remoteName);
       // Try to find a remote data source for this passed in remote info
-      CATMAID.API.linkDataSource(project.id, api, remoteProject.id)
+      return CATMAID.API.linkDataSource(project.id, api, remoteProject.id)
         .then(linkFound => {
           if (!linkFound) {
             console.log("Found no matching data source, hiding imported remote data not available");
@@ -2302,8 +2302,8 @@
               action: () => {
                 CATMAID.openProjectStack(project.id, activeStackViewer.primaryStack.id)
                   .then((stackViewer) => {
-                    this.openAdditionalTracinData(key, p, stackViewer);
-                    this._updateMoreToolsMenu(true);
+                    this.openAdditionalTracinData(key, p, stackViewer)
+                      .then(() => this._updateMoreToolsMenu(true));
                   });
               },
             }];
@@ -2321,8 +2321,8 @@
               submenu.push({
                 title: "Add to focused viewer",
                 action: () => {
-                  this.openAdditionalTracinData(key, p);
-                  this._updateMoreToolsMenu(true);
+                  this.openAdditionalTracinData(key, p)
+                      .then(() => this._updateMoreToolsMenu(true));
                 },
               });
             }
@@ -2347,10 +2347,11 @@
                 if (isEnabled) {
                   activeStackViewer.removeLayer(layerName);
                   activeStackViewer.update();
+                  this._updateMoreToolsMenu(true);
                 } else {
-                  this.openAdditionalTracinData(key, p);
+                  this.openAdditionalTracinData(key, p)
+                    .then(() => this._updateMoreToolsMenu(true));
                 }
-                this._updateMoreToolsMenu(true);
               },
             };
             return po;

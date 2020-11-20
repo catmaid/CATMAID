@@ -476,7 +476,7 @@ class TrakEM2ToCATMAIDTransformer():
         self.user_id = user_id
         self.user = User.objects.get(id=user_id)
         self.project_id = int(catmaid_project_id)
-        self.p = TrakEM2.Project.openFSProject(Java.String(xml_path), False) #type: ignore
+        self.p = TrakEM2.Project.openFSProject(Java.String(xml_path), False) # type: ignore
         if not self.p:
             raise ValueError("Could not open project")
 

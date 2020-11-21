@@ -661,6 +661,15 @@ class Exporter():
                     # Because we retrieve these objects as part of the returned
                     # links to get only the used tags.
                     tags = set(t.class_instance for t in tag_links)
+
+                    tag_filter_params = {
+                        'project': self.project,
+                        'class_instance__class_column': classes['label'],
+                        'relation_id': relations['labeled_as'],
+                    }
+
+                    tag_links_connectors = ConnectorClassInstance.objects.select_related('class_instance') \
+                            .filter(**tag_filter_params)
             else:
                 tag_skeletons = set(skeleton_id_constraints)
                 n_default_tag_skeletons = len(tag_skeletons)

@@ -4609,7 +4609,7 @@ def edge_list_to_swc(edge_lines):
         pos = meta[node]
         ref_mesh_node = dist.get(node)
         if ref_mesh_node is None:
-            radius =  float(-1)
+            radius = float(-1)
         else:
             radius = math.sqrt((pos[0] - ref_mesh_node[0])**2 +
                     (pos[1] - ref_mesh_node[1])**2 + (pos[2] - ref_mesh_node[2])**2)

@@ -29,14 +29,7 @@
   /**
    * Information on local environment.
    */
-  API.LocalAPI = Object.freeze({
-    name: 'This server',
-    url: '',
-    apiKey: undefined,
-    httpAuthUser: undefined,
-    httpAuthPass: undefined,
-    dataSourceId: undefined,
-  });
+  API.LocalAPI = Object.freeze(new API('This CATMAID'));
 
   /**
    * Get the most simple API there is. It doesn't contain any particular
@@ -103,6 +96,35 @@
     }
 
     return apis;
+  };
+
+  /**
+   * Similar to API.splitByAPI, but also respects the project ID and will return
+   * return a list of RemoteProject instances.
+   *
+   * @param {Object} models     An object mapping skeleton IDs to skelteon model objects
+   * @returns {RemoteProject[]} A list of remote project objects.
+   */
+  API.getModelCollections = function(models, defaultProjectId) {
+    // Fast path for case with only local models:
+    if (!CATMAID.API.hasRemoteData(models)) {
+      return [new ModelCollection(CATMAID.API.LocalAPI, defaultProjectId, models)];
+    }
+
+    let modelCollections = new Map();
+    for (let key in models) {
+      let model = models[key];
+      let api = model.api || CATMAID.API.LocalAPI;
+      let mcKey = `${api.name}-${model.projectId}`;
+      let mc = modelCollections.get(mcKey);
+      if (!mc) {
+        let projectId = model.projectId ? model.projectId : defaultProjectId;
+        mc = new CATMAID.ModelCollection(api, projectId);
+        modelCollections.set(mcKey, mc);
+      }
+      mc.addModel(model);
+    }
+    return Array.from(modelCollections.values());
   };
 
   /**

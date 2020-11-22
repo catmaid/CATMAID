@@ -2216,7 +2216,7 @@ var WindowMaker = new function()
 
     $(container)
       .append($('<h4 />').text('Contributors'))
-      .append('CATMAID &copy;&nbsp;2007&ndash;2018 ' +
+      .append('CATMAID &copy;&nbsp;2007&ndash;2020 ' +
           '<a href="http://fly.mpi-cbg.de/~saalfeld/">Stephan Saalfeld</a>, ' +
           '<a href="http://www.unidesign.ch/">Stephan Gerhard</a>, ' +
           '<a href="http://longair.net/mark/">Mark Longair</a>, ' +

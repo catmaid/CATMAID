@@ -80,13 +80,13 @@ django/applications/catmaid/static/js/widgets/clustering_widget.js: line 634, co
 django/applications/catmaid/static/js/widgets/clustering_widget.js: line 691, col 13, 'x' is defined but never used.
 django/applications/catmaid/static/js/widgets/clustering_widget.js: line 691, col 25, 'h' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 1348, col 13, 'orders' is defined but never used.
-django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 1870, col 11, 'one' is defined but never used.
-django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 2341, col 9, 'accum' is defined but never used.
-django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 3036, col 11, 'startId' is defined but never used.
-django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 3382, col 13, 'intragroup' is defined but never used.
-django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 3766, col 11, 'sorted' is defined but never used.
-django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 4105, col 9, 'edgeData' is defined but never used.
+django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 1351, col 13, 'orders' is defined but never used.
+django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 1876, col 11, 'one' is defined but never used.
+django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 2350, col 9, 'accum' is defined but never used.
+django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 3045, col 11, 'startId' is defined but never used.
+django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 3391, col 13, 'intragroup' is defined but never used.
+django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 3775, col 11, 'sorted' is defined but never used.
+django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 4114, col 9, 'edgeData' is defined but never used.
 
 django/applications/catmaid/static/js/widgets/connectivity.js: line 465, col 9, 'widgetID' is defined but never used.
 django/applications/catmaid/static/js/widgets/connectivity.js: line 466, col 9, 'skeletons' is defined but never used.

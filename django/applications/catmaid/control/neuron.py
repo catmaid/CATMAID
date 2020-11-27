@@ -10,7 +10,8 @@ from typing import Any, Dict, DefaultDict, List, Optional, Tuple
 from django.http import HttpRequest, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.db import connection
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model ; User = get_user_model()
+from django.contrib.auth.models import Group
 
 from catmaid.control.authentication import requires_user_role, \
         can_edit_class_instance_or_fail, can_edit_all_or_fail

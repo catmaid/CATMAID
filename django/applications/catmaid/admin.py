@@ -12,7 +12,8 @@ from django.core.exceptions import ValidationError
 from django.contrib import admin, messages
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.admin import UserAdmin, GroupAdmin
-from django.contrib.auth.models import User, Group
+from django.contrib.auth import get_user_model ; User = get_user_model()
+from django.contrib.auth.models import Group
 from django.contrib.sites.models import Site
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy

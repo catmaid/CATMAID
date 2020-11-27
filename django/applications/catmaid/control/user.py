@@ -9,7 +9,7 @@ from django.http import HttpRequest, JsonResponse
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.mixins import UserPassesTestMixin
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model ; User = get_user_model()
 import django.contrib.auth.views as django_auth_views
 
 from catmaid.control.authentication import (access_check, PermissionError)

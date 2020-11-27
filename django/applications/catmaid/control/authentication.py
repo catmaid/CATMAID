@@ -18,7 +18,8 @@ from django import forms
 from django.conf import settings
 from django.urls import reverse
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.auth.models import User, Group
+from django.contrib.auth import get_user_model ; User = get_user_model()
+from django.contrib.auth.models import Group
 from django.contrib.sites.shortcuts import get_current_site
 from django.db import connection
 from django.http import HttpRequest, HttpResponse, HttpResponseRedirect, JsonResponse

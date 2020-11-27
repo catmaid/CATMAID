@@ -15,7 +15,8 @@ from django import forms
 from django.db import connection
 from django.db.models import Count
 from django.conf import settings
-from django.contrib.auth.models import User, Group
+from django.contrib.auth import get_user_model ; User = get_user_model()
+from django.contrib.auth.models import Group
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError

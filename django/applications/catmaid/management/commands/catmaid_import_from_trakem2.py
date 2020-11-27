@@ -17,7 +17,7 @@ from typing import Any, List, Iterator
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
 from django.db import connection
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model ; User = get_user_model()
 
 from catmaid.control.common import get_class_to_id_map, get_relation_to_id_map
 from catmaid.control.skeleton import _import_skeleton_swc, edge_list_to_swc

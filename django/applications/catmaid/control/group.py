@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 import logging
 
-from django.contrib.auth.models import User, Group
+from django.contrib.auth import get_user_model ; User = get_user_model()
+from django.contrib.auth.models import Group
 from django.contrib.auth.decorators import user_passes_test
 from django.http import HttpRequest, JsonResponse
 from django.utils.decorators import method_decorator

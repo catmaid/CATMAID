@@ -244,7 +244,7 @@ def projects(request:HttpRequest) -> JsonResponse:
     if with_mirrors:
         cursor.execute("""
             SELECT DISTINCT ON (ps.project_id, ps.stack_id) ps.project_id,
-                ps.stack_id, s.title, s.comment, sm.mirrors
+                ps.stack_id, s.title, s.comment, s.dimension, sm.mirrors
             FROM project_stack ps
             JOIN UNNEST(%(user_project_ids)s::integer[]) user_project(id)
                 ON ps.project_id = user_project.id
@@ -261,7 +261,8 @@ def projects(request:HttpRequest) -> JsonResponse:
         })
     else:
         cursor.execute("""
-            SELECT DISTINCT ON (ps.project_id, ps.stack_id) ps.project_id, ps.stack_id, s.title, s.comment
+            SELECT DISTINCT ON (ps.project_id, ps.stack_id) ps.project_id,
+            ps.stack_id, s.title, s.comment, s.dimension
             FROM project_stack ps
             JOIN UNNEST(%(user_project_ids)s::integer[]) user_project(id)
                 ON ps.project_id = user_project.id
@@ -280,9 +281,10 @@ def projects(request:HttpRequest) -> JsonResponse:
             'id': row[1],
             'title': row[2],
             'comment': row[3],
+            'dimensions': [row[4].x, row[4].y, row[4].z],
         }
         if with_mirrors:
-            stack_data['mirrors'] = row[4]
+            stack_data['mirrors'] = row[5]
         stacks.append(stack_data)
 
     # Get all stack groups for this project

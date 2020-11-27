@@ -368,7 +368,8 @@
         rowSpan.classList.add('image-entry');
         let imgSpan = rowSpan.appendChild(document.createElement('span'));
         if (p.stacks && p.stacks.length > 0) {
-          let mirror = p.stacks[0].mirrors[this.sample_mirror_index];
+          let stack = p.stacks[0];
+          let mirror = stack.mirrors[this.sample_mirror_index];
           if (mirror) {
             let tileSource = CATMAID.TileSources.get(mirror.id,
               mirror.tile_source_type, mirror.image_base, mirror.file_extension,
@@ -378,12 +379,20 @@
               link.href = '#';
               link.dataset.type = 'stack';
               link.dataset.pid = p.id;
-              link.dataset.sid = p.stacks[0].id;
+              link.dataset.sid = stack.id;
               // Use overview image
               let img = link.appendChild(document.createElement('img'));
               img.onerror = showErrorImage;
               try {
-                img.src = tileSource.getOverviewURL(null, [this.sample_slice]);
+                let sampleSlice = this.sample_slice;
+                if (sampleSlice === 'center') {
+                  sampleSlice = Math.floor(stack.dimensions[2] * 0.5);
+                } else if (sampleSlice === 'last') {
+                  sampleSlice = Math.max(0, stack.dimensions[2] - 1);
+                } else if (sampleSlice === 'first') {
+                  sampleSlice = 0;
+                }
+                img.src = tileSource.getOverviewURL(null, [sampleSlice]);
               } catch (error) {
                 // Show placeholder if overview is unavailable
                 img.src = CATMAID.makeStaticURL('/images/overview-placeholder.png');

@@ -15,9 +15,10 @@
 # If <max-zoom-level> is ommitted, a default number of zoom levels is picked,
 # which is as many as it takes until the scaled image height fits on a single
 # tile.
+#
+# If the width/height of the picture is an odd number after every division,
+# then zoom levels could get shifted a bit?
 ##
-
-#set -eux
 
 usage="Usage: ${0} <image-file-name> <tile-size> [<outfolder> [<thumbnail-size> [<max-zoom-level>]]]"
 
@@ -31,8 +32,7 @@ then
 	exit 0
 fi
 
-
-image="$1"
+image="$(realpath $1)"
 tilesize=${2}
 image_folder="$( dirname $image )"
 outfolder="${3:-$image_folder/}"
@@ -41,111 +41,81 @@ thumbsize="${4:-192}"
 mkdir -p "${outfolder}"
 cd "${outfolder}" || exit
 
-convert +compress "${image}" "s_0.ppm" || exit
+startwidth=$(identify -format "%w" "$image")
+startheight=$(identify -format "%h" "$image")
 
-width=`identify -format "%w" "s_0.ppm"`
-height=`identify -format "%h" "s_0.ppm"`
-
-zero=0
 s=0
-default_max_zoom=$(echo "l($((${width} / ${tilesize})))/l(2)" | bc -l | sed -e 's/\..*//')
+default_max_zoom=$(echo "l($((${startwidth} / ${tilesize})))/l(2)+2" | bc -l | sed -e 's/\..*//')
 max_zoom=${5:-$default_max_zoom}
 echo "Max zoom level: ${max_zoom} (default: ${default_max_zoom})"
 
-# With s=0 initially this is just the regular width and height
-width=$((${width}/(2**${s})))
-height=$((${height}/(2**${s})))
+convert +compress "${image}" "s_${s}.ppm" || exit
 
-collumns=$((${width}/${tilesize}))
-if [[ $width > $(($collumns*${tilesize})) ]]
-then
-	collumns=$(($collumns+1))
-fi
-rows=$((${height}/${tilesize}))
-if [[ $height > $(($rows*${tilesize})) ]]
-then
-	rows=$(($rows+1))
-fi
+width="$startwidth"
+height="$startheight"
 
-echo "${width} => ${collumns}" >&2
-echo "${height} => ${rows}" >&2
-
-convert -crop ${tilesize}x${tilesize} "s_${s}.ppm" "${s}.jpg"
-for file in ${s}-*.jpg
+while [ $s -lt $max_zoom ]
 do
-	regex="s/${s}-\([0-9][0-9]*\).jpg/\1/"
-	n=`echo "${file}" | sed "${regex}"`
-	r="$((${n}/${collumns}))"
-	c="$((${n}%${collumns}))"
-	mv "$file" "${r}_${c}_${s}.jpg"
-done
 
-s=$(($s+1))
-width=$((${width}/2))
-height=$((${height}/2))
-collumns=$((${width}/${tilesize}))
-if [[ $width > $(($collumns*${tilesize})) ]]
-then
-	collumns=$(($collumns+1))
-fi
-rows=$((${height}/${tilesize}))
-if [[ $height > $(($rows*${tilesize})) ]]
-then
-	rows=$(($rows+1))
-fi
+	extentwidth=$width
+	extentheight=$height
 
-ref_s=$s
-ref_height=$height
-while [ $ref_height -ge $((2*${tilesize})) ];
-do
-	ref_s=$(($ref_s+1))
-	ref_height=$((${ref_height}/2))
-done
-
-nz=$((${max_zoom} - 2))
-while [ $height -ge $((${tilesize}/2**${nz})) ];
-do
-	echo "${width} => ${collumns}" >&2
-	echo "${height} => ${rows}" >&2
-
-  if [[ "${collumns}" -eq "1" ]]; then
-    convert -resize ${width}x${height} -background black -extent ${tilesize}x${tilesize} -gravity NorthWest "s_$((${s}-1)).ppm" "s_${s}.ppm"
-    convert "s_${s}.ppm" "0_0_${s}.jpg"
-  else
-    convert -resize ${width}x${height} "s_$((${s}-1)).ppm" "s_${s}.ppm"
-
-    convert -crop ${tilesize}x${tilesize} "s_${s}.ppm" "${s}.jpg"
-    for file in ${s}-*.jpg
-    do
-      regex="s/${s}-\([0-9][0-9]*\).jpg/\1/"
-      n=`echo "${file}" | sed "${regex}"`
-      r=$((${n}/${collumns}))
-      c=$((${n}%${collumns}))
-      mv "$file" "${r}_${c}_${s}.jpg"
-    done
-  fi
-
-	s=$(($s+1))
-	width=$((${width}/2))
-	height=$((${height}/2))
 	collumns=$((${width}/${tilesize}))
 	if [[ $width > $(($collumns*${tilesize})) ]]
 	then
 		collumns=$(($collumns+1))
+		extentwidth=$(($collumns*$tilesize))
 	fi
 	rows=$((${height}/${tilesize}))
 	if [[ $height > $(($rows*${tilesize})) ]]
 	then
 		rows=$(($rows+1))
+		extentheight=$(($rows*$tilesize))
 	fi
+
+	echo "${width} => ${collumns}" >&2
+	echo "${height} => ${rows}" >&2
+
+	# skip resizing for zoomlevel 0
+	if [[ "${s}" -ne 0 ]]
+	then
+		convert -resize ${width}x${height} "s_$((${s}-1)).ppm" "s_${s}.ppm"
+	fi
+
+	if [[ $width -ne $extentwidth ]] || [[ $height -ne $extentheight ]]
+	then
+		# gravity center sounds more logical, but NorthWest matches TrakEM output
+		convert -background black -extent ${extentwidth}x${extentheight} -gravity NorthWest "s_${s}.ppm" "s_${s}_ext.ppm"
+	else
+		ln "s_${s}.ppm" "s_${s}_ext.ppm"
+	fi
+
+	convert -crop ${tilesize}x${tilesize} "s_${s}_ext.ppm" "${s}.jpg"
+	# If this is the last tile, rename it directly. If it fails
+	# then rename tiles according to position.
+	# Also, If this is the last tile, break the loop because it makes
+	# no sense to continue shrinking the image in a single tile.
+	if mv "${s}.jpg" 0_0_${s}.jpg 2>/dev/null
+	then
+		break
+	else
+		for file in ${s}-*.jpg
+		do
+			regex="s/${s}-\([0-9][0-9]*\).jpg/\1/"
+			n=`echo "${file}" | sed "${regex}"`
+			r=$((${n}/${collumns}))
+			c=$((${n}%${collumns}))
+			mv "$file" "${r}_${c}_${s}.jpg"
+		done
+	fi
+
+	width=$((${width}/2))
+	height=$((${height}/2))
+	s=$(($s+1))
 done
 
-if [[ $height < $width ]]
-then
-	convert -resize ${thumbsize} "s_$((${ref_s}-2)).ppm" "small.jpg"
-else
-	convert -resize x${thumbsize} "s_$((${ref_s}-2)).ppm" "small.jpg"
-fi
+convert -resize ${thumbsize}x${thumbsize} -extent ${thumbsize}x${thumbsize} -background black -gravity center "s_$((${s}-1)).ppm" "small.jpg"
 
 rm *.ppm
 
+echo "Done." >&2

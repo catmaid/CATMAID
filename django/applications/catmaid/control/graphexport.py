@@ -10,11 +10,9 @@ from catmaid.control.authentication import requires_user_role
 from catmaid.control.graph import _skeleton_graph
 from catmaid.control.skeleton import _skeleton_info_raw
 
-try:
-    import networkx as nx
-    from networkx.readwrite import json_graph
-except ImportError:
-    pass
+import networkx as nx
+from networkx.readwrite import json_graph
+
 
 @requires_user_role([UserRole.Annotate, UserRole.Browse])
 def export_jsongraph(request:HttpRequest, project_id) -> JsonResponse:

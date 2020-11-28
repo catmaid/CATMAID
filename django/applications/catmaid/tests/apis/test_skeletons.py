@@ -11,7 +11,8 @@ from django.db import connection, transaction
 from django.shortcuts import get_object_or_404
 from guardian.shortcuts import assign_perm
 
-from catmaid.control.annotation import _annotate_entities
+from catmaid.control.annotation import _annotate_entities, annotations_for_skeleton
+from catmaid.control.skeleton import _get_neuronname_from_skeletonid
 from catmaid.models import (
     ClassInstance, ClassInstanceClassInstance, Log, Review, TreenodeConnector,
     ReviewerWhitelist, Treenode, User, ClientDatastore, ClientData
@@ -1413,8 +1414,7 @@ class SkeletonsApiTransactionTests(CatmaidApiTransactionTestCase):
         # auto_id enabled (default).
         swc_file2 = StringIO(orig_swc_string)
         response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
-                {'file.swc': swc_file2, 'name': 'test2', 'neuron_id':
-                    neuron.id})
+                {'file.swc': swc_file2, 'name': 'test2', 'neuron_id': neuron.id})
 
         transaction.commit()
 
@@ -1439,7 +1439,8 @@ class SkeletonsApiTransactionTests(CatmaidApiTransactionTestCase):
         self.assertEqual(n_skeleton_nodes, n_orig_skeleton_nodes)
 
 
-        # Test replacing the imported neuron with forcing an update
+        # Test replacing the imported neuron with forcing an update. In this
+        # case we expect the neuron and skeleton to be replaced.
         swc_file2 = StringIO(orig_swc_string)
         response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
                 {'file.swc': swc_file2, 'name': 'test2', 'neuron_id': neuron.id,
@@ -1490,11 +1491,11 @@ class SkeletonsApiTransactionTests(CatmaidApiTransactionTestCase):
 
 
         # Test replacing the imported skeleton without forcing an update and
-        # auto_id enabled (default).
+        # auto_id enabled (default). We expect a new skeleton (and neuron) to be
+        # created.
         swc_file2 = StringIO(orig_swc_string)
         response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
-                {'file.swc': swc_file2, 'name': 'test3', 'skeleton_id':
-                    skeleton.id})
+                {'file.swc': swc_file2, 'name': 'test3', 'skeleton_id': skeleton.id})
 
         transaction.commit()
 
@@ -1514,7 +1515,7 @@ class SkeletonsApiTransactionTests(CatmaidApiTransactionTestCase):
         self.assertEqual(neuron.name, 'test3')
         self.assertEqual(skeleton.name, 'test3')
         self.assertNotEqual(neuron.id, last_neuron_id)
-        self.assertNotEqual(last_skeleton_id, skeleton.id)
+        self.assertNotEqual(skeleton.id, last_skeleton_id)
 
         # Make sure there are as many nodes as expected for the imported
         # skeleton.
@@ -1558,6 +1559,9 @@ class SkeletonsApiTransactionTests(CatmaidApiTransactionTestCase):
         self.fake_authentication()
 
         orig_skeleton_id = 235
+        orig_neuron_id = _get_neuronname_from_skeletonid(self.test_project_id,
+                orig_skeleton_id)['neuronid']
+
         response = self.client.get('/%d/skeleton/%d/eswc' % (self.test_project_id, orig_skeleton_id))
         self.assertStatus(response)
         orig_swc_string = response.content.decode('utf-8')
@@ -1605,13 +1609,25 @@ class SkeletonsApiTransactionTests(CatmaidApiTransactionTestCase):
             self.assertEqual(tn.confidence, new_tn.confidence)
             self.assertEqual(max(tn.radius, 0), max(new_tn.radius, 0))
 
-
         # Remember current edit time for later
         last_neuron_id = neuron.id
         last_skeleton_id = skeleton.id
         last_neuron_edit_time = neuron.edition_time
         last_skeleton_edit_time = skeleton.edition_time
 
+        # Since no annotations were provided, we expect the default 'Import'
+        # annotation to be the only one after the import.
+        new_neuron_annotations = list(annotations_for_skeleton(self.test_project_id, new_skeleton_id).keys())
+        self.assertEqual(new_neuron_annotations, ['Import'])
+
+        # Add a test annotation
+        test_annotation = 'test-annotation'
+        _annotate_entities(self.test_project_id, [neuron.id],
+                {test_annotation: {'user_id': self.test_user_id}})
+
+        new_neuron_annotations = set(annotations_for_skeleton(self.test_project_id, new_skeleton_id).keys())
+        new_test_annotations = set(['Import', test_annotation])
+        self.assertEqual(new_neuron_annotations, new_test_annotations)
 
         # Test replacing the imported neuron without forcing an update and
         # auto_id disabled.
@@ -1630,13 +1646,16 @@ class SkeletonsApiTransactionTests(CatmaidApiTransactionTestCase):
             self.assertTrue(k in parsed_response)
             self.assertEqual(parsed_response[k], v)
 
+        # Make sure no annotation changed
+        new_neuron_annotations_test_1 = set(annotations_for_skeleton(self.test_project_id, new_skeleton_id).keys())
+        self.assertEqual(new_neuron_annotations_test_1, new_test_annotations)
 
         # Test replacing the imported neuron without forcing an update and
-        # auto_id enabled (default).
+        # auto_id enabled (default). This should lead to a new neuron to be
+        # created (including a new skeleton).
         swc_file2 = StringIO(orig_swc_string)
         response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
-                {'file.eswc': swc_file2, 'name': 'test2', 'neuron_id':
-                    neuron.id})
+                {'file.eswc': swc_file2, 'name': 'test3', 'neuron_id': neuron.id})
 
         transaction.commit()
 
@@ -1655,6 +1674,10 @@ class SkeletonsApiTransactionTests(CatmaidApiTransactionTestCase):
         self.assertEqual(neuron.edition_time, last_neuron_edit_time)
         self.assertNotEqual(neuron.id, parsed_response['neuron_id'])
 
+        # Make sure no annotation changed
+        new_neuron_annotations_test_1 = set(annotations_for_skeleton(self.test_project_id, new_skeleton_id).keys())
+        self.assertEqual(new_neuron_annotations_test_1, new_test_annotations)
+
         # Make sure there are as many nodes as expected for the imported
         # skeleton.
         n_skeleton_nodes = Treenode.objects.filter(skeleton_id=parsed_response['skeleton_id']).count()
@@ -1662,11 +1685,12 @@ class SkeletonsApiTransactionTests(CatmaidApiTransactionTestCase):
 
         transaction.commit()
 
-        # Test replacing the imported neuron with forcing an update
+        # Test replacing the imported neuron with forcing an update. But since
+        # auto_id defaults to True, a new neuron is created
         swc_file2 = StringIO(orig_swc_string)
         response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
-                {'file.eswc': swc_file2, 'name': 'test2', 'neuron_id': neuron.id,
-                    'force': True})
+                {'file.eswc': swc_file2, 'name': 'test4', 'neuron_id': neuron.id,
+                    'force': True, 'annotations': ['xyz1']})
 
         transaction.commit()
 
@@ -1681,24 +1705,31 @@ class SkeletonsApiTransactionTests(CatmaidApiTransactionTestCase):
                 class_instance_a__class_column__class_name='skeleton')
         self.assertEqual(len(replaced_skeletons), 1)
         self.assertEqual(neuron.id, parsed_response['neuron_id'])
-        self.assertEqual(neuron.name, 'test2')
+        self.assertEqual(neuron.name, 'test4')
         self.assertEqual(neuron.id, last_neuron_id)
         self.assertNotEqual(neuron.edition_time, last_neuron_edit_time)
 
         # Make sure there are as many nodes as expected for the imported
         # skeleton.
-        n_skeleton_nodes = Treenode.objects.filter(skeleton_id=parsed_response['skeleton_id']).count()
+        replaced_skeleton_id = parsed_response['skeleton_id']
+        n_skeleton_nodes = Treenode.objects.filter(skeleton_id=replaced_skeleton_id).count()
         self.assertEqual(n_skeleton_nodes, n_orig_skeleton_nodes)
 
-
         # Make sure we work with most recent skeleton data
-        skeleton = ClassInstance.objects.get(pk=parsed_response['skeleton_id'])
+        last_skeleton = skeleton
+        skeleton = ClassInstance.objects.get(pk=replaced_skeleton_id)
+
+        updated_test_annotations = new_test_annotations.union(set(['xyz1']))
+
+        # Make sure the neuron has the requested additional annotation
+        new_neuron_annotations_test_2 = set(annotations_for_skeleton(self.test_project_id, replaced_skeleton_id).keys())
+        self.assertEqual(new_neuron_annotations_test_2, updated_test_annotations)
 
         # Test replacing the imported skeleton without forcing an update and
         # auto_id disabled.
         swc_file2 = StringIO(orig_swc_string)
         response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
-                {'file.eswc': swc_file2, 'name': 'test2', 'skeleton_id':
+                {'file.eswc': swc_file2, 'name': 'test5', 'skeleton_id':
                     skeleton.id, 'auto_id': False})
 
         transaction.commit()
@@ -1711,22 +1742,25 @@ class SkeletonsApiTransactionTests(CatmaidApiTransactionTestCase):
             self.assertTrue(k in parsed_response)
             self.assertEqual(parsed_response[k], v)
 
+        # Make sure no annotation changed
+        new_neuron_annotations_test_3 = set(annotations_for_skeleton(self.test_project_id, replaced_skeleton_id).keys())
+        self.assertEqual(new_neuron_annotations_test_3, updated_test_annotations)
 
         # Test replacing the imported skeleton without forcing an update and
         # auto_id enabled (default).
         swc_file2 = StringIO(orig_swc_string)
         response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
-                {'file.eswc': swc_file2, 'name': 'test3', 'skeleton_id':
-                    skeleton.id})
+                {'file.eswc': swc_file2, 'name': 'test6', 'skeleton_id':
+                    skeleton.id, 'annotations': ['xyz']})
 
         transaction.commit()
 
         self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         last_skeleton_id = skeleton.id
+        noop_update_skeleton_id = parsed_response['skeleton_id']
+        skeleton = ClassInstance.objects.get(pk=noop_update_skeleton_id)
         neuron = ClassInstance.objects.get(pk=parsed_response['neuron_id'])
-        skeleton = ClassInstance.objects.get(pk=parsed_response['skeleton_id'])
-
 
         # Make sure there is still only one skeleton
         linked_neurons = ClassInstanceClassInstance.objects.filter(
@@ -1734,21 +1768,33 @@ class SkeletonsApiTransactionTests(CatmaidApiTransactionTestCase):
                 relation__relation_name='model_of',
                 class_instance_b__class_column__class_name='neuron')
         self.assertEqual(len(linked_neurons), 1)
-        self.assertEqual(neuron.name, 'test3')
-        self.assertEqual(skeleton.name, 'test3')
+        self.assertEqual(neuron.name, 'test6')
+        self.assertEqual(skeleton.name, 'test6')
         self.assertNotEqual(neuron.id, last_neuron_id)
-        self.assertNotEqual(last_skeleton_id, skeleton.id)
+        self.assertNotEqual(skeleton.id, last_skeleton_id)
 
         # Make sure there are as many nodes as expected for the imported
         # skeleton.
         n_skeleton_nodes = Treenode.objects.filter(skeleton_id=parsed_response['skeleton_id']).count()
         self.assertEqual(n_skeleton_nodes, n_orig_skeleton_nodes)
 
+        # Make sure the new resulting skeleton has only the passed in
+        # annotations (xyz), because force = False and auto_id = True, a new
+        # neuron was created for the requested skeleton.
+        new_neuron_annotations_test_5 = set(annotations_for_skeleton(
+                self.test_project_id, noop_update_skeleton_id).keys())
+        self.assertEqual(new_neuron_annotations_test_5, set(['xyz']))
+
+        # Add a test annotations to be able to differentiate this neuron from
+        # the next import attempt.
+        _annotate_entities(self.test_project_id, [neuron.id],
+                {test_annotation: {'user_id': self.test_user_id}})
+
         # Test replacing the imported neuron with forcing an update
         swc_file2 = StringIO(orig_swc_string)
         response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
-                {'file.eswc': swc_file2, 'name': 'test2', 'skeleton_id': skeleton.id,
-                    'force': True})
+                {'file.eswc': swc_file2, 'name': 'test7', 'skeleton_id': skeleton.id,
+                    'force': True, 'annotations': ['xyz2']})
 
         transaction.commit()
 
@@ -1757,19 +1803,25 @@ class SkeletonsApiTransactionTests(CatmaidApiTransactionTestCase):
 
         last_skeleton_edit_time = skeleton.edition_time
 
-        # Make sure there is still only one skeleton
+        # We now expect the union of the existing and the passed in anno
         skeleton.refresh_from_db()
 
+        post_force_update_skeleton_id = parsed_response['skeleton_id']
         replaced_neurons = ClassInstanceClassInstance.objects.filter(
                 class_instance_a_id=skeleton.id,
                 relation__relation_name='model_of',
                 class_instance_b__class_column__class_name='neuron')
         self.assertEqual(len(replaced_neurons), 1)
-        self.assertEqual(skeleton.id, parsed_response['skeleton_id'])
-        self.assertEqual(skeleton.name, 'test2')
+        self.assertEqual(skeleton.id, post_force_update_skeleton_id)
+        self.assertEqual(skeleton.name, 'test7')
         self.assertNotEqual(skeleton.edition_time, last_skeleton_edit_time)
+
+        # Make sure no annotation changed
+        new_neuron_annotations_test_6 = set(annotations_for_skeleton(
+                self.test_project_id, post_force_update_skeleton_id).keys())
+        self.assertEqual(new_neuron_annotations_test_6, set([test_annotation, 'xyz', 'xyz2']))
 
         # Make sure there are as many nodes as expected for the imported
         # skeleton.
-        n_skeleton_nodes = Treenode.objects.filter(skeleton_id=parsed_response['skeleton_id']).count()
+        n_skeleton_nodes = Treenode.objects.filter(skeleton_id=post_force_update_skeleton_id).count()
         self.assertEqual(n_skeleton_nodes, n_orig_skeleton_nodes)

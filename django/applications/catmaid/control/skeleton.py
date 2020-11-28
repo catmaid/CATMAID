@@ -3117,7 +3117,11 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
     relation_map = get_relation_to_id_map(project_id)
     class_map = get_class_to_id_map(project_id)
 
+    create_neuron_skeleton_link = False
+
     new_neuron = None
+    new_skeleton = None
+
     if neuron_id is not None:
         # Check that the neuron to use exists
         try:
@@ -3130,7 +3134,7 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
                     raise ValueError(f"Existing object with ID {existing_neuron.id} is not a neuron, " + \
                                      f"but is marked as {existing_neuron.class_column.class_name}")
 
-                # Remove all data linked to this neuron, including skeletons
+                # Remove all skeleton data linked to this neuron
                 cici = ClassInstanceClassInstance.objects.filter(
                         class_instance_b=neuron_id,
                         relation_id=relation_map['model_of'],
@@ -3143,16 +3147,21 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
                 # edit the existing skeleton.
                 for skeleton_link in cici:
                     old_skeleton = skeleton_link.class_instance_a
+                    # Require users to have edit permission on the skeleton and
+                    # all its treenodes.
                     can_edit_class_instance_or_fail(user, old_skeleton.id, 'class_instance')
-                    # Require users to have edit permission on all treenodes of the
-                    # skeleton.
                     treenodes = Treenode.objects.filter(skeleton_id=old_skeleton.id,
                             project_id=project_id)
                     treenode_ids = treenodes.values_list('id', flat=True)
                     can_edit_all_or_fail(user, treenode_ids, 'treenode')
 
-                    # Remove existing skeletons
-                    if skeleton_id != old_skeleton.id:
+                    # Remove existing skeletons unless it matches the current
+                    # skeleton ID or wasn't provided. In that case the old
+                    # skeleton is reused.
+                    if skeleton_id in (None, old_skeleton.id):
+                        new_skeleton = old_skeleton
+                    else:
+                        create_neuron_skeleton_link = True
                         skeleton_link.delete()
                         old_skeleton.delete()
 
@@ -3170,7 +3179,6 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
             # The neuron ID is okay to use
             pass
 
-    new_skeleton = None
     if skeleton_id is not None:
         # Check that the skeleton to use exists
         try:
@@ -3188,6 +3196,9 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
                         class_instance_a=skeleton_id,
                         relation_id=relation_map['model_of'],
                         class_instance_b__class_column_id=class_map['neuron'])
+                if len(cici) != 1:
+                    raise ValueError(f"Found more than one neuron link for skeleton {skeleton_id}")
+                existing_neuron_id = cici[0].class_instance_b
 
                 # Raise an Exception if the user doesn't have permission to
                 # edit the existing skeleton.
@@ -3200,13 +3211,23 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
                 # Raise an Exception if the user doesn't have permission to
                 # edit the existing treenodes.
                 can_edit_all_or_fail(user, treenode_ids, 'treenode')
+
+                # Rremove all treenodes of existing skeletons. If a neuron ID is
+                # passed in and it is different from the existing neureon ID,
+                # the neuron is deleted as well.
                 for link in cici:
                     old_neuron = link.class_instance_b
                     can_edit_class_instance_or_fail(user, old_neuron.id, 'class_instance')
 
-                    # Remove existing skeletons
-                    link.delete()
-                    old_neuron.delete()
+                    # Remove existing neuron, if it is different from a passed
+                    # in neurom ID. If no neuron ID was passed in, we just continue
+                    # using the existing one (along with everything attached to it).
+                    if neuron_id in (None, existing_neuron_id):
+                        new_neuron = old_neuron
+                    else:
+                        link.delete()
+                        old_neuron.delete()
+
                     treenodes.delete()
 
                 new_skeleton = existing_skeleton
@@ -3235,6 +3256,8 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
         new_skeleton.save()
         new_skeleton.name = 'skeleton %d' % new_skeleton.id
 
+    has_new_skeleton_id = new_skeleton.id is None
+
     new_skeleton.save()
     skeleton_id = new_skeleton.id
 
@@ -3245,6 +3268,7 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
     if not new_neuron:
         new_neuron = ClassInstance()
         new_neuron.id = neuron_id
+        create_neuron_skeleton_link = True
 
     new_neuron.user = user
     new_neuron.project_id = project_id
@@ -3256,15 +3280,17 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
         new_neuron.save()
         new_neuron.name = 'neuron %d' % new_neuron.id
 
+    has_new_neuron_id = new_neuron.id is None
+
     new_neuron.save()
     neuron_id = new_neuron.id
 
-    has_new_neuron_id = new_neuron.id == neuron_id
-    has_new_skeleton_id = new_skeleton.id == skeleton_id
+    if create_neuron_skeleton_link:
+        relate_neuron_to_skeleton(neuron_id, new_skeleton.id)
 
-    relate_neuron_to_skeleton(neuron_id, new_skeleton.id)
-
-    # Add annotations, if that is requested
+    # Add annotations, if that is requested. This will only by default append to
+    # any existing annotations for this neuron (none for new neurons). If
+    # replace_annotations is True, all existing annotations will be replaced.
     if annotations:
         annotation_map = {a:{'user_id': user.id} for a in annotations}
         _annotate_entities(project_id, [new_neuron.id], annotation_map)

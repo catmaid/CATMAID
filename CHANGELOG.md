@@ -418,6 +418,10 @@ Miscellaneous:
   layer is added. Before this could sometimes lead to mouse clicks not been
   caught in the remote tracing layer.
 
+- Skeleton import API: new annotations are now added to existing annotations by
+  default, rather than overriding them. This can be changed by setting the
+  replace_annotations parameter to true.
+
 ## Maintenance updates
 
 - Volume widget: don't show removal options by default. It happens generally

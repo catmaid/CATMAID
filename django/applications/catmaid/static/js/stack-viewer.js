@@ -967,9 +967,8 @@
       this._layerOrder.splice(this._layerOrder.indexOf(key), 1);
 
       if (layer instanceof CATMAID.StackLayer) {
-        var otherStackLayers = this._layers.forEach(function (otherLayer) {
-          return otherLayer instanceof CATMAID.StackLayer && otherLayer.stack.id === layer.stack.id;
-        });
+        let otherStackLayers = this.getLayersOfType(CATMAID.StackLayer)
+            .filter(otherLayer => otherLayer.stack.id === layer.stack.id);
 
         // If this was the last stack layer for a particular stack...
         if (!otherStackLayers) {

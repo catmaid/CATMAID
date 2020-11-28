@@ -419,6 +419,8 @@ Miscellaneous:
 - Tracing tool: the "More tools" menu is now properly closed when a remote data
   source is selected.
 
+- Tracing tool: the mouse cursor icon is now initialized correctly.
+
 - Remote tracing layers: mouse bindings are now correctly updated when a remote
   layer is added. Before this could sometimes lead to mouse clicks not been
   caught in the remote tracing layer.
@@ -427,7 +429,7 @@ Miscellaneous:
   default, rather than overriding them. This can be changed by setting the
   replace_annotations parameter to true.
 
-- Tracing tool: the mouse cursor icon is now initialized correctly.
+- Stack viewer: fix inconsistent state when removing copies of stack layers.
 
 ## Maintenance updates
 

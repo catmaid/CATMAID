@@ -550,6 +550,8 @@
           inactivateBindings(activeStackViewer);
           activateBindings(activeStackViewer, activeLayer);
         }
+
+        activeLayer.tracingOverlay.updateCursor();
         return activeLayer;
       }
 
@@ -558,6 +560,7 @@
         let api = SkeletonAnnotations.getActiveSkeletonAPI();
 
         for (let layer of tracingLayers) {
+          layer.tracingOverlay.updateCursor();
           if (CATMAID.API.equals(layer.tracingOverlay.api, api) &&
               layer.tracingOverlay.nodes.has(activeNodeId)) {
             activeLayer = layer;

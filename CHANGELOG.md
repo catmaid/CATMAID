@@ -427,6 +427,8 @@ Miscellaneous:
   default, rather than overriding them. This can be changed by setting the
   replace_annotations parameter to true.
 
+- Tracing tool: the mouse cursor icon is now initialized correctly.
+
 ## Maintenance updates
 
 - Volume widget: don't show removal options by default. It happens generally

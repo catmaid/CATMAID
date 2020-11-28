@@ -210,7 +210,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
                 'label': label,
                 'skeleton_id': skid,
                 'node_count': len(g),
-                'node_reviewed_count': sum(1 for v in g.node.values() if 0 != len(v.get('reviewer_ids', []))), # TODO when bandwidth > 0, not all nodes are included. They will be included when the bandwidth is computed with an O(n) algorithm rather than the current O(n^2)
+                'node_reviewed_count': sum(1 for v in g.nodes.values() if 0 != len(v.get('reviewer_ids', []))), # TODO when bandwidth > 0, not all nodes are included. They will be included when the bandwidth is computed with an O(n) algorithm rather than the current O(n^2)
                 'branch': False,
             })
             i += 1
@@ -358,7 +358,7 @@ def skeleton_graph(request:HttpRequest, project_id=None) -> JsonResponse:
         circuit = _skeleton_graph(project_id, skeleton_ids,
                 confidence_threshold, bandwidth, expand, compute_risk,
                 cable_spread, path_confluence, source_rel, target_rel)
-        package:Dict[str, Any] = {'nodes': [{'data': props} for props in circuit.node.values()],
+        package:Dict[str, Any] = {'nodes': [{'data': props} for props in circuit.nodes.values()],
                    'edges': []}
         edges:List = package['edges']
         for g1, g2, props in circuit.edges(data=True):

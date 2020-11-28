@@ -288,6 +288,11 @@ Import/export widget:
   displayed at the bottom of the widget. Each link is a successful import and,
   when clicked, selects and moves to the respective skeleton.
 
+- The NetowrkX JSON graph export is now in networkx 2.x format, rather than in
+  v1.x format like before. The main difference is that start and target nodes of
+  an edge are now defined explicitly by ID rather than an index.
+
+
 TrakEM2 import managmenet command:
 
 - The new catmaid_import_from_trakem2 management command can be used to import

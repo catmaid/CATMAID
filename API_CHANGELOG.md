@@ -29,6 +29,11 @@ included in this changelog.
   used to remove all existing annotations if an existing neuron/skeleton is
   replaced with force=true.
 
+- `POST /{project_id}/graphexport/json`:
+  The returned graph export is now in networkx 2.x format, rather than in v1.x
+  format like before. The main difference is that start and target nodes of an
+  edge are now defined explicitly by ID rather than an index.
+
 ### Deprecations
 
 None.

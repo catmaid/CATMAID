@@ -157,6 +157,7 @@
             .append($('<input type="button" value="x" class="remove"/>')
                 .click(makeRemoveHandler(stackViewer, key))));
       }
+
       container.append($('<h4/>').append(layer_name));
 
       if (CATMAID.tools.isFn(layer.getLayerDisplayInfo)) {
@@ -238,7 +239,9 @@
         }
       }
 
-      container.append($('<h5 />'));
+      if (layer.getAvailableBlendModes || layer.getAvailableFilters) {
+        container.append($('<h5 />').append('Blending and Filters'));
+      }
 
       // Blend mode
       if (layer.getAvailableBlendModes) {
@@ -328,6 +331,79 @@
             layer.redraw();
           }
         });
+      }
+
+      // Source specific settings storage - stores as settings of the stack
+      // viewer.
+      if (CATMAID.tools.isFn(layer.getSourceSpec)) {
+        let saveSettings = e => {
+          var key = $(e.target).parents('.layerControl').data('key');
+          var layer = stackViewer.getLayer(key);
+          let sourceSpec = layer.getSourceSpec();
+          let scope = 'session';
+
+          let settings = Array.from(layer.getLayerSettings().values()).reduce((o,s) => {
+            for (let entry of s) {
+              o[entry.name] = entry.value;
+            }
+            return o;
+          }, {});
+          settings['opacity'] = layer.getOpacity();
+          settings['isHideable'] = layer.isHideable;
+          if (layer.getAvailableBlendModes) {
+            settings['blendMode'] = layer.getBlendMode();
+
+            let filters = layer.filters.map(f => {
+              return {
+                'name': f.displayName,
+                'params': f.params.map(p => {
+                  return {
+                    'name': p.name,
+                    'value': f.pixiFilter[p.name],
+                  };
+                }),
+              };
+            });
+            settings['layerFilters'] = filters;
+          }
+
+          let defaultLayerConfig = CATMAID.tools.deepCopy(CATMAID.StackViewer.Settings[scope].default_layer_config);
+          defaultLayerConfig[sourceSpec] = settings;
+          CATMAID.StackViewer.Settings.set('default_layer_config', defaultLayerConfig, scope);
+          CATMAID.msg('Success', 'Stores settings as defaults for source');
+        };
+        let restoreFromSettings = e => {
+          var key = $(e.target).parents('.layerControl').data('key');
+          var layer = stackViewer.getLayer(key);
+          let sourceSpec = layer.getSourceSpec();
+          let scope = 'session';
+          let settings = CATMAID.StackViewer.Settings[scope].default_layer_config[sourceSpec];
+          if (settings) {
+            layer.applySettings(settings);
+            if (layer.getAvailableBlendModes) {
+              layer.syncFilters();
+            }
+            layer.redraw();
+            CATMAID.msg('Success', 'Restored settings from source specific defaults');
+          } else {
+            CATMAID.warn('Did not find any default setting for this layer and source');
+          }
+        };
+        let clearSettings = e => {
+          let key = $(e.target).parents('.layerControl').data('key');
+          let layer = stackViewer.getLayer(key);
+          let sourceSpec = layer.getSourceSpec();
+          let scope = 'session';
+          let defaultLayerConfig = CATMAID.tools.deepCopy(CATMAID.StackViewer.Settings[scope].default_layer_config);
+          delete defaultLayerConfig[sourceSpec];
+          CATMAID.StackViewer.Settings.set('default_layer_config', defaultLayerConfig, scope);
+          CATMAID.msg('Success', 'Source specific settings cleared');
+        };
+        container.append($('<h5 />').append('Source specific settings storage'))
+            .append($('<div class="setting distribute"/>')
+                .append($('<button/>').append('Save as default for source').click(saveSettings))
+                .append($('<button/>').append('Restore from default').click(restoreFromSettings))
+                .append($('<button/>').append('Clear default').click(clearSettings)));
       }
 
       layerList.append(container);

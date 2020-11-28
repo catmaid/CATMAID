@@ -65,6 +65,11 @@
       this._transpose = true;
     }
 
+    this._anisotropy = {
+      x: undefined,
+      y: undefined,
+    };
+
     this.stackViewer.getLayersView().appendChild(this.tilesContainer);
 
     if (this.showOverview) {
@@ -630,10 +635,10 @@
    * Set a layer setting for this layer. The value will only have any effect if
    * the layer's tile source accepts setting changes.
    */
-  TileLayer.prototype.setLayerSetting = function(name, value) {
+  TileLayer.prototype.setLayerSetting = function(name, value, redraw = true) {
     if ('efficiencyThreshold' === name) {
       this.efficiencyThreshold = value;
-      this.redraw();
+      if (redraw) this.redraw();
     } else if ('webGL' === name) {
       if (value) {
         if (!(this instanceof CATMAID.PixiTileLayer)) {
@@ -647,7 +652,7 @@
         }
       }
     } else {
-      CATMAID.StackLayer.prototype.setLayerSetting.call(this, name, value);
+      CATMAID.StackLayer.prototype.setLayerSetting.call(this, name, value, redraw);
     }
   };
 

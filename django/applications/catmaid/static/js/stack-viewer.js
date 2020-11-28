@@ -932,9 +932,11 @@
    * If a layer with the passed key exists, then this layer will be replaced.
    *
    * @param key
+   * @param {bool} loadSettings (optional) Whether default settings for thsi
+   *                            stack should be loaed.
    * @param layer
    */
-  StackViewer.prototype.addLayer = function (key, layer) {
+  StackViewer.prototype.addLayer = function (key, layer, loadSettings = true) {
     if (this._layers.has(key))
       this._layers.get(key).unregister();
     this._layers.set(key, layer);
@@ -947,6 +949,18 @@
         insertionStrategy.move(this, layer, key);
       } else {
        throw new CATMAID.ValueError("Unknown layer insertion strategt: " + strategyName);
+      }
+
+      if (loadSettings && CATMAID.tools.isFn(layer.getSourceSpec)) {
+        try {
+          let sourceSpec = layer.getSourceSpec();
+          let settings = CATMAID.StackViewer.Settings.session.default_layer_config[sourceSpec];
+          if (settings) {
+            layer.applySettings(settings);
+          }
+        } catch (error) {
+          CATMAID.handleError(error);
+        }
       }
     }
     this.layercontrol.refresh();
@@ -1194,6 +1208,58 @@
           },
           show_project_title: {
             default: true
+          },
+          /**
+           * This is supposed to be a mapping of source spec identifiers (e.g.
+           * stacklayer-{stack-id}) to an object of settings associated with
+           * displaying this particular source in a particular layer. Settings
+           * objects are different for different layers and source. This is an
+           * example for a pixi tile layer:
+           *
+           * {
+           *    stack_name_pattern: string, can be regex
+           *    stack_id_pattern: string, can be regex
+           *    opacity: float, [0,1]
+           *    hide_if_nearest_slice_broken: bool,
+           *    use_webgl: bool,
+           *    tile_area_efficiency: float, [0,1]
+           *    interpolation: string,
+           *    mirror_pattern: string, first is used
+           *    custom_mirror: string, custom mirror config
+           *    blend_mode: string, e.g. add
+           *    filters: list of filter objects
+           * }
+           *
+           * with a custom mirror config being optional an object of the
+           * following schema:
+           *
+           * {
+           *   url: string,
+           *   title: string,
+           *   file_Extension: string,
+           *   tile_width: int,
+           *   tile_height: int,
+           *   tile_source_type: int,
+           *   auto_change_on_error: bool
+           * }
+           *
+           * and with filter objects following the schema:
+           *
+           * {
+           *   name: string, name used in front-end
+           *   parameters: object, depends on type (name)
+           * }
+           *
+           * parameters are the UI element label mapped to a value, e.g. for
+           * Intesity Threshold Transparency it would be
+           *
+           * {
+           *  intensity_threshold: 0.1,
+           *  luminance_coefficients: [0.2125, 0.7154, 0.0721]
+           * }
+           */
+          default_layer_config: {
+            default: {}
           },
         },
         migrations: {}

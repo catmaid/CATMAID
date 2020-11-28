@@ -112,6 +112,7 @@
       for (var j = 0; j < cols; ++j) {
         this._tiles[i][j] = new this.tileConstructor(emptyTex);
         this.batchContainer.addChild(this._tiles[i][j]);
+        this._tiles[i][j].blendMode = PIXI.BLEND_MODES[this.blendMode];
         this._tiles[i][j].position.x = j * this.tileWidth * this._anisotropy.x;
         this._tiles[i][j].position.y = i * this.tileHeight * this._anisotropy.y;
 

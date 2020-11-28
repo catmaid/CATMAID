@@ -115,6 +115,53 @@
   };
 
   /**
+   * Return a string that represents the data source for this stack layer.
+   */
+  StackLayer.prototype.getSourceSpec = function() {
+    return `stacklayer-${this.stack.id}`;
+  };
+
+  StackLayer.prototype.applySettings = function(settings) {
+    for (let key in settings) {
+      // Opacity and space bar hiding is handled separately
+      if (key === 'opacity') {
+        this.opacity = settings[key];
+      } else if (key === 'isHideable') {
+        this.isHideable = settings[key];
+      } else if (key !== 'blendMode' && key !== 'layerFilters') {
+        // Blending and shading is also handled separately below after all other settings have been applied.
+      } else {
+        this.setLayerSetting(key, settings[key]);
+      }
+    }
+    // Handle blend mode and filters
+    if (this.getAvailableBlendModes) {
+      for (let key in settings) {
+        if (key === 'blendMode') {
+          this.blendMode = settings[key];
+        } else if (key === 'layerFilters') {
+          // Remove all filters first
+          if (this.filters) this.filters.length = 0;
+          else this.filters = [];
+          // Add all stored filters
+          for (let f of settings[key]) {
+            let availableFilters = this.getAvailableFilters();
+            if (availableFilters && availableFilters[f.name]) {
+              let filter = new (availableFilters[f.name])();
+              if (f.params) {
+                for (let p of f.params) {
+                  filter.pixiFilter[p.name] = p.value;
+                }
+              }
+              this.filters.push(filter);
+            }
+          }
+        }
+      }
+    }
+  };
+
+  /**
    * Handle a canary tile check for the tile source mirror.
    *
    * If the mirror is not accessible, switch to the first accessible mirror
@@ -417,19 +464,19 @@
    * Set a layer setting for this layer. The value will only have any effect if
    * the layer's tile source accepts setting changes.
    */
-  StackLayer.prototype.setLayerSetting = function(name, value) {
+  StackLayer.prototype.setLayerSetting = function(name, value, redraw = true) {
     if ('hideIfBroken' === name) {
       this.hideIfNearestSliceBroken = value;
       if (!this.hideIfNearestSliceBroken) this.setOpacity(this.opacity);
     } else if ('efficiencyThreshold' === name) {
       this.efficiencyThreshold = value;
-      this.redraw();
+      if (redraw) this.redraw();
     } else if ('mirrorSelection' === name) {
       this.switchToMirror(value);
     } else if ('changeMirrorIfNoData' === name) {
       this.changeMirrorIfNoData = value;
       // If this was set to true, perform a canary test
-      if (this.changeMirrorIfNoData) {
+      if (this.changeMirrorIfNoData && redraw) {
         this.tileSource.checkCanary(project, this.stack)
             .then(this._handleCanaryCheck.bind(this));
       }

@@ -202,6 +202,10 @@ div.LayerControl .layerClose {
   margin: 0.2em 0;
 }
 
+.layerControl .setting.distribute {
+  justify-content: space-between;
+}
+
 div.LayerControl .hSliderView {
   float: none;
   display: inline-block;

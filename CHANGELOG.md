@@ -314,6 +314,13 @@ Miscellaneous:
   stack and mirror name in its title bar. This can be adjusted in the "Stack
   view" settings of the Settings Manager.
 
+- Layer settings like opacity, blending more or filters can now be stored as
+  part of the regular settings and can be defined for the regular scopes like in
+  the Settings Widget (e.g. session or project). These settings are stored per
+  layer type and source reference (e.g. stack ID). In order to save, restore and
+  clear those settings, there are now three new buttons at the bottom of each
+  layer that supports settings storage.
+
 - Node distance measurements (icon in tracing tool bar) are now allowed also
   between nodes of different skeletons. In this case only the straight line
   distance will be displayed. Both the straight line distance and the path

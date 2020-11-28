@@ -24,6 +24,11 @@ included in this changelog.
   Now accepts the optional parameters user_id and type to further constrain the
   result. Type is a transaction label string, e.g. 'skeletons.import'.
 
+- `POST /{project_id}/skeletons/import`:
+  Now accepts the optional boolean parameter replace_annotations, which can be
+  used to remove all existing annotations if an existing neuron/skeleton is
+  replaced with force=true.
+
 ### Deprecations
 
 None.

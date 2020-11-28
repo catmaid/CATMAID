@@ -38,7 +38,8 @@ from catmaid.control.common import (insert_into_log, get_class_to_id_map,
 from catmaid.control.link import LINK_TYPES
 from catmaid.control.neuron import _delete_if_empty
 from catmaid.control.annotation import (annotations_for_skeleton,
-        create_annotation_query, _annotate_entities, _update_neuron_annotations)
+        create_annotation_query, _annotate_entities, _update_neuron_annotations,
+        clear_annotations)
 from catmaid.control.provenance import get_data_source, normalize_source_url
 from catmaid.control.review import get_review_status
 from catmaid.control.tree_util import find_root, reroot, edge_count_to_root
@@ -2903,6 +2904,19 @@ def import_skeleton(request:HttpRequest, project_id=None) -> Union[HttpResponse,
         type: array
         items:
           type: string
+      - name: replace_annotations
+        description: >
+            If enabled and an existing neuron is replaced with a new skeleton,
+            then all existing annotations of the target neuron are replaced with
+            the annotations passed in or the default 'Import' annotations. If
+            disabled, the existing annotations remaind and the passed in
+            annotations or the default 'Import' annotation are appended
+            (default). For newly created skelteons, this option has no
+            relevance.
+        type: boolean
+        required: false
+        defaultValue: false
+        paramType: form
       - name: source_id
         description: >
             If specified, this source ID will be saved and mapped to the new
@@ -2959,6 +2973,7 @@ def import_skeleton(request:HttpRequest, project_id=None) -> Union[HttpResponse,
     auto_id = get_request_bool(request.POST, 'auto_id', True)
     name = request.POST.get('name', None)
     annotations = get_request_list(request.POST, 'annotations', ['Import'])
+    replace_annotations = get_request_bool(request.POST, 'replace_annotations', False)
     source_id = request.POST.get('source_id', None)
     source_url = request.POST.get('source_url', None)
     source_project_id = request.POST.get('source_project_id', None)
@@ -2976,13 +2991,13 @@ def import_skeleton(request:HttpRequest, project_id=None) -> Union[HttpResponse,
                 return import_skeleton_swc(request.user, project_id, swc_string,
                         neuron_id, skeleton_id, name, annotations, force,
                         auto_id, source_id, source_url, source_project_id,
-                        source_type)
+                        source_type, replace_annotations=replace_annotations)
             if extension == 'eswc':
                 swc_string = '\n'.join([line.decode('utf-8') for line in uploadedfile])
                 return import_skeleton_eswc(request.user, project_id, swc_string,
                         neuron_id, skeleton_id, name, annotations, force,
                         auto_id, source_id, source_url, source_project_id,
-                        source_type)
+                        source_type, replace_annotations=replace_annotations)
             else:
                 return HttpResponse(f'File type "{extension}" not understood. Known file types: swc', status=415)
 
@@ -2992,7 +3007,7 @@ def import_skeleton(request:HttpRequest, project_id=None) -> Union[HttpResponse,
 def _import_skeleton_swc(user, project_id, swc_string, neuron_id=None,
         skeleton_id=None, name=None, annotations=['Import'], force=False,
         auto_id=True, source_id=None, source_url=None, source_project_id=None,
-        source_type='skeleton') -> JsonResponse:
+        source_type='skeleton', replace_annotations=False) -> JsonResponse:
     """Import a neuron modeled by a skeleton in SWC format.
     """
 
@@ -3021,7 +3036,7 @@ def _import_skeleton_swc(user, project_id, swc_string, neuron_id=None,
 
     import_info = _import_skeleton(user, project_id, g, neuron_id, skeleton_id,
             name, annotations, force, auto_id, source_id, source_url,
-            source_project_id, source_type)
+            source_project_id, source_type, replace_annotations=replace_annotations)
     node_id_map = {n: d['id'] for n, d in import_info['graph'].nodes(data=True)}
 
     return {
@@ -3034,18 +3049,18 @@ def _import_skeleton_swc(user, project_id, swc_string, neuron_id=None,
 def import_skeleton_swc(user, project_id, swc_string, neuron_id=None,
         skeleton_id=None, name=None, annotations=['Import'], force=False,
         auto_id=True, source_id=None, source_url=None, source_project_id=None,
-        source_type='skeleton') -> JsonResponse:
+        source_type='skeleton', replace_annotations=False) -> JsonResponse:
     """Import a neuron modeled by a skeleton in SWC format.
     """
     return JsonResponse(_import_skeleton_swc(user, project_id, swc_string,
         neuron_id, skeleton_id, name, annotations, force, auto_id, source_id,
-        source_url, source_project_id, source_type))
+        source_url, source_project_id, source_type, replace_annotations=replace_annotations))
 
 
 def import_skeleton_eswc(user, project_id, swc_string, neuron_id=None,
         skeleton_id=None, name=None, annotations=['Import'], force=False,
         auto_id=True, source_id=None, source_url=None, source_project_id=None,
-        source_type='skeleton') -> JsonResponse:
+        source_type='skeleton', replace_annotations=False) -> JsonResponse:
     """Import a neuron modeled by a skeleton in eSWC format.
     """
 
@@ -3092,7 +3107,8 @@ def import_skeleton_eswc(user, project_id, swc_string, neuron_id=None,
 
     import_info = _import_skeleton(user, project_id, g, neuron_id, skeleton_id,
             name, annotations, force, auto_id, source_id, source_url,
-            source_project_id, source_type, extended_data=True)
+            source_project_id, source_type, extended_data=True,
+            replace_annotations=replace_annotations)
     node_id_map = {n: d['id'] for n, d in import_info['graph'].nodes(data=True)}
 
     return JsonResponse({
@@ -3105,7 +3121,8 @@ def import_skeleton_eswc(user, project_id, swc_string, neuron_id=None,
 def _import_skeleton(user, project_id, arborescence, neuron_id=None,
         skeleton_id=None, name=None, annotations=['Import'], force=False,
         auto_id=True, source_id=None, source_url=None, source_project_id=None,
-        source_type='skeleton', extended_data=False, map_available_users=True) -> Dict[str, Any]:
+        source_type='skeleton', extended_data=False, map_available_users=True,
+        replace_annotations=False) -> Dict[str, Any]:
     """Create a skeleton from a networkx directed tree.
 
     Associate the skeleton to the specified neuron, or a new one if none is
@@ -3291,6 +3308,9 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
     # Add annotations, if that is requested. This will only by default append to
     # any existing annotations for this neuron (none for new neurons). If
     # replace_annotations is True, all existing annotations will be replaced.
+    if replace_annotations:
+        clear_annotations(project_id, new_skeleton.id)
+
     if annotations:
         annotation_map = {a:{'user_id': user.id} for a in annotations}
         _annotate_entities(project_id, [new_neuron.id], annotation_map)

@@ -1825,3 +1825,40 @@ class SkeletonsApiTransactionTests(CatmaidApiTransactionTestCase):
         # skeleton.
         n_skeleton_nodes = Treenode.objects.filter(skeleton_id=post_force_update_skeleton_id).count()
         self.assertEqual(n_skeleton_nodes, n_orig_skeleton_nodes)
+
+        # Test replacing the imported neuron with forcing an update and removing
+        # all exisiting annotations
+        swc_file2 = StringIO(orig_swc_string)
+        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
+                {'file.eswc': swc_file2, 'name': 'test8', 'skeleton_id': skeleton.id,
+                    'force': True, 'replace_annotations': True, 'annotations': ['xyz3']})
+
+        transaction.commit()
+
+        self.assertStatus(response)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+
+        last_skeleton_edit_time = skeleton.edition_time
+
+        # We now expect the union of the existing and the passed in anno
+        skeleton.refresh_from_db()
+
+        post_force_update_skeleton_id = parsed_response['skeleton_id']
+        replaced_neurons = ClassInstanceClassInstance.objects.filter(
+                class_instance_a_id=skeleton.id,
+                relation__relation_name='model_of',
+                class_instance_b__class_column__class_name='neuron')
+        self.assertEqual(len(replaced_neurons), 1)
+        self.assertEqual(skeleton.id, post_force_update_skeleton_id)
+        self.assertEqual(skeleton.name, 'test8')
+        self.assertNotEqual(skeleton.edition_time, last_skeleton_edit_time)
+
+        # Make sure no annotation changed
+        new_neuron_annotations_test_7 = set(annotations_for_skeleton(
+                self.test_project_id, post_force_update_skeleton_id).keys())
+        self.assertEqual(new_neuron_annotations_test_7, set(['xyz3']))
+
+        # Make sure there are as many nodes as expected for the imported
+        # skeleton.
+        n_skeleton_nodes = Treenode.objects.filter(skeleton_id=post_force_update_skeleton_id).count()
+        self.assertEqual(n_skeleton_nodes, n_orig_skeleton_nodes)

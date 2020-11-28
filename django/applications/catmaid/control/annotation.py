@@ -1847,3 +1847,39 @@ def annotations_for_skeleton(project_id:Union[int,str], skeleton_id, relations=N
     })
 
     return dict(cursor.fetchall())
+
+
+def clear_annotations(project_id:Union[int,str], skeleton_id, relations=None, classes=None) -> Dict:
+    """Remove all annotations from a skeleton.
+    """
+    if not relations:
+        relations = get_relation_to_id_map(project_id)
+    if not classes:
+        classes = get_class_to_id_map(project_id)
+    cursor = connection.cursor()
+    cursor.execute("""
+        DELETE FROM class_instance_class_instance cici
+        USING class_instance a, class_instance neuron,
+            class_instance_class_instance skeleton_neuron,
+            class_instance skeleton
+        WHERE a.id = cici.class_instance_b
+            AND neuron.id = cici.class_instance_a
+            AND cici.class_instance_a = skeleton_neuron.class_instance_b
+            AND skeleton.id = skeleton_neuron.class_instance_a
+            AND cici.project_id = %(project_id)s
+            AND a.class_id = %(annotation_class)s
+            AND cici.relation_id = %(annotated_with_rel)s
+            AND neuron.class_id = %(neuron_class)s
+            AND skeleton_neuron.relation_id =  %(model_of_rel)s
+            AND skeleton_neuron.class_instance_a = %(skeleton_id)s
+        RETURNING cici.id
+    """, {
+        'project_id': project_id,
+        'annotation_class': classes['annotation'],
+        'annotated_with_rel': relations['annotated_with'],
+        'neuron_class': classes['neuron'],
+        'model_of_rel': relations['model_of'],
+        'skeleton_id': skeleton_id,
+    })
+
+    return list([r[0] for r in cursor.fetchall()])

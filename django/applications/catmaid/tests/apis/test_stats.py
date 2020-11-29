@@ -170,6 +170,8 @@ class StatsApiTests(CatmaidApiTestCase):
             'cable_length_total': 30436.534191990067,
             'n_treenodes': 95,
             'n_connectors': 8,
+            'n_skeletons_non_zero_length': 10,
+            'n_skeletons': 12,
         }
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(expected_result, parsed_response)

@@ -719,6 +719,8 @@
 
           // Add listing
           let fields = [
+            ['n_skeletons', 'Number of skeletons'],
+            ['n_skeletons_non_zero_length', 'Number of skeletons (length > 0)'],
             ['cable_length_total', 'Total Cable Length (nm)'],
             ['n_treenodes', 'Number of treenodes'],
             ['n_connectors', 'Number of connectors'],

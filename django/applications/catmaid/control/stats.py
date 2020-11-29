@@ -114,9 +114,17 @@ class ProjectAggStats(APIView):
           type: boolean
           paramType: form
           default: true
+        - name: with_skeletons
+          description: |
+            Whether the skeleton counts in this project should be included.
+          required: false
+          type: boolean
+          paramType: form
+          default: true
         """
         with_cable_length = get_request_bool(request.query_params, 'with_cable_length', True)
         with_node_count = get_request_bool(request.query_params, 'with_node_count', True)
+        with_skeletons = get_request_bool(request.query_params, 'with_skeletons', True)
 
         result = {}
         cursor = connection.cursor()
@@ -152,6 +160,28 @@ class ProjectAggStats(APIView):
             })
 
             result['n_connectors'] = cursor.fetchone()[0]
+
+        if with_skeletons:
+            cursor.execute("""
+                SELECT s1.*, s2.*
+                FROM (
+                    SELECT COUNT(*)
+                    FROM catmaid_skeleton_summary
+                    WHERE project_id = %(project_id)s
+                ) s1,
+                (
+                    SELECT COUNT(*)
+                    FROM catmaid_skeleton_summary
+                    WHERE project_id = %(project_id)s
+                        AND cable_length > 0
+                ) s2;
+            """, {
+                'project_id': project_id,
+            })
+
+            rows = cursor.fetchone()
+            result['n_skeletons'] = rows[0]
+            result['n_skeletons_non_zero_length'] = rows[1]
 
         return Response(result)
 

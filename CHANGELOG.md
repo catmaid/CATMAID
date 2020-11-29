@@ -213,6 +213,11 @@ Administration:
   groups (`NEW_USER_DEFAULT_GROUPS` setting) and the default tool visibility
   settings apply as well.
 
+- If new users are created, there is now also a user group created with the same
+  name as the new user's username. This group can be used to manage edit permissions
+  the user's data. If groups shouldn't be created automatically, set the
+  `NEW_USER_CREATE_USER_GROUP` to `False` in the settings.
+
 - Project importer: YAML data can now also be pasted into a text box for
   project import, just like JSON data.
 

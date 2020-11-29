@@ -329,6 +329,11 @@ The CATMAID admins
 # A new user's defaul groups
 NEW_USER_DEFAULT_GROUPS = []
 
+# Whether the creation of new users should cause the creation of a group with
+# the same name. This groups is used to manage edit permission on the user's
+# data.
+NEW_USER_CREATE_USER_GROUP = True
+
 # While pickle can cause security problems [1], we allow it for now and trust
 # that the Celery server will only accept connections from CATMAID. To improve
 # security, this should be changed though, see also [2].

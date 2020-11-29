@@ -1625,8 +1625,18 @@ def create_user_profile(sender, instance, created, **kwargs) -> None:
 
         profile.save()
 
-# Connect the User model's post save signal to profile creation
+
+def create_user_group(sender, instance, created, **kwargs) -> None:
+    """ Ensure there is a user group with the same name as the username.
+    """
+    if created and settings.NEW_USER_CREATE_USER_GROUP:
+        Group.objects.get_or_create(name=instance.username)
+
+
+# Connect the User model's post save signal to the creation of the user profile
+# and the user group.
 post_save.connect(create_user_profile, sender=User)
+post_save.connect(create_user_group, sender=User)
 
 def add_user_to_default_groups(sender, instance, created, **kwargs) -> None:
     if created:

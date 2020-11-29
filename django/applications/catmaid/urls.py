@@ -416,6 +416,7 @@ urlpatterns += [
     url(r'^dataviews/list$', data_view.get_available_data_views, name='list_dataviews'),
     url(r'^dataviews/default$', data_view.get_default_properties, name='default_dataview'),
     url(r'^dataviews/(?P<data_view_id>\d+)/$', data_view.get_detail, name='detail_dataview'),
+    url(r'^dataviews/(?P<data_view_id>\d+)/make-home-view$', data_view.make_home_view, name='make_home_view'),
     url(r'^dataviews/show/(?P<data_view_id>\d+)$', data_view.get_data_view, name='show_dataview'),
     url(r'^dataviews/show/default$', data_view.get_default_data_view, name='show_default_dataview'),
     url(r'^dataviews/type/comment$', data_view.get_data_view_type_comment, name='get_dataview_type_comment'),

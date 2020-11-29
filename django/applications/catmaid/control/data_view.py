@@ -10,6 +10,7 @@ from django.db.models import Count
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.template import loader
+from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
 
 from taggit.models import TaggedItem
@@ -107,6 +108,22 @@ def get_default_properties(request:HttpRequest) -> JsonResponse:
             result = {}
 
     return JsonResponse(result)
+
+
+@login_required
+def make_home_view(request:HttpRequest, data_view_id) -> JsonResponse:
+    """Get details on a particular data view.
+    """
+    dataview = DataView.objects.get(id=data_view_id)
+    userprofile = request.user.userprofile
+
+    userprofile.home_view = dataview
+    userprofile.save();
+
+    return JsonResponse({
+        'status': 'Home view updated',
+    })
+
 
 def get_detail(request:HttpRequest, data_view_id) -> JsonResponse:
     """Get details on a particular data view.

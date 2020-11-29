@@ -1430,7 +1430,7 @@ var project;
     {
       var dv = e[i];
       var url = CATMAID.makeURL('?dataview=' + dv.id);
-      var link = '<a class="hoverlink" href="' + url + '">&para;&nbsp;</a>';
+      var link = `<a class="hoverlink auth-only" href="#" onclick="CATMAID.client.makeHomeView(${dv.id}).then(r => CATMAID.msg('Success', r.status)).catch(CATMAID.handleError);"><i class="fa fa-home"></i>&nbsp;</a>&nbsp;<a class="hoverlink" href="${url}"><i class="fa fa-link"></i>&nbsp;</a>`;
       menuItems[i] = {
         title: dv.title,
         note: link + dv.note,
@@ -1440,6 +1440,10 @@ var project;
 
     menus.dataview.update(menuItems);
   }
+
+  Client.prototype.makeHomeView = function(dataViewId) {
+    return CATMAID.fetch(`/dataviews/${dataViewId}/make-home-view`);
+  };
 
   /**
    * Load a particular data view.

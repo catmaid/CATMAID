@@ -324,6 +324,19 @@ TrakEM2 import managmenet command:
   The latter seems to generate better skeletons at the moment, but might require
   a bit more setup time.
 
+Data views:
+
+- Add the options sample_image, sample_mirror and sanmple_slice to the front-end
+  based "Simple project list" data view. These options behave like in the other
+  data views.
+
+- If more than one data view is available, users can now select a home view by
+  clicking the home icon in the 'Home' menu in the upper left corner. Upon next
+  reload of the page, this makes the respective data view the default one the
+  users sees.
+
+- The icon to create a link to a data view changed to a more common chain icon.
+
 Miscellaneous:
 
 - Each stack viewer will now show the project name by default along with the
@@ -374,10 +387,6 @@ Miscellaneous:
 - The overview image in the lower right corner of the stack viewer is now
   displayed by default. This behavior can be adjusted for users, projects and
   the whole instance in the Settings Widget.
-
-- Data views; add the options sample_image, sample_mirror and sanmple_slice to
-  the front-end based "Simple project list" data view. These options behave like
-  in the other data views.
 
 - Open window: a new button "Open with active skeleton" makes it quicker to open
   a new widget with the active skeleton loaded.

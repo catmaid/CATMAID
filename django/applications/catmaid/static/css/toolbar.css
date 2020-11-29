@@ -245,6 +245,24 @@ div.menu_item tr.menu_item_selected a.hoverlink {
   color: #FFF;
   text-decoration: none;
 }
+div.menu_item tr.menu_item_hover a.hoverlink:hover,
+div.menu_item tr.menu_item_hover a.authhoverlink:hover,
+.catmaid.authenticated div.menu_item tr.menu_item_hover a.hoverlink.auth-only:hover,
+.catmaid.authenticated div.menu_item tr.menu_item_selected a.hoverlink.auth-only:hover {
+  color: #ffb300;
+}
+
+.catmaid.authenticated div.menu_item tr.menu_item_hover a.hoverlink.auth-only,
+.catmaid.authenticated div.menu_item tr.menu_item_selected a.hoverlink.auth-only {
+  visibility: visible;
+  color: #FFF;
+  text-decoration: none;
+}
+
+.catmaid:not(.authenticated) div.menu_item tr.menu_item_hover a.hoverlink.auth-only,
+.catmaid:not(.authenticated) div.menu_item tr.menu_item_selected a.hoverlink.auth-only {
+  visibility: hidden;
+}
 
 div.toolbar div.box p.toolbar_wait,
 div.toolbar div.box_right p.toolbar_wait {

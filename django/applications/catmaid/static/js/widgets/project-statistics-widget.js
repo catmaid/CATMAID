@@ -842,10 +842,10 @@
           '<br clear="all" />' +
           '<h3>Nodes created by user</h3>' +
           '<div class="buttonpanel" data-role="piechart_treenode_controls"></div>' +
-          '<div id="piechart_treenode_holder"></div>' +
+          '<div id="piechart_treenode_holder"><span class="help">Fetching data…</span></div>' +
           '<br clear="all" />' +
           '<h3>Largest neurons</h3>' +
-          '<div id="project-stats-largest-neurons"></div>' +
+          '<div id="project-stats-largest-neurons"><span class="help">Fetching data…</span></div>' +
           '</div>';
 
         $(container).on('change', 'input#include-import-contrib', e => {
@@ -873,7 +873,7 @@
         includeImports.appendChild(includeImportsCb);
         includeImports.appendChild(document.createTextNode('Include imports'));
 
-        $('div[data-role=piechart_treenode_controls]', container).append(includeImports);
+        $('div[data-role=piechart_treenode_controls]', container).empty().append(includeImports);
       },
       init: function() {
         var self = this;

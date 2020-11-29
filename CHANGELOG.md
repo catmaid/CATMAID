@@ -337,6 +337,9 @@ Data views:
 
 - The icon to create a link to a data view changed to a more common chain icon.
 
+- A click on the Home button in the upper left corner will now bring the user to
+  their home view (if defined), otherwise the global default data view.
+
 Miscellaneous:
 
 - Each stack viewer will now show the project name by default along with the

@@ -74,7 +74,7 @@
         <div class="menu toolbar_item">
           <div id="home_box" class="box">
             <div class="menu_item" style="float:left" onpointerover="this.lastChild.style.display = 'block';" onpointerout="this.lastChild.style.display = 'none';">
-              <p><a onclick="if (project) { project.destroy(); } return false;">Home</a></p>
+              <p><a onclick="if (project) { project.destroy(); } else { CATMAID.client.loadHomeView(); } return false;">Home</a></p>
               <div class="pulldown" id="dataview_menu"></div></div>
           </div>
           <div id="projectmenu_box" class="box">

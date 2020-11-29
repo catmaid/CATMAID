@@ -1017,21 +1017,9 @@ var project;
 
       var projectUpdate = CATMAID.client.updateProjects()
         .then(function() {
-          var backgroundDataView = !!project;
-
           // If the user user has a home view set, load it. Otherwise load the
           // default data view.
-          if (e.userprofile.home_view_id) {
-            return CATMAID.DataViews.getConfig(e.userprofile.home_view_id)
-              .then(config => CATMAID.client.switch_dataview(
-                  CATMAID.DataView.makeDataView(config), backgroundDataView))
-              .catch(e => {
-                CATMAID.handleError(e);
-                return CATMAID.client.load_default_dataview(backgroundDataView);
-              });
-          } else {
-            return CATMAID.client.load_default_dataview(backgroundDataView);
-          }
+          return CATMAID.client.loadHomeView(!!project);
         })
         .catch(CATMAID.handleError);
 
@@ -1441,8 +1429,28 @@ var project;
     menus.dataview.update(menuItems);
   }
 
+  /**
+   * Make the data view with the passed in ID the default for the current user.
+   */
   Client.prototype.makeHomeView = function(dataViewId) {
     return CATMAID.fetch(`/dataviews/${dataViewId}/make-home-view`);
+  };
+
+  /**
+   * Load the user's home view or the default view.
+   */
+  Client.prototype.loadHomeView = function(backgroundDataView = false) {
+    if (CATMAID.userprofile.home_view_id !== undefined) {
+      return CATMAID.DataViews.getConfig(CATMAID.userprofile.home_view_id)
+        .then(config => CATMAID.client.switch_dataview(
+            CATMAID.DataView.makeDataView(config), backgroundDataView))
+        .catch(e => {
+          CATMAID.handleError(e);
+          return CATMAID.client.load_default_dataview(backgroundDataView);
+        });
+    } else {
+      return CATMAID.client.load_default_dataview(backgroundDataView);
+    }
   };
 
   /**

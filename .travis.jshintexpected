@@ -202,12 +202,6 @@ django/applications/catmaid/static/js/widgets/pair-statistics-widget.js: line 80
 django/applications/catmaid/static/js/widgets/pair-statistics-widget.js: line 814, col 19, 'batches' is defined but never used.
 django/applications/catmaid/static/js/widgets/pair-statistics-widget.js: line 848, col 25, 'k' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/project-statistics-widget.js: line 483, col 11, 'current_label' is defined but never used.
-django/applications/catmaid/static/js/widgets/project-statistics-widget.js: line 524, col 11, 'legendW' is defined but never used.
-django/applications/catmaid/static/js/widgets/project-statistics-widget.js: line 520, col 9, 'update_linegraph' is defined but never used.
-django/applications/catmaid/static/js/widgets/project-statistics-widget.js: line 725, col 9, 'refresh_editors' is defined but never used.
-django/applications/catmaid/static/js/widgets/project-statistics-widget.js: line 734, col 9, 'refresh_summary' is defined but never used.
-django/applications/catmaid/static/js/widgets/project-statistics-widget.js: line 919, col 7, 'openUserProficiency' is defined but never used.
 
 django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 152, col 13, 'state' is defined but never used.
 django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 198, col 9, 'month' is defined but never used.
@@ -305,4 +299,4 @@ django/applications/catmaid/static/libs/catmaid/time-series.js: line 19, col 12,
 django/applications/catmaid/static/libs/catmaid/volumes.js: line 613, col 9, 'abs' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/volumes.js: line 805, col 15, 'dSimplicesT' is defined but never used.
 
-241 errors
+235 errors

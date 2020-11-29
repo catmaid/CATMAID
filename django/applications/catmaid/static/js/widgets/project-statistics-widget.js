@@ -30,11 +30,8 @@
     // An optional text pattern that the largest neurons need to have
     this.topNNameFilter = '';
 
-    var update_stats_fields = function(data) {
-      $("#skeletons_created").text(data.skeletons_created);
-      $("#treenodes_created").text(data.treenodes_created);
-      $("#connectors_created").text(data.connectors_created);
-    };
+    // Whether the user performance graph should be displayed.
+    this.showUserGraph = false;
 
     function wrapWithLink(data, num, type) {
       // Create a new link that retrieves the required information.
@@ -480,7 +477,6 @@
       });
 
       // Add hover functionality
-      var current_label = null;
       pie.hover(
         function () {
           // Scale everything up
@@ -521,7 +517,6 @@
       $("#linechart_treenode_holder").empty();
 
       var w = 600, h = 400, wPadding = 40, hPadding = 65;
-      var legendW = 100;
       var endDate = new Date();
       var startDate = endDate.addDays(-30);
       var msPerDay = 1000 * 60 * 60 * 24;
@@ -620,9 +615,12 @@
           },
           parallel: true,
         })
-        .then(function(response) {
+        .then(response => {
           // The respose maps user IDs to number of nodes
           update_piechart(response, "piechart_treenode_holder");
+          if (this.showUserGraph) {
+            update_linegraph(response);
+          }
         })
         .catch(CATMAID.handleError);
     };
@@ -702,7 +700,6 @@
     };
 
     this.refreshProjectAggregateInfo = function() {
-      let self = this;
       return CATMAID.fetch({
           url: `${project.id}/stats/aggregates`,
           parallel: true,
@@ -725,7 +722,7 @@
             ['cable_length_total', 'Total Cable Length (nm)'],
             ['n_treenodes', 'Number of treenodes'],
             ['n_connectors', 'Number of connectors'],
-          ]
+          ];
           for (let entry of fields) {
             let label = target.appendChild(document.createElement('span'));
             label.appendChild(document.createTextNode(entry[1]));
@@ -752,24 +749,6 @@
           $(".stats-history-setting").prop('disabled', false);
           statisticsData = jso || null;
           update_user_history(jso, timeUnit, this.includeImportContributions);
-        })
-        .catch(CATMAID.handleError);
-      return true;
-    };
-
-    var refresh_editors = function() {
-      CATMAID.fetch(project.id + '/stats/editor')
-        .then(function(response) {
-          update_piechart(response, "piechart_editor_holder");
-        })
-        .catch(CATMAID.handleError);
-      return true;
-    };
-
-    var refresh_summary = function() {
-      CATMAID.fetch(project.id + '/stats/summary')
-        .then(function(response) {
-          update_stats_fields(jso);
         })
         .catch(CATMAID.handleError);
       return true;
@@ -951,10 +930,6 @@
     widget.setStartDate(options.startDate);
     widget.setEndDate(options.endDate);
     widget.refresh();
-  };
-
-  var openUserProficiency = function() {
-    WindowMaker.show('user-analytics');
   };
 
   // Export statistics widget

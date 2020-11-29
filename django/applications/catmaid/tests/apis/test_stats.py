@@ -162,6 +162,18 @@ class StatsApiTests(CatmaidApiTestCase):
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(expected_result, parsed_response)
 
+    def test_project_agg_stats(self):
+        self.fake_authentication()
+        response = self.client.get(f'/{self.test_project_id}/stats/aggregates')
+        self.assertStatus(response)
+        expected_result = {
+            'cable_length_total': 30436.534191990067,
+            'n_treenodes': 95,
+            'n_connectors': 8,
+        }
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(expected_result, parsed_response)
+
     def test_stats_user_history_no_utc_offset(self):
         self.fake_authentication()
 

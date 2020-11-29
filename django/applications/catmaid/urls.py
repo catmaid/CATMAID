@@ -165,6 +165,7 @@ urlpatterns += [
 
 # Statistics
 urlpatterns += [
+    url(r'^(?P<project_id>\d+)/stats/aggregates$', stats.ProjectAggStats.as_view()),
     url(r'^(?P<project_id>\d+)/stats/cable-length$', stats.stats_cable_length),
     url(r'^(?P<project_id>\d+)/stats/nodecount$', stats.stats_nodecount),
     url(r'^(?P<project_id>\d+)/stats/editor$', stats.stats_editor),

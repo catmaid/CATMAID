@@ -93,6 +93,69 @@ def stats_cable_length(request:HttpRequest, project_id=None) -> JsonResponse:
     return JsonResponse(result, safe=False)
 
 
+class ProjectAggStats(APIView):
+
+    @method_decorator(requires_user_role(UserRole.Browse))
+    def get(self, request:HttpRequest, project_id) -> Response:
+        """Get aggregate/sum information on various object types in the passed in
+        project.
+        parameters:
+        - name: with_cable_length
+          description: |
+            Whether the total cable length in this project should be included.
+          required: false
+          type: boolean
+          paramType: form
+          default: true
+        - name: with_node_count
+          description: |
+            Whether the total node count in this project should be included.
+          required: false
+          type: boolean
+          paramType: form
+          default: true
+        """
+        with_cable_length = get_request_bool(request.query_params, 'with_cable_length', True)
+        with_node_count = get_request_bool(request.query_params, 'with_node_count', True)
+
+        result = {}
+        cursor = connection.cursor()
+
+        if with_cable_length:
+            cursor.execute("""
+                SELECT SUM(cable_length)
+                FROM catmaid_skeleton_summary
+                WHERE project_id = %(project_id)s
+            """, {
+                'project_id': project_id,
+            })
+
+            result['cable_length_total'] = cursor.fetchone()[0]
+
+        if with_node_count:
+            cursor.execute("""
+                SELECT SUM(num_nodes)
+                FROM catmaid_skeleton_summary
+                WHERE project_id = %(project_id)s
+            """, {
+                'project_id': project_id,
+            })
+
+            result['n_treenodes'] = cursor.fetchone()[0]
+
+            cursor.execute("""
+                SELECT COUNT(*)
+                FROM connector
+                WHERE project_id = %(project_id)s
+            """, {
+                'project_id': project_id,
+            })
+
+            result['n_connectors'] = cursor.fetchone()[0]
+
+        return Response(result)
+
+
 @api_view(['GET'])
 @requires_user_role(UserRole.Browse)
 def stats_nodecount(request:HttpRequest, project_id=None) -> JsonResponse:

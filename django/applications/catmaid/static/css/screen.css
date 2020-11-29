@@ -1822,6 +1822,12 @@ button.files-loaded {
   border: 0;
 }
 
+.two-column-grid {
+  display: grid;
+  grid-template-columns: 15em 1fr;
+  grid-row-gap: 0.2em;
+}
+
 .three-column-grid {
   display: grid;
   grid-template-columns: 8em 1fr 2em;

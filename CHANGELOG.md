@@ -292,6 +292,13 @@ Import/export widget:
   v1.x format like before. The main difference is that start and target nodes of
   an edge are now defined explicitly by ID rather than an index.
 
+Project statistics widget:
+
+- Subsections will now show more clearly when they are still fetching data.
+
+- A new data overview section has been added to the bottom of the content. It
+  shows currently the total cable length of skeletons in the project along with
+  the total number of treenodes and connectors.
 
 TrakEM2 import managmenet command:
 

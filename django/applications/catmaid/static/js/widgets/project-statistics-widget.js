@@ -609,6 +609,7 @@
       this.refresh_history();
       this.refreshNodecount();
       this.refreshLargestNeurons();
+      this.refreshProjectAggregateInfo();
     };
 
     this.refreshNodecount = function() {
@@ -696,6 +697,40 @@
             let scoreSpan = li.appendChild(document.createElement('span'));
             scoreSpan.classList.add('cable-length');
             scoreSpan.appendChild(document.createTextNode(' (' + Math.round(result[i][1]) + 'nm)'));
+          }
+        });
+    };
+
+    this.refreshProjectAggregateInfo = function() {
+      let self = this;
+      return CATMAID.fetch({
+          url: `${project.id}/stats/aggregates`,
+          parallel: true,
+        })
+        .then(function(result) {
+          let target = document.getElementById("project-stats-aggregates");
+          if (!target) {
+            CATMAID.warn("Could not find target element");
+            return;
+          }
+          // Clear target container
+          while (target.lastChild) {
+            target.removeChild(target.lastChild);
+          }
+
+          target.classList.add('two-column-grid');
+
+          // Add listing
+          let fields = [
+            ['cable_length_total', 'Total Cable Length (nm)'],
+            ['n_treenodes', 'Number of treenodes'],
+            ['n_connectors', 'Number of connectors'],
+          ]
+          for (let entry of fields) {
+            let label = target.appendChild(document.createElement('span'));
+            label.appendChild(document.createTextNode(entry[1]));
+            let value = target.appendChild(document.createElement('span'));
+            value.appendChild(document.createTextNode(result[entry[0]]));
           }
         });
     };
@@ -846,6 +881,8 @@
           '<br clear="all" />' +
           '<h3>Largest neurons</h3>' +
           '<div id="project-stats-largest-neurons"><span class="help">Fetching data…</span></div>' +
+          '<h3>Data overview</h3>' +
+          '<div id="project-stats-aggregates"><span class="help">Fetching data…</span></div>' +
           '</div>';
 
         $(container).on('change', 'input#include-import-contrib', e => {

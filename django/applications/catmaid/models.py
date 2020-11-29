@@ -1262,6 +1262,9 @@ class DataView(models.Model):
             ("can_browse_dataviews", "Can browse data views")
         )
 
+    def __str__(self) -> str:
+        return f'DataView: {self.title} (id: {self.id}'
+
     def save(self, *args, **kwargs) -> None:
         """ Does a post-save action: Make sure (only) one data view
         is the default.
@@ -1575,6 +1578,8 @@ class UserProfile(models.Model):
     color = RGBAField(default=distinct_user_color)
     primary_group = models.ForeignKey(Group, default=None, null=True, blank=True,
             on_delete=models.DO_NOTHING)
+    home_view = models.ForeignKey(DataView, default=None, null=True, blank=True,
+            on_delete=models.DO_NOTHING)
 
     def __str__(self) -> str:
         return self.user.username
@@ -1604,6 +1609,7 @@ class UserProfile(models.Model):
         pdict['show_ontology_tool'] = self.show_ontology_tool
         pdict['show_roi_tool'] = self.show_roi_tool
         pdict['primary_group_id'] = self.primary_group_id
+        pdict['home_view_id'] = self.home_view_id
 
         return pdict
 

@@ -1018,7 +1018,20 @@ var project;
       var projectUpdate = CATMAID.client.updateProjects()
         .then(function() {
           var backgroundDataView = !!project;
-          CATMAID.client.load_default_dataview(backgroundDataView);
+
+          // If the user user has a home view set, load it. Otherwise load the
+          // default data view.
+          if (e.userprofile.home_view_id) {
+            return CATMAID.DataViews.getConfig(e.userprofile.home_view_id)
+              .then(config => CATMAID.client.switch_dataview(
+                  CATMAID.DataView.makeDataView(config), backgroundDataView))
+              .catch(e => {
+                CATMAID.handleError(e);
+                return CATMAID.client.load_default_dataview(backgroundDataView);
+              });
+          } else {
+            return CATMAID.client.load_default_dataview(backgroundDataView);
+          }
         })
         .catch(CATMAID.handleError);
 

@@ -203,6 +203,10 @@ Data sources:
 
 Administration:
 
+- User profiles can now include a "home view", which is a reference to the
+  preferred data view for a particular user. When a user signs-in, this data
+  view is displayed. If none is set, the default data view is used.
+
 - External accounts can now be used to sign-in to a CATMAID instance (if
   enabled) using OAuth2. The documentation has details on how to configure this.
   This can allow users with e.g. an existing Orcid ID or GitHub account to

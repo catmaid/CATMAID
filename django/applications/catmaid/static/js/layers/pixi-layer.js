@@ -745,6 +745,29 @@
             setParam(newMat);
           };
 
+          let rowBackgroundColors = {
+            0: '#ffd2d2',
+            1: '#bdf9cc',
+            2: '#d4e1ff',
+            3: '#fff',
+          };
+
+          let mainBackgroundColors = {
+            0: '#ff6a6a',
+            1: '#1bda4b',
+            2: '#6690f1',
+            3: '#fff',
+          };
+
+          let colBackgroundColors = {
+            0: '#f14c4c',
+            1: '#2aff2a',
+            2: '#78b7f9',
+            3: 'white',
+            4: 'white',
+          };
+
+          let colorize = true;
           for (var i = 0; i < param.size[0]; ++i) {
             var row = $('<tr/>');
             for (var j = 0; j < param.size[1]; ++j) {
@@ -752,7 +775,13 @@
               var cell = $('<input type="number" step="0.1" value="' + mat[ind] + '"/>');
               cell.change(setMatrix);
               cell.css('width', '4em');
-              row.append($('<td/>').append(cell));
+              if (colorize) {
+                if (i == j) cell.css('background', mainBackgroundColors[i]);
+                else cell.css('background', rowBackgroundColors[i]);
+              }
+              let td = $('<td/>').append(cell);
+              if (colorize) td.css('background', colBackgroundColors[j]);
+              row.append(td);
             }
             matTable.append(row);
           }

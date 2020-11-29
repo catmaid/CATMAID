@@ -404,6 +404,9 @@ Miscellaneous:
 - The position and ID input box on the right side of the second tool bar accepts
   now also location triplets that are delimited by space or tabs.
 
+- Layer settings: the color transform filter matrix input elements use now
+  background colors to better indicate the meaning of rows and columns.
+
 ### Bug fixes
 
 - 3D viewer: PNG exports can now be transparent again.

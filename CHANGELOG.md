@@ -416,6 +416,8 @@ Miscellaneous:
 
 ### Bug fixes
 
+- Graph widget: fraction edge labels work again. They produced an error before.
+
 - 3D viewer: PNG exports can now be transparent again.
 
 - 3D viewer: the default settings for orthographic mode and control lock are no

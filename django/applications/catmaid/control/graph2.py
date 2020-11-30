@@ -470,7 +470,7 @@ def _skeleton_graph(project_id, skeleton_ids, confidence_threshold, bandwidth,
                     tc1.relation_id, tc2.relation_id,
                     LEAST(tc1.confidence, tc2.confidence)
                 FROM treenode_connector tc1
-                JOIN UNNEST(%(skeleton_id)s::bigint[]) skeleton(id)
+                JOIN UNNEST(%(skeleton_ids)s::bigint[]) skeleton(id)
                     ON tc1.skeleton_id = skeleton.id
                 JOIN treenode_connector tc2
                     ON tc1.connector_id = tc2.connector_id

@@ -395,8 +395,8 @@ var WindowMaker = new function()
     addWindowConfigButton(win, WA);
 
     var tabs = DOM.addTabGroup(bar, WA.widgetID, ['Main', 'View', 'Shading',
-        'Skeleton filters', 'View settings', 'Stacks', 'Shading parameters',
-        'Animation', 'History', 'Export']);
+        'Skeleton filters', 'View settings', 'Volumes & Geometry', 'Stacks',
+        'Shading parameters', 'Animation', 'History', 'Export']);
     var o = WA.options;
 
     var select_source = CATMAID.skeletonListSources.createSelect(WA);
@@ -969,62 +969,6 @@ var WindowMaker = new function()
 
     DOM.appendToTab(tabs['View settings'],
         [
-          [volumeSelectionWrapper],
-          ['Faces ', o.meshes_faces, function() { WA.options.meshes_faces = this.checked;}, false],
-          [WA.createMeshColorButton()],
-          {
-            type: 'checkbox',
-            label: 'Pickable',
-            title: 'Whether or not to include volumes when picking a location using Shift + Click',
-            value: WA.options.volume_location_picking,
-            onclick: function() {
-              WA.options.volume_location_picking = this.checked;
-            }
-          },
-          [landmarkGroupSelection],
-          {
-            type: 'numeric',
-            label: 'Landmark scale',
-            value: o.landmark_scale,
-            length: 3,
-            onchange: function() {
-              let value  = parseInt(this.value, 10);
-              if (value && !Number.isNaN(value)) {
-                WA.options.landmark_scale = value;
-                WA.adjustContent();
-              }
-            }
-          },
-          [pointCloudSelectionWrapper],
-          {
-            type: 'numeric',
-            label: 'Point cloud scale',
-            value: o.pointcloud_scale,
-            length: 3,
-            onchange: function() {
-              let value  = parseInt(this.value, 10);
-              if (value && !Number.isNaN(value)) {
-                WA.options.pointcloud_scale = value;
-                WA.adjustContent();
-              }
-            }
-          },
-          {
-            type: 'numeric',
-            label: 'Point cloud sample',
-            value: o.pointcloud_sample * 100,
-            length: 3,
-            step: 1,
-            min: 0,
-            max: 100,
-            onchange: function() {
-              let value  = parseInt(this.value, 10);
-              if (value && !Number.isNaN(value)) {
-                WA.options.pointcloud_sample = value / 100.0;
-                WA.adjustContent();
-              }
-            }
-          },
           ['Active node', o.show_active_node, function() { WA.options.show_active_node = this.checked; WA.adjustContent(); }, false],
           ['Active node on top', o.active_node_on_top, function() { WA.options.active_node_on_top = this.checked; WA.adjustContent(); }, false],
           ['Radius adaptive active node', o.active_node_respects_radius, function() { WA.options.active_node_respects_radius = this.checked; WA.adjustContent(); }, false],
@@ -1179,6 +1123,66 @@ var WindowMaker = new function()
           let value = parseInt(this.value, 10);
           WA.updateTextScaling(value);
         }, 3, undefined, false, 0.1, 0);
+
+    DOM.appendToTab(tabs['Volumes & Geometry'],
+        [
+          [volumeSelectionWrapper],
+          ['Faces ', o.meshes_faces, function() { WA.options.meshes_faces = this.checked;}, false],
+          [WA.createMeshColorButton()],
+          {
+            type: 'checkbox',
+            label: 'Pickable',
+            title: 'Whether or not to include volumes when picking a location using Shift + Click',
+            value: WA.options.volume_location_picking,
+            onclick: function() {
+              WA.options.volume_location_picking = this.checked;
+            }
+          },
+          [landmarkGroupSelection],
+          {
+            type: 'numeric',
+            label: 'Landmark scale',
+            value: o.landmark_scale,
+            length: 3,
+            onchange: function() {
+              let value  = parseInt(this.value, 10);
+              if (value && !Number.isNaN(value)) {
+                WA.options.landmark_scale = value;
+                WA.adjustContent();
+              }
+            }
+          },
+          [pointCloudSelectionWrapper],
+          {
+            type: 'numeric',
+            label: 'Point cloud scale',
+            value: o.pointcloud_scale,
+            length: 3,
+            onchange: function() {
+              let value  = parseInt(this.value, 10);
+              if (value && !Number.isNaN(value)) {
+                WA.options.pointcloud_scale = value;
+                WA.adjustContent();
+              }
+            }
+          },
+          {
+            type: 'numeric',
+            label: 'Point cloud sample',
+            value: o.pointcloud_sample * 100,
+            length: 3,
+            step: 1,
+            min: 0,
+            max: 100,
+            onchange: function() {
+              let value  = parseInt(this.value, 10);
+              if (value && !Number.isNaN(value)) {
+                WA.options.pointcloud_sample = value / 100.0;
+                WA.adjustContent();
+              }
+            }
+          }
+        ]);
 
     DOM.appendToTab(tabs['Stacks'],
         [

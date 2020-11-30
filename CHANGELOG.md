@@ -139,6 +139,10 @@ Graph widget:
 
 3D viewer:
 
+- The new tab "Volumes & Geometry" contains now all settings related to volumes,
+  landmarks and point clouds. This makes the "Volume settings" tab a little
+  less overloaded.
+
 - For both in-widget and exported animations a duration time in seconds can now
   be specified. When enabled and an animation is played in the 3D Viewer, the
   duration will just stop rotation and any other ongoing animation after the

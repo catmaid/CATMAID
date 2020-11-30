@@ -1126,7 +1126,7 @@ class Command(BaseCommand):
         # Give some information about the export
         will_export = []
         wont_export = []
-        for t in ('treenodes', 'annotations', 'tags'):
+        for t in ('treenodes', 'annotations', 'tags', 'volumes'):
             if options['export_' + t]:
                 will_export.append(t)
             else:

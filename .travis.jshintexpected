@@ -258,11 +258,6 @@ django/applications/catmaid/static/libs/catmaid/color-source.js: line 37, col 12
 
 django/applications/catmaid/static/libs/catmaid/command.js: line 423, col 9, 'mappedValue' is defined but never used.
 
-django/applications/catmaid/static/libs/catmaid/models/landmarks.js: line 525, col 13, 'isMember' is defined but never used.
-django/applications/catmaid/static/libs/catmaid/models/landmarks.js: line 573, col 11, 'skeletonModels' is defined but never used.
-django/applications/catmaid/static/libs/catmaid/models/landmarks.js: line 610, col 11, 'prepare' is defined but never used.
-django/applications/catmaid/static/libs/catmaid/models/landmarks.js: line 8, col 7, 'distanceSq' is defined but never used.
-
 django/applications/catmaid/static/libs/catmaid/models/sampler.js: line 245, col 15, 'thisIsLast' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/models/sampler.js: line 156, col 11, 'intervalStartPos' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/models/sampler.js: line 479, col 11, 'arbor' is defined but never used.
@@ -293,4 +288,4 @@ django/applications/catmaid/static/libs/catmaid/time-series.js: line 19, col 12,
 django/applications/catmaid/static/libs/catmaid/volumes.js: line 613, col 9, 'abs' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/volumes.js: line 805, col 15, 'dSimplicesT' is defined but never used.
 
-230 errors
+226 errors

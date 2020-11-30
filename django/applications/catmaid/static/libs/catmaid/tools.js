@@ -883,4 +883,14 @@ CATMAID.tools = CATMAID.tools || {};
     return string.charAt(0).toUpperCase() + string.slice(1);
   };
 
+  /**
+   * Return squared distance between an axis aligned bounding box and a point p.
+   */
+  tools.distanceSq = function(aaBb, x, y, z) {
+    var dx = Math.max(aaBb.min.x - x, 0, x - aaBb.max.x);
+    var dy = Math.max(aaBb.min.y - y, 0, y - aaBb.max.y);
+    var dz = Math.max(aaBb.min.z - z, 0, z - aaBb.max.z);
+    return dx*dx + dy*dy + dz * dz;
+  };
+
 })(CATMAID.tools);

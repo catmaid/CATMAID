@@ -3,16 +3,6 @@
   "use strict";
 
   /**
-   * Return squared distance between an axis aligned bounding box and a point p.
-   */
-  let distanceSq = function(aaBb, x, y, z) {
-    var dx = Math.max(aaBb.min.x - x, 0, x - aaBb.max.x);
-    var dy = Math.max(aaBb.min.y - y, 0, y - aaBb.max.y);
-    var dz = Math.max(aaBb.min.z - z, 0, z - aaBb.max.z);
-    return dx*dx + dy*dy + dz * dz;
-  };
-
-  /**
    * This namespace provides functions to work with labels on nodes. All of them
    * return promises.
    */
@@ -536,7 +526,6 @@
       for (let i=0, imax=landmark.locations.length; i<imax; ++i) {
         // Check if the landmark location is a member of this group
         var loc = landmark.locations[i];
-        var isMember = false;
         for (var j=0, jmax=groupLocations.length; j<jmax; ++j) {
           let groupLocation = groupLocations[j];
           if (groupLocation.id == loc.id) {
@@ -584,11 +573,6 @@
       sourceLandmarkGroupIndex = sourceLandmarkGroupIndex || landmarkGroupIndex;
       sourceLandmarkIndex = sourceLandmarkIndex || landmarkIndex;
 
-      let skeletonModels = Object.keys(transformation.skeletons).reduce(function(o, s) {
-        o['transformed-' + s] = transformation.skeletons[s];
-        return o;
-      }, {});
-
       let mls;
       if (transformation.mappings.length > 0) {
         try {
@@ -621,7 +605,7 @@
       };
 
       // Compute source and target landmark group boundaries
-      let prepare = Promise.all([
+      Promise.all([
           // Source group ID
           Promise.all(transformation.mappings.map(m =>
               transformation.landmarkProvider.get(m[0],

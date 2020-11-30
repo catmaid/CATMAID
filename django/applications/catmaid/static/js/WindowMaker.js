@@ -2080,6 +2080,8 @@ var WindowMaker = new function()
 
     CATMAID.Volumes.on(CATMAID.Volumes.EVENT_VOLUME_ADDED,
         refreshVolumeList, WA);
+    CATMAID.Volumes.on(CATMAID.Volumes.EVENT_VOLUME_DELETED,
+        refreshVolumeList, WA);
     CATMAID.Pointcloud.on(CATMAID.Pointcloud.EVENT_POINTCLOUD_ADDED,
         refreshPointcloudList, WA);
     CATMAID.Pointcloud.on(CATMAID.Pointcloud.EVENT_POINTCLOUD_DELETED,
@@ -2088,6 +2090,8 @@ var WindowMaker = new function()
     // Clear listeners that were added above
     var unregisterUIListeners = function() {
       CATMAID.Volumes.off(CATMAID.Volumes.EVENT_VOLUME_ADDED,
+          refreshVolumeList, WA);
+      CATMAID.Volumes.off(CATMAID.Volumes.EVENT_VOLUME_DELETED,
           refreshVolumeList, WA);
       CATMAID.Pointcloud.off(CATMAID.Pointcloud.EVENT_POINTCLOUD_ADDED,
           refreshPointcloudList, WA);

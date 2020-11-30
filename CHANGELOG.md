@@ -432,6 +432,8 @@ Miscellaneous:
 
 - 3D viewer: fix camera movement using the mouse wheel.
 
+- 3D viewer: the volume list is now also updated if a volume is deleted.
+
 - Volume lists (drop down menus) are now automatically refreshed if a volume is
   added, updated or removed.
 

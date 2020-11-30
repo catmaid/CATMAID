@@ -7,12 +7,6 @@ django/applications/catmaid/static/js/3d/skeleton-shading.js: line 546, col 13, 
 django/applications/catmaid/static/js/3d/skeleton-shading.js: line 571, col 9, 'nAddedDomains' is defined but never used.
 django/applications/catmaid/static/js/3d/skeleton-shading.js: line 1044, col 13, 'arbor' is defined but never used.
 
-django/applications/catmaid/static/js/WindowMaker.js: line 2114, col 17, 'frame' is defined but never used.
-django/applications/catmaid/static/js/WindowMaker.js: line 1175, col 9, 'textScalingInput' is defined but never used.
-django/applications/catmaid/static/js/WindowMaker.js: line 2227, col 18, 'action' is defined but never used.
-django/applications/catmaid/static/js/WindowMaker.js: line 2227, col 26, 'i' is defined but never used.
-django/applications/catmaid/static/js/WindowMaker.js: line 2485, col 15, 'handle' is defined but never used.
-
 django/applications/catmaid/static/js/dom.js: line 652, col 13, 'self' is defined but never used.
 django/applications/catmaid/static/js/dom.js: line 827, col 15, 'opened' is defined but never used.
 django/applications/catmaid/static/js/dom.js: line 822, col 9, 'update' is defined but never used.
@@ -299,4 +293,4 @@ django/applications/catmaid/static/libs/catmaid/time-series.js: line 19, col 12,
 django/applications/catmaid/static/libs/catmaid/volumes.js: line 613, col 9, 'abs' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/volumes.js: line 805, col 15, 'dSimplicesT' is defined but never used.
 
-235 errors
+230 errors

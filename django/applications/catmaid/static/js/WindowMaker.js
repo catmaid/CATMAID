@@ -1174,10 +1174,10 @@ var WindowMaker = new function()
               WA.updateLinkNodeHandleScaling(this.value);
         }, 3, undefined, false, 10, 0);
 
-    var textScalingInput = DOM.appendNumericField(tabs['View settings'],
-        'Text scaling', 'Scaling of text.', o.text_scaling, null, function() {
-              let value = parseInt(this.value, 10);
-              WA.updateTextScaling(value);
+    DOM.appendNumericField(tabs['View settings'], 'Text scaling', 'Scaling of text.',
+        o.text_scaling, null, function() {
+          let value = parseInt(this.value, 10);
+          WA.updateTextScaling(value);
         }, 3, undefined, false, 0.1, 0);
 
     DOM.appendToTab(tabs['Stacks'],
@@ -2113,7 +2113,6 @@ var WindowMaker = new function()
             }
             break;
           case CMWWindow.RESIZE:
-            var frame = win.getFrame();
             var w = win.getAvailableWidth();
             var h = win.getContentHeight() - bar.offsetHeight;
             container.style.width = w + "px";
@@ -2226,7 +2225,7 @@ var WindowMaker = new function()
 
   this.setKeyShortcuts = function(win)
   {
-    var actions, action, i, tool, content, container;
+    var actions, tool, content, container;
 
     // If a window hasn't been passed in, look it up.
     if (typeof win == 'undefined') {
@@ -2484,7 +2483,7 @@ var WindowMaker = new function()
    */
   this.getOpenWidgetsOfType = function(widgetType) {
     let wMap = new Map();
-    for (let [handle, map] of windows.entries()) {
+    for (let map of windows.values()) {
       for (let [win, widget] of map.entries()) {
         if (widget instanceof widgetType) {
           wMap.set(win, widget);

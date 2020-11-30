@@ -410,18 +410,20 @@ var WindowMaker = new function()
           ['Refresh', WA.updateSkeletons.bind(WA)],
           {
             type: 'button',
-            label: 'Focus skeleton',
-            title: 'Look at active skeleton\'s center of mass from current camera location',
+            label: 'Focus skeleton(s)',
+            title: 'Look at active skeleton\'s center of mass from current camera location or center of mass of all 3D skeletons if no/unloaded active skeleton.',
             onclick: function() {
               let activeSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
               if (activeSkeletonId) {
                 if (WA.hasSkeleton(activeSkeletonId)) {
                   WA.lookAtSkeleton(activeSkeletonId);
                 } else {
-                  CATMAID.warn('Active skeleton not loaded in 3D Viewer');
+                  CATMAID.warn('Selecting center of mass in 3D Viewer, active skeleton not loaded in 3D Viewer');
+                  WA.lookAtCenterOfMass();
                 }
               } else {
-                CATMAID.warn('No skeleton selected!');
+                CATMAID.warn('Selecting center of mass in 3D Viewer, no skeleton selected');
+                WA.lookAtCenterOfMass();
               }
             }
           },

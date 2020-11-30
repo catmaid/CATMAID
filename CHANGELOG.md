@@ -166,6 +166,10 @@ Graph widget:
 - The PNG export dialog allows now to select whether the background should be
   transparent.
 
+- The "Focus skeleton(s)" button in the Main tab will now focus the center of
+  mass of all skeletons loaded in 3D, if no skeleton is active or the active
+  skeleton is not loaded in the 3D Viewer.
+
 Skeleton history widget:
 
 - Skeletons to query can now also be appened through the common skeleton source

@@ -1989,6 +1989,19 @@
     this.lookAt(skeleton.getCenterOfMass());
   };
 
+  /**
+   * Look at the center of mass of all loaded skeletons.
+   */
+  WebGLApplication.prototype.lookAtCenterOfMass = function() {
+    let loadedSkeletonIds =  Object.keys(this.space.content.skeletons);
+    let factor = 1.0 / loadedSkeletonIds.length;
+    let com = loadedSkeletonIds.reduce(
+        (avg, skId) => avg.addScaledVector(
+            this.space.content.skeletons[skId].getCenterOfMass(), factor),
+        new THREE.Vector3());
+    this.lookAt(com);
+  };
+
   WebGLApplication.prototype.updateActiveNode = function() {
     var activeNode = this.space.content.active_node;
     var activeNodeDisplayed = activeNode.mesh.visible;

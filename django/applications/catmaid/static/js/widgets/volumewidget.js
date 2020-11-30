@@ -518,6 +518,7 @@
       CATMAID.warn("No skeletons selected in source " + source.getName());
       return;
     }
+    let self = this;
     CATMAID.Volumes.findSkeletonInnervations(project.id, skeletonIds, annotation)
       .then(function(result) {
         if (!result || result.length === 0) {

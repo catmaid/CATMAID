@@ -157,7 +157,7 @@
    * This userprofile class represents options that are set for a particular user.
    */
   var Userprofile = function(profile) {
-    let allowedNull = new Set(['primary_group_id', 'primary_group_name']);
+    let allowedNull = new Set(['primary_group_id', 'primary_group_name', 'home_view_id']);
     // Store all recognized options as a member
     for (var field in this.getOptions()) {
       // Raise an error if an expected field does not exist.
@@ -186,6 +186,7 @@
       show_ontology_tool: false,
       show_roi_tool: false,
       primary_group_id: false,
+      home_view_id: true,
     };
   };
 

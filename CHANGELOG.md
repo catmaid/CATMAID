@@ -340,6 +340,9 @@ Data views:
 - A click on the Home button in the upper left corner will now bring the user to
   their home view (if defined), otherwise the global default data view.
 
+- The data view menu (Home button) will now highlight the currently active data
+  view.
+
 Miscellaneous:
 
 - Each stack viewer will now show the project name by default along with the

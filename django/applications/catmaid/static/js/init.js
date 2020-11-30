@@ -125,6 +125,9 @@ var project;
     // Whether or not this client is authenticated with a back-end.
     this._is_authenticated = false;
 
+    // A list of known data views
+    this._knownDataViews = {};
+
     // Do periodic update checks
     window.setTimeout(CATMAID.Init.checkVersion, CATMAID.Init.CHECK_VERSION_TIMEOUT_INTERVAL);
 
@@ -438,7 +441,10 @@ var project;
       menus[name] = new Menu();
       document.getElementById(name + '_menu').appendChild(menus[name].getView());
     });
-    CATMAID.DataViews.list().then(handle_dataviews);
+    CATMAID.DataViews.list().then(dataviews => {
+      this._knownDataViews = dataviews;
+      this._updateDataViewMenu();
+    });
     CATMAID._updateLoginMenu();
 
     var self = this;
@@ -1398,36 +1404,40 @@ var project;
       CATMAID.rootWindow.closeAllChildren();
     }
 
-    CATMAID.DataViews.getConfig(id)
+    return CATMAID.DataViews.getConfig(id)
       .then(function(config) {
         // open data view
         var dataview = CATMAID.DataView.makeDataView(config);
         CATMAID.client.switch_dataview(dataview);
-      })
-      .catch(CATMAID.handleError);
+      });
   };
 
-  function handle_dataviews(e) {
+  /**
+   * Update the home/dataview menu. The currently selected data view is marked
+   * as highlighted.
+   */
+  Client.prototype._updateDataViewMenu = function() {
     var menuItems = {};
-    /* As we want to handle a data view change in JS,
-     * a function is added as action for all the menu
-     * elements. Also add small links to each menu entry
-     * as comment.
-     */
-    for ( var i in e )
-    {
-      var dv = e[i];
-      var url = CATMAID.makeURL('?dataview=' + dv.id);
-      var link = `<a class="hoverlink auth-only" href="#" onclick="CATMAID.client.makeHomeView(${dv.id}).then(r => CATMAID.msg('Success', r.status)).catch(CATMAID.handleError);"><i class="fa fa-home"></i>&nbsp;</a>&nbsp;<a class="hoverlink" href="${url}"><i class="fa fa-link"></i>&nbsp;</a>`;
+    for (var i in this._knownDataViews) {
+      let dv = this._knownDataViews[i];
+      let dvId = dv.id;
+      let isActiveView = this.current_dataview && this.current_dataview.id === dv.id;
+      var url = CATMAID.makeURL(`?dataview=${dvId}`);
+      var link = `<a class="hoverlink auth-only" href="#" onclick="CATMAID.client.makeHomeView(${dvId}).then(r => CATMAID.msg('Success', r.status)).catch(CATMAID.handleError);"><i class="fa fa-home"></i>&nbsp;</a>&nbsp;<a class="hoverlink" href="${url}"><i class="fa fa-link"></i>&nbsp;</a>`;
       menuItems[i] = {
+        state: isActiveView ? '*' : '',
+        active: isActiveView,
         title: dv.title,
         note: link + dv.note,
-        action: handleDataViewSelection.bind(undefined, dv.id)
+        action: e => {
+          handleDataViewSelection(dvId)
+            .then(() => this._updateDataViewMenu())
+            .catch(CATMAID.handleError);
+        },
       };
     }
-
     menus.dataview.update(menuItems);
-  }
+  };
 
   /**
    * Make the data view with the passed in ID the default for the current user.
@@ -1467,15 +1477,15 @@ var project;
       container.removeChild(container.firstChild);
     }
 
-    let self = this;
     dataview.createContent(container)
-      .then(function() {
+      .then(() => {
         dataview.refresh();
         // Revalidate content to lazy-load
         CATMAID.client.blazy.revalidate();
 
-        self.current_dataview = dataview;
+        this.current_dataview = dataview;
 
+        this._updateDataViewMenu();
         CATMAID._updateUserMenu();
       });
 

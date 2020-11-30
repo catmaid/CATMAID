@@ -3695,7 +3695,8 @@
               CATMAID.msg("Success", "Created new landmark group pair");
 
               // Clear input fields
-
+              groupNameAChanged = false;
+              groupNameBChanged = false;
               return widget.updateLandmarksAndGroups();
             })
             .catch(CATMAID.handleError);

@@ -155,7 +155,6 @@
     if (this._currentZIndex.size > 0) {
       let zIndex = this._currentZIndex;
       let currentZ = this.stackViewer.z;
-      let nextZ = this.stackViewer.z + 1;
       let primaryStack = this.stackViewer.primaryStack;
       // Render intersection of each available skeleton with the current
       // section.
@@ -287,8 +286,7 @@
         distsq,
         mindistsq = radius * radius,
         nearestnode = null,
-        node,
-        nodeid;
+        node;
 
     var x = this.stackViewer.primaryStack.stackToProjectX(zs, ys, xs),
         y = this.stackViewer.primaryStack.stackToProjectY(zs, ys, xs),

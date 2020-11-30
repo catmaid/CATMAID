@@ -16,9 +16,6 @@ django/applications/catmaid/static/js/extensions.js: line 147, col 7, 'samePath'
 
 django/applications/catmaid/static/js/label-annotations.js: line 17, col 19, '_stack' is defined but never used.
 
-django/applications/catmaid/static/js/layers/landmark-layer.js: line 158, col 11, 'nextZ' is defined but never used.
-django/applications/catmaid/static/js/layers/landmark-layer.js: line 291, col 9, 'nodeid' is defined but never used.
-
 django/applications/catmaid/static/js/layers/skeleton-projection-layer.js: line 338, col 9, 'self' is defined but never used.
 django/applications/catmaid/static/js/layers/skeleton-projection-layer.js: line 115, col 7, 'hasSource' is defined but never used.
 
@@ -288,4 +285,4 @@ django/applications/catmaid/static/libs/catmaid/time-series.js: line 19, col 12,
 django/applications/catmaid/static/libs/catmaid/volumes.js: line 613, col 9, 'abs' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/volumes.js: line 805, col 15, 'dSimplicesT' is defined but never used.
 
-226 errors
+224 errors

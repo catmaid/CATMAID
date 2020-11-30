@@ -135,9 +135,14 @@
      * Create a new group with the specified name.
      */
     addGroup: function(projectId, name) {
-      return CATMAID.fetch(projectId + '/landmarks/groups/', 'PUT', {
+      let response = CATMAID.fetch(projectId + '/landmarks/groups/', 'PUT', {
           name: name
         });
+      response.finally(() => {
+        let groupId = response.id;
+        CATMAID.Landmarks.trigger(CATMAID.Landmarks.EVENT_LANDMARKGROUP_ADDED, [groupId]);
+      });
+      return response;
     },
 
     /**
@@ -145,7 +150,11 @@
      * requesting user on that landmark group.
      */
     deleteGroup: function(projectId, groupId) {
-      return CATMAID.fetch(projectId + '/landmarks/groups/' + groupId + '/', 'DELETE');
+      let response = CATMAID.fetch(`${projectId}/landmarks/groups/${groupId}/`, 'DELETE');
+      response.finally(() => {
+        CATMAID.Landmarks.trigger(CATMAID.Landmarks.EVENT_LANDMARKGROUP_DELETED, [groupId]);
+      });
+      return response;
     },
 
     /**
@@ -246,13 +255,18 @@
      */
     materialize: function(projectId, nameGroupA, nameGroupB, landmarks, links,
         reuseExistingLandmarks) {
-      return CATMAID.fetch(projectId + '/landmarks/groups/materialize', 'POST', {
+      let response = CATMAID.fetch(projectId + '/landmarks/groups/materialize', 'POST', {
         'group_a_name': nameGroupA,
         'group_b_name': nameGroupB,
         'landmarks': landmarks,
         'links': links,
         'reuse_existing_landmarks': reuseExistingLandmarks
       });
+      response.finally(() => {
+        CATMAID.Landmarks.trigger(CATMAID.Landmarks.EVENT_LANDMARKGROUP_ADDED,
+            [response.group_a_id, response.group_b_id]);
+      });
+      return response;
     },
 
     /**
@@ -750,6 +764,8 @@
   // Provide some basic events
   Landmarks.EVENT_DISPLAY_TRANSFORM_ADDED = "display_transform_added";
   Landmarks.EVENT_DISPLAY_TRANSFORM_REMOVED = "display_transform_removed";
+  Landmarks.EVENT_LANDMARKGROUP_ADDED = "display_transform_added";
+  Landmarks.EVENT_LANDMARKGROUP_DELETED = "display_transform_deleted";
   CATMAID.asEventSource(Landmarks);
 
   // Export namespace

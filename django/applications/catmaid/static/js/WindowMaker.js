@@ -947,6 +947,15 @@ var WindowMaker = new function()
     var landmarkGroupSelectionWrapper = document.createElement('span');
     landmarkGroupSelectionWrapper.appendChild(landmarkGroupSelection);
 
+    // Replace landmark group selection wrapper children with new select
+    var refreshLandmarkList = function() {
+      while (landmarkGroupSelectionWrapper.firstChild) {
+        landmarkGroupSelectionWrapper.removeChild(landmarkGroupSelectionWrapper.firstChild);
+      }
+      let landmarkSelection = DOM.createAsyncPlaceholder(initLandmarkList());
+      landmarkGroupSelectionWrapper.appendChild(landmarkSelection);
+    };
+
     // Create async selection and wrap it in container to have handle on initial
     // DOM location
     var pointCloudSelection = DOM.createAsyncPlaceholder(initPointCloudList());
@@ -1138,7 +1147,7 @@ var WindowMaker = new function()
               WA.options.volume_location_picking = this.checked;
             }
           },
-          [landmarkGroupSelection],
+          [landmarkGroupSelectionWrapper],
           {
             type: 'numeric',
             label: 'Landmark scale',
@@ -2086,6 +2095,10 @@ var WindowMaker = new function()
         refreshPointcloudList, WA);
     CATMAID.Pointcloud.on(CATMAID.Pointcloud.EVENT_POINTCLOUD_DELETED,
         refreshPointcloudList, WA);
+    CATMAID.Landmarks.on(CATMAID.Landmarks.EVENT_LANDMARKGROUP_ADDED,
+        refreshLandmarkList, WA);
+    CATMAID.Landmarks.on(CATMAID.Landmarks.EVENT_LANDMARKGROUP_DELETED,
+        refreshLandmarkList, WA);
 
     // Clear listeners that were added above
     var unregisterUIListeners = function() {

@@ -18,6 +18,8 @@ from django.db.backends import signals as db_signals
 from django.contrib import auth
 from django.contrib.auth.management.commands import createsuperuser
 
+from psycopg2.extensions import register_adapter, adapt
+
 try:
     import rpy2.rinterface as rinterface
     import rpy2.rinterface_lib.embedded
@@ -233,6 +235,9 @@ class CATMAIDConfig(AppConfig):
         # Make sure all settings variables are of the type we expect.
         self.validate_configuration()
 
+        # We need some additional database type adapters
+        self.init_db_extras()
+
         # If prepared statements are enabled, make sure they are created for
         # every new connection. Binding this signal handler has to happen before
         # the first database connection is created or connection pooling can not
@@ -396,3 +401,9 @@ class CATMAIDConfig(AppConfig):
         user = get_system_user(User)
         for p in Project.objects.all():
             validate_project_setup(p.id, user.id, True, Class, Relation)
+
+    def init_db_extras(self) -> None:
+        """Make sure we have communicated to psycopg2 that we need support for
+        some extra types.
+        """
+        register_adapter(set, lambda x: adapt(list(x)))

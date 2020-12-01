@@ -685,7 +685,7 @@
   /**
    * Show all selected volumes in a new 3D Viewer.
    */
-  VolumeManagerWidget.prototype.showSelectedVolumesIn3d = function(volumeIds, skeletonIds) {
+  VolumeManagerWidget.prototype.showSelectedVolumesIn3d = function(volumeIds, skeletonIds, colorMap = undefined) {
     if (!volumeIds || volumeIds.length === 0) {
       CATMAID.warn('No volumes selected');
       return;
@@ -711,7 +711,7 @@
     lut.setMax(volumeIds.length - 1);
 
     volumeIds.forEach(function(v, i) {
-      let color = lut.getColor(i);
+      let color = (colorMap ? colorMap.get(v.id) : null) || lut.getColor(i);
       widget3d.showVolume(v.id, true, color, 0.3, true);
     });
   };
@@ -1261,11 +1261,16 @@
               CATMAID.warn("No results to show");
               return;
             }
-            let selectedVolumes = widget.innervationsDatatable.rows().data().toArray().filter(function(v) {
+            let volumes = widget.innervationsDatatable.rows().data().toArray();
+            let colorMap = new Map();
+            let lut = new THREE.Lut("rainbow", 10);
+            lut.setMax(Math.max(1, volumes.length - 1));
+            let selectedVolumes = volumes.filter(function(v, i) {
+              colorMap.set(v.id, lut.getColor(i));
               return v.selected;
             });
 
-            widget.showSelectedVolumesIn3d(selectedVolumes, skeletonIds);
+            widget.showSelectedVolumesIn3d(selectedVolumes, skeletonIds, colorMap);
           },
         }, {
           type: 'checkbox',

@@ -446,6 +446,10 @@ Miscellaneous:
 - Volume manager: the "Invert" checkbox for new filter rules for input skeletons
   during volume creation is now position properly.
 
+- Volume manager: the colors used for showing result volumes from an innervation
+  query in a new 3D Viewer are now computed correctly so that they match the
+  listing colors.
+
 - Node filters: default values for extra options like merge operation,
   skeleton/name filters or invert, are now correct on repeated filter creation
   if these options were changed for the first filter.

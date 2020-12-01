@@ -1450,7 +1450,7 @@ var project;
    * Load the user's home view or the default view.
    */
   Client.prototype.loadHomeView = function(backgroundDataView = false) {
-    if (CATMAID.userprofile.home_view_id !== undefined) {
+    if (CATMAID.userprofile.home_view_id !== undefined && CATMAID.userprofile.home_view_id !== null) {
       return CATMAID.DataViews.getConfig(CATMAID.userprofile.home_view_id)
         .then(config => CATMAID.client.switch_dataview(
             CATMAID.DataView.makeDataView(config), backgroundDataView))

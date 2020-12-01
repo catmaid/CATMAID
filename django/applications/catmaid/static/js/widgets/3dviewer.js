@@ -2467,7 +2467,99 @@
       this.loadedVolumes.delete(volumeId);
       this.space.render();
     }
+
+    this.updateVolumeSelectionControls();
+
     return Promise.resolve();
+  };
+
+  WebGLApplication.prototype.getLoadedVolumeIds = function() {
+    let buttonPanel = document.querySelector(`#webgl_viewer_buttons1 span[data-role=volume-select]`);
+    if (buttonPanel) {
+      let controls = buttonPanel.querySelectorAll('input[type=checkbox][data-role=option]');
+      controls.forEach(c => {
+        let volumeId = Number(c.value);
+        let volumeLoaded = this.loadedVolumes.has(volumeId);
+        if (c.checked && !volumeLoaded) {
+          c.checked = false;
+          c.parentNode.nextElementSibling.remove();
+        } else if (!c.checked && volumeLoaded) {
+          c.checked = true;
+          this._appendVolumeDetailControls(c.closest('li'), volumeId);
+        }
+      });
+    }
+  };
+
+  var updateVolumeColor = function(widget, volumeId, rgb, alpha, colorChanged,
+      alphaChanged, colorHex) {
+    widget.setVolumeColor(volumeId,
+        colorChanged ? ('#' + colorHex) : null,
+        alphaChanged ? alpha : null);
+  };
+
+  var updateVolumeFaces = function(widget, volumeId, e) {
+    var facesVisible = e.target.checked;
+    widget.setVolumeStyle(volumeId, facesVisible);
+    // Stop propagation or the general volume list change handler is called.
+    e.stopPropagation();
+  };
+
+  var updateVolumeSubiv = function(widget, volumeId, smooth, subdivisions) {
+    var subdiv = smooth ? (subdivisions === undefined ? 3 : subdivisions) : 0;
+    widget.setVolumeSubdivisions(volumeId, subdiv);
+  };
+
+  var updateVolumeBb = function(widget, volumeId, e) {
+    var showBb = e.target.checked;
+    widget.setVolumeBoundingBox(volumeId, showBb);
+    // Stop propagation or the general volume list change handler is called.
+    e.stopPropagation();
+  };
+
+  WebGLApplication.prototype._appendVolumeDetailControls = function(target, volumeId) {
+    var volumeControls = target.appendChild(document.createElement('span'));
+    volumeControls.setAttribute('data-role', 'volume-controls');
+    volumeControls.setAttribute('data-volume-id', volumeId);
+    CATMAID.DOM.appendColorButton(volumeControls, 'c',
+      'Change the color of this volume',
+      undefined, undefined, {
+        initialColor: this.options.meshes_color,
+        initialAlpha: this.options.meshes_opacity,
+        onColorChange: updateVolumeColor.bind(window, this, volumeId)
+      });
+
+    var facesCb = CATMAID.DOM.appendCheckbox(volumeControls, "Faces",
+        "Whether faces should be displayed for this volume",
+        this.options.meshes_faces, updateVolumeFaces.bind(window, this, volumeId));
+    facesCb.style.display = 'inline';
+
+    // Make sure a change signal is not propagated, otherwise the menu
+    // closes.
+    var subdivInput = CATMAID.DOM.createNumericField(undefined, ' ',
+        "The number of subdivisions to use.", '3', undefined,
+        (e) => {
+          updateVolumeSubiv(this, volumeId,
+              subdivCb.querySelector('input').checked, e.target.value);
+          e.stopPropagation();
+        },
+        3, undefined, !!this.options.meshes_subdiv, 1, 0, undefined, undefined);
+
+    var subdivCb = CATMAID.DOM.appendCheckbox(volumeControls, "Subdivide",
+        "Whether meshes should be smoothed by subdivision",
+        !!this.options.meshes_subdiv, (e) => {
+          updateVolumeSubiv(this, volumeId, e.target.checked,
+              parseInt(subdivInput.querySelector('input').value));
+          // Stop propagation or the general volume list change handler is called.
+          e.stopPropagation();
+        });
+    subdivCb.style.display = 'inline';
+    volumeControls.appendChild(subdivInput);
+
+    var bbCb = CATMAID.DOM.appendCheckbox(volumeControls, "BB",
+        "Whether or not to show the bounding box of this mesh",
+        !!this.options.meshes_boundingbox, updateVolumeBb.bind(window, this, volumeId));
+    bbCb.style.display = 'inline';
   };
 
   /**

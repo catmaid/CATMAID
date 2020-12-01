@@ -437,6 +437,9 @@ Miscellaneous:
 - 3D viewer: the landmark group list is now updated when landmark groups are
   added or deleted.
 
+- 3D viewer: the volume visibility controls are now correctly enabled if a
+  volume is made visible from another widget.
+
 - Volume lists (drop down menus) are now automatically refreshed if a volume is
   added, updated or removed.
 

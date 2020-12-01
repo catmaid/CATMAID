@@ -383,7 +383,7 @@ var WindowMaker = new function()
     content.style.backgroundColor = "#ffffff";
 
     var bar = document.createElement( "div" );
-    bar.id = "3d_viewer_buttons";
+    bar.id = `webgl_viewer_buttons${WA.id}`;
     bar.classList.add('windowpanel', 'buttonpanel');
     DOM.addFilterControlsToggle(win, 'Filter: ' +
         WA.getName(), {
@@ -727,78 +727,13 @@ var WindowMaker = new function()
       e.stopPropagation();
     };
 
-    var updateVolumeColor = function(volumeId, rgb, alpha, colorChanged,
-        alphaChanged, colorHex) {
-      WA.setVolumeColor(volumeId,
-          colorChanged ? ('#' + colorHex) : null,
-          alphaChanged ? alpha : null);
-    };
-
-    var updateVolumeFaces = function(volumeId, e) {
-      var facesVisible = e.target.checked;
-      WA.setVolumeStyle(volumeId, facesVisible);
-      // Stop propagation or the general volume list change handler is called.
-      e.stopPropagation();
-    };
-
-    var updateVolumeSubiv = function(volumeId, smooth, subdivisions) {
-      var subdiv = smooth ? (subdivisions === undefined ? 3 : subdivisions) : 0;
-      WA.setVolumeSubdivisions(volumeId, subdiv);
-    };
-
-    var updateVolumeBb = function(volumeId, e) {
-      var showBb = e.target.checked;
-      WA.setVolumeBoundingBox(volumeId, showBb);
-      // Stop propagation or the general volume list change handler is called.
-      e.stopPropagation();
-    };
-
-    function setVolumeEntryVisible(li, volumeId, visible, faces, color, alpha,
-        subdiv, bb) {
+    function setVolumeEntryVisible(li, volumeId, visible) {
       // Add extra display controls for enabled volumes
       if (!li) {
         return;
       }
       if (visible) {
-        var volumeControls = li.appendChild(document.createElement('span'));
-        volumeControls.setAttribute('data-role', 'volume-controls');
-        CATMAID.DOM.appendColorButton(volumeControls, 'c',
-          'Change the color of this volume',
-          undefined, undefined, {
-            initialColor: color,
-            initialAlpha: alpha,
-            onColorChange: updateVolumeColor.bind(null, volumeId)
-          });
-
-        var facesCb = CATMAID.DOM.appendCheckbox(volumeControls, "Faces",
-            "Whether faces should be displayed for this volume",
-            faces, updateVolumeFaces.bind(null, volumeId));
-        facesCb.style.display = 'inline';
-
-        // Make sure a change signal is not propagated, otherwise the menu
-        // closes.
-        var subdivInput = CATMAID.DOM.createNumericField(undefined, ' ',
-            "The number of subdivisions to use.", '3', undefined,
-            (e) => {
-              updateVolumeSubiv(volumeId, subdivCb.querySelector('input').checked, e.target.value);
-              e.stopPropagation();
-            },
-            3, undefined, !!subdiv, 1, 0, undefined, undefined);
-
-        var subdivCb = CATMAID.DOM.appendCheckbox(volumeControls, "Subdivide",
-            "Whether meshes should be smoothed by subdivision",
-            !!subdiv, (e) => {
-              updateVolumeSubiv(volumeId, e.target.checked, parseInt(subdivInput.querySelector('input').value));
-              // Stop propagation or the general volume list change handler is called.
-              e.stopPropagation();
-            });
-        subdivCb.style.display = 'inline';
-        volumeControls.appendChild(subdivInput);
-
-        var bbCb = CATMAID.DOM.appendCheckbox(volumeControls, "BB",
-            "Whether or not to show the bounding box of this mesh",
-            !!bb, updateVolumeBb.bind(null, volumeId));
-        bbCb.style.display = 'inline';
+        WA._appendVolumeDetailControls(li, volumeId);
       } else {
         var volumeControls = li.querySelector('span[data-role=volume-controls]');
         if (volumeControls) {
@@ -924,9 +859,7 @@ var WindowMaker = new function()
         WA.showVolume(volumeId, visible, undefined, undefined, o.meshes_faces)
           .catch(CATMAID.handleError);
 
-        setVolumeEntryVisible(element.closest('li'), volumeId, visible,
-            o.meshes_faces, o.meshes_color, o.meshes_opacity,
-            o.meshes_subdiv, o.meshes_boundingbox);
+        setVolumeEntryVisible(element.closest('li'), volumeId, visible);
       },
       rowCallback: function(row, id, visible) {
         let loadedVolume = WA.loadedVolumes.get(id);

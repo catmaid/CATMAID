@@ -108,7 +108,7 @@
   API.getModelCollections = function(models, defaultProjectId) {
     // Fast path for case with only local models:
     if (!CATMAID.API.hasRemoteData(models)) {
-      return [new ModelCollection(CATMAID.API.LocalAPI, defaultProjectId, models)];
+      return [new CATMAID.ModelCollection(CATMAID.API.LocalAPI, defaultProjectId, models)];
     }
 
     let modelCollections = new Map();

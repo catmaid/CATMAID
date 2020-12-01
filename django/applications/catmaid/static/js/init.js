@@ -1423,7 +1423,7 @@ var project;
       let dvId = dv.id;
       let isActiveView = this.current_dataview && this.current_dataview.id === dv.id;
       var url = CATMAID.makeURL(`?dataview=${dvId}`);
-      var link = `<a class="hoverlink auth-only" href="#" onclick="CATMAID.client.makeHomeView(${dvId}).then(r => CATMAID.msg('Success', r.status)).catch(CATMAID.handleError);"><i class="fa fa-home"></i>&nbsp;</a>&nbsp;<a class="hoverlink" href="${url}"><i class="fa fa-link"></i>&nbsp;</a>`;
+      var link = `<a class="hoverlink auth-only" href="#" onclick="CATMAID.client.makeHomeView(${dvId}).then(r => CATMAID.msg('Success', 'New home view set')).catch(CATMAID.handleError);"><i class="fa fa-home"></i>&nbsp;</a>&nbsp;<a class="hoverlink" href="${url}"><i class="fa fa-link"></i>&nbsp;</a>`;
       menuItems[i] = {
         state: isActiveView ? '*' : '',
         active: isActiveView,
@@ -1443,7 +1443,10 @@ var project;
    * Make the data view with the passed in ID the default for the current user.
    */
   Client.prototype.makeHomeView = function(dataViewId) {
-    return CATMAID.fetch(`/dataviews/${dataViewId}/make-home-view`);
+    return CATMAID.fetch(`/dataviews/${dataViewId}/make-home-view`)
+      .then(() => {
+        CATMAID.session.home_view_id = dataViewId;
+      });
   };
 
   /**

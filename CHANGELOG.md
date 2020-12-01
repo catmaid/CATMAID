@@ -46,6 +46,13 @@
 
 ### Features and enhancements
 
+Notes widget:
+
+- This new and simple widget can be used to take notes either only for the
+  current project, shared across all projects or globally visible for all users.
+  The last option is only available to admin users for writing. Use the "Open
+  Widget" dialog to open it using the "Notes" keyword.
+
 Publication widget
 
 - This new widget makes management of publication related annotations easier. It

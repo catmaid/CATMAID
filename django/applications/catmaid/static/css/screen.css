@@ -1863,3 +1863,8 @@ button.files-loaded {
 .publication-widget i.reset-to-inherit.highlight {
   color: orange;
 }
+
+.notes-widget textarea {
+  width: 100%;
+  height: 15em;
+}

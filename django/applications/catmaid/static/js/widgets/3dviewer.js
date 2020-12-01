@@ -2450,6 +2450,7 @@
               subdivisions: subdivisions,
               boundingBox: !!bb
             });
+            this.updateVolumeSelectionControls();
             this.space.render();
           } else {
             CATMAID.warn("Couldn't parse volume \"" + volumeId + "\"");
@@ -2465,16 +2466,15 @@
         this.space.scene.project.remove(v);
       }, this);
       this.loadedVolumes.delete(volumeId);
+      this.updateVolumeSelectionControls();
       this.space.render();
     }
-
-    this.updateVolumeSelectionControls();
 
     return Promise.resolve();
   };
 
-  WebGLApplication.prototype.getLoadedVolumeIds = function() {
-    let buttonPanel = document.querySelector(`#webgl_viewer_buttons1 span[data-role=volume-select]`);
+  WebGLApplication.prototype.updateVolumeSelectionControls = function() {
+    let buttonPanel = document.querySelector(`#webgl_viewer_buttons${this.widgetID} span[data-role=volume-select]`);
     if (buttonPanel) {
       let controls = buttonPanel.querySelectorAll('input[type=checkbox][data-role=option]');
       controls.forEach(c => {

@@ -383,7 +383,7 @@ var WindowMaker = new function()
     content.style.backgroundColor = "#ffffff";
 
     var bar = document.createElement( "div" );
-    bar.id = `webgl_viewer_buttons${WA.id}`;
+    bar.id = `webgl_viewer_buttons${WA.widgetID}`;
     bar.classList.add('windowpanel', 'buttonpanel');
     DOM.addFilterControlsToggle(win, 'Filter: ' +
         WA.getName(), {

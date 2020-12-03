@@ -3043,8 +3043,7 @@
               if (widget.showMultiMappingOptions) {
                 let componentList = $('<select/>').addClass('multiline wide-select').attr('size', '4')[0];
                 let mappingList = CATMAID.DOM.createLabeledControl('Additional mappings', componentList,
-                  "The list of known CATMAID instances that can be used to " +
-                  "e.g. retrieve tracing data.", 'cm-top');
+                  "Landmark group mappings set up from source to target.", 'cm-top');
                 $(newDTForm).append(mappingList);
 
                 // Add selected mapping

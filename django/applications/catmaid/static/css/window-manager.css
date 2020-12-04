@@ -17,27 +17,27 @@ div.eventCatcherMiddle {
 }
 
 div.eventCatcherTop {
-  background: url(../images/red50-20x20.png) repeat-x top;
+  background: linear-gradient(180deg, rgba(255,0,0,0.5) 20px, rgba(0,0,0,0) 0) repeat-x top;
   display: block;
 }
 
 div.eventCatcherBottom {
-  background: url(../images/red50-20x20.png) repeat-x bottom;
+  background: linear-gradient(0deg, rgba(255,0,0,0.5) 20px, rgba(0,0,0,0) 0) repeat-x bottom;
   display: block;
 }
 
 div.eventCatcherLeft {
-  background: url(../images/red50-20x20.png) repeat-y left;
+  background: linear-gradient(90deg, rgba(255,0,0,0.5) 20px, rgba(0,0,0,0) 0) repeat-y left;
   display: block;
 }
 
 div.eventCatcherRight {
-  background: url(../images/red50-20x20.png) repeat-y right;
+  background: linear-gradient(270deg, rgba(255,0,0,0.5) 20px, rgba(0,0,0,0) 0) repeat-y right;
   display: block;
 }
 
 div.eventCatcherMiddle {
-  background: url(../images/red50-20x20.png) no-repeat center/33% 33%;
+  background: linear-gradient(0deg, rgba(255,0,0,0.5) 100%, rgba(0,0,0,0) 0) no-repeat center/33% 33%;
   display: block;
 }
 

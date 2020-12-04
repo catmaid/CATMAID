@@ -1575,7 +1575,7 @@ img.missing-image {
 }
 
 img.missing-image:before {
-	content: url(../images/grey20.png);
+	content: rgba(160,160,160,0.2);
   display: inline-block;
   font-size: 0;
   line-height: 0;
@@ -1605,7 +1605,7 @@ img.missing-image:before {
   margin: 0;
   padding: 0;
   border: solid 1px #0000FF;
-  background: url(../images/blue20.png);
+  background: rgba(0,0,255,0.2);
   overflow: visible;
   z-index: 3;
   width: 100px;

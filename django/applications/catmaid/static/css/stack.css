@@ -99,7 +99,7 @@ div.smallMapView_hidden div.smallMapRect {
   margin: 0;
   padding: 0;
   border: solid 2px #0000FF;
-  background: url(../images/blue20.png);
+  background: rgba(0,0,255,0.2);
   overflow: hidden;
 }
 
@@ -291,7 +291,7 @@ div.scaleBenchmark p {
   margin-top: -12px;
   padding: 3px min(6px, 5%) 3px min(14px, 5%);
   color: #FFFFFF;
-  background: url(../images/blue20.png);
+  background: rgba(0,0,255,0.2);
   overflow: hidden;
 }
 
@@ -320,7 +320,7 @@ div.scaleBenchmark p span {
   margin-top: -12px;
   padding: 3px 6px 3px 14px;
   color: #FFFFFF;
-  background: url(../images/blue20.png);
+  background: rgba(0,0,255,0.2);
   overflow: hidden;
 }
 
@@ -401,13 +401,13 @@ div.stackInfo_selected {
   padding: 0;
   width: 100%;
   color: #FFFFFF;
-  background: url(../images/black20.png);
+  background: rgba(0,0,0,0.2);
   overflow: hidden;
   z-index: 6;
 }
 
 div.stackInfo_selected {
-  background: url(../images/blue20.png);
+  background: rgba(0,0,255,0.2);
 }
 
 div.stackInfo p,
@@ -441,7 +441,7 @@ div.stackInfo_selected p.stackClose {
   margin: 0;
   padding: 0;
   border: solid 1px #0000FF;
-  background: url(../images/blue20.png);
+  background: rgba(0,0,255,0.2);
   overflow: visible;
   z-index: 3;
 }

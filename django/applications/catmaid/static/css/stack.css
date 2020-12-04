@@ -289,7 +289,7 @@ div.scaleBenchmark p {
   border: none;
   margin: 0;
   margin-top: -12px;
-  padding: 3px 6px 3px 14px;
+  padding: 3px min(6px, 5%) 3px min(14px, 5%);
   color: #FFFFFF;
   background: url(../images/blue20.png);
   overflow: hidden;

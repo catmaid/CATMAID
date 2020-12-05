@@ -7,13 +7,16 @@ from django.conf import settings
 from django.http import HttpResponseRedirect
 from django.views.generic import TemplateView
 from django.contrib import messages
-from django.contrib.auth import get_user_model ; User = get_user_model()
+from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.contrib.sites.shortcuts import get_current_site
 from django.apps import apps
 
 from allauth.socialaccount import providers
 from allauth.utils import get_request_param
+
+User = get_user_model()
+
 
 class CatmaidView(TemplateView):
     """ This view adds extra context to its template. This extra context is

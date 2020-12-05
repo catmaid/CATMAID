@@ -12,7 +12,7 @@ from django.core.exceptions import ValidationError
 from django.contrib import admin, messages
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.admin import UserAdmin, GroupAdmin
-from django.contrib.auth import get_user_model ; User = get_user_model()
+from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.contrib.sites.models import Site
 from django.utils.safestring import mark_safe
@@ -37,6 +37,9 @@ from catmaid.views.dvid import DVIDImportWizard
 from catmaid.views.userimporter import UserImportWizard
 from catmaid.views.dataexporter import CatmaidDataExportWizard
 from catmaid.views.image_block_source_importer import ImageBlockSourceImportWizard
+
+User = get_user_model()
+
 
 def add_related_field_wrapper(form, col_name, rel=None) -> None:
     """Wrap a field on a form so that a little plus sign appears right next to

@@ -10,7 +10,7 @@ from typing import Any, Dict, DefaultDict, List, Optional, Tuple
 from django.http import HttpRequest, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.db import connection
-from django.contrib.auth import get_user_model ; User = get_user_model()
+from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 
 from catmaid.control.authentication import requires_user_role, \
@@ -22,6 +22,7 @@ from catmaid.models import UserRole, Project, Class, ClassInstance, \
 
 from rest_framework.decorators import api_view
 
+User = get_user_model()
 
 
 @api_view(['GET'])

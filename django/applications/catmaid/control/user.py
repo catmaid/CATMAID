@@ -9,11 +9,13 @@ from django.http import HttpRequest, JsonResponse
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.mixins import UserPassesTestMixin
-from django.contrib.auth import get_user_model ; User = get_user_model()
+from django.contrib.auth import get_user_model
 import django.contrib.auth.views as django_auth_views
 
 from catmaid.control.authentication import (access_check, PermissionError)
 from catmaid.control.common import get_request_bool
+
+User = get_user_model()
 
 
 def not_anonymous(user):

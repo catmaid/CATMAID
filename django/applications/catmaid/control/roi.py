@@ -5,7 +5,7 @@ import os.path
 from typing import Tuple
 
 from django.conf import settings
-from django.contrib.auth import get_user_model ; User = get_user_model()
+from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.http import HttpRequest, HttpResponseRedirect, JsonResponse
 from django.shortcuts import redirect
@@ -19,6 +19,8 @@ from catmaid.models import UserRole, RegionOfInterest, Project, Relation, \
 from celery.task import task
 from celery.utils.log import get_task_logger
 
+User = get_user_model()
+
 # Prefix for stored ROIs
 file_prefix = "roi_"
 # File extension of the stored ROIs
@@ -30,6 +32,7 @@ roi_path = os.path.join(settings.MEDIA_ROOT,
 logger = get_task_logger(__name__)
 # Locks will expire after two minutes
 LOCK_EXPIRE = 60 * 2
+
 
 @requires_user_role([UserRole.Browse])
 def get_roi_info(request:HttpRequest, project_id=None, roi_id=None) -> JsonResponse:

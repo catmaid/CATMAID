@@ -13,7 +13,7 @@ import urllib.parse
 
 from django import forms
 from django.conf import settings
-from django.contrib.auth import get_user_model ; User = get_user_model()
+from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.contrib.gis.db import models as spatial_models
 from django.contrib.postgres.fields import JSONField, ArrayField
@@ -35,6 +35,7 @@ from .fields import (Double3DField, Integer3DField, RGBAField,
         DownsampleFactorsField, SerializableGeometryField,
         DbDefaultDateTimeField)
 
+User = get_user_model()
 
 CELL_BODY_CHOICES = (
     ('u', 'Unknown'),

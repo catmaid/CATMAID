@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from django.contrib.auth import get_user_model ; User = get_user_model()
+from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
 
 from catmaid.models import *
@@ -9,6 +9,8 @@ from catmaid.control.tracing import setup_tracing
 import logging
 logger = logging.getLogger(__name__)
 from .common import set_log_level
+
+User = get_user_model()
 
 
 class Command(BaseCommand):

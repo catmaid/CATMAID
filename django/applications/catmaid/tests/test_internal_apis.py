@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 
 from django.test import TestCase
-from django.contrib.auth import get_user_model ; User = get_user_model()
+from django.contrib.auth import get_user_model
 from django.http.request import QueryDict
 from catmaid.control.common import get_request_bool, get_request_list
 from catmaid.models import Project, Class, Relation, ClassInstance, \
     ClassInstanceClassInstance
 from catmaid.control.annotation import delete_annotation_if_unused
 from catmaid.tests.common import CatmaidTestCase
+
+User = get_user_model()
 
 
 class InternalApiTestsNoDB(TestCase):

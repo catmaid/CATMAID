@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 
-from django.contrib.auth import get_user_model ; User = get_user_model()
+from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.contrib.auth.decorators import user_passes_test
 from django.http import HttpRequest, JsonResponse
@@ -11,6 +11,7 @@ from rest_framework.views import APIView
 
 from catmaid.control.authentication import requires_user_role, access_check
 
+User = get_user_model()
 
 logger = logging.getLogger('__name__')
 

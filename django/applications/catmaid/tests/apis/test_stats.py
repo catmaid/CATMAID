@@ -166,15 +166,12 @@ class StatsApiTests(CatmaidApiTestCase):
         self.fake_authentication()
         response = self.client.get(f'/{self.test_project_id}/stats/aggregates')
         self.assertStatus(response)
-        expected_result = {
-            'cable_length_total': 30436.534191990067,
-            'n_treenodes': 95,
-            'n_connectors': 8,
-            'n_skeletons_non_zero_length': 10,
-            'n_skeletons': 12,
-        }
         parsed_response = json.loads(response.content.decode('utf-8'))
-        self.assertEqual(expected_result, parsed_response)
+        self.assertEqual(95, parsed_response['n_treenodes'])
+        self.assertEqual(8, parsed_response['n_connectors'])
+        self.assertEqual(10, parsed_response['n_skeletons_non_zero_length'])
+        self.assertEqual(12, parsed_response['n_skeletons'])
+        self.assertAlmostEqual(30436.53419199, parsed_response['cable_length_total'])
 
     def test_stats_user_history_no_utc_offset(self):
         self.fake_authentication()

@@ -109,3 +109,9 @@ overridden in ``settings.py``. Below is an explanation of all available settings
     ``STATIC_EXTENSION_FILES``
     A list of file names that are allowed to be loaded by the front-end through
     ``STATIC_EXTENSION_URL`` and ``STATIC_EXTENSION_ROOT``. Empty by default.
+
+.. glossary::
+    ``NEW_USER_CREATE_USER_GROUP``
+    Whether or not a matching user group should be created for every newly
+    created user. This can make user management easier if a lot of shared data
+    access is configured.

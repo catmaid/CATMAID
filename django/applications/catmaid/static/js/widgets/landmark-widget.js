@@ -833,7 +833,6 @@
       let transformation = this.displayTransformations[i];
       for (let j=0; j<target3dViewers.length; ++j) {
         let widget = target3dViewers[j];
-        let selected = this.targeted3dViewerNames.get(widget.getName());
         widget.setLandmarkTransformStyle(transformation);
       }
     }
@@ -986,10 +985,6 @@
             landmarks, links, reuseExistingLandmarks);
       });
   };
-
-  function getId(e) {
-    return e.id;
-  }
 
   function hasFourElements(l) {
     return l.length === 4;
@@ -1469,8 +1464,6 @@
             var tr = $(this).closest('tr');
             var data =  $(table).DataTable().row(tr).data();
 
-            var id = parseInt(this.dataset.id, 10);
-
             // Toggle landmark group selection state
             widget.selectLandmark(data.id);
           }
@@ -1927,7 +1920,12 @@
               if (!widget.editUpdateExistingLandmarkLocations &&
                   linkedLocations.length > 0) {
                 throw new CATMAID.Warning('The landmark "' + landmark.name +
-                    '" is already has a location link with this group');
+                    '" already has a location link with this group');
+              }
+              if (landmarkNewInGroup) {
+                CATMAID.msg('New landmark', 'Created new landmark object');
+              } else {
+                CATMAID.msg('Existing landmark', 'Reusing existing landmark object');
               }
               return CATMAID.Landmarks.linkNewLocationToLandmarkAndGroup(project.id,
                   landmarkGroupId, landmark.id, loc,
@@ -2004,7 +2002,7 @@
         landmarkTableWrapper.classList.add('container');
         landmarkTableWrapper.appendChild(landmarkTable);
         content.appendChild(landmarkTableWrapper);
-        var landmarkDataTable = widget.landmarkDataTable = $(landmarkTable).DataTable({
+        widget.landmarkDataTable = $(landmarkTable).DataTable({
           dom: "lfrtip",
           autoWidth: false,
           paging: true,
@@ -2274,8 +2272,6 @@
         var addLinkButton = newGroupLinkPanel.appendChild(document.createElement('button'));
         addLinkButton.appendChild(document.createTextNode('Add new group link'));
         addLinkButton.onclick = function(e) {
-          let edtitedGroupIsSubject = true;
-
           let groupAId = parseInt(groupASelect.value, 10);
           let groupBId = parseInt(groupBSelect.value, 10);
           let relationId = parseInt(relationSelect.value, 10);
@@ -2304,7 +2300,7 @@
         relationTableWrapper.classList.add('container');
         relationTableWrapper.appendChild(relationTable);
         content.appendChild(relationTableWrapper);
-        var relationDataTable = $(relationTable).DataTable({
+        $(relationTable).DataTable({
           dom: "lfrtip",
           autoWidth: false,
           paging: true,
@@ -2523,7 +2519,6 @@
 
           // Load selected CSV files and enable import button if this worked
           // without problems.
-          let importList = [];
           let parsePromises = [];
           for (let i=0; i<widget.filesToImport.length; ++i) {
             let file = widget.filesToImport[i];
@@ -2724,7 +2719,7 @@
 
         let groupOptions;
 
-        let sourceSelectSetting, sourceGroup;
+        let sourceSelectSetting;
         let sourceRemote = '';
         let sourceProject = project.id;
         let sourceNeuronAnnotation = '';
@@ -2759,13 +2754,6 @@
             let asyncProjectList = CATMAID.Remote.createAsyncProjectSelect(sourceRemote,
                 sourceProject, undefined, e => {
                   sourceProject = parseInt(e.target.value, 10);
-
-                  // If the source project is the current project, the regular source
-                  // select and source group select are shown. Otherwise hidden.
-                  let currentProjectMode = sourceProject == project.id ? 'block' : 'none';
-                  //sourceSelectSetting.style.display = currentProjectMode;
-                  //sourceGroup.style.display = currentProjectMode;
-
                   updateSourceGroupList();
                   if (updateMatchingGroupList) {
                     updateMatchingGroupList();
@@ -3326,10 +3314,6 @@
               CATMAID.Relations.list(project.id)
                 .then(function(relationMap) {
                   let relationNames = Object.keys(relationMap);
-                  let invRelationMap = relationNames.reduce(function(o, name) {
-                    o[relationMap[name]] = name;
-                    return o;
-                  }, {});
                   let relationOptions = relationNames
                       .filter(name => widget.allowedRelationNames.has(name))
                       .map(function(name) {
@@ -3546,7 +3530,7 @@
 
         // Volume A
         let volumeA = null;
-        let volumeASelectionSetting = groupSettings.appendChild(
+        groupSettings.appendChild(
             CATMAID.DOM.createLabeledAsyncPlaceholder(
                 "Volume A", initVolumeList('a', function(volumeId) {
                   volumeA = volumeId;
@@ -3575,7 +3559,7 @@
 
         // Volume B
         let volumeB = null;
-        let volumeBSelectionSetting = groupSettings.appendChild(
+        groupSettings.appendChild(
             CATMAID.DOM.createLabeledAsyncPlaceholder(
                 "Volume B", initVolumeList('b', function(volumeId) {
                   volumeB = volumeId;
@@ -3613,7 +3597,7 @@
 
         // Mirror axis
         let mirrorAxis = 'none';
-        let mirrorAxisSetting = groupSettings.appendChild(
+        groupSettings.appendChild(
             CATMAID.DOM.createSelectSetting('Mirror axis', {
                 '(none)': 'none',
                 'X axis': 'x',
@@ -3634,10 +3618,6 @@
         CATMAID.Relations.list(project.id)
           .then(function(relationMap) {
             let relationNames = Object.keys(relationMap);
-            let invRelationMap = relationNames.reduce(function(o, name) {
-              o[relationMap[name]] = name;
-              return o;
-            }, {});
             let relationOptions = relationNames.map(function(name) {
               return { title: name, value: relationMap[name] };
             });

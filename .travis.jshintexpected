@@ -128,22 +128,6 @@ django/applications/catmaid/static/js/widgets/connector-list.js: line 502, col 1
 django/applications/catmaid/static/js/widgets/input.js: line 104, col 7, 'self' is defined but never used.
 django/applications/catmaid/static/js/widgets/input.js: line 5, col 10, 'Input' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/landmark-widget.js: line 836, col 13, 'selected' is defined but never used.
-django/applications/catmaid/static/js/widgets/landmark-widget.js: line 1472, col 17, 'id' is defined but never used.
-django/applications/catmaid/static/js/widgets/landmark-widget.js: line 1921, col 19, 'landmarkNewInGroup' is defined but never used.
-django/applications/catmaid/static/js/widgets/landmark-widget.js: line 2277, col 15, 'edtitedGroupIsSubject' is defined but never used.
-django/applications/catmaid/static/js/widgets/landmark-widget.js: line 2007, col 13, 'landmarkDataTable' is defined but never used.
-django/applications/catmaid/static/js/widgets/landmark-widget.js: line 2307, col 13, 'relationDataTable' is defined but never used.
-django/applications/catmaid/static/js/widgets/landmark-widget.js: line 2526, col 15, 'importList' is defined but never used.
-django/applications/catmaid/static/js/widgets/landmark-widget.js: line 2765, col 23, 'currentProjectMode' is defined but never used.
-django/applications/catmaid/static/js/widgets/landmark-widget.js: line 3330, col 23, 'invRelationMap' is defined but never used.
-django/applications/catmaid/static/js/widgets/landmark-widget.js: line 2727, col 34, 'sourceGroup' is defined but never used.
-django/applications/catmaid/static/js/widgets/landmark-widget.js: line 3638, col 17, 'invRelationMap' is defined but never used.
-django/applications/catmaid/static/js/widgets/landmark-widget.js: line 3550, col 13, 'volumeASelectionSetting' is defined but never used.
-django/applications/catmaid/static/js/widgets/landmark-widget.js: line 3579, col 13, 'volumeBSelectionSetting' is defined but never used.
-django/applications/catmaid/static/js/widgets/landmark-widget.js: line 3617, col 13, 'mirrorAxisSetting' is defined but never used.
-django/applications/catmaid/static/js/widgets/landmark-widget.js: line 990, col 12, 'getId' is defined but never used.
-
 django/applications/catmaid/static/js/widgets/morphology-plot.js: line 559, col 15, 'centerNodeId' is defined but never used.
 django/applications/catmaid/static/js/widgets/morphology-plot.js: line 548, col 13, 'result' is defined but never used.
 django/applications/catmaid/static/js/widgets/morphology-plot.js: line 597, col 15, 'centerNodeId' is defined but never used.
@@ -285,4 +269,4 @@ django/applications/catmaid/static/libs/catmaid/time-series.js: line 19, col 12,
 django/applications/catmaid/static/libs/catmaid/volumes.js: line 613, col 9, 'abs' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/volumes.js: line 805, col 15, 'dSimplicesT' is defined but never used.
 
-224 errors
+209 errors

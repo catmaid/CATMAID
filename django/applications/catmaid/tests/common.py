@@ -6,9 +6,13 @@ from django.db import connection
 from django.test import TestCase
 from django.test.client import Client
 from catmaid.apps import get_system_user
-from catmaid.models import Project, User
+from catmaid.models import Project
 from catmaid.control.project import validate_project_setup
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 import guardian.management
+
+User = get_user_model()
 
 
 def create_anonymous_user():
@@ -66,6 +70,12 @@ class CatmaidTestCase(TestCase, AssertStatusMixin):
         cls.test_project_id = 3
         cls.user = User.objects.create_user('temporary',
                 'temporary@my.mail', 'temporary')
+
+        # Add admin user and test2 users to the test1 group
+        g = Group.objects.get(name='test1')
+        g.user_set.add(User.objects.get(username='admin'))
+        g.user_set.add(User.objects.get(username='test2'))
+        g.save()
 
     def setUp(self):
         self.client = Client()

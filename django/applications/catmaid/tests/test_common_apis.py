@@ -15,9 +15,14 @@ from catmaid.control.annotation import _annotate_entities
 from catmaid.fields import Double3D, Integer3D
 from catmaid.models import Project, Stack, ProjectStack, StackMirror
 from catmaid.models import ClassInstance, Log
-from catmaid.models import Treenode, Connector, User
+from catmaid.models import Treenode, Connector
 from catmaid.models import TreenodeClassInstance, ClassInstanceClassInstance
 from catmaid.tests.common import create_anonymous_user, init_consistent_data, AssertStatusMixin
+
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
+
+User = get_user_model()
 
 
 class TransactionTests(TransactionTestCase, AssertStatusMixin):
@@ -203,6 +208,12 @@ class ViewPageTests(TestCase, AssertStatusMixin):
         # Assign the new user permissions to browse and annotate projects
         assign_perm('can_browse', user, p)
         assign_perm('can_annotate', user, p)
+
+        # Add admin user and test2 users to the test1 group
+        g = Group.objects.get(name='test1')
+        g.user_set.add(User.objects.get(username='admin'))
+        g.user_set.add(User.objects.get(username='test2'))
+        g.save()
 
     def test_testdata(self):
         """Makes sure the test data doesn't contain rows for the base tables

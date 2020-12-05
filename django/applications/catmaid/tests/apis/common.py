@@ -4,10 +4,14 @@ from django.db import connection
 from django.shortcuts import get_object_or_404
 from django.test import TestCase, TransactionTestCase
 from django.test.client import Client
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from guardian.shortcuts import assign_perm
 
 from catmaid.models import Project, Treenode, User
 from catmaid.tests.common import create_anonymous_user, init_consistent_data, AssertStatusMixin
+
+User = get_user_model()
 
 
 class CatmaidApiTestMixin(AssertStatusMixin):
@@ -38,6 +42,12 @@ class CatmaidApiTestMixin(AssertStatusMixin):
         # Assign the new user permissions to browse and annotate projects
         assign_perm('can_browse', cls.test_user, cls.test_project)
         assign_perm('can_annotate', cls.test_user, cls.test_project)
+
+        # Add admin user and test2 users to the test1 group
+        g = Group.objects.get(name='test1')
+        g.user_set.add(User.objects.get(username='admin'))
+        g.user_set.add(User.objects.get(username='test2'))
+        g.save()
 
 
     def setUp(self):

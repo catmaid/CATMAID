@@ -118,7 +118,7 @@ def make_home_view(request:HttpRequest, data_view_id) -> JsonResponse:
     userprofile = request.user.userprofile
 
     userprofile.home_view = dataview
-    userprofile.save();
+    userprofile.save()
 
     return JsonResponse({
         'status': 'Home view updated',

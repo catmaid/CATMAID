@@ -8,7 +8,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from guardian.shortcuts import assign_perm
 
-from catmaid.models import Project, Treenode, User
+from catmaid.models import Project, Treenode
 from catmaid.tests.common import create_anonymous_user, init_consistent_data, AssertStatusMixin
 
 User = get_user_model()

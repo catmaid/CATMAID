@@ -16,7 +16,7 @@ from django.db import connection
 from django.db.models import Count
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, User
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
@@ -36,8 +36,6 @@ from catmaid.fields import Double3D
 from catmaid.control.common import urljoin, is_valid_host
 from catmaid.control.classification import get_classification_links_qs, \
         link_existing_classification, ClassInstanceClassInstanceProxy
-
-User = get_user_model()
 
 TEMPLATES = {"pathsettings": "catmaid/import/setup_path.html",
              "projectselection": "catmaid/import/setup_projects.html",

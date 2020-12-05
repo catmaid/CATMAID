@@ -1849,7 +1849,7 @@ def annotations_for_skeleton(project_id:Union[int,str], skeleton_id, relations=N
     return dict(cursor.fetchall())
 
 
-def clear_annotations(project_id:Union[int,str], skeleton_id, relations=None, classes=None) -> Dict:
+def clear_annotations(project_id:Union[int,str], skeleton_id, relations=None, classes=None) -> List[int]:
     """Remove all annotations from a skeleton.
     """
     if not relations:

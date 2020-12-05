@@ -177,7 +177,6 @@ django/applications/catmaid/static/js/widgets/pair-statistics-widget.js: line 80
 django/applications/catmaid/static/js/widgets/pair-statistics-widget.js: line 814, col 19, 'batches' is defined but never used.
 django/applications/catmaid/static/js/widgets/pair-statistics-widget.js: line 848, col 25, 'k' is defined but never used.
 
-
 django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 152, col 13, 'state' is defined but never used.
 django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 198, col 9, 'month' is defined but never used.
 django/applications/catmaid/static/js/widgets/reconstruction-sampler.js: line 199, col 9, 'day' is defined but never used.

@@ -358,6 +358,13 @@ Data views:
 - The data view menu (Home button) will now highlight the currently active data
   view.
 
+Cropping tool:
+
+- A new radio button in front of both the top and the bottom Z index sliders
+  allows users now to choose whether the link the displayed Z slice to either
+  the top or the bottom of the copping box. This makes it easier to visually
+  confirm top and bottom of the bounding box.
+
 Miscellaneous:
 
 - Each stack viewer will now show the project name by default along with the

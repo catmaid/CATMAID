@@ -13,6 +13,8 @@
     var self = this;
     this.toolname = "croppingtool";
 
+    this.viewBoundToTopZ = true;
+
     this.slider_crop_top_z = new CATMAID.Slider(
         CATMAID.Slider.HORIZONTAL,
         true,
@@ -56,12 +58,22 @@
     };
 
     // A procedure to add containers for extra sliders
-    var create_slider_box = function(name, text, slider) {
-      var p = document.createElement("p");
-      p.innerHTML = text;
+    var create_slider_box = function(name, text, slider, radioButton = undefined) {
       // fill container
       var container = create_tb_box();
-      container.appendChild(p);
+      if (radioButton) {
+        let p = document.createElement("p");
+        let label = document.createElement('label');
+        label.classList.add('checkbox-label');
+        p.appendChild(label);
+        label.appendChild(radioButton);
+        label.appendChild(document.createTextNode(text));
+        container.appendChild(p);
+      } else {
+        let p = document.createElement("p");
+        p.appendChild(document.createTextNode(text));
+        container.appendChild(p);
+      }
       container.appendChild(slider.getView());
       container.appendChild(slider.getInputView());
       // add container to the toolbar
@@ -69,10 +81,38 @@
       added_elements.push(container);
     };
 
+    // Add a radio btton to make the current Z dependent on the top z-index
+    // (default).
+    let bindViewToTopZRadioButton = document.createElement('input');
+    bindViewToTopZRadioButton.type = 'radio';
+    bindViewToTopZRadioButton.title = 'Select to link the displayed Z slice to the top view Z';
+    bindViewToTopZRadioButton.classList.add('padded');
+    bindViewToTopZRadioButton.name = 'z-view-binding';
+    bindViewToTopZRadioButton.value = 'top';
+    bindViewToTopZRadioButton.checked = this.viewBoundToTopZ;
+    bindViewToTopZRadioButton.onchange = e => {
+      this.viewBoundToTopZ = e.target.checked;
+      this.updateViewBinding();
+      CATMAID.status('View bound to top Z');
+    };
+
+    let bindViewToBottomZRadioButton = document.createElement('input');
+    bindViewToBottomZRadioButton.type = 'radio';
+    bindViewToBottomZRadioButton.title = 'Select to link the displayed Z slice to the bottom view Z';
+    bindViewToBottomZRadioButton.classList.add('padded');
+    bindViewToBottomZRadioButton.name = 'z-view-binding';
+    bindViewToBottomZRadioButton.value = 'top';
+    bindViewToBottomZRadioButton.checked = this.viewBoundToBottomZ;
+    bindViewToBottomZRadioButton.onchange = e => {
+      this.viewBoundToTopZ = !e.target.checked;
+      this.updateViewBinding();
+      CATMAID.status('View bound to bottom Z');
+    };
+
     create_slider_box( "slider_crop_top_z", "top z-index",
-        this.slider_crop_top_z );
+        this.slider_crop_top_z, bindViewToTopZRadioButton );
     create_slider_box( "slider_crop_bottom_z", "bottom z-index",
-        this.slider_crop_bottom_z );
+        this.slider_crop_bottom_z, bindViewToBottomZRadioButton );
     create_slider_box( "slider_crop_s", "zoom-level",
         this.slider_crop_s );
 
@@ -261,12 +301,7 @@
     this.changeSlice = function( val, step )
     {
       val = self.stackViewer.toValidZ(val, step < 0 ? -1 : 1);
-      self.stackViewer.moveToPixel( val, self.stackViewer.y, self.stackViewer.x, self.stackViewer.s );
-    };
-
-    this.changeBottomSlice = function( val )
-    {
-
+      return self.stackViewer.moveToPixel( val, self.stackViewer.y, self.stackViewer.x, self.stackViewer.s );
     };
 
     /**
@@ -379,7 +414,7 @@
         0,
         self.stackViewer.primaryStack.slices,
         self.stackViewer.z,
-        self.changeBottomSlice );
+        CATMAID.noop );
 
       // initialize zoom-level slider
       self.slider_crop_s.update(
@@ -454,6 +489,46 @@
       CroppingTool.superproto.destroy.call( self );
 
       return;
+    };
+
+    /**
+     * Link either the top or bottom Z slider to the current view.
+     */
+    this.updateViewBinding = function() {
+      if (this.viewBoundToTopZ) {
+        this.changeSlice(this.slider_crop_top_z.val, 1)
+          .then(() => {
+            self.slider_crop_top_z.update(
+              0,
+              0,
+              self.stackViewer.primaryStack.slices,
+              self.stackViewer.z,
+              self.changeSliceDelayed );
+            self.slider_crop_bottom_z.update(
+              0,
+              0,
+              self.stackViewer.primaryStack.slices,
+              self.slider_crop_bottom_z.val,
+              CATMAID.noop);
+          })
+          .catch(CATMAID.handleError);
+      } else {
+        this.changeSlice(this.slider_crop_bottom_z.val, 1)
+          .then(() => {
+            self.slider_crop_top_z.update(
+              0,
+              0,
+              self.stackViewer.primaryStack.slices,
+              self.slider_crop_top_z.val,
+              CATMAID.noop);
+            self.slider_crop_bottom_z.update(
+              0,
+              0,
+              self.stackViewer.primaryStack.slices,
+              self.slider_crop_bottom_z.val,
+              self.changeSliceDelayed );
+          });
+      }
     };
   }
   CATMAID.tools.extend( CroppingTool, CATMAID.RoiTool );

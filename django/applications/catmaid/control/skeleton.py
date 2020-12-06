@@ -3225,9 +3225,10 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
                 treenodes = Treenode.objects.filter(skeleton_id=skeleton_id,
                         project_id=project_id)
                 treenode_ids = treenodes.values_list('id', flat=True)
-                # Raise an Exception if the user doesn't have permission to
-                # edit the existing treenodes.
-                can_edit_all_or_fail(user, treenode_ids, 'treenode')
+                if treenode_ids:
+                    # Raise an Exception if the user doesn't have permission to
+                    # edit the existing treenodes.
+                    can_edit_all_or_fail(user, treenode_ids, 'treenode')
 
                 # Rremove all treenodes of existing skeletons. If a neuron ID is
                 # passed in and it is different from the existing neureon ID,

@@ -3196,7 +3196,8 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
             # The neuron ID is okay to use
             pass
 
-    if skeleton_id is not None:
+    # Take care of a passed in skeleton if this didn't happen already
+    if skeleton_id is not None and new_skeleton is None:
         # Check that the skeleton to use exists
         try:
             existing_skeleton = ClassInstance.objects.get(pk=skeleton_id)

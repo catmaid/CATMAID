@@ -1853,6 +1853,8 @@ class SkeletonsApiTransactionTests(CatmaidApiTransactionTestCase):
         self.assertEqual(skeleton.name, 'test8')
         self.assertNotEqual(skeleton.edition_time, last_skeleton_edit_time)
 
+        post_force_update_neuron_id = replaced_neurons[0].class_instance_b_id
+
         # Make sure no annotation changed
         new_neuron_annotations_test_7 = set(annotations_for_skeleton(
                 self.test_project_id, post_force_update_skeleton_id).keys())
@@ -1861,4 +1863,43 @@ class SkeletonsApiTransactionTests(CatmaidApiTransactionTestCase):
         # Make sure there are as many nodes as expected for the imported
         # skeleton.
         n_skeleton_nodes = Treenode.objects.filter(skeleton_id=post_force_update_skeleton_id).count()
+        self.assertEqual(n_skeleton_nodes, n_orig_skeleton_nodes)
+
+        # Test replacing the imported neuron with forcing an update and removing
+        # all exisiting annotations
+        swc_file2 = StringIO(orig_swc_string)
+        response = self.client.post('/%d/skeletons/import' % (self.test_project_id,),
+                {'file.eswc': swc_file2, 'name': 'test9',
+                    'skeleton_id': post_force_update_skeleton_id,
+                    'neuron_id': post_force_update_neuron_id, 'force': True,
+                    'auto_id': False, 'annotations': ['xyz4']})
+
+        transaction.commit()
+
+        self.assertStatus(response)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+
+        last_skeleton_edit_time = skeleton.edition_time
+
+        # We now expect the union of the existing and the passed in anno
+        skeleton.refresh_from_db()
+
+        post_force_update_skeleton_id_2 = parsed_response['skeleton_id']
+        replaced_neurons = ClassInstanceClassInstance.objects.filter(
+                class_instance_a_id=skeleton.id,
+                relation__relation_name='model_of',
+                class_instance_b__class_column__class_name='neuron')
+        self.assertEqual(len(replaced_neurons), 1)
+        self.assertEqual(skeleton.id, post_force_update_skeleton_id_2)
+        self.assertEqual(skeleton.name, 'test9')
+        self.assertNotEqual(skeleton.edition_time, last_skeleton_edit_time)
+
+        # Make sure our annotation was added
+        new_neuron_annotations_test_7 = set(annotations_for_skeleton(
+                self.test_project_id, post_force_update_skeleton_id_2).keys())
+        self.assertEqual(new_neuron_annotations_test_7, set(['xyz3', 'xyz4']))
+
+        # Make sure there are as many nodes as expected for the imported
+        # skeleton.
+        n_skeleton_nodes = Treenode.objects.filter(skeleton_id=post_force_update_skeleton_id_2).count()
         self.assertEqual(n_skeleton_nodes, n_orig_skeleton_nodes)

@@ -3213,7 +3213,7 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
                         class_instance_a=skeleton_id,
                         relation_id=relation_map['model_of'],
                         class_instance_b__class_column_id=class_map['neuron'])
-                if len(cici) != 1:
+                if len(cici) > 1:
                     raise ValueError(f"Found more than one neuron link for skeleton {skeleton_id}")
                 existing_neuron_id = cici[0].class_instance_b
 

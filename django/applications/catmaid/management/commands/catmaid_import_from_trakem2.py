@@ -950,8 +950,7 @@ class TrakEM2ToCATMAIDTransformer():
             else:
                 log(f'Removed {n_old_faces - n_faces} not fully connected faces, out of {n_old_faces} in total')
 
-            remesh = True
-            if remesh:
+            if self.blender_remesh:
                 mesh = sk.remesh(mesh, self.remesh_voxel_size, self.remesh_adaptivity)
 
             if self.only_largest_mesh_component:

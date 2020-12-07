@@ -11,7 +11,7 @@ sudo apt-get install -q postgresql-12 postgresql-client-12 postgresql-12-postgis
 
 # Drop existin database and crate a new one to make sure we run in a ramdisk and
 # on port 5432.
-sudo pg_dropcluster 12 main
+sudo pg_dropcluster --stop 12 main
 sudo mkdir -p /var/ramfs/postgresql/12/main
 sudo chown postgres:postgres /var/ramfs/postgresql/12/main
 sudo pg_createcluster -d /var/ramfs/postgresql/12/main -p 5432 12 main

@@ -1,4 +1,4 @@
-dist: xenial
+dist: bionic
 notifications:
   email: false
 language: python
@@ -8,9 +8,7 @@ python:
   - "3.7"
   - "3.8"
   - "nightly"
-  - "pypy3.6-7.1.1"
-env:
-  - CRYPTOGRAPHY_ALLOW_OPENSSL_102=yes
+  - "pypy3.6-7.3.1"
 matrix:
   allow_failures:
   - python: "nightly"

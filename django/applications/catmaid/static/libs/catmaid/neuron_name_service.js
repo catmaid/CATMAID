@@ -574,7 +574,6 @@
               // Split format string in format components and regular
               // components.
               var components = formatString.split(/((?:%f|%\d+)(?:\{.*\})?)/g);
-              var lastComponentIndex = components.length - 1;
               var leftTrimmed = false;
               var rightTrimmed = false;
               var lastMappedElement = null;
@@ -626,7 +625,7 @@
                   }
 
                   // Right-trim current component, if next components is empty
-                  if (i < lastComponentIndex) {
+                  if (i < (mappedComponents.length - 1)) {
                     var l = c.length;
                     var nextComponent = mappedComponents[i + 1];
                     if (nextComponent.length === 0) {

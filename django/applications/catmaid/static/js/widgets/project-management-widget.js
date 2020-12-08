@@ -11,8 +11,8 @@
     this.idPrefix = `project-management-widget${this.widgetID}-`;
 
     // The current edit mode
-    this.mode = 'permissions';
-    this.modes = ['permissions', 'delete'];
+    this.mode = 'project-access';
+    this.modes = ['project-access', 'delete'];
 
     this.neuronNameService = CATMAID.NeuronNameService.getInstance();
   };
@@ -115,8 +115,8 @@
   };
 
   ProjectManagementWidget.MODES = {
-    'permissions': {
-      title: 'Permissions',
+    'project-access': {
+      title: 'Project access',
       createControls: function(widget) {
         let infoPanel = document.createElement('p');
         infoPanel.appendChild(document.createTextNode(' Set user and group permissions for this project'));
@@ -137,6 +137,10 @@
           content.appendChild(document.createTextNode('No administration permissions'));
           return;
         }
+
+        let msg = content.appendChild(document.createElement('p'));
+        msg.classList.add('info-text');
+        msg.appendChild(document.createTextNode('Project access permissions allow you to configure which user or which group of users can among other things see or edit the current project (or user space). The help page has more information.'));
 
         let userHeader = content.appendChild(document.createElement('h1'));
         userHeader.style.clear = 'both';

@@ -1180,7 +1180,7 @@ class TrakEM2ToCATMAIDTransformer():
             if not result:
                 raise ValueError(f"Could not import skeleton {skeleton_id}")
 
-            log(f'number of btreenodes is: {str(len(result["node_id_map"]))} for '
+            log(f'number of treenodes is: {str(len(result["node_id_map"]))} for '
                     f'TrakEM2 arealist {str(arealist.getId())}')
             self.n_arealist_imports += 1
         except Exception as e:

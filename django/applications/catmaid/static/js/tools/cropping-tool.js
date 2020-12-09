@@ -300,8 +300,12 @@
 
     this.changeSlice = function( val, step )
     {
-      val = self.stackViewer.toValidZ(val, step < 0 ? -1 : 1);
-      return self.stackViewer.moveToPixel( val, self.stackViewer.y, self.stackViewer.x, self.stackViewer.s );
+      try {
+        val = self.stackViewer.toValidZ(val, step < 0 ? -1 : 1);
+        return self.stackViewer.moveToPixel( val, self.stackViewer.y, self.stackViewer.x, self.stackViewer.s );
+      } catch (error) {
+        return Promise.reject(error);
+      }
     };
 
     /**

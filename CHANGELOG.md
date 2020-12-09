@@ -434,6 +434,10 @@ Miscellaneous:
 
 ### Bug fixes
 
+- Cropping tool: if a single pixel past the start of a new image tile
+  represented part of the outer boundary of a cropping area, this part was
+  rendered only as black pixels. This is fixed now.
+
 - Graph widget: fraction edge labels work again. They produced an error before.
 
 - 3D viewer: PNG exports can now be transparent again.

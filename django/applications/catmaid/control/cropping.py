@@ -188,13 +188,23 @@ class ImagePart:
         self.y_max_src = y_max_src
         self.x_dst = x_dst
         self.y_dst = y_dst
-        self.width = x_max_src - x_min_src
-        self.height = y_max_src - y_min_src
-        self.estimated_size = 0
+
+        # Compute width and height, one is added, because x/y min/max are
+        # inclusive values, i.e. of the range [x_min_src, x_max_src].
+        self.width = x_max_src - x_min_src + 1
+        self.height = y_max_src - y_min_src + 1
+
         # Complain if the width or the height is zero
         if self.width == 0 or self.height == 0:
             raise ValueError( "An image part must have an area, hence no " \
                     "extent should be zero!" )
+
+        self.estimated_size = 0
+
+    def __str__(self):
+        return (f'Image part at ({self.x_dst}, {self.y_dst}) with dimensions '
+            f'({self.width}, {self.height}), Source: ({self.x_min_src}, {self.y_min_src}), '
+            f'({self.x_max_src}, {self.y_min_src})')
 
     def get_image(self):
         # Open the image
@@ -483,9 +493,9 @@ def extract_substack_no_rotation(job) -> List:
                         part = ImagePart(path, cur_px_x_min, cur_px_x_max,
                                 cur_px_y_min, cur_px_y_max, x_dst, y_dst)
                         image_parts.append( part )
-                    except:
+                    except Exception as e:
                         # ignore failed slices
-                        pass
+                        logger.error(f'An error happend while creating an impagepart: {e}')
                     # Update y component of destination position
                     y_dst += cur_px_y_max - cur_px_y_min
                 # Update x component of destination position

@@ -166,9 +166,11 @@ Docker-compose
 Before updating the docker images, the database should be backed up. The easiest
 way to do this and also be able to quickly restore in case something goes wrong,
 is to perform a file based copy of the ``volumes`` folder after stopping the
-database. To stop the database, call the following three commands from the
+database. To stop CATMAID and the database, call the following commands from the
 ``catmaid-docker`` directory (containing the ``docker-compose.yml`` file)::
 
+  CATMAID_STOP_CMD='supervisorctl stop all'
+  docker exec -i -t catmaid_app_1 /bin/bash -c "${CATMAID_STOP_CMD}"
   PG_STOP_CMD='export PGCTL=$(which pg_ctl); su postgres -c "${PGCTL} stop"'
   docker exec -i -t catmaid_db_1 /bin/bash -c "${PG_STOP_CMD}"
   docker-compose stop

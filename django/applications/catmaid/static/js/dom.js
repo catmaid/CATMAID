@@ -202,12 +202,14 @@
   /**
    * Helper function to create a number input field with label.
    */
-  DOM.createNumericInputSetting = function(name, val, step, helptext, handler)
+  DOM.createNumericInputSetting = function(name, val, step, helptext, handler, min = 0)
   {
     var input = $('<input/>').attr('type', 'number')
-      .attr('min', '0')
       .attr('step', undefined === step ? 1 : step)
       .addClass("ui-corner-all").val(val);
+    if (min !== null) {
+      input.attr('min', min);
+    }
     if (handler) {
       input.change(handler);
     }

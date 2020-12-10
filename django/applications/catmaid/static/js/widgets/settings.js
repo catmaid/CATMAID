@@ -542,6 +542,25 @@
            .catch(CATMAID.handleError);
       });
 
+      // Min zoom level
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createNumericInputSetting(
+              "Min zoom level",
+              CATMAID.StackViewer.Settings[SETTINGS_SCOPE].min_zoom_level,
+              1,
+              "The minimum zoom level that is accessible through the UI. The default value of -2 leads to two artificial zoom levels.",
+              function() {
+                var newMinZoomLevels = parseFloat(this.value);
+                CATMAID.StackViewer.Settings
+                    .set(
+                      'min_zoom_level',
+                      newMinZoomLevels,
+                      SETTINGS_SCOPE);
+              }, null),
+          CATMAID.StackViewer.Settings,
+          'min_zoom_level',
+          SETTINGS_SCOPE));
+
       // Layer insertion strategy
       ds.append(wrapSettingsControl(
           CATMAID.DOM.createSelectSetting(

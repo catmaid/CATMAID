@@ -1261,6 +1261,9 @@
           default_layer_config: {
             default: {}
           },
+          min_zoom_level: {
+            default: -2
+          },
         },
         migrations: {}
       });

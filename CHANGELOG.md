@@ -378,6 +378,9 @@ Miscellaneous:
   clear those settings, there are now three new buttons at the bottom of each
   layer that supports settings storage.
 
+- The minimum zoom level can now be configured in the Settings Widget using the
+  "Min zoom level" control of the "Stack view" section.
+
 - Node distance measurements (icon in tracing tool bar) are now allowed also
   between nodes of different skeletons. In this case only the straight line
   distance will be displayed. Both the straight line distance and the path

@@ -648,9 +648,9 @@
    *
    * @returns {Promise} Promise resolving with the Stack.
    */
-  Stack.fetch = function(projectId, stackId) {
+  Stack.fetch = function(projectId, stackId, minZoomLevel = -2) {
     return CATMAID.fetch(projectId + '/stack/' + stackId + '/info')
-      .then(CATMAID.Stack.fromStackInfoJson);
+      .then(CATMAID.Stack.fromStackInfoJson, minZoomLevel);
   };
 
   /**
@@ -660,7 +660,7 @@
    * @param  {Object} json
    * @return {Stack}
    */
-  Stack.fromStackInfoJson = function (json) {
+  Stack.fromStackInfoJson = function (json, minZoomLevel = -2) {
     return new CATMAID.Stack(
         json.sid,
         json.stitle,
@@ -669,7 +669,7 @@
         json.translation,
         json.broken_slices,
         json.downsample_factors,
-        -2,
+        minZoomLevel,
         json.comment,
         json.description,
         json.metadata,

@@ -2023,7 +2023,8 @@ var project;
     function loadStack(e, stackViewer, hideStackLayer, reorient) {
       var useExistingViewer = typeof stackViewer !== 'undefined';
 
-      var stack = new CATMAID.Stack.fromStackInfoJson(e);
+      var stack = new CATMAID.Stack.fromStackInfoJson(e,
+          CATMAID.StackViewer.Settings.session.min_zoom_level);
       if (CATMAID.tools.isNumber(reorient)) {
         stack = new CATMAID.ReorientedStack(stack, reorient);
       }

@@ -57,6 +57,7 @@ if [ "${1:0:1}" = '-' ]; then
 fi
 
 init_catmaid () {
+  echo "Startig CATMAID"
   # Make sure there is a folder writable by www-data in the /var/run folder,
   # used for some sockets and PID files.
   mkdir -p /var/run/catmaid
@@ -260,6 +261,25 @@ init_catmaid () {
   fg
 }
 
+shutdown_catmaid () {
+  echo "Stopping Supervisord processes"
+  supervisorctl stop all
+  echo "Stopping Supervisord"
+  pkill -TERM supervisord
+  echo "Stopping RabbitMQ"
+  pkill -TERM rabbitmq-server
+  echo "Stopping PostgreSQL"
+  pkill -TERM postgres
+
+  exit 0;
+}
+
+# Trap SIGTERM and SIGKILL from Docker in order to shutdown all services
+# properly.
+handle_shutdown () {
+  trap shutdown_catmaid SIGTERM INT
+}
+
 if [ "$1" = 'standalone' ]; then
   if ! grep -Fxq "local ${DB_NAME} ${DB_USER} md5" "${DB_CONF_FILE/postgresql.conf/}pg_hba.conf"
   then
@@ -299,10 +319,13 @@ if [ "$1" = 'standalone' ]; then
   rm -f /etc/nginx/sites-enabled/default
   ln -sf /home/scripts/docker/nginx-catmaid.conf /etc/nginx/sites-enabled/
 
+  handle_shutdown
+
   echo "Starting Nginx"
   service nginx start
   init_catmaid
 elif [ "$1" = 'platform' ]; then
+  handle_shutdown
   init_catmaid
 else
     exec "$@"

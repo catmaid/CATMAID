@@ -512,6 +512,10 @@ Miscellaneous:
 
 - Stack viewer: fix inconsistent state when removing copies of stack layers.
 
+- Docker: when the container is stopped, all processes are now gracefully
+  stopped as well. I.e. the database will be notified about an imminent
+  shutdown, etc.
+
 ## Maintenance updates
 
 - Volume widget: don't show removal options by default. It happens generally

@@ -7,10 +7,6 @@ django/applications/catmaid/static/js/3d/skeleton-shading.js: line 546, col 13, 
 django/applications/catmaid/static/js/3d/skeleton-shading.js: line 571, col 9, 'nAddedDomains' is defined but never used.
 django/applications/catmaid/static/js/3d/skeleton-shading.js: line 1044, col 13, 'arbor' is defined but never used.
 
-django/applications/catmaid/static/js/dom.js: line 652, col 13, 'self' is defined but never used.
-django/applications/catmaid/static/js/dom.js: line 827, col 15, 'opened' is defined but never used.
-django/applications/catmaid/static/js/dom.js: line 822, col 9, 'update' is defined but never used.
-
 django/applications/catmaid/static/js/extensions.js: line 108, col 7, 'samePath' is defined but never used.
 django/applications/catmaid/static/js/extensions.js: line 147, col 7, 'samePath' is defined but never used.
 
@@ -268,4 +264,4 @@ django/applications/catmaid/static/libs/catmaid/time-series.js: line 19, col 12,
 django/applications/catmaid/static/libs/catmaid/volumes.js: line 613, col 9, 'abs' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/volumes.js: line 805, col 15, 'dSimplicesT' is defined but never used.
 
-209 errors
+206 errors

@@ -91,9 +91,11 @@
     bindViewToTopZRadioButton.value = 'top';
     bindViewToTopZRadioButton.checked = this.viewBoundToTopZ;
     bindViewToTopZRadioButton.onchange = e => {
-      this.viewBoundToTopZ = e.target.checked;
-      this.updateViewBinding();
-      CATMAID.status('View bound to top Z');
+      if (e.target == bindViewToTopZRadioButton) {
+        this.viewBoundToTopZ = e.target.checked;
+        this.updateViewBinding();
+        CATMAID.status('View bound to top Z');
+      }
     };
 
     let bindViewToBottomZRadioButton = document.createElement('input');
@@ -104,9 +106,11 @@
     bindViewToBottomZRadioButton.value = 'top';
     bindViewToBottomZRadioButton.checked = this.viewBoundToBottomZ;
     bindViewToBottomZRadioButton.onchange = e => {
-      this.viewBoundToTopZ = !e.target.checked;
-      this.updateViewBinding();
-      CATMAID.status('View bound to bottom Z');
+      if (e.target == bindViewToBottomZRadioButton) {
+        this.viewBoundToTopZ = !e.target.checked;
+        this.updateViewBinding();
+        CATMAID.status('View bound to bottom Z');
+      }
     };
 
     create_slider_box( "slider_crop_top_z", "top z-index",

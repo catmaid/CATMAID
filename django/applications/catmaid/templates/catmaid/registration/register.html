@@ -58,6 +58,12 @@
       <input type="submit" value="Create the account">
       </span>
     </form>
+    {% if CONFIRM_TERMS %}
+      <h2>Terms and conditions</h2>
+      <p>
+        {{ CONFIRM_TERMS_TEXT | safe }}
+      </p>
+    {% endif %}
 
   </div>
 

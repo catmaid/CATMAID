@@ -115,3 +115,13 @@ overridden in ``settings.py``. Below is an explanation of all available settings
     Whether or not a matching user group should be created for every newly
     created user. This can make user management easier if a lot of shared data
     access is configured.
+
+.. glossary::
+    ``USER_REGISTRATION_CONFIRM_TERMS``
+    Whether or not a user registration form requires users to accept a set of
+    terms and conditions. Disabled by default.
+
+.. glossary::
+   ``USER_REGISTRATION_CONFIRM_TERMS_TEXT``
+   The terms and conditions users need to accept upon registering, if this
+   confirmation is required.

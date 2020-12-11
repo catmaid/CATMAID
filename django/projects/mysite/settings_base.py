@@ -326,6 +326,15 @@ Best,
 The CATMAID admins
 """
 
+USER_REGISTRATION_CONFIRM_TERMS = False
+USER_REGISTRATION_CONFIRM_TERMS_TEXT = """By joining this CATMAID server you accept the following terms and conditions:
+
+<ol>
+<li>The provider of both this service and all displayed data is not responsible
+for any data lost.</li>
+</ol>
+"""
+
 # A new user's defaul groups
 NEW_USER_DEFAULT_GROUPS = []
 

@@ -410,10 +410,13 @@ Miscellaneous:
   hash characters (#) at the end of passed in URLs are now removed
   automatically.
 
-- The user registration form fits now the overal layout better and include first
+- The user registration form fits now the overall layout better and include first
   and last name as well as the email address. Also, a link to the user
   registration form is now displayed right next to the login link in the top
-  right corner, if user registration is enabled.
+  right corner, if user registration is enabled. It also allows to optionally
+  require users to accept a certain set of terms and conditions, which can be
+  configured through the settings variables USER_REGISTRATION_CONFIRM_TERMS and
+  USER_REGISTRATION_CONFIRM_TERMS_TEXT (disabled by default).
 
 - The overview image in the lower right corner of the stack viewer is now
   displayed by default. This behavior can be adjusted for users, projects and

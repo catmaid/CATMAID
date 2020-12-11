@@ -236,12 +236,11 @@ init_catmaid () {
     done
   fi
 
-  # First start supervisor in background, start Celery and pull supervisor
-  # into foreground.
+  # First start supervisor in background and optionally start Celery and Daphne.
   echo "Starting CATMAID"
   supervisord -n -c /etc/supervisor/supervisord.conf &
   # Sleep a second to give supervisor a chance to start
-  until supervisorctl status; do
+  until ls /var/run/supervisor.sock 2> /dev/null; do
     sleep 0.1
   done
 
@@ -257,8 +256,11 @@ init_catmaid () {
     supervisorctl start daphne-catmaid
   fi
 
-  # Move supervisor back into foreground
-  fg
+  # All required components are started now and in order to receive signals for
+  # the shutdown handler, we need to wait here until child processes have
+  # finished. If we would set e.g. supervisor to run in the foreground (fg), the
+  # entry point script would not be able to receive the required signals.
+  wait
 }
 
 shutdown_catmaid () {

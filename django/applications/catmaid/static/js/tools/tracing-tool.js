@@ -2429,10 +2429,13 @@
               return CATMAID.Remote.importRemoteSkeletonsWithPreview(api,
                   projectId, [activeSkeletonId], annotations, entityMap, result => {
                     let activeTracingLayer = this.getActiveTracingLayer();
+                    let referenceNodeId = SkeletonAnnotations.isRealNode(activeNodeId) ?
+                        activeNodeId : SkeletonAnnotations.getParentOfVirtualNode(activeNodeId);
+
                     if (activeTracingLayer) {
                       activeTracingLayer.forceRedraw(() => {
                         if (result && result.length > 0) {
-                          CATMAID.Remote.selectImportedNode(activeNodeId, result[0]);
+                          CATMAID.Remote.selectImportedNode(referenceNodeId, result[0]);
                         }
                       });
                     }

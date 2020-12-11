@@ -260,6 +260,7 @@ init_catmaid () {
   # the shutdown handler, we need to wait here until child processes have
   # finished. If we would set e.g. supervisor to run in the foreground (fg), the
   # entry point script would not be able to receive the required signals.
+  # See: https://tldp.org/LDP/Bash-Beginners-Guide/html/sect_12_02.html
   wait
 }
 

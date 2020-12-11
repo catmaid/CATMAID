@@ -1,4 +1,4 @@
-FROM ubuntu:16.04
+FROM ubuntu:20.04
 LABEL maintainer="Andrew Champion <andrew.champion@gmail.com>, Tom Kazimiers <tom@voodoo-arts.net>"
 
 # For building the image, let dpkg/apt know that we install and configure
@@ -9,20 +9,17 @@ ARG DEBIAN_FRONTEND=noninteractive
 # instance, make sure we install the upstream version to match the manual (and
 # make building images on top of this one easier).
 RUN apt-get update -y \
-    && apt-get install -y apt-utils apt-transport-https gawk \
-    && apt-get install -y software-properties-common \
+    && apt-get install -y apt-utils apt-transport-https ca-certificates gnupg \
+    && apt-get install -y gawk wget software-properties-common \
+    && apt-get update -y \
+    && wget --quiet -O - https://postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
+    && add-apt-repository "deb https://apt.postgresql.org/pub/repos/apt/ focal-pgdg main" \
+    && wget --quiet -O - https://dl.bintray.com/rabbitmq/Keys/rabbitmq-release-signing-key.asc | apt-key add - \
+    && add-apt-repository "deb https://dl.bintray.com/rabbitmq-erlang/debian focal erlang" \
     && add-apt-repository ppa:deadsnakes/ppa \
     && add-apt-repository -y ppa:nginx/stable \
-    && add-apt-repository -y ppa:ubuntugis/ppa \
-    && apt-get install -y wget ca-certificates \
-    && add-apt-repository "deb http://apt.postgresql.org/pub/repos/apt/ xenial-pgdg main" \
-    && wget --quiet -O - https://postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
-    && add-apt-repository "deb http://dl.bintray.com/rabbitmq-erlang/debian xenial erlang" \
-    && wget --quiet -O - https://github.com/rabbitmq/signing-keys/releases/download/2.0/rabbitmq-release-signing-key.asc | apt-key add - \
-    && add-apt-repository "deb https://packagecloud.io/rabbitmq/rabbitmq-server/ubuntu/ xenial main" \
-    && wget --quiet -O - https://packagecloud.io/rabbitmq/rabbitmq-server/gpgkey | apt-key add - \
     && apt-get update -y \
-    && apt-get install -y python3.6 python3.6-dev git python-pip \
+    && apt-get install -y python3.6 python3.6-dev git python3-pip \
     && apt-get install -y nginx supervisor \
     && apt-get install -y rabbitmq-server \
     && rm -rf /var/lib/apt/lists/*

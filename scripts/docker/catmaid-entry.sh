@@ -290,7 +290,7 @@ if [ "$1" = 'standalone' ]; then
 
   if [ "$DB_TUNE" = true ]; then
   echo "Tuning Postgres server configuration"
-    CONNECTIONS=${DB_CONNECTIONS} CONF_FILE="${DB_CONF_FILE}" FORCE_PGTUNE=${DB_FORCE_TUNE} python /home/scripts/database/pg_tune.py
+    CONNECTIONS=${DB_CONNECTIONS} CONF_FILE="${DB_CONF_FILE}" FORCE_PGTUNE=${DB_FORCE_TUNE} python3 /home/scripts/database/pg_tune.py
   fi
 
   service postgresql restart

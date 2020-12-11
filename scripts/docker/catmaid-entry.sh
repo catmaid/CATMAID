@@ -198,8 +198,8 @@ init_catmaid () {
 
   sed -i "/^\(CELERY_BROKER_URL = \).*/d" mysite/settings.py
   sed -i "/^\(CELERY_WORKER_CONCURRENCY = \).*/d" mysite/settings.py
-  if [ "$CM_RUN_CELERY" = true ]; then
-    # Let CATMAID know about available async processing.
+  if [[ "$CM_RUN_CELERY" = true ]]; then
+    # Let CATMAID know about available async grocessing.
     echo "Updating settings.py:"
     echo "Setting CELERY_BROKER_URL = \"${CM_CELERY_BROKER_URL}\""
     echo "CELERY_BROKER_URL = \"${CM_CELERY_BROKER_URL}\"" >> mysite/settings.py
@@ -216,7 +216,7 @@ init_catmaid () {
     fi
   fi
 
-  if [ "$CM_RUN_ASGI" = true ]; then
+  if [[ "$CM_RUN_ASGI" = true ]]; then
     echo "Setting CHANNEL_LAYERS"
     echo "CHANNEL_LAYERS = {
   'default': {
@@ -245,14 +245,14 @@ init_catmaid () {
     sleep 0.1
   done
 
-  if [ "$CM_RUN_CELERY" = true ]; then
+  if [[ "$CM_RUN_CELERY" = true ]]; then
     echo "Starting Celery"
     supervisorctl start celery-catmaid
     echo "Starting Celery Beat"
     supervisorctl start celery-beat-catmaid
   fi
 
-  if [ "$CM_RUN_ASGI" = true ]; then
+  if [[ "$CM_RUN_ASGI" = true ]]; then
     echo "Starting ASGI server Daphne"
     supervisorctl start daphne-catmaid
   fi

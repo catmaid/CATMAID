@@ -45,8 +45,8 @@
   ActiveSkeleton.prototype.createModel = function() {
     var active = SkeletonAnnotations.getActiveSkeletonId();
     if (!active) return null;
-    var name = CATMAID.NeuronNameService.getInstance().getName(active);
     let api = SkeletonAnnotations.getActiveSkeletonAPI();
+    var name = CATMAID.NeuronNameService.getInstance(api).getName(active);
     return new CATMAID.SkeletonModel(active, name, new THREE.Color(1, 1, 0), api,
         SkeletonAnnotations.getActiveProjectId());
   };

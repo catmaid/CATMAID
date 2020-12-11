@@ -2584,18 +2584,38 @@ var project;
         let newName = `Space #${nSpaces + 1} - ${projectDetails.title}`;
         let createProjectToken = false, approvalNeeded = false;
 
+        let originProjectId = project.id;
+        // FIXME: This is a hack
+        let originProject = {
+          id: project.id,
+          title: project.title,
+        };
+
         let switchToNewProject = function(result) {
           let newProjectId = result.new_project_id;
+          let showOriginTracingData = defaultLayerField.checked;
           let switchDialog = new CATMAID.OptionsDialog("Switch to new project?", {
-            'Cancel': e => {},
+            'Stay here': e => {},
             'Switch to new space': e => {
               // Open new space
               let stackId = project.focusedStackViewer.primaryStack.id;
               project.setTool(null);
               return CATMAID.openProjectStack(newProjectId, stackId)
                 .then(stackViewer => {
-                  stackViewer.moveTo(z, y, x, s);
                   CATMAID.msg("Success", "Opened newly created space");
+                  return Promise.all([stackViewer, stackViewer.moveTo(z, y, x, s)]);
+                })
+                .then(results => {
+                  let stackViewer = results[0];
+                  // Add default remote data
+                  if (showOriginTracingData) {
+                    project.setTool(new CATMAID.TracingTool());
+                    let tool = project.getTool();
+                    if (tool instanceof CATMAID.TracingTool) {
+                      return tool.openAdditionalTracinData('This server', originProject, stackViewer)
+                          .then(() => tool._updateMoreToolsMenu(true));
+                    }
+                  }
                 })
                 .catch(CATMAID.handleError);
             },
@@ -2641,7 +2661,7 @@ var project;
                 approvalNeeded: approvalNeeded,
               };
             }
-            CATMAID.Project.createFork(project.id, newName, volumeField.checked, projectTokenOptions)
+            CATMAID.Project.createFork(originProjectId, newName, volumeField.checked, projectTokenOptions)
               .then(result => {
                 return switchToNewProject(result);
               })
@@ -2660,6 +2680,9 @@ var project;
         confirmationDialog.appendMessage("Please confirm the creation of the new space. Update the name if you like.");
         var nameField = confirmationDialog.appendField("Name", undefined, newName);
         nameField.size = 50;
+
+        var defaultLayerField = confirmationDialog.appendCheckbox("Show tracing data of this project", undefined, true,
+            "If enabled, the tracing data of the current project is shown by default");
 
         var volumeField = confirmationDialog.appendCheckbox("Copy volumes/meshes", undefined, true,
             "If enabled, all visible volumes/meshes will copied from this project to the new space");

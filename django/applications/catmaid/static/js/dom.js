@@ -651,8 +651,6 @@
         });
         filterListContent.appendChild(table);
 
-        var self = this;
-
         var datatable = $(table).DataTable({
           dom: "tp",
           ajax: function(data, callback, settings) {
@@ -820,13 +818,10 @@
       return show;
     };
 
-    // Make a update function that can be referred to from handlers
-    var update = toggle.bind(window, true);
-
     return DOM.addCaptionButton(win, 'fa fa-filter', title,
         function() {
           // Do a regular toggle update by default
-          var opened = toggle();
+          toggle();
         });
   };
 

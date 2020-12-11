@@ -2612,7 +2612,7 @@ var project;
                     project.setTool(new CATMAID.TracingTool());
                     let tool = project.getTool();
                     if (tool instanceof CATMAID.TracingTool) {
-                      return tool.openAdditionalTracinData('This server', originProject, stackViewer)
+                      return tool.openAdditionalTracinData('This instance', originProject, stackViewer)
                           .then(() => tool._updateMoreToolsMenu(true));
                     }
                   }

@@ -584,7 +584,7 @@
       version: 0,
       entries: {
         local_server_name: {
-          default: 'This server'
+          default: 'This instance'
         },
       },
       migrations: {}

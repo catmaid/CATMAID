@@ -2216,7 +2216,7 @@
     let work = [
         CATMAID.Project.list(true, true, false)
           .then(projects => {
-            this.remoteTracingProjcts.set('This server', {
+            this.remoteTracingProjcts.set('This instance', {
               api: CATMAID.API.getLocalAPI(),
               name: CATMAID.Remote.Settings.session.local_server_name,
               projects: projects,

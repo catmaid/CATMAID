@@ -278,7 +278,7 @@ shutdown_catmaid () {
 # properly.
 handle_shutdown () {
   echo "Setting up shutdown signal handler"
-  trap 'echo "Received shutdown request"; shutdown_catmaid; exit 0' SIGINT SIGTERM SIGHUP
+  trap 'echo "Received shutdown request"; shutdown_catmaid; exit 0' SIGINT SIGTERM SIGHUP EXIT
 }
 
 if [ "$1" = 'standalone' ]; then

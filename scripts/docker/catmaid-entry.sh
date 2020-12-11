@@ -272,14 +272,13 @@ shutdown_catmaid () {
   pkill -TERM rabbitmq-server
   echo "Stopping PostgreSQL"
   pkill -TERM postgres
-
-  exit 0;
 }
 
 # Trap SIGTERM and SIGKILL from Docker in order to shutdown all services
 # properly.
 handle_shutdown () {
-  trap shutdown_catmaid SIGTERM INT
+  echo "Setting up shutdown signal handler"
+  trap 'echo "Received shutdown request"; shutdown_catmaid; exit 0' SIGINT SIGTERM SIGHUP
 }
 
 if [ "$1" = 'standalone' ]; then

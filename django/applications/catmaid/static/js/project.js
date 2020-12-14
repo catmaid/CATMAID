@@ -319,8 +319,7 @@
       CATMAID.statusBar.printCoords('');
 
       this.trigger(Project.EVENT_PROJECT_DESTROYED);
-      Project.trigger(Project.EVENT_PROJECT_DESTROYED);
-      project = null;
+      Project.trigger(Project.EVENT_PROJECT_DESTROYED, this.id);
     };
 
     /**

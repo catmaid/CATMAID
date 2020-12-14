@@ -766,7 +766,6 @@ var project;
       // browse it.
       if (!CATMAID.mayView()) {
         project.destroy();
-        project = null;
       } else {
         // Reset current tool
         project.setTool(project.getTool());
@@ -1537,6 +1536,7 @@ var project;
   };
 
   Client.prototype._handleProjectDestroyed = function() {
+    project = null;
     this.updateContextHelp(true);
     CATMAID._updateUserMenu();
   };

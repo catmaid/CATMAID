@@ -2159,6 +2159,7 @@ var project;
           switchDialog.onOK = function() {
             // Open new space
             let stackId = project.focusedStackViewer.primaryStack.id;
+            project.setTool(null);
             return CATMAID.openProjectStack(newProjectId, stackId)
               .then(stackViewer => {
                 stackViewer.moveTo(z, y, x, s);

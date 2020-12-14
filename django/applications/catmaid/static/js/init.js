@@ -2159,7 +2159,7 @@ var project;
           switchDialog.onOK = function() {
             // Open new space
             let stackId = project.focusedStackViewer.primaryStack.id;
-            CATMAID.openProjectStack(newProjectId, stackId)
+            return CATMAID.openProjectStack(newProjectId, stackId)
               .then(stackViewer => {
                 stackViewer.moveTo(z, y, x, s);
                 CATMAID.msg("Success", "Opened newly created space");
@@ -2178,11 +2178,13 @@ var project;
             }
             CATMAID.Project.createFork(project.id, newName, volumeField.checked)
               .then(result => {
-                  switchToNewProject(result.new_project_id);
-                  return Promise.all([
-                    CATMAID.client.updateProjects(),
-                    CATMAID.updatePermissions(),
-                  ]);
+                return switchToNewProject(result.new_project_id);
+              })
+              .then(() => {
+                return Promise.all([
+                  CATMAID.client.updateProjects(),
+                  CATMAID.updatePermissions(),
+                ]);
               })
               .catch(CATMAID.handleError);
           },

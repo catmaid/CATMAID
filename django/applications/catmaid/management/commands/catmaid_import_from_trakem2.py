@@ -19,6 +19,7 @@ from django.conf import settings
 from django.db import connection
 from django.contrib.auth import get_user_model
 
+from catmaid.control.annotation import _annotate_entities
 from catmaid.control.common import get_class_to_id_map, get_relation_to_id_map
 from catmaid.control.skeleton import _import_skeleton_swc, edge_list_to_swc
 from catmaid.control.volume import TriangleMeshVolume
@@ -568,7 +569,7 @@ class TrakEM2ToCATMAIDTransformer():
         log(f'- Closest node matches: {self.n_closest_node_matches}')
 
 
-    def add_recursively(self, pt, parent_id, depth=0, annotations=[]):
+    def add_recursively(self, pt, parent_id, depth=0, annotations=[], parts_collection=None):
         pad = " "*depth
         name_with_id = self.get_project_thing_name(pt)
         pt_type = pt.getType()
@@ -597,29 +598,37 @@ class TrakEM2ToCATMAIDTransformer():
         elif pt_type in ("pre", "post"):
             log(pad + "Ignoring pre/post object")
         elif pt_type == "neuron":
-            # is_neuron = True
+            is_neuron = True
             ignore = False
             descent = True
             new_id = self.insert_neuron(name_with_id)
             self.neuron_map[name_with_id] = new_id
+            log(f'{pad}created neuron ({name_with_id}) and descending into {pt_type}')
         elif pt_type == "connector":
             self.connector_pre_neuron_map[name_with_id] = parent_id
             log(pad + "Noting connector")
         elif pt_type == "treeline":
             ignore = False
-            skeleton_id = self.insert_skeleton(parent_id, name_with_id)
-            tl = pt.getObject()
-            self.insertTree(tl,skeleton_id)
-            self.n_treeline_imports += 1
+            if parts_collection:
+                parts_collection['treeline'].append(pt)
+            else:
+                skeleton_id = self.insert_skeleton(parent_id, name_with_id, pad=pad)
+                tl = pt.getObject()
+                self.insertTree(tl, skeleton_id, parent_id, annotations)
+                self.n_treeline_imports += 1
+
         elif pt_type == "areatree":
             # FIXME: no proper support for areatrees yet, so just import as a
             # treeline for the moment:
             ignore = False
-            skeleton_id = self.insert_skeleton(parent_id, name_with_id)
-            tl = pt.getObject()
-            self.insertTree(tl,skeleton_id)
-            self.n_areatree_imports += 1
-            self.displayable_map[tl.getId()] = parent_id
+            if parts_collection:
+                parts_collection['areatree'].append(pt)
+            else:
+                skeleton_id = self.insert_skeleton(parent_id, name_with_id, pad=pad)
+                tl = pt.getObject()
+                self.insertTree(tl,skeleton_id, parent_id, annotations)
+                self.n_areatree_imports += 1
+                self.displayable_map[tl.getId()] = parent_id
         elif pt_type == "ball":
             # TODO: could just be supported by a treenode, since they
             # have a radius
@@ -630,10 +639,13 @@ class TrakEM2ToCATMAIDTransformer():
             log(pad + "Ignoring profile list")
         elif pt_type == "area_list":
             ignore = False
-            skeleton_id = self.insert_skeleton(parent_id, name_with_id)
-            tl = pt.getObject()
-            self.insertAreaList(tl, skeleton_id, parent_id, self.resample, annotations)
-            self.displayable_map[tl.getId()] = parent_id
+            if parts_collection:
+                parts_collection['area_list'].append(pt)
+            else:
+                skeleton_id = self.insert_skeleton(parent_id, name_with_id, pad=pad)
+                tl = pt.getObject()
+                self.insertAreaList(tl, skeleton_id, parent_id, self.resample, annotations)
+                self.displayable_map[tl.getId()] = parent_id
         elif pt_type == "pipe":
             log(pad + "Ignoring pipe")
         elif pt_type == "centrosome_without_cilium":
@@ -653,30 +665,136 @@ class TrakEM2ToCATMAIDTransformer():
                 ignore = True
                 log(f'{pad}Ignoring {name_with_id}, because of no matching name filter')
             else:
-                new_id = self.insert_neuron(name_with_id)
+                is_neuron = True
+                new_id = self.insert_neuron(name_with_id, pad=pad)
                 ignore = False
                 descent = True
-                log(pad + "Created neuron (" + name_with_id + ") and descending into " + pt_type)
+                log(f'{pad}Created neuron ({name_with_id}) and descending into {pt_type}')
         elif pt_type in ("pres", "posts"):
-            log(pad + "Ignoring " + pt_type)
+            log(pad + "ignoring " + pt_type)
         elif pt_type == "marker":
             ignore = True
-            log(pad + "Ignoring marker")
+            log(pad + "ignoring marker")
         elif pt_type == "network":
             new_id = parent_id
             ignore = False
             descent = True
-            log(pad + "Descending into " + pt_type)
+            log(pad + "descending into " + pt_type)
         else:
-            raise Exception("Unknown type: "+str(pt_type))
+            raise exception("unknown type: "+str(pt_type))
+
         children = pt.getChildren()
         if children and (new_id or descent):
             all_ignored = True
+
+            if is_neuron:
+                # collect all possible skeleton parts and merge them into a
+                # single representation at locations of
+                parts_collection = {
+                    'treeline': [],
+                    'areatree': [],
+                    'area_list': [],
+                }
+
+            # Visit children recursively
             for c in children:
-                all_ignored = self.add_recursively(c, new_id, depth+1, annotations.copy()) and all_ignored
-            if is_neuron and all_ignored:
-                log(pad + "Deleted empty neuron {}".format(new_id))
-                self.delete_neuron(new_id)
+                all_ignored = self.add_recursively(c, new_id, depth+1,
+                        annotations.copy(), parts_collection) and all_ignored
+            if is_neuron:
+                sum_parts = sum([len(x) for x in parts_collection.values()])
+                if all_ignored or sum_parts == 0:
+                    log(f'{pad}deleted empty neuron {new_id} (having {sum_parts} parts)')
+                    self.delete_neuron(new_id)
+                else:
+                    if not new_id:
+                        raise ValueError('Expected a newly created neuron ID to be available')
+                    # for each areatree, area_list and treeline, create an
+                    # individual neuron with the same annotations. if they
+                    # should be merged, they can be merged manually in catmaid
+                    # directly. this seems safer than guessing the merge
+                    # location.
+                    log(f'{pad}Attempting to import {len(parts_collection["area_list"])} arealists, '
+                            f'{len(parts_collection["areatree"])} areatrees, '
+                            f'{len(parts_collection["treeline"])} treelines. Each as separate neuron.')
+                    current_neuron_id = None
+
+                    if sum_parts > 1:
+                        effective_annotations = annotations.copy()
+                        effective_annotations.append('Multiple parts')
+                    else:
+                        effective_annotations = annotations
+
+                    n = 0
+                    area_list_annotations = None
+                    for c in parts_collection['area_list']:
+                        if not area_list_annotations:
+                            area_list_annotations = effective_annotations.copy()
+                            area_list_annotations.append('arealist')
+                        new_name_with_id = self.get_project_thing_name(c)
+                        effective_name = name_with_id if n == 0 else f'{name_with_id} #{n+1} ({new_name_with_id})'
+                        if current_neuron_id is None:
+                            current_neuron_id = new_id
+                        else:
+                            log(f'{pad}Creating clone of current neuron for new skeleton')
+
+                            current_neuron_id = self.insert_neuron(effective_name, pad=pad)
+                            log(f'{pad}created neuron ({effective_name}) and descending with ID {current_neuron_id} (arealist))')
+
+                        skeleton_id = self.insert_skeleton(current_neuron_id, new_name_with_id, pad=pad)
+                        self.insertAreaList(c.getObject(), skeleton_id, current_neuron_id, self.resample, area_list_annotations)
+                        self.displayable_map[c.getId()] = current_neuron_id
+
+                        n += 1
+
+                    area_tree_annotations = None
+                    for c in parts_collection['areatree']:
+                        if not area_tree_annotations:
+                            area_tree_annotations = effective_annotations.copy()
+                            area_tree_annotations.append('areatree')
+                        new_name_with_id = self.get_project_thing_name(c)
+                        effective_name = name_with_id if n == 0 else f'{name_with_id} #{n+1} ({new_name_with_id})'
+                        if current_neuron_id is None:
+                            current_neuron_id = new_id
+                        else:
+                            log(f'{pad}Creating clone of current neuron for new skeleton')
+
+                            current_neuron_id = self.insert_neuron(effective_name, pad=pad)
+                            log(f'{pad}created neuron ({effective_name}) and descending with ID {current_neuron_id} (areatree))')
+
+                        skeleton_id = self.insert_skeleton(current_neuron_id, new_name_with_id, pad=pad)
+                        self.insertTree(c.getObject(), skeleton_id, current_neuron_id, area_tree_annotations)
+                        self.displayable_map[c.getId()] = current_neuron_id
+                        self.n_areatree_imports += 1
+
+                        n += 1
+
+                    treeline_annotations = None
+                    for c in parts_collection['treeline']:
+                        if not treeline_annotations:
+                            treeline_annotations = effective_annotations.copy()
+                            treeline_annotations.append('treeline')
+                        new_name_with_id = self.get_project_thing_name(c)
+                        effective_name = name_with_id if n == 0 else f'{name_with_id} #{n+1} ({new_name_with_id})'
+                        if current_neuron_id is None:
+                            current_neuron_id = new_id
+                        else:
+                            log(f'{pad}Creating clone of current neuron for new skeleton')
+
+                            current_neuron_id = self.insert_neuron(effective_name, pad=pad)
+                            log(f'{pad}created neuron ({effective_name}) and descending with ID {current_neuron_id} (treeline))')
+
+                        skeleton_id = self.insert_skeleton(current_neuron_id, new_name_with_id, pad=pad)
+                        self.insertTree(c.getObject(), skeleton_id, current_neuron_id, treeline_annotations)
+                        self.displayable_map[c.getId()] = current_neuron_id
+                        self.n_treeline_imports += 1
+
+                        n += 1
+
+                    # No skeleton has been created
+                    if n == 0:
+                        log(pad + "deleted neuron without skeletons {}".format(new_id))
+                        self.delete_neuron(new_id)
+
         return ignore
 
     def add_synapse(self, name, connector, pre_nodes, post_nodes):
@@ -843,21 +961,21 @@ class TrakEM2ToCATMAIDTransformer():
         z = float(nd.layer.z) * self.pw
         return (x, y, z)
 
-    def insert_neuron(self, name):
+    def insert_neuron(self, name, pad=''):
         new_id = self.new_class_instance('neuron', name)
-        log(f'insert neuron {new_id} name: {name}')
+        log(f'{pad}insert neuron {new_id} name: {name}')
         return new_id
 
     def delete_neuron(self, part_of_group_id):
         self.delete_class_instance(part_of_group_id)
 
-    def insert_skeleton(self, model_of_neuron_id, name):
+    def insert_skeleton(self, model_of_neuron_id, name, pad=''):
         new_id = self.new_class_instance('skeleton', name)
-        log(f'insert skeleton {new_id} {model_of_neuron_id}')
+        log(f'{pad}insert skeleton {new_id} {model_of_neuron_id}')
         self.new_class_instance_class_instance('model_of', new_id, model_of_neuron_id)
         return new_id
 
-    def insertTree(self, tree, skeleton_id):
+    def insertTree(self, tree, skeleton_id, parent_id, annotations=['Import']):
         if isinstance(tree, str):
             return
         root = tree.getRoot()
@@ -894,6 +1012,9 @@ class TrakEM2ToCATMAIDTransformer():
                 for tag in all_tags:
                     tag_as_string = tag.toString()
                     log("Trying to add tag: "+tag_as_string)
+        if annotations:
+            _annotate_entities(self.project_id, [parent_id],
+                    {a: {'user_id': self.user_id} for a in annotations})
 
     def insertAreaList(self, arealist, skeleton_id, neuron_id, resample=1,
             annotations=['Import']):
@@ -1219,8 +1340,6 @@ class TrakEM2ToCATMAIDTransformer():
             'id': obj_id,
         })
         old_id = cursor.fetchone()
-        if obj_id:
-            obj_id = obj_id[0]
         return old_id
 
     def new_class_instance_class_instance(self, relation_name, ci1, ci2):

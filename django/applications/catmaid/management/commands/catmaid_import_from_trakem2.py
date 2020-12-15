@@ -746,6 +746,7 @@ class TrakEM2ToCATMAIDTransformer():
                         skeleton_id = self.insert_skeleton(current_neuron_id, new_name_with_id, pad=pad)
                         self.insertAreaList(c.getObject(), skeleton_id, current_neuron_id, self.resample, area_list_annotations)
                         self.displayable_map[c.getId()] = current_neuron_id
+                        self.displayable_map[c.getObject().getId()] = current_neuron_id
 
                         n += 1
 
@@ -767,6 +768,7 @@ class TrakEM2ToCATMAIDTransformer():
                         skeleton_id = self.insert_skeleton(current_neuron_id, new_name_with_id, pad=pad)
                         self.insertTree(c.getObject(), skeleton_id, current_neuron_id, area_tree_annotations)
                         self.displayable_map[c.getId()] = current_neuron_id
+                        self.displayable_map[c.getObject().getId()] = current_neuron_id
                         self.n_areatree_imports += 1
 
                         n += 1
@@ -789,6 +791,7 @@ class TrakEM2ToCATMAIDTransformer():
                         skeleton_id = self.insert_skeleton(current_neuron_id, new_name_with_id, pad=pad)
                         self.insertTree(c.getObject(), skeleton_id, current_neuron_id, treeline_annotations)
                         self.displayable_map[c.getId()] = current_neuron_id
+                        self.displayable_map[c.getObject().getId()] = current_neuron_id
                         self.n_treeline_imports += 1
 
                         n += 1

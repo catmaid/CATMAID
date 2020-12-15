@@ -684,7 +684,7 @@ class TrakEM2ToCATMAIDTransformer():
             descent = True
             log(pad + "descending into " + pt_type)
         else:
-            raise exception("unknown type: "+str(pt_type))
+            raise Exception("unknown type: "+str(pt_type))
 
         children = pt.getChildren()
         if children and (new_id or descent):

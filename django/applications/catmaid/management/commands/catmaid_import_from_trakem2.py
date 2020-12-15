@@ -171,7 +171,8 @@ class ConnectorNode:
                 log(f"Looked up neuron for connector based on intersecting TrakEM2 objects: {import_neuron_id}")
 
         if import_neuron_id is None:
-            log('Could not find imported neuron. Skipping.')
+            log(f'Could not find imported neuron at location ({self.x}, {self.y}, {self.z}) '
+                    f'for {"pre" if self.side == SynapseSides.PRE else "post"} side. Skipping.')
             return None, None
 
         try:
@@ -264,7 +265,9 @@ class ConnectorNode:
         })
 
         result = cursor.fetchone()
-        if not result:
+        if result:
+            log(f'Closest node in skeleton {import_skeleton_id} for location {(self.x, self.y, self.z)}: {result[0]} with distance {result[1]}')
+        else:
             log(f'Found no closest node in skeleton {import_skeleton_id} for location {(self.x, self.y, self.z)}')
             return None, 0
 
@@ -944,7 +947,7 @@ class TrakEM2ToCATMAIDTransformer():
         if imported_neuron_id:
             log(f'Found imported neuron {imported_neuron_id} for intersected displayable: {obj}')
         else:
-            log(f'Found no imported neuron for displayable: {obj}')
+            log(f'Found no imported neuron for displayable (id: {obj.getId()}: {obj}')
 
         return imported_neuron_id
 

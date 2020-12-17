@@ -10,3 +10,89 @@ img.logo {
 .toctree-wrapper a.reference {
   border: none;
 }
+
+table.cat-training-pipeline {
+  font-size: smaller;
+  color: black;
+}
+
+table.cat-training-pipeline tr:nth-child(-n+4) td:nth-child(n+1):nth-child(-n+19),
+table.cat-training-pipeline tr:nth-child(4) td:nth-child(20),
+table.cat-training-pipeline tr:nth-child(5) td:nth-child(1),
+table.cat-training-pipeline tr:nth-child(12),
+table.cat-training-pipeline tr:nth-child(n+14):nth-child(-n+16) td:nth-child(n+7):nth-child(-n+20),
+table.cat-training-pipeline tr:nth-child(14) td:nth-child(3),
+table.cat-training-pipeline tr:nth-child(14) td:nth-child(n+7):nth-child(-n+20),
+table.cat-training-pipeline tr:nth-child(21),
+table.cat-training-pipeline tr:nth-child(22) td:nth-child(n+7):nth-child(-n+8),
+table.cat-training-pipeline tr:nth-child(n+26):nth-child(-n+27) td:nth-child(n+7):nth-child(-n+20) {
+  font-weight: bold;
+}
+table.cat-training-pipeline tr:nth-child(5) {
+  vertical-align: bottom;
+}
+
+table.cat-training-pipeline tr:nth-child(-n+5) td:nth-child(n+2):nth-child(-n+2) {
+  background-color: #f1c232;
+}
+
+table.cat-training-pipeline tr:nth-child(-n+5) td:nth-child(n+3):nth-child(-n+7) {
+  background-color: #6aa84f;
+}
+
+table.cat-training-pipeline tr:nth-child(-n+5) td:nth-child(n+8):nth-child(-n+13) {
+  background-color: #5e90df
+}
+
+table.cat-training-pipeline tr:nth-child(-n+5) td:nth-child(n+14):nth-child(-n+19) {
+  background-color: #c16c96;
+}
+
+table.cat-training-pipeline tr:nth-child(5) td:nth-child(20) {
+  font-weight: bold;
+  background-color: #d84e32;
+}
+
+table.cat-training-pipeline tr:nth-child(6) td:nth-child(n+2):nth-child(-n+20) {
+  background-color: #9900ff;
+}
+
+table.cat-training-pipeline tr:nth-child(7) td:nth-child(n+2):nth-child(-n+12) {
+  background-color: #ff00ff;
+}
+
+table.cat-training-pipeline tr:nth-child(8) td:nth-child(n+2):nth-child(-n+7) {
+  background-color: #00ff00;
+}
+
+table.cat-training-pipeline tr:nth-child(8) td:nth-child(n+8):nth-child(-n+8) {
+  background-color: #ffff00;
+}
+
+table.cat-training-status tr:nth-child(1) td:nth-child(1) {
+  background-color: #ffff00;
+}
+
+table.cat-training-status tr:nth-child(1) td:nth-child(2) {
+  background-color: #00ff00;
+}
+
+table.cat-training-status tr:nth-child(1) td:nth-child(3) {
+  background-color: #9900ff;
+}
+
+table.cat-training-status tr:nth-child(1) td:nth-child(4) {
+  background-color: #ff00ff;
+}
+
+table.cat-training-status tr:nth-child(1) td:nth-child(5) {
+  background-color: #ff9900;
+}
+
+table.cat-training-confidence tr:nth-child(4) td:nth-child(n+2):nth-child(-n+3) {
+  color: #6aa84f;
+}
+
+table.cat-training-confidence tr:nth-child(4) td:nth-child(n+4):nth-child(-n+6) {
+  color: #ff0000;
+}

@@ -1,3 +1,5 @@
+.. _tracing-neurons:
+
 Instructions for Tracing Neurons
 ================================
 

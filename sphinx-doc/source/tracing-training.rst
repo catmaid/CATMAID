@@ -28,7 +28,7 @@ multiple weeks gave tracers the skills they needed. We started
 with asking trainees to look at 22 neurons, eventually settled on 18 though,
 where the easiest level now includes only a single neuron. A shared spreadsheet
 was used to keep track of the progress of all trainees. This was also used as a
-means of communication between trainers and team leads. An example of such a
+means of communication between trainees and trainers. An example of such a
 spreadsheet is shown as table below can be downloaded as `Open Document
 Spreadsheet <_static/tracing/training/cat-training-pipeline.ods>`_ or
 `Excel format <_static/tracing/training/cat-training-pipeline.xlsx>`_.
@@ -51,8 +51,8 @@ Generally, the training pipeline follows following steps:
 2. Trainee - Trace neuron
 3. Trainee - On completion - update progress sheet
 4. Trainee - Pick next neuron from list
-5. Team lead - Review completed neuron
-6. Team lead - Update progress sheet
+5. Trainer - Review completed neuron
+6. Trainer - Update progress sheet
 
 Example neuron names in the training dataset are:
 
@@ -69,7 +69,7 @@ code:
 .. csv-table:: Status colors
   :class: cat-training-status
 
-  "Trainee working on tracing", "Trainee completed tracing", "Team lead completed review", "Tracing deleted for given trainee", "Tracing on hold"
+  "Trainee working on tracing", "Trainee completed tracing", "Trainer completed review", "Tracing deleted for given trainee", "Tracing on hold"
 
 While tracing, trainees where advised to follow the following general guidelines
 regarding the use of node tags and edge confidence values:
@@ -109,6 +109,5 @@ And in addition:
 This document allows trainees to move through a defined and comparable process
 to learn about CATMAID and tracing, as well as the dataset itself.
 
-A Trainer or the team lead would guide new trainees according to the above plan
-and track their progress using the different color codes above in the trainee's
-"swim lane".
+A Trainer would guide new trainees according to the above plan and track their
+progress using the different color codes above in the trainee's "swim lane".

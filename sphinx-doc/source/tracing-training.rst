@@ -57,7 +57,7 @@ Generally, the training pipeline follows following steps:
 Example neuron names in the training dataset are:
 
 - CAT L1-1 SC
-- CAT L2-4 LR"
+- CAT L2-4 LR
 - CAT L1-3 AW
 - CAT L5-1 TP
 - CAT L4-4 CP

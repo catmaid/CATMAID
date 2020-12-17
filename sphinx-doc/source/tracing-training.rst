@@ -69,7 +69,7 @@ code:
 .. csv-table:: Status colors
   :class: cat-training-status
 
-  "Trainee working on tracing", "Trainee completed tracing", "Trainer completed review", "Tracing deleted for given trainee", "Tracing on hold"
+  "Trainee working on tracing", "Trainee completed tracing", "Trainer completed review", "Tracing on hold"
 
 While tracing, trainees where advised to follow the following general guidelines
 regarding the use of node tags and edge confidence values:

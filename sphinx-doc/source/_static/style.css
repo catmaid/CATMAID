@@ -53,19 +53,31 @@ table.cat-training-pipeline tr:nth-child(5) td:nth-child(20) {
   background-color: #d84e32;
 }
 
-table.cat-training-pipeline tr:nth-child(6) td:nth-child(n+2):nth-child(-n+20) {
+table.cat-training-pipeline tr:nth-child(6) td:nth-child(n+2):nth-child(-n+19) {
   background-color: #9900ff;
 }
 
-table.cat-training-pipeline tr:nth-child(7) td:nth-child(n+2):nth-child(-n+12) {
-  background-color: #ff00ff;
+table.cat-training-pipeline tr:nth-child(6) td:nth-child(20) {
+  background-color: #ffff00;
 }
 
-table.cat-training-pipeline tr:nth-child(8) td:nth-child(n+2):nth-child(-n+7) {
+table.cat-training-pipeline tr:nth-child(7) td:nth-child(n+2):nth-child(-n+7) {
+  background-color: #9900ff;
+}
+
+table.cat-training-pipeline tr:nth-child(7) td:nth-child(8) {
   background-color: #00ff00;
 }
 
-table.cat-training-pipeline tr:nth-child(8) td:nth-child(n+8):nth-child(-n+8) {
+table.cat-training-pipeline tr:nth-child(7) td:nth-child(9) {
+  background-color: #ffff00;
+}
+
+table.cat-training-pipeline tr:nth-child(8) td:nth-child(n+2):nth-child(-n+6) {
+  background-color: #9900ff;
+}
+
+table.cat-training-pipeline tr:nth-child(8) td:nth-child(7) {
   background-color: #ffff00;
 }
 
@@ -82,10 +94,6 @@ table.cat-training-status tr:nth-child(1) td:nth-child(3) {
 }
 
 table.cat-training-status tr:nth-child(1) td:nth-child(4) {
-  background-color: #ff00ff;
-}
-
-table.cat-training-status tr:nth-child(1) td:nth-child(5) {
   background-color: #ff9900;
 }
 

@@ -7,9 +7,9 @@ Like with most things, to get good at tracing neurons, some training is needed.
 The :ref:`introduction for tracing neurons <tracing-neurons>` helps with first
 steps, but managing a whole team and being confident in the quality of the
 results, will require some supervision. There are of course many ways on how to
-go about this, and an ad-hoc approach is surely fine for smaller groups. Below we
-show one example of a systematic approach that was developed by Ruchi Parekh and
-trainers in the Connectome Annotation Team (`CAT
+go about this, and an ad-hoc approach is surely fine for smaller groups. Below
+we show one example of a systematic approach that was developed by Ruchi Parekh
+and trainers in the Connectome Annotation Team (`CAT
 <https://www.janelia.org/support-team/connectome-annotation>`_) at Janelia
 Research Campus, where it worked for groups of tracers with 20 and more people.
 

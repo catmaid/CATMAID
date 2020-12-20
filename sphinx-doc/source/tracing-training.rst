@@ -29,6 +29,9 @@ pipeline <training_tracers_pipeline>`, explained in the second part. There,
 tracers were asked to reconstruct particular neurons in increasing difficulty,
 highlighting different aspects of CATMAID and the dataset.
 
+For any questions on the training protocol, please email Ruchi Parekh
+(``parekhr@janelia.hhmi.org``).
+
 .. _training_tracers_intro:
 
 Introductory Training Protocol

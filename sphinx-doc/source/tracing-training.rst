@@ -133,3 +133,208 @@ tasks within the FAFB training environment:
 
         <div class="figure"><iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/cCUasVdhvGA" frameborder="0" allowfullscreen></iframe>
         <p class="caption"><span class="caption-text">Annotate synapses</span></p></div>
+
+Introductory Training Protocol
+------------------------------
+
+This training protocol is meant to introduce manual neuron reconstruction with
+CATMAID, using the FAFB dataset. This dataset consists of the EM data of the
+brain of a female adult Drosophila melanogaster. at a resolution of 4 x 4 x 40
+nm/vx. An example on how such a brain is dissected and prepared, Janelia's
+FlyLight team has some helpful `videos
+<https://www.janelia.org/project-team/flylight/protocols>`_. It might also be
+worthwile to check out the virtual fly brain `nomenclature
+<https://www.sciencedirect.com/science/article/pii/S0896627313011781>`_. A
+publicly accessible CATMAID server can be found at `spaces.itanna.org
+<https://spaces.itanna.io/catmaid/itanna>`_, which allows creating personal and
+shared training projects for the FAFBv14 dataset. `Virtual Fly Brain
+<http://catmaid.virtualflybrain.org/`_ also hosts a read-only version of the
+FAFB dataset. For those interested in a broader context on the training neurons
+and in further understanding of the mushroom body, have a look `here
+<http://dx.doi.org/10.7554/eLife.04577.004>`_ and `here
+<https://onlinelibrary.wiley.com`_.
+
+When introducing new trainees to CATMAID, the following rough outline seemed
+like a useful path to take:
+
+- Open FAFB project from front page
+- Browse EM data
+- Open Tracing Tool, select a few neurons by both clicking and G key
+- Open 3D Viewer and add a neuron, demo space manipulation
+- Activate node in 3D to see in EM
+- Link from 3D Viewer to EM gray space (F10 function)
+- Volume display of neuropils/whole brains (Volumes & Geometry tab in 3D)
+- Provide a general intro to hot keys, help page (F1 or ? icon) and context help
+  (upper right corner)
+
+Trainers create seed nodes for new trainees, named after their initials (see
+video linked above). Assuming this has been done, the following steps are taken
+in order to provide an introduction that provides trainees with the skills
+required to actually step through the training pipeline.
+
+Protocol
+^^^^^^^^
+
+Each trainee will look at three intro neurons, before they can move to the
+training pipeline above: **1. PN -> 2. KC -> 3. PN -> 4. Pipeline**.
+
+1. Select `Neuron Search` widget (toolbar icon: tag and question mark)
+2. Enter neuron number (users initials) from trainer
+3. Click on neuron seed number in window, append in 3D widget using ‘Active
+   skeleton’ Start with Projection Neuron (PN)
+4. Start at seed node (will be the active node) and place a ‘TODO’ tag
+   - go to step 1 ‘Projection Neuron (PN)’ section of protocol
+5. Once finished with step 1 PN, trainee will be assigned a Kenyon Cell (KC)
+   - Repeat above steps
+   - Go to step 2 ‘Kenyon Cell (KC)’ section of protocol
+6. Once finished with step 2 KC, trainee will return to finish PN
+   - Repeat above steps
+   - Go to step 3 ‘Projection neuron (PN)’ section of protocol
+7. Once finished with step 3 PN, trainee will move into the pipeline
+
+1. PN - Projection Neuron
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. image:: _static/tracing/training/tracing-intro-1.png
+  :width: 500
+  :alt: PN - Projection Neuron
+
+Besides 1. and 2. in the image above, the goals are also
+
+3. Review own work
+4. Review with trainer
+
+**At end of PN - you should know**
+
+**Neuroanatomy**
+
+- Recognize a branching point
+- Understand the 3D of branching structures
+- Recognize a synapse
+  - Understand 4 major indicators
+- Recognize differences in morphology of a bouton and fingers of a claw
+- Preliminary understanding of ‘stringiness’ (it’s *not* a characteristic of the
+  neuron itself- it’s a term we’ve given to describe the morphological ‘look’ of
+  the neuron)
+
+**Tracing**
+
+- Place nodes in center
+- Create connecting skeletons
+- Create “clean” skeleton (i.e. a biologically realistic neuronal skeleton)
+- Check your neuron going “forward” and “backward”
+- Know how to go from an active node without forming parallel lines
+- To tackle small jumps and crappy section
+
+**Software**
+
+- +/- to zoom in and out of EM stack
+- Searching for neuron
+- 3D viewer - zoom, rotate, activate a node, pre, post and meta tags, taking off
+  bounding box and floor, coloring neuron etc
+- F10 function
+- Tags - L, K, N
+- Untag - shift + whatever tag you need to untag (ex: shift+L gets rid of TODO)
+- “keyboard shortcut help”
+
+2. KC - Kenyon Cell
+^^^^^^^^^^^^^^^^^^^
+
+.. image:: _static/tracing/training/tracing-intro-2.png
+  :width: 500
+  :alt: KC - Kenyon Cell
+
+Besides 1. to 4. in the image above, the goal is also
+
+5. Review own work
+6. Review with Trainer
+
+**At end of KC - you should know**
+
+All “you should know”s from PN + the following:
+
+**Neuroanatomy**
+
+- See further examples of synapses
+
+  - See and recognize structural differences in synapses in KC and PN (especially in the calyx vs lobes)
+  - Discuss how some indicators are more prevalent in different brain regions (vesicle clumping in PN boutons vs KC lobes)
+  - Discuss different types of syn (e.g. en passant and en face)
+- Differences in pedunculus, lobe, and calyx EM anatomy and 3D morphology (refer to Illustration/explanation provided by trainer)
+
+**Tracing**
+
+- Continue to understand how each node helps shape the 3D morphology of the neuron
+- Know how to correctly tag soma
+- Know how to properly use uncertain tags
+
+3. PN - Projection Neuron
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. image:: _static/tracing/training/tracing-intro-3.png
+  :width: 500
+  :alt: PN - Projection Neuron
+
+Besides 1. in the image above, the goal is also
+
+2. Review own work
+3. Review 1-1 with Trainer
+
+**At end of PN - you should know**
+
+All “you should know”s from PN + KC + the following:
+
+**Neuroanatomy**
+
+- Synapses in detail (bouton to claw)
+- Invagination
+- Cistern/ER
+- Vacuole
+- Vesicles
+- Synaptic cleft
+- Mitochondria
+- Microtubules - follow for continuations
+- Understand the above neurobiology in general context with the understanding
+  that each may look different in different brain regions
+
+**Tracing**
+
+- Solid understanding of difference between PN trunk/KC pedunculus (tract) synapse and bouton/calyx (dendritic) synapse
+
+**Software**
+
+- Good sense of the hot keys and how to navigate them without a trainer
+
+Synapse information
+^^^^^^^^^^^^^^^^^^^
+
+**Identify** a synapse:
+
+- T-bars - presynaptic protein where vesicles bind and neurotransmitter is released
+- Vesicles - small neurotransmitter filled spheres
+
+  - Important to identify clumping around T-bars
+  - Scroll between sections to determine how long T-bars and vesicles exist
+- Synaptic cleft - extracellular space where neurotransmitter diffuses to postsynaptic partners.
+
+  - The cleft is located between the T-bar and the postsynaptic cells
+- Postsynaptic density (PSD) - postsynaptic receptor proteins that signify uptake of neurotransmitter
+
+.. image:: _static/tracing/training/tracing-intro-4.png
+  :width: 500
+  :alt: Synapses
+
+Note the movement across the first two images of the second row.
+
+Neurons used in training
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+- 4PN and 4KC neurons used in training. (Neurons used in training in 2019)
+- Uniglomerular mALT VC3l adPN 23135 BH
+- Uniglomerular mALT VM5d adPN 49866 JMR
+- Uniglomerular mALT VC1 lPN 22133 BH
+- Uniglomerular mALT VC3l adPN 46801 JMR
+- KCaBs 515202 NM
+- KCaBc 514395 NM
+- KCaBs 31268 IJA
+- KCaBs 7675 EW AJ

@@ -148,11 +148,11 @@ worthwile to check out the virtual fly brain `nomenclature
 publicly accessible CATMAID server can be found at `spaces.itanna.org
 <https://spaces.itanna.io/catmaid/itanna>`_, which allows creating personal and
 shared training projects for the FAFBv14 dataset. `Virtual Fly Brain
-<http://catmaid.virtualflybrain.org/`_ also hosts a read-only version of the
+<http://catmaid.virtualflybrain.org/>`_ also hosts a read-only version of the
 FAFB dataset. For those interested in a broader context on the training neurons
 and in further understanding of the mushroom body, have a look `here
 <http://dx.doi.org/10.7554/eLife.04577.004>`_ and `here
-<https://onlinelibrary.wiley.com`_.
+<https://onlinelibrary.wiley.com>`_.
 
 When introducing new trainees to CATMAID, the following rough outline seemed
 like a useful path to take:

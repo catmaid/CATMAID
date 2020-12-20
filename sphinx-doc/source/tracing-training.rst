@@ -111,3 +111,23 @@ to learn about CATMAID and tracing, as well as the dataset itself.
 
 A Trainer would guide new trainees according to the above plan and track their
 progress using the different color codes above in the trainee's "swim lane".
+
+Training materials
+------------------
+
+For some common tasks, we have created short tutorial videos:
+
+.. raw:: html
+
+        <div class="figure"><iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/FRYLNWroEf4" frameborder="0" allowfullscreen></iframe>
+        <p class="caption"><span class="caption-text">Henrique Ludwig explains how to create seed nodes in the FAFB training environment.</span></p></div>
+
+.. raw:: html
+
+        <div class="figure"><iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/v0a-lV-bh3Q" frameborder="0" allowfullscreen></iframe>
+        <p class="caption"><span class="caption-text">Henrique Ludwig explains the first steps of tracing neurons in the FAFB training environment.</span></p></div>
+
+.. raw:: html
+
+        <div class="figure"><iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/cCUasVdhvGA" frameborder="0" allowfullscreen></iframe>
+        <p class="caption"><span class="caption-text">Henrique Ludwig explains how to annotate synapses in the FAFB training environment.</span></p></div>

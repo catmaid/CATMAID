@@ -2640,7 +2640,7 @@
     volume.boundingBox = visible;
 
     if (volume.boundingBoxMeshes && volume.boundingBoxMeshes.length > 0) {
-      this.space.scene.project.remove.apply(this.space.scene, volume.boundingBoxMeshes);
+      this.space.scene.project.remove.apply(this.space.scene.project, volume.boundingBoxMeshes);
     }
 
     if (visible) {

@@ -1890,8 +1890,17 @@ var project;
       note: '',
       action: function() {
         let l = document.location;
-        CATMAID.tools.copyToClipBoard(l.origin + l.pathname + project.createURL(true));
+        CATMAID.tools.copyToClipBoard(l.origin + l.pathname + project.createURL(true, true));
         CATMAID.msg('Success', 'Copied URL to view with layout to clipboard');
+      }
+    }, {
+      id: 'copy-current-layout-url',
+      title: 'Copy URL to view with layout (no skeletons)',
+      note: '',
+      action: function() {
+        let l = document.location;
+        CATMAID.tools.copyToClipBoard(l.origin + l.pathname + project.createURL(true, false));
+        CATMAID.msg('Success', 'Copied URL to view with layout to clipboard, don\'t include skeletons.');
       }
     }, {
       id: 'copy-current-layout-spec',

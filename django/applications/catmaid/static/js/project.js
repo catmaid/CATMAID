@@ -420,7 +420,7 @@
     /**
      * create a URL to the current view
      */
-    this.createURL = function(withLayout = false) {
+    this.createURL = function(withLayout = false, withSkeletons = true) {
       let x, y, z, activeNodeId, activeSkeletonId, stackGroupId, sgs = [],
           stacks = [], stackScaleLevels = [];
       let tool = project.getTool().toolname;
@@ -458,7 +458,7 @@
 
       let layout;
       if (withLayout){
-        layout = CATMAID.Layout.makeLayoutSpecForWindow(CATMAID.rootWindow);
+        layout = CATMAID.Layout.makeLayoutSpecForWindow(CATMAID.rootWindow, withSkeletons);
       }
 
       return Project.createRelativeURL(self.id, x, y, z, tool, activeNodeId,

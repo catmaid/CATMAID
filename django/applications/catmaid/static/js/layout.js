@@ -729,22 +729,23 @@
   function mapNodeToLayoutSpec(node) {
     /* jshint validthis: true */
     return nodeToLayoutSpec(node, this.stackViewerMapping,
-        this.subscriptionInfo);
+        this.subscriptionInfo, this.withSkeletons);
   }
 
-  function nodeToLayoutSpec(node, stackViewerMapping, subscriptionInfo) {
+  function nodeToLayoutSpec(node, stackViewerMapping, subscriptionInfo, withSkeletons = true) {
     if (node instanceof CMWHSplitNode) {
-      return 'h(' + nodeToLayoutSpec(node.child1, stackViewerMapping, subscriptionInfo) + ', ' +
-          nodeToLayoutSpec(node.child2, stackViewerMapping, subscriptionInfo) + ', ' +
+      return 'h(' + nodeToLayoutSpec(node.child1, stackViewerMapping, subscriptionInfo, withSkeletons) + ', ' +
+          nodeToLayoutSpec(node.child2, stackViewerMapping, subscriptionInfo, withSkeletons) + ', ' +
           Number(node.widthRatio).toFixed(2) + ')';
     } else if (node instanceof CMWVSplitNode) {
-      return 'v(' + nodeToLayoutSpec(node.child1, stackViewerMapping, subscriptionInfo) + ', ' +
-          nodeToLayoutSpec(node.child2, stackViewerMapping, subscriptionInfo) + ', ' +
+      return 'v(' + nodeToLayoutSpec(node.child1, stackViewerMapping, subscriptionInfo, withSkeletons) + ', ' +
+          nodeToLayoutSpec(node.child2, stackViewerMapping, subscriptionInfo, withSkeletons) + ', ' +
           Number(node.heightRatio).toFixed(2) + ')';
     } else if (node instanceof CMWTabbedNode) {
       return 't([' + node.children.map(mapNodeToLayoutSpec, {
           stackViewerMapping: stackViewerMapping,
           subscriptionInfo: subscriptionInfo,
+          withSkeletons: withSkeletons,
         }).join(', ') + '])';
     } else if (node instanceof CMWWindow) {
       var stackViewer = stackViewerMapping.get(node);
@@ -768,12 +769,27 @@
             node.id + ' of type ' + node.constructor.name);
       }
 
+      // Store skeletons, if any.
+      let widgetSkeletons;
+      if (withSkeletons && CATMAID.tools.isFn(widgetInfo.widget.getSkeletonModels)) {
+        let models = widgetInfo.widget.getSkeletonModels();
+        let skeletons = Object.values(models).map(m => {
+          return `{ "id": ${m.id}, "color": "${m.color.getStyle()}" }`;
+        });
+        if (skeletons.length > 0) {
+          widgetSkeletons = `"skeletons": [${skeletons.join(',')}]`;
+        }
+      }
+
       // If this widget contains any subscriptions, add them to the output.
       var isSubscriptionSource = subscriptionInfo.idIndex.has(widgetInfo.widget);
       var isSubscriptionTaget = subscriptionInfo.subscriptions.has(widgetInfo.widget) &&
           subscriptionInfo.subscriptions.get(widgetInfo.widget).length > 0;
       if (isSubscriptionSource || isSubscriptionTaget) {
         var components = ['{ type: "', widgetInfo.key, '"'];
+        if (widgetSkeletons) {
+          components.push(', ', widgetSkeletons);
+        }
         if (isSubscriptionSource) {
           components.push(', id: "', subscriptionInfo.idIndex.get(widgetInfo.widget), '"');
         }
@@ -872,13 +888,13 @@
    * Create a new layout specification for the passed in window or return null
    * of this is not possible.
    */
-  Layout.makeLayoutSpecForWindow = function(rootNode) {
+  Layout.makeLayoutSpecForWindow = function(rootNode, withSkeletons = true) {
     if (!rootNode.child) {
       return null;
     }
     let stackViewerWindowMapping = new Map(project.getStackViewers().map(toWindowMapping));
     return nodeToLayoutSpec(rootNode.child, stackViewerWindowMapping,
-        getSubscriptions(rootNode.child));
+        getSubscriptions(rootNode.child), withSkeletons);
   };
 
   /**

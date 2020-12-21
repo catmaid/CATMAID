@@ -120,6 +120,14 @@ Layouts:
   specification of the current view to the clipboard. This can be useful when
   constructing URLs to specific views.
 
+- Widgets in layouts can now optionally specify a list of skeletons to load.
+  This is done by adding the `skeletons` parameter:
+
+  "skeletons": [16035815, {"id": 16035701, "color": "rgb(0.5,1,0.2)"}]
+
+  The list of skeletons can consist of skeleton IDs and/or optionally objects
+  that can also specify a color in terms of common CSS definitions.
+
 - The Selection Table can now receive an options parameter from the layout
   initialization. If it contains a list of skeleton IDs like this, then
   selection table will load this automatically:

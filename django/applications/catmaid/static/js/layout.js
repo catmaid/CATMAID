@@ -15,7 +15,7 @@
 
   const WindowBuilder = {};
   WindowBuilder[F1] = function() {
-    return WindowMaker.create('keyboard-shortcuts').window;
+    return WindowMaker.create('keyboard-shortcuts');
   };
 
   /**
@@ -28,7 +28,10 @@
   WindowBuilder[X3D] = function() {
     var win = WindowMaker.create('3d-viewer').window;
     var splitNode = win.getParent();
-    return splitNode;
+    return {
+      window: splitNode,
+      widget: null,
+    };
   };
 
   /**
@@ -39,24 +42,43 @@
   WindowBuilder['3d-viewer'] = function() {
     return WindowMaker.create('3d-viewer', {
       selectionTable: false,
-    }).window;
+    });
   };
 
-  const createWindow = function(name, options) {
+  const createWindow = function(name, options, skeletonIds) {
     var creator = WindowBuilder[name];
     if (!creator) {
       creator = function() {
-        return WindowMaker.create(name, options).window;
+        return WindowMaker.create(name, options);
       };
     }
     if (!creator) {
       throw new CATMAID.ValueError("Could not find window creator for: " + name);
     }
-    var win = creator();
-    if (!win) {
+    var windowInfo = creator();
+    if (!windowInfo || !windowInfo.window) {
       throw new CATMAID.ValueError("Could not create window for: " + name);
     }
-    return win;
+
+    // If initial skeleton IDs are provided, try to add them to the created
+    // widget.
+    if (skeletonIds && windowInfo.widget) {
+      if (isFn(windowInfo.widget.append)) {
+        let models = skeletonIds.reduce((o, skeleton) => {
+          // If skeleton_ids elements are objects, we expect at least an "id" field, but also accept "color".
+          if (skeleton instanceof Object) {
+            o[skeleton.id] = new CATMAID.SkeletonModel(skeleton.id, "",
+                skeleton.color ? new THREE.Color(skeleton.color) : undefined);
+          } else {
+            o[skeleton] = new CATMAID.SkeletonModel(skeleton);
+          }
+          return o;
+        }, {});
+        windowInfo.widget.append(models);
+      }
+    }
+
+    return windowInfo.window;
   };
 
   const LayaoutNode = function() {};
@@ -313,7 +335,7 @@
     if (isFn(this.a.makeRegularWindows)) {
       n = this.a.makeRegularWindows(n, target);
     } else if (!validOrientations.has(this.a)) {
-      var win = createWindow(this.a, this.metaA.options);
+      var win = createWindow(this.a, this.metaA.options, this.metaA.skeletons);
       var typedWindows = target.get(this.a);
       if (!typedWindows) {
         typedWindows = [];
@@ -325,7 +347,7 @@
     if (isFn(this.b.makeRegularWindows)) {
       n = this.b.makeRegularWindows(n, target);
     } else if (!validOrientations.has(this.b)) {
-      var win = createWindow(this.b, this.metaB.options);
+      var win = createWindow(this.b, this.metaB.options, this.metaB.skeletons);
       var typedWindows = target.get(this.b);
       if (!typedWindows) {
         typedWindows = [];
@@ -590,7 +612,7 @@
       CATMAID.warn("Can't load layout, Other stack viewer configuration expected");
       return;
     }
-    
+
     // Close all open widgets
     CATMAID.WindowMaker.closeAllButStackViewers(stackViewers);
 

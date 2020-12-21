@@ -63,13 +63,18 @@ Optional Query Parameters
 
 ``layout`` (string)
     An optional layout specification in the format of layouts described in the
-    Settings Widget. E.g. ``layou=h(XY, { type: "neuron-search", id:
+    Settings Widget. E.g. ``layout=h(XY, { type: "neuron-search", id:
     "neuron-search-1"}, 0.6)`` to show a Neuron Search widget in a 1/3 wide
     column on the right. Depending on the widget referenced, additional options
     are available. For instance, the Neuron Search can be instructed to search
-    for a particular annotation right away: ``layou=h(XY, { type: "neuron-search", id:
+    for a particular annotation right away: ``layout=h(XY, { type: "neuron-search", id:
     "neuron-search-1", options: {"annotation-name": "papers"}}, 0.6)``.
-    Available options are collected below.
+    Available options are collected below. Additionally, individual layout
+    elements can have a ``"skeletons"`` parameter (like the ``"options"``
+    parameter), which can take a list of skeleton IDs or, alternatively objects
+    having an ``id`` and a ``color`` field. The color can be defined in terms of
+    common CSS color representations like "red" or "rgb(0.2,1,0.5)". These
+    skeletons are added to the newly created widgets, if possible.
 
 Legacy Query Parameters
 -----------------------

@@ -820,7 +820,7 @@ var WindowMaker = new function()
             var pointCloudId = e.target.value;
             WA.showPointCloud(pointCloudId, visible);
 
-            // Add extra display controls for enabled volumes
+            // Add extra display controls for enabled point clouds
             var li = e.target.closest('li');
             if (!li) {
               return;

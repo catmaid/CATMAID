@@ -1,0 +1,112 @@
+on: [push, pull_request]
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  lint-python:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+      - run: |
+          pip install "$(grep -E '^flake8' django/requirements-test.txt)"
+          pip install "$(grep -E '^mypy' django/requirements-test.txt)"
+        name: Install lint tools
+      - run: flake8 --statistics --count django
+      - run: mypy django/
+
+  lint-javascript:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2-beta
+        with:
+          node-version: '12'
+      - run: npm install
+      - run: npm run lint:js-diff
+        name: Check lint errors against blessed failures
+      - run: npm run jsdoc
+        name: Ensure that docs are valid
+
+  test-backend:
+    runs-on: ubuntu-18.04
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.6', '3.7', '3.8', 'pypy3']
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: |
+          sudo apt purge postgresql-13
+          bash scripts/travis/install_postgres.sh
+      - run: bash scripts/travis/install_gdal.sh
+      - run: sudo apt-get install -y -qq $(< packagelist-ubuntu-apt.txt)
+        name: Install ubuntu requirements
+      - uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-py_${{ matrix.python-version }}-${{ hashFiles('django/requirements*.txt') }}
+      - run: pip install -r django/requirements-test.txt coveralls
+      - run: bash scripts/travis/setup_database.sh
+      - run: bash scripts/travis/configure_catmaid.sh
+      - run: |
+          cd django/projects
+          python manage.py migrate --noinput
+        name: Apply migrations
+      - run: |
+          cd django/projects
+          python manage.py makemigrations catmaid
+        name: Check migrations are up to date
+      - run: |
+          cd django/projects
+          coverage run manage.py test catmaid.tests
+        name: Run tests
+
+  test-frontend:
+    runs-on: ubuntu-18.04
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.8']
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: actions/setup-node@v2-beta
+        with:
+          node-version: '12'
+      - run: npm install
+      - run: |
+          sudo apt purge postgresql-13
+          bash scripts/travis/install_postgres.sh
+      - run: bash scripts/travis/install_gdal.sh
+      - run: sudo apt-get install -y -qq $(< packagelist-ubuntu-apt.txt)
+        name: Install ubuntu requirements
+      - uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-py_${{ matrix.python-version }}-${{ hashFiles('django/requirements.txt') }}
+      - run: pip install -r django/requirements.txt
+      - run: bash scripts/travis/setup_database.sh
+      - run: bash scripts/travis/configure_catmaid.sh
+      - run: |
+          cd django/projects
+          python manage.py migrate --noinput
+        name: Apply migrations
+      - run: |
+          cd django/projects
+          python manage.py collectstatic --link --noinput
+      - run: |
+          sed -i 's/login_required(\([^)]*\))/\1/g' django/applications/catmaid/urls.py
+          python -Wall -Wignore::ImportWarning manage.py django/projects/manage.py runserver &
+          sleep 5
+        name: Start development server
+      - run: npm run karma

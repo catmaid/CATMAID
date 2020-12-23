@@ -47,6 +47,9 @@ jobs:
           sudo apt purge postgresql-13
           bash scripts/travis/install_postgres.sh
       - run: bash scripts/travis/install_gdal.sh
+      - run: |
+          source scripts/travis/configure_pypy_libs.sh
+          if_pypy_force_os_sqlite_lib
       - run: sudo apt-get install -y -qq $(< packagelist-ubuntu-apt.txt)
         name: Install ubuntu requirements
       - uses: actions/cache@v2

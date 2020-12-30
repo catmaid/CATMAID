@@ -813,8 +813,9 @@
        */
       getInstance: function(api = undefined) {
         // If no API is provided (the default), null is used as a unique index
-        // for the regular back-end.
-        let instance = instances.get(api ? api : undefined);
+        // for the regular back-end. Make sure an API is only referenced if it
+        // is not the local back-end we are talking to.
+        let instance = instances.get((api && !api.isLocal)? api : undefined);
         if (!instance) {
           instance = init(undefined, api);
           instances.set(api || undefined, instance);

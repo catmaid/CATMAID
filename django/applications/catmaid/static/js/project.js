@@ -752,6 +752,45 @@
     return result;
   };
 
+  /**
+   * Update properties of this project.
+   *
+   * @param projectId {Integer} The project to delete.
+   * @param properties {Object} An object containing one or more of the fields
+   *                            'title', 'comment'.
+   * @returns {Promise} Resolves once the project is updated.
+   */
+  Project.prototype.updateProperties = function(properties) {
+    if (!CATMAID.hasPermission(this.id, 'can_administer')) {
+      return Promise.reject(new CATMAID.PermissionError("Need administration permissions in this project"));
+    }
+    const allowedFields = new Set(['title', 'comment']);
+    for (let key in properties) {
+      if (!allowedFields.has(key)) {
+        throw new CATMAID.ValueError(`Property "${key}" is not allowed for project updates`);
+      }
+    }
+
+    let result = CATMAID.fetch(`${this.id}/`, 'POST', properties);
+    result.then(response => {
+      this.title = response.title;
+      Project.trigger(Project.EVENT_PROJECT_CHANGED, response);
+    });
+
+    return result;
+  };
+
+  /**
+   * Refresh properties of this project.
+   * @returns {Promise} Resolves once the project is updated.
+   */
+  Project.prototype.refresh = function() {
+    return CATMAID.fetch(`${project.id}/`)
+      .then(response => {
+        this.title = response.title;
+      });
+  };
+
   // Add event support to project and define some event constants
   CATMAID.asEventSource(Project.prototype);
   CATMAID.asEventSource(Project);
@@ -759,6 +798,7 @@
   Project.EVENT_STACKVIEW_CLOSED = 'project_stackview_closed';
   Project.EVENT_STACKVIEW_FOCUS_CHANGED = 'project_stackview_focus_changed';
   Project.EVENT_LOCATION_CHANGED = 'project_location_changed';
+  Project.EVENT_PROJECT_CHANGED = 'project_changed';
   Project.EVENT_PROJECT_DELETED = 'project_deleted';
   Project.EVENT_PROJECT_DESTROYED = 'project_project_destroyed';
   Project.EVENT_TOOL_CHANGED = 'project_tool_changed';

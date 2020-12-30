@@ -665,6 +665,19 @@ def fork(request:HttpRequest, project_id) -> JsonResponse:
 
 class ProjectDetail(APIView):
 
+
+    def get(self, request:Request, project_id:int) -> JsonResponse:
+        """Get details on a project.
+        """
+        project = get_object_or_404(Project, pk=project_id)
+
+        return JsonResponse({
+            'id': project.id,
+            'title': project.title,
+            'comment': project.comment,
+        })
+
+
     @method_decorator(requires_user_role('delete_projectt'))
     @method_decorator(requires_user_role(UserRole.Admin))
     def delete(self, request:Request, project_id:int) -> JsonResponse:
@@ -675,4 +688,23 @@ class ProjectDetail(APIView):
         delete_projects([project_id])
         return JsonResponse({
             'deleted_project_id': project_id,
+        })
+
+
+    @method_decorator(requires_user_role(UserRole.Admin))
+    def post(self, request:Request, project_id:int) -> JsonResponse:
+        """Update properties of a project.
+
+        This requires <can_administer> permission on a project.
+        """
+        project = get_object_or_404(Project, pk=project_id)
+        if 'title' in request.data:
+            project.title = request.data.get('title')
+
+        project.save()
+
+        return JsonResponse({
+            'id': project.id,
+            'title': project.title,
+            'comment': project.comment,
         })

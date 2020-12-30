@@ -216,6 +216,13 @@ var project;
     // Update window title bar
     document.title = `CATMAID - ${project.title}`;
 
+    CATMAID.Project.offAllInContext(CATMAID.client);
+    CATMAID.Project.on(CATMAID.Project.EVENT_PROJECT_CHANGED, function (projectData) {
+      // Update window title bar
+      document.title = `CATMAID - ${projectData.title}`;
+      this.updateProjects();
+    }, CATMAID.client);
+
     // Load user settings
     CATMAID.Client.Settings
         .load()

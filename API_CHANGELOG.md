@@ -18,6 +18,12 @@ included in this changelog.
 - POST `/{project_id}/neurons/all-skeletons`:
   Map a list of neuron IDs to the skeleton IDs that model them.
 
+- GET `/{project_id}/`:
+  Get project details like the title and comment.
+
+- POST `/{project_id}/`:
+  Update the project title if the user has admin permissions in the project.
+
 ### Modifications
 
 - `GET /{project_id}/transactions/`:

@@ -12,7 +12,7 @@
 
     // The current edit mode
     this.mode = 'project-access';
-    this.modes = ['project-access', 'delete'];
+    this.modes = ['project-access', 'properties', 'delete'];
 
     this.neuronNameService = CATMAID.NeuronNameService.getInstance();
   };
@@ -457,6 +457,52 @@
             .catch(CATMAID.handleError);
         });
       }
+    },
+    'properties': {
+      title: 'Project properties',
+      createControls: function(target) {
+        let infoPanel = document.createElement('p');
+        infoPanel.appendChild(document.createTextNode('Administrator users can update project properties.'));
+        return [{
+          type: 'child',
+          element: infoPanel,
+        }];
+      },
+      createContent: function(content, widget) {
+        if (!CATMAID.hasPermission(project.id, 'can_administer')) {
+          content.appendChild(document.createTextNode('No administration permissions for this project'));
+          return;
+        }
+
+        let infoParagraph1 = content.appendChild(document.createElement('p'));
+        infoParagraph1.appendChild(document.createTextNode('This view allows project admins to update different properties of this project. After having made a change that should get saved, click the "Save" button at the bottom of the page.'));
+
+        let projectName = project.title;
+
+        let propertiesPanel = content.appendChild(document.createElement('p'));
+        $(propertiesPanel).append(CATMAID.DOM.createInputSetting(
+            'Project name',
+            projectName,
+            'The name of this project',
+            function() {
+              projectName = this.value;
+            }));
+
+        let savePanel = content.appendChild(document.createElement('p'));
+        savePanel.classList.add('clear');
+        let saveB = savePanel.appendChild(document.createElement('button'));
+        saveB.appendChild(document.createTextNode('Save'));
+
+        saveB.addEventListener('click', function() {
+          project.updateProperties({
+              title: projectName,
+            })
+            .then(response => {
+              CATMAID.msg('Success', `Properties of project "${project.title}" (ID: ${project.id}) updated`);
+            })
+            .catch(CATMAID.handleError);
+        });
+      },
     },
     'delete': {
       title: 'Delete data',

@@ -154,6 +154,9 @@
     if (primaryStack.description.length > 0) {
       this.addLayer('Stack description', new CATMAID.MetadataLayer(this, primaryStack.description));
     }
+
+    CATMAID.Project.on(CATMAID.Project.EVENT_PROJECT_CHANGED,
+        this.handleChangedProject, this);
   }
 
   StackViewer.prototype = {};
@@ -840,6 +843,9 @@
   };
 
   StackViewer.prototype.destroy = function() {
+    CATMAID.Project.off(CATMAID.Project.EVENT_PROJECT_CHANGED,
+        this.handleChangedProject, this);
+
     this._layers.forEach(function (layer) {
       if (typeof layer.unregister === 'function') {
         layer.unregister();
@@ -1187,6 +1193,10 @@
   StackViewer.prototype.toDataURL = function (type, canvas) {
     let context = CATMAID.PixiLayer.contexts.get(this);
     if (context) return context.toDataURL(type, canvas);
+  };
+
+  StackViewer.prototype.handleChangedProject = function (newProjectData) {
+    this.updateTitle();
   };
 
   StackViewer.Settings = new CATMAID.Settings(

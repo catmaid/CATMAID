@@ -127,5 +127,20 @@ QUnit.test('Event system test', function( assert ) {
     var handler = function() {};
     assert.strictEqual(e.events, undefined, 'event list is empty after initialization');
   })();
+
+  // Test if context is ignored  on removal, if not passed
+  (function() {
+    var e = CATMAID.asEventSource({});
+    var wasExecuted = 0;
+    var handler = function() { wasExecuted += 1; };
+    var o1 = {}, o2 = {};
+    e.on('foo', handler, o1);
+    e.on('foo', handler, o2);
+    e.on('bar', handler, o1);
+    e.offAllInContext(o1);
+    e.trigger('foo');
+    e.trigger('bar');
+    assert.strictEqual(wasExecuted, 1, 'remove all listeners for callback');
+  })();
 });
 

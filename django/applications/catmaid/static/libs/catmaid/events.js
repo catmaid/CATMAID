@@ -84,8 +84,8 @@
         throw new CATMAID.ValueError("No context provided");
       }
       if (this.hasOwnProperty('events')) {
-        var indexes = [];
         for (let event of this.events) {
+          var indexes = [];
           let listeners = this.events.get(event[0]);
           for (var i=0, l=listeners.length; i<l; i++) {
             let ctxMatches = (context === listeners[i][1]);
@@ -93,10 +93,10 @@
               indexes.push(i);
             }
           }
-        }
-        for (var i=0, l=indexes.length; i<l; i++) {
-          // Remove the event and keep offset due to removed elements in mind
-          listeners.splice(indexes[i] - i, 1);
+          for (var i=0, l=indexes.length; i<l; i++) {
+            // Remove the event and keep offset due to removed elements in mind
+            listeners.splice(indexes[l - i - 1], 1);
+          }
         }
       }
     },

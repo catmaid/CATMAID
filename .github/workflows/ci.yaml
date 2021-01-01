@@ -56,6 +56,7 @@ jobs:
       - run: pip install -r django/requirements-test.txt coveralls
       - run: bash scripts/travis/setup_database.sh
       - run: bash scripts/travis/configure_catmaid.sh
+      - run: bash scripts/travis/configure_pypy_libs.sh
       - run: |
           cd django/projects
           python manage.py migrate --noinput
@@ -65,8 +66,6 @@ jobs:
           python manage.py makemigrations catmaid
         name: Check migrations are up to date
       - run: |
-          source scripts/travis/configure_pypy_libs.sh
-          if_pypy_force_os_sqlite_lib
           cd django/projects
           coverage run manage.py test catmaid.tests
         name: Run tests

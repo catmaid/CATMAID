@@ -1008,7 +1008,7 @@
           this.datasetURL.substring(0, ngPreSearchIndex - 1);
       this.datasetPathFormat = this.datasetURL.substring(this.rootURL.length + 1);
 
-      this.datasetAttributes = [];
+      this.datasetAttributes = null;
       this.promiseReady = NeuroglancerPrecomputedImageBlockSource.loadNeuroglancerPrecomputed()
           .then(ngprewasm => this._findRoot(ngprewasm).then(r => this.reader = r))
           .then(() => this.populateDatasetAttributes());
@@ -1062,9 +1062,9 @@
       // The voxel offset specifies how the image dataset is translated relativ
       // to the global origin. We want to map from global into voxel
       let voxelCoord = [
-          blockCoord[0] * bs[0] /* - vo[0] */,
-          blockCoord[1] * bs[1] /* - vo[1] */,
-          blockCoord[2] * bs[2] /* - vo[2] */];
+          blockCoord[0] * bs[0] + vo[0],
+          blockCoord[1] * bs[1] + vo[1],
+          blockCoord[2] * bs[2] + vo[2]];
 
       return `${this.rootURL}/${this.datasetPath(zoomLevel)}/` +
           `${voxelCoord[0]}-${voxelCoord[0] + bs[0]}_${voxelCoord[1]}-${voxelCoord[1] + bs[1]}_${voxelCoord[2]}-${voxelCoord[2] + bs[2]}`;
@@ -1074,7 +1074,9 @@
       return this.reader
           .get_dataset_attributes("")
           .then(dataAttrs => {
-            this.datasetAttributes[zoomLevel] = dataAttrs;
+            this.datasetAttributes = dataAttrs;
+            // This makes accessing individual scale level properties easier.
+            this.scalelevelAttributes = dataAttrs.to_json().scales;
             this.ready = true;
           });
     }
@@ -1082,12 +1084,12 @@
     blockCoordBounds(zoomLevel) {
       if (!this.ready) return;
 
-      let attrs = this.datasetAttributes[zoomLevel];
-      let bs = attrs.get_block_size();
+      let attrs = this.datasetAttributes;
+      let bs = attrs.get_block_size(zoomLevel);
       // Use `BigInt` rather than literals to not break old parsers.
       let n0 = BigInt(0);
       let n1 = BigInt(1);
-      let max = attrs.get_dimensions().map((d, i) => {
+      let max = attrs.get_dimensions(zoomLevel).map((d, i) => {
         let b = BigInt(bs[i]);
         // - 1 because this is inclusive.
         return (d + n1) / b + (d % b != n0  ? n1 : n0) - n1;
@@ -1101,35 +1103,35 @@
     }
 
     blockSize(zoomLevel) {
-      if (!this.ready || !this.datasetAttributes[zoomLevel]) return [
+      if (!this.ready || !this.datasetAttributes) return [
         this.tileWidth,
         this.tileHeight,
         1
       ];
-      let bs = this.datasetAttributes[zoomLevel].get_block_size();
+      let bs = this.datasetAttributes.get_block_size(zoomLevel);
       return CATMAID.tools.permute(bs, this.sliceDims);
     }
 
     voxelOffset(zoomLevel) {
-      if (!this.ready || !this.datasetAttributes[zoomLevel]) return [
+      if (!this.ready || !this.datasetAttributes) return [
         0,
         0,
         0
       ];
-      let vo = this.datasetAttributes[zoomLevel].get_voxel_offset();
+      let vo = this.datasetAttributes.get_voxel_offset(zoomLevel);
       return CATMAID.tools.permute(vo, this.sliceDims);
     }
 
     dataType () {
       return this.ready ?
-          this.datasetAttributes[0].get_data_type().toLowerCase() :
+          this.datasetAttributes.get_data_type().toLowerCase() :
           undefined;
     }
 
     readBlock(zoomLevel, ...sourceCoord) {
       return this.promiseReady.then(() => {
         let path = this.datasetPath(zoomLevel);
-        let dataAttrs = this.datasetAttributes[zoomLevel];
+        let dataAttrs = this.datasetAttributes;
 
         let blockCoord = CATMAID.tools.permute(sourceCoord, this.reciprocalSliceDims);
 
@@ -1159,12 +1161,14 @@
     }
 
     scaleLevelPath(zoomLevel) {
-      // FIXME: use actual keys
-      return '4_4_40';
+      if (!this.ready) {
+        return '';
+      }
+      return this.scalelevelAttributes[zoomLevel].key;
     }
 
     numScaleLevels() {
-      return this.datasetAttributes.length;
+      return this.datasetAttributes ? this.datasetAttributes.to_json().scales.length : 0;
     }
 
     checkCanary(project, stack, noCache) {
@@ -1225,7 +1229,7 @@
     readBlock(zoomLevel, ...sourceCoord) {
       return this.promiseReady.then(() => {
         let path = this.datasetPath(zoomLevel);
-        let dataAttrs = this.datasetAttributes[zoomLevel];
+        let dataAttrs = this.datasetAttributes;
 
         if (!dataAttrs) return {block: null, etag: undefined};
 

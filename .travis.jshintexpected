@@ -264,4 +264,8 @@ django/applications/catmaid/static/libs/catmaid/time-series.js: line 19, col 12,
 django/applications/catmaid/static/libs/catmaid/volumes.js: line 613, col 9, 'abs' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/volumes.js: line 805, col 15, 'dSimplicesT' is defined but never used.
 
-206 errors
+django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 1817, col 1, 'async functions' is only available in ES8 (use 'esversion: 8').
+django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 1850, col 1, 'async functions' is only available in ES8 (use 'esversion: 8').
+django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2009, col 29, The object literal notation {} is preferable.
+
+209 errors

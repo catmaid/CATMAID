@@ -104,6 +104,14 @@
     this.updateActiveNode();
     project.on(CATMAID.Project.EVENT_STACKVIEW_FOCUS_CHANGED, this.adjustStaticContent, this);
     project.on(CATMAID.Project.EVENT_LOCATION_CHANGED, this.handlelLocationChange, this);
+
+    // If there is an initial view set, apply it.
+    if (this.initialView) {
+      this.space.view.setView(
+        this.initialView.target, this.initialView.pos, this.initialView.up,
+        this.initialView.zoom, this.initialView.isOrthographic);
+    }
+
     this.initialized = true;
   };
 
@@ -9950,9 +9958,20 @@
             }
             return o;
           }, []));
+
+      // Fetch current view
+      let camera = widget.space.view.camera;
+      let cameraTarget = widget.space.view.controls.target;
+
       return {
         options: state,
-        volumes: volumes
+        volumes: volumes,
+        camera: {
+          target: [cameraTarget.x, cameraTarget.y, cameraTarget.z],
+          pos: [camera.position.x, camera.position.y, camera.position.z],
+          up: [camera.up.x, camera.up.y, camera.up.z],
+          zoom: camera.zoom,
+        },
       };
     },
     setState: function(widget, state) {
@@ -9987,6 +10006,16 @@
               v.subdiv, v.bb)
             .catch(CATMAID.handleError);
         });
+      }
+
+      if (state.camera) {
+        widget.initialView = {
+          target: new THREE.Vector3().fromArray(state.camera.target),
+          pos: new THREE.Vector3().fromArray(state.camera.pos),
+          up: new THREE.Vector3().fromArray(state.camera.up),
+          zoom: state.camera.zoom,
+          isOrthographic: widget.options.camera_view == 'orthographic',
+        };
       }
     }
   });

@@ -197,6 +197,10 @@ Graph widget:
   mass of all skeletons loaded in 3D, if no skeleton is active or the active
   skeleton is not loaded in the 3D Viewer.
 
+- The current view is now part of the saved state/settings. This is used as
+  initial view when used in a URL or when saved through the 'Save settings'
+  button in the panel opened by the window icon in the widget title bar.
+
 Skeleton history widget:
 
 - Skeletons to query can now also be appened through the common skeleton source

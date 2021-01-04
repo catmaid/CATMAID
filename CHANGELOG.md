@@ -117,9 +117,12 @@ Layouts:
 - New layout menu item: "Copy URL to view with layout". This will create a URL
   to the current view like the link button on the right hand side of the second
   toolbar, but with a layout spec included. It will open all widgets in the new
-  CATMAID like in the current one. This includes skeletons and their colors by
-  default. A second menu entry with the "(no skeletons)" suffix allows to create
-  link with only the layout and no skeletons.
+  CATMAID like in the current one. This includes skeletons, their colors and
+  widget configurations by default. A second menu entry with the "(no
+  skeletons)" suffix allows to create link with only the layout and no
+  skeletons. And a third menu entry with the suffix ("no widget settings)"
+  allows to copy only the layout plus skeletons, without any widget
+  configuration.
 
 - New layout menu item: "Copy current layout spec". This will copy the layout
   specification of the current view to the clipboard. This can be useful when

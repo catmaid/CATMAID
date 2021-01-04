@@ -81,6 +81,24 @@ var WindowMaker = new function()
   };
 
   /**
+   * Get a JSON representation of the widget state.
+   */
+  CATMAID.getWidgetState = function(widget) {
+    var widgetStateManager = stateManagers.get(widget.constructor);
+    if (widgetStateManager) {
+      try {
+        key = windowManagerStoragePrefix + widgetStateManager.key;
+        return stateSerializer.serialize({
+          'state': widgetStateManager.getState(widget),
+          'widget': widget.constructor.name,
+        }).replace(/"/g, "'");
+      } catch (e) {
+        return false;
+      }
+    }
+  };
+
+  /**
    *  Try to load a widget state from a cookie using the passed in state
    *  manager.
    */
@@ -114,18 +132,38 @@ var WindowMaker = new function()
    * If enabled by the client settings (or force is truthy), this loads the last
    * saved state for a widget.
    */
-  var checkAndLoadWidgetState = function(widget, force) {
-    if (!(CATMAID.Client.Settings.session.auto_widget_state_load || force)) {
+  var checkAndLoadWidgetState = function(widget, force, state) {
+    if (!(CATMAID.Client.Settings.session.auto_widget_state_load || force) && !state) {
       return;
     }
     var stateManager = stateManagers.get(widget.constructor);
     if (stateManager) {
       try {
-        loadWidgetState(widget, stateManagers.get(widget.constructor));
+        if (state) {
+          stateManager.setState(widget, state);
+        } else {
+          loadWidgetState(widget, stateManagers.get(widget.constructor));
+        }
       } catch (e) {
         CATMAID.warn("Couldn't load last widget state");
       }
     }
+  };
+
+  /**
+   * Attempte to load the provided state for the passed in widget.
+   */
+  CATMAID.loadStateIntoWidget = function(widget, state) {
+    var stateManager = stateManagers.get(widget.constructor);
+    if (stateManager) {
+      try {
+        stateManager.setState(widget, state);
+        return true;
+      } catch (e) {
+        CATMAID.warn("Couldn't load last widget state");
+      }
+    }
+    return false;
   };
 
   /**
@@ -272,7 +310,7 @@ var WindowMaker = new function()
    * Create a general widget window for a widget instance that provides a widget
    * configuration.
    */
-  var createWidget = function(instance, options) {
+  var createWidget = function(instance, options, state) {
     try {
       CATMAID.throwOnInsufficientWebGlContexts(instance.MIN_WEBGL_CONTEXTS || 0);
     } catch (e) {
@@ -285,7 +323,7 @@ var WindowMaker = new function()
     var config = instance.getWidgetConfiguration();
 
     // Try to load state, if not disabled
-    checkAndLoadWidgetState(instance);
+    checkAndLoadWidgetState(instance, undefined, state);
 
     var win = new CMWWindow(instance.getName());
     var container = win.getFrame();
@@ -359,7 +397,7 @@ var WindowMaker = new function()
   };
 
   /** Creates and returns a new 3d webgl window */
-  var create3dWebGLWindow = function(options)
+  var create3dWebGLWindow = function(options, isInstance, state)
   {
     if ( !WEBGL.isWebGLAvailable() ) {
       throw new CATMAID.NoWebGLAvailableError("The 3D Viewer requires WebGL, but it is not available");
@@ -376,7 +414,7 @@ var WindowMaker = new function()
 
     var WA = new CATMAID.WebGLApplication();
 
-    checkAndLoadWidgetState(WA);
+    checkAndLoadWidgetState(WA, undefined, state);
 
     var win = new CMWWindow(WA.getName());
     var content = win.getFrame();
@@ -2449,10 +2487,10 @@ var WindowMaker = new function()
 
   /** Always create a new instance of the widget. The caller is allowed to hand
    * in extra parameters that will be passed on to the actual creator method. */
-  this.create = function(name, options, isInstance) {
+  this.create = function(name, options, isInstance, state) {
     if (creators.hasOwnProperty(name)) {
       try {
-        var handles = creators[name].init(options, isInstance);
+        var handles = creators[name].init(options, isInstance, state);
         if (windows.has(name)) {
           windows.get(name).set(handles.window, handles.widget);
         } else {
@@ -2519,9 +2557,9 @@ var WindowMaker = new function()
     }
 
     creators[key] = {
-      init: function(options, isInstance) {
+      init: function(options, isInstance, state) {
         instance = isInstance ? options : new creator(options);
-        return createWidget(instance, isInstance ? undefined : options);
+        return createWidget(instance, isInstance ? undefined : options, state);
       },
       name: options.name || key,
       description: options.description || ''

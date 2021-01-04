@@ -39,23 +39,23 @@
    * created. We want to handle the Selection Table (if any) separately as well
    * as any subscriptions.
    */
-  WindowBuilder['3d-viewer'] = function() {
+  WindowBuilder['3d-viewer'] = function(state) {
     return WindowMaker.create('3d-viewer', {
       selectionTable: false,
-    });
+    }, false, state);
   };
 
-  const createWindow = function(name, options, skeletonIds) {
+  const createWindow = function(name, options, skeletonIds, state) {
     var creator = WindowBuilder[name];
     if (!creator) {
-      creator = function() {
-        return WindowMaker.create(name, options);
+      creator = function(widgetState) {
+        return WindowMaker.create(name, options, false, widgetState);
       };
     }
     if (!creator) {
       throw new CATMAID.ValueError("Could not find window creator for: " + name);
     }
-    var windowInfo = creator();
+    var windowInfo = creator(state ? state.state : undefined);
     if (!windowInfo || !windowInfo.window) {
       throw new CATMAID.ValueError("Could not create window for: " + name);
     }
@@ -335,7 +335,7 @@
     if (isFn(this.a.makeRegularWindows)) {
       n = this.a.makeRegularWindows(n, target);
     } else if (!validOrientations.has(this.a)) {
-      var win = createWindow(this.a, this.metaA.options, this.metaA.skeletons);
+      var win = createWindow(this.a, this.metaA.options, this.metaA.skeletons, this.metaA.state);
       var typedWindows = target.get(this.a);
       if (!typedWindows) {
         typedWindows = [];
@@ -347,7 +347,7 @@
     if (isFn(this.b.makeRegularWindows)) {
       n = this.b.makeRegularWindows(n, target);
     } else if (!validOrientations.has(this.b)) {
-      var win = createWindow(this.b, this.metaB.options, this.metaB.skeletons);
+      var win = createWindow(this.b, this.metaB.options, this.metaB.skeletons, this.metaB.state);
       var typedWindows = target.get(this.b);
       if (!typedWindows) {
         typedWindows = [];
@@ -732,7 +732,8 @@
         this.subscriptionInfo, this.withSkeletons);
   }
 
-  function nodeToLayoutSpec(node, stackViewerMapping, subscriptionInfo, withSkeletons = true) {
+  function nodeToLayoutSpec(node, stackViewerMapping, subscriptionInfo, withSkeletons = true,
+      withWidgetSettings = true) {
     if (node instanceof CMWHSplitNode) {
       return 'h(' + nodeToLayoutSpec(node.child1, stackViewerMapping, subscriptionInfo, withSkeletons) + ', ' +
           nodeToLayoutSpec(node.child2, stackViewerMapping, subscriptionInfo, withSkeletons) + ', ' +
@@ -781,6 +782,15 @@
         }
       }
 
+      // Store widget settings, if requested
+      let widgetSettings;
+      if (withWidgetSettings) {
+        let state = CATMAID.getWidgetState(widgetInfo.widget);
+        if (state) {
+          widgetSettings = `"state": ${state}`;
+        }
+      }
+
       // If this widget contains any subscriptions, add them to the output.
       var isSubscriptionSource = subscriptionInfo.idIndex.has(widgetInfo.widget);
       var isSubscriptionTaget = subscriptionInfo.subscriptions.has(widgetInfo.widget) &&
@@ -789,6 +799,9 @@
         var components = ['{ type: "', widgetInfo.key, '"'];
         if (widgetSkeletons) {
           components.push(', ', widgetSkeletons);
+        }
+        if (widgetSettings) {
+          components.push(', ', widgetSettings);
         }
         if (isSubscriptionSource) {
           components.push(', id: "', subscriptionInfo.idIndex.get(widgetInfo.widget), '"');

@@ -1897,17 +1897,35 @@ var project;
       note: '',
       action: function() {
         let l = document.location;
-        CATMAID.tools.copyToClipBoard(l.origin + l.pathname + project.createURL(true, true));
+        CATMAID.tools.copyToClipBoard(l.origin + l.pathname + project.createURL(true, true, true));
         CATMAID.msg('Success', 'Copied URL to view with layout to clipboard');
       }
     }, {
-      id: 'copy-current-layout-url',
+      id: 'copy-current-layout-url-no-skeletons',
       title: 'Copy URL to view with layout (no skeletons)',
       note: '',
       action: function() {
         let l = document.location;
-        CATMAID.tools.copyToClipBoard(l.origin + l.pathname + project.createURL(true, false));
+        CATMAID.tools.copyToClipBoard(l.origin + l.pathname + project.createURL(true, false, true));
         CATMAID.msg('Success', 'Copied URL to view with layout to clipboard, don\'t include skeletons.');
+      }
+    }, {
+      id: 'copy-current-layout-url-no-settings',
+      title: 'Copy URL to view with layout (no widget settings)',
+      note: '',
+      action: function() {
+        let l = document.location;
+        CATMAID.tools.copyToClipBoard(l.origin + l.pathname + project.createURL(true, true, false));
+        CATMAID.msg('Success', 'Copied URL to view with layout to clipboard, don\'t include skeletons.');
+      }
+    }, {
+      id: 'copy-current-layout-url-simple',
+      title: 'Copy URL to view (location only)',
+      note: '',
+      action: function() {
+        let l = document.location;
+        CATMAID.tools.copyToClipBoard(l.origin + l.pathname + project.createURL(false, false, false));
+        CATMAID.msg('Success', 'Copied URL to view, location only.');
       }
     }, {
       id: 'copy-current-layout-spec',
@@ -2269,7 +2287,7 @@ var project;
     }
 
     // Initialize a new CATMAID front-end
-    var options = CATMAID.tools.parseQuery(window.location.search);
+    var options = CATMAID.tools.parseQuery(window.location.href);
     CATMAID.client = new CATMAID.Client(options);
   };
 

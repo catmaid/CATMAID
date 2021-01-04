@@ -178,7 +178,7 @@
       if (isFn(c.missingViews)) {
           c.missingViews(views);
       } else {
-        views.delete(c);
+        views.delete(c.type);
       }
     }
   };
@@ -188,7 +188,7 @@
     for (var i=0; i<this.children.length; ++i) {
       var c = this.children[i];
       result += isFn(c.minStackViewers) ?
-          c.minStackViewers() : (validOrientations.has(c) ? 1 : 0);
+          c.minStackViewers() : (validOrientations.has(c.type) ? 1 : 0);
     }
     return result;
   };
@@ -198,7 +198,7 @@
     for (var i=0; i<this.children.length; ++i) {
       var c = this.children[i];
       result += isFn(c.maxStackViewers) ?
-          c.maxStackViewers() : (validOrientations.has(c) ? 1 : 0);
+          c.maxStackViewers() : (validOrientations.has(c.type) ? 1 : 0);
     }
     return result;
   };
@@ -208,7 +208,7 @@
     for (var i=0; i<this.children.length; ++i) {
       var c = this.children[i];
       result += isFn(c.regularWindows) ?
-          c.regularWindows() : (validOrientations.has(c) ? 0 : 1);
+          c.regularWindows() : (validOrientations.has(c.type) ? 0 : 1);
     }
     return result;
   };
@@ -218,7 +218,7 @@
     for (var i=0; i<this.children.length; ++i) {
       var c = this.children[i];
       var a = isFn(c.makeNode) ?
-          c.makeNode(windows) : windows.get(c).pop();
+          c.makeNode(windows) : windows.get(c.type).pop();
       childNodes.push(a);
     }
     this._nodes = Array.from(childNodes);
@@ -233,12 +233,12 @@
       var c = this.children[i];
       if (isFn(c.makeRegularWindows)) {
         n = n - c.makeRegularWindows(n, target);
-      } else if (!validOrientations.has(c)) {
-        var win = createWindow(c);
-        var typedWindows = target.get(c);
+      } else if (!validOrientations.has(c.type)) {
+        var win = createWindow(c.type, c.meta.options, c.meta.skeletons, c.meta.state);
+        var typedWindows = target.get(c.type);
         if (!typedWindows) {
           typedWindows = [];
-          target.set(c, typedWindows);
+          target.set(c.type, typedWindows);
         }
         typedWindows.push(win);
         --n;
@@ -248,7 +248,7 @@
   };
 
   MultiNode.prototype.getSubscriptions = function(target) {
-    for (var i=0; i<this.children.length; ++i) {
+    for (let i=0; i<this.children.length; ++i) {
       var c = this.children[i];
       if (isFn(c.getSubscriptions)) {
         c.getSubscriptions(target);
@@ -257,7 +257,7 @@
           if (!this._nodes[i]) {
             throw new CATMAID.ValueError("Expected created node in multi node context");
           }
-          target.idIndex.set(this.meta.id, this._nodes[i]);
+          target.idIndex.set(c.meta.id, this._nodes[i]);
         }
 
         if (c.meta.subscriptions) {
@@ -265,11 +265,11 @@
           if (sub.length > 0 && !this._nodes[i]) {
             throw new CATMAID.ValueError("Expected created node in multi node context");
           }
-          for (var i=0; i<sub.length; ++i) {
-            var sub = sub[i];
+          for (let j=0; j<sub.length; ++j) {
+            var sub = sub[j];
             target.subscriptions.push({
               source: sub.source,
-              target: this._nodes[i],
+              target: this._nodes[j],
             });
           }
         }
@@ -526,7 +526,9 @@
   var TNode = function(a) {
     this.children = a.map(function(c) {
       if (typeof(c) === 'object' && !(c instanceof LayaoutNode)) {
-        return c.type;
+        let child = {};
+        assignNodeInfo(child, 'type', 'meta', c);
+        return child;
       } else {
         return c;
       }

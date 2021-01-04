@@ -547,6 +547,9 @@ Miscellaneous:
   stopped as well. I.e. the database will be notified about an imminent
   shutdown, etc.
 
+- Layouts: subscriptions, skeletons and options are now now properly loaded from
+  tab nodes in layout specs.
+
 ## Maintenance updates
 
 - Volume widget: don't show removal options by default. It happens generally

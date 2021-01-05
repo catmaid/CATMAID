@@ -1058,17 +1058,13 @@
       let z = Math.floor(slicePixelPosition[0] / bs[2]);
       let vo = this.voxelOffset(zoomLevel);
       let sourceCoord = [col, row, z];
-
-      // Compute a block coordinate into the Neuroglancer precomputed dataset
-      // and counter-act voxel offset.
       let blockCoord = CATMAID.tools.permute(sourceCoord, this.reciprocalSliceDims);
-
       // The voxel offset specifies how the image dataset is translated relativ
       // to the global origin. We want to map from global into voxel
       let voxelCoord = [
-          (blockCoord[0] - snap(vo[0], bs[0])) * bs[0] + vo[0],
-          (blockCoord[1] - snap(vo[1], bs[1])) * bs[1] + vo[1],
-          (blockCoord[2] - snap(vo[2], bs[2])) * bs[2] + vo[2]];
+          blockCoord[0] * bs[0] + vo[0],
+          blockCoord[1] * bs[1] + vo[1],
+          blockCoord[2] * bs[2] + vo[2]];
 
       return `${this.rootURL}/${this.datasetPath(zoomLevel)}/` +
           `${voxelCoord[0]}-${voxelCoord[0] + bs[0]}_${voxelCoord[1]}-${voxelCoord[1] + bs[1]}_${voxelCoord[2]}-${voxelCoord[2] + bs[2]}`;
@@ -1137,10 +1133,7 @@
         let path = this.datasetPath(zoomLevel);
         let dataAttrs = this.datasetAttributes;
 
-        // Compute a block coordinate into the Neuroglancer precomputed dataset
-        // and counter-act voxel offset.
         let blockCoord = CATMAID.tools.permute(sourceCoord, this.reciprocalSliceDims);
-        CATMAID.NeuroglancerPrecomputedImageBlockSource.absoluteToRelativeBlockCoord(blockCoord, dataAttrs, zoomLevel);
 
         return this.reader
             .read_block_with_etag(path, dataAttrs, blockCoord.map(BigInt))
@@ -1206,24 +1199,6 @@
     }
   };
 
-  let snap = (vo, bs) => vo < 0 ? Math.ceil(vo / bs) : Math.floor(vo / bs);
-
-  /**
-   * Since the dataset's voxel offset is added to the requested block coordinate
-   * request, the returned block for (0,0,0) would in-fact be (vx, vy, vz) where
-   * v# represents the voxel offset. To not have the CATMAID front-end display
-   * coordinates that are unaware of this and don't match the Neuroglancer
-   * display, we counter-act this here by subtracting the voxel offset here
-   * (only to have it added back in the worker for reading the actual block).
-   */
-  CATMAID.NeuroglancerPrecomputedImageBlockSource.absoluteToRelativeBlockCoord = function(blockCoord, dataAttrs, zoomLevel) {
-    let voxelOffset = dataAttrs.get_voxel_offset(zoomLevel);
-    let blockSize = dataAttrs.get_block_size(zoomLevel);
-    blockCoord[0] = blockCoord[0] - snap(voxelOffset[0], blockSize[0]);
-    blockCoord[1] = blockCoord[1] - snap(voxelOffset[1], blockSize[1]);
-    blockCoord[2] = blockCoord[2] - snap(voxelOffset[2], blockSize[2]);
-  };
-
   /**
    * Image block source type for NeuroglancerPrecomputed datasets. This sub-implementation uses
    * a pool of web workers for block loading.
@@ -1258,10 +1233,7 @@
 
         if (!dataAttrs) return {block: null, etag: undefined};
 
-        // Compute a block coordinate into the Neuroglancer precomputed dataset
-        // and counter-act voxel offset.
         let blockCoord = CATMAID.tools.permute(sourceCoord, this.reciprocalSliceDims);
-        CATMAID.NeuroglancerPrecomputedImageBlockSource.absoluteToRelativeBlockCoord(blockCoord, dataAttrs, zoomLevel);
 
         return this.workers
             .postMessage([path, dataAttrs.to_json(), blockCoord.map(BigInt)])

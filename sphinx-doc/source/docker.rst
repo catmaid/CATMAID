@@ -166,13 +166,9 @@ Docker-compose
 Before updating the docker images, the database should be backed up. The easiest
 way to do this and also be able to quickly restore in case something goes wrong,
 is to perform a file based copy of the ``volumes`` folder after stopping the
-database. To stop CATMAID and the database, call the following commands from the
+database. To stop CATMAID and the database, call the following command from the
 ``catmaid-docker`` directory (containing the ``docker-compose.yml`` file)::
 
-  CATMAID_STOP_CMD='supervisorctl stop all'
-  docker exec -i -t catmaid_app_1 /bin/bash -c "${CATMAID_STOP_CMD}"
-  PG_STOP_CMD='export PGCTL=$(which pg_ctl); su postgres -c "${PGCTL} stop"'
-  docker exec -i -t catmaid_db_1 /bin/bash -c "${PG_STOP_CMD}"
   docker-compose stop
 
 And then copy the complete ``volumes`` folder::
@@ -189,7 +185,7 @@ Then update your docker images::
 
 Finally the docker containers have to be built and started again::
 
-  docker-compose up --build
+  docker-compose up --build -d
 
 In case a newly pulled docker image introduces a new Postgres version, CATMAID's
 docker-compose start-up script will detect this and abort the container
@@ -201,11 +197,14 @@ required. First ``DB_UPDATE=true`` has to be added as environment variable of
 the ``db`` app in the ``docker-compose.yml`` file. The docker-compose setup
 needs then to be rebuilt and run::
 
-  docker-compose up --build
+  docker-compose up --build -d
 
 After a successful upgrade, the ``DB_UPDATE`` variable should be set to
 ``false`` again, to not accidentally upgrade the data files without ensuring a
 back-up has been made.
+
+In order to check logs of the running containers, ``docker-compose logs`` can be
+useful.
 
 Starting docker-compose as systemd service
 ------------------------------------------

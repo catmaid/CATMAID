@@ -94,6 +94,12 @@
       return a.position - b.position;
     });
 
+    // Allow metadata field to override default voxel offset of (0,0,0). This
+    // can be used to offset stack coordinates by a constant factor, defined for
+    // zoom-level zero. This is currently used only for external interaction
+    // with stack (e.g. status bar position, location lookup).
+    this.voxelOffset = metadata ? CATMAID.tools.getDefined(metadata.voxelOffset, [0, 0, 0]) : [0, 0, 0];
+
     // Allow metadata field to override clamping default value (true)
     this.clamp = metadata ? CATMAID.tools.getDefined(metadata.clamp, true) : true;
 

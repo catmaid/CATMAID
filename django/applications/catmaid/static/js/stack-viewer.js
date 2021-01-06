@@ -448,8 +448,9 @@
    * @return {{xc, yc, z, s}} Top left view scaled coordinates in the target stack.
    */
   StackViewer.prototype.scaledPositionInStack = function (stack) {
+    let pos;
     if (stack.id === this.primaryStack.id) {
-      return {
+      pos = {
         xc: this.xc,
         yc: this.yc,
         z: this.z,
@@ -457,7 +458,7 @@
       };
     } else {
       var pc = this.projectCoordinates();
-      return {
+      pos = {
         xc: Math.floor(stack.projectToUnclampedStackX(pc.z, pc.y, pc.x)
           / Math.pow(2, stack.projectToStackSX(pc.s)) - this.viewWidth / 2),
         yc: Math.floor(stack.projectToUnclampedStackY(pc.z, pc.y, pc.x)
@@ -466,6 +467,16 @@
         s:  stack.projectToStackSMP(pc.s)
       };
     }
+
+    if (CATMAID.StackViewer.Settings.session.apply_primary_voxel_offset) {
+      //
+      let scale = 1 / Math.pow(2, pos.s);
+      pos.xc -= stack.voxelOffset[0] * scale;
+      pos.yc -= stack.voxelOffset[1] * scale;
+      pos.z -= stack.voxelOffset[2] * scale;
+    }
+
+    return pos;
   };
 
 
@@ -1273,6 +1284,12 @@
           },
           min_zoom_level: {
             default: -2
+          },
+          // Whether to apply a potentially defined voxel offset to stack coordinate
+          // displays. Such a voxel offset can be defined as meta data on a
+          // stack using the voxel_offset field.
+          apply_primary_voxel_offset: {
+            default: true
           },
         },
         migrations: {}

@@ -147,7 +147,9 @@ class Stack(models.Model):
             help_text="Arbitrary text that is displayed alongside the stack.")
     metadata = JSONField(blank=True, null=True, help_text="Optional JSON for a "
             "stack. Supported is the boolean field \"clamp\" which can be set "
-            "to \"false\" to disable tile access clamping.")
+            "to \"false\" to disable tile access clamping as well as the 3-tuple
+            \"vertexOffset\", which can be used to offset the voxels space of
+            the stack by the respective vector.")
     attribution = models.TextField(blank=True, null=True,
             help_text="Attribution or citation information for this dataset.")
     canary_location = Integer3DField(default=(0, 0, 0), help_text="Stack space "

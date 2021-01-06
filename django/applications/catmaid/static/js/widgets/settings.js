@@ -413,6 +413,23 @@
           'show_project_title',
           SETTINGS_SCOPE));
 
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
+              "Apply primary stack voxel offset",
+              CATMAID.StackViewer.Settings[SETTINGS_SCOPE].apply_primary_voxel_offset,
+              "Whether or not to apply a voxel offset for the priamry stack in a view, if such a offset it defined in the stack metadata. This effectively shifts the primary stack in voxel space.",
+              function() {
+                let applyVoxelOffset = this.checked;
+                CATMAID.StackViewer.Settings
+                    .set(
+                      'apply_primary_voxel_offset',
+                      applyVoxelOffset,
+                      SETTINGS_SCOPE);
+              }),
+          CATMAID.StackViewer.Settings,
+          'apply_primary_voxel_offset',
+          SETTINGS_SCOPE));
+
       // Hide layers if nearest section is broken
       ds.append(wrapSettingsControl(
           CATMAID.DOM.createCheckboxSetting(

@@ -399,6 +399,16 @@ Tile source types are listed by the enumeration integer ID referenced by
 
     gs://neuroglancer/basil_v0/son_of_alignment/v3.04_cracks_only_normalized_rechunked/%SCALE_DATASET%/0_1_2
 
+   Also note that Neuroglancer datasets can have a property called
+   ``voxelOffset``, which by default is ``(0, 0, 0)``. If set to other values
+   the dataset will be artificially resized at the origin accordingly. To Match
+   voxel coordinates between CATMAID and Neuroglancer, the respective CATMAID
+   stack needs to have the ``voxelsOffset`` metadata field set with the the
+   value and "Apply primary stack voxel offset" has to be checked in the
+   Settings Widget (default). For instance, if the zero-zoom level voxel offset
+   is ``(-3072, -3072, 0)``, then the metadata of the CATMAID stack should look
+   like this: ``{"voxelOffset": [-3072, -3072, 0]}``.
+
 Backend Representation
 ----------------------
 

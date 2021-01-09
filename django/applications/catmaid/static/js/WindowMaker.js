@@ -709,7 +709,27 @@ var WindowMaker = new function()
             label: 'User colormap',
             title: 'Show usernames associated to used colors. Requires user-based coloring mode.',
             onclick: WA.toggleUserColormapDialog.bind(WA)
-          }
+          },
+          {
+            type: 'text',
+            label: 'Light pos.',
+            title: 'Position of the hemisphere light source. If empty, the light will be positioned centered "below" the image data (default).',
+            value: o.light_dir && o.light_dir.length > 0 ? o.light_dir.join(', ') : '',
+            placeholder: '(Default)',
+            length: 6,
+            onchange: (e) => {
+              if (e.target.value.trim().length === 0) {
+                WA.setLightPosition(null);
+              } else {
+                let coords = e.target.value.split(',').map(c => Number(c.trim()));
+                if (coords.filter(c => Number.isNaN(c)).length > 0) {
+                  CATMAID.warn("Can't parse coordinates");
+                  return;
+                }
+                WA.setLightPosition(coords);
+              }
+            }
+          },
         ]);
 
     var adjustFn = function(param_name) {

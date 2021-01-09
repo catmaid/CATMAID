@@ -1252,6 +1252,7 @@
 
   WebGLApplication.prototype.Options = function() {
     this.debug = false;
+    this.light_dir = null;
     this.meshes_color = "#ffffff";
     this.meshes_opacity = 0.2;
     this.meshes_faces = false;
@@ -3403,7 +3404,11 @@
     var ambientLight = new THREE.AmbientLight(0x505050);
     var height = dimensions.max.y - dimensions.min.y;
     var hemiLight = new THREE.HemisphereLight( 0xffffff, 0x000000, 1 );
-    hemiLight.position.set( center.x, - center.y - height, center.z);
+    if (this.options.light_dir && this.options.light_dir.length === 3) {
+      hemiLight.position.set(...this.options.light_dir);
+    } else {
+      hemiLight.position.set(center.x, - center.y - height, center.z);
+    }
     return [ambientLight, hemiLight];
   };
 
@@ -8904,6 +8909,26 @@
       this.updateSkeletonColors()
         .then(this.render.bind(this));
     }
+  };
+
+  /**
+   * Set location of the hemisphere light. If a falsy value is passed in, the
+   * light will ne set to the top center of the bounding box.
+   */
+  WebGLApplication.prototype.setLightPosition = function(coords) {
+    if (coords) {
+      this.options.light_dir = [...coords];
+    } else {
+      var height = this.space.dimensions.max.y - this.space.dimensions.min.y;
+      coords = [
+        this.space.center.x,
+        - this.space.center.y - height,
+        this.space.center.z
+      ];
+      this.options.light_dir = null;
+    }
+    this.space.lights[1].position.set(...coords);
+    this.space.render();
   };
 
   /**

@@ -201,6 +201,9 @@ Graph widget:
   initial view when used in a URL or when saved through the 'Save settings'
   button in the panel opened by the window icon in the widget title bar.
 
+- The "Shading" tab features now an input text field that allows to change the
+  location of the hemispheric light source.
+
 Skeleton history widget:
 
 - Skeletons to query can now also be appened through the common skeleton source

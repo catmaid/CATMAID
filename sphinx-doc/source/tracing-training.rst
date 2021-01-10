@@ -251,6 +251,16 @@ tasks within the FAFB training environment:
 .. raw:: html
 
         <div class="figure"><iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/FRYLNWroEf4" frameborder="0" allowfullscreen></iframe>
+        <p class="caption"><span class="caption-text">Starting in CATMAID</span></p></div>
+
+.. raw:: html
+
+        <div class="figure"><iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/b9e7264ukIc" frameborder="0" allowfullscreen></iframe>
+        <p class="caption"><span class="caption-text">Keyboard shortcuts in CATMAID</span></p></div>
+
+.. raw:: html
+
+        <div class="figure"><iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/FRYLNWroEf4" frameborder="0" allowfullscreen></iframe>
         <p class="caption"><span class="caption-text">Create a seed node</span></p></div>
 
 .. raw:: html
@@ -262,6 +272,11 @@ tasks within the FAFB training environment:
 
         <div class="figure"><iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/cCUasVdhvGA" frameborder="0" allowfullscreen></iframe>
         <p class="caption"><span class="caption-text">Annotate synapses</span></p></div>
+
+.. raw:: html
+
+        <div class="figure"><iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/n2bNpi-p1ik" frameborder="0" allowfullscreen></iframe>
+        <p class="caption"><span class="caption-text">Correcting Mistakes in a Traced Skeleton</span></p></div>
 
 .. _training_tracers_pipeline:
 

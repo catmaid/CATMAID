@@ -245,8 +245,9 @@ Training materials
 ------------------
 
 CAT Trainer, Henrique Ludwig, has created short tutorials explaining some common
-tasks within the FAFB training environment:
-
+tasks within the FAFB training environment, available as a `playlist
+<https://youtube.com/playlist?list=PLqugYeeugrPdWXz8KNuUOZ55tZCbMyFSp>`_ or here
+individually:
 
 .. raw:: html
 

@@ -645,6 +645,8 @@ class Exporter():
 
             # Export tags
             tags = set()
+            tag_links = set()
+            tag_links_connectors = set()
             if len(export_settings['tags']) == 0:
                 if self.export_tags and 'labeled_as' in relations:
                     tag_filter_params = {
@@ -662,14 +664,15 @@ class Exporter():
                     # links to get only the used tags.
                     tags = set(t.class_instance for t in tag_links)
 
-                    tag_filter_params = {
-                        'project': self.project,
-                        'class_instance__class_column': classes['label'],
-                        'relation_id': relations['labeled_as'],
-                    }
-
-                    tag_links_connectors = ConnectorClassInstance.objects.select_related('class_instance') \
-                            .filter(**tag_filter_params)
+                    if connector_ids:
+                        tag_filter_params = {
+                            'project': self.project,
+                            'class_instance__class_column': classes['label'],
+                            'relation_id': relations['labeled_as'],
+                            'connector_id__in': connector_ids,
+                        }
+                        tag_links_connectors = ConnectorClassInstance.objects.select_related('class_instance') \
+                                .filter(**tag_filter_params)
             else:
                 tag_skeletons = set(skeleton_id_constraints)
                 n_default_tag_skeletons = len(tag_skeletons)
@@ -696,14 +699,15 @@ class Exporter():
                 # links to get only the used tags.
                 tags = set(t.class_instance for t in tag_links)
 
-                tag_filter_params = {
-                    'project': self.project,
-                    'class_instance__class_column': classes['label'],
-                    'relation_id': relations['labeled_as'],
-                }
-
-                tag_links_connectors = ConnectorClassInstance.objects.select_related('class_instance') \
-                        .filter(**tag_filter_params)
+                if connector_ids:
+                    tag_filter_params = {
+                        'project': self.project,
+                        'class_instance__class_column': classes['label'],
+                        'relation_id': relations['labeled_as'],
+                        'connector_id__in': connector_ids,
+                    }
+                    tag_links_connectors = ConnectorClassInstance.objects.select_related('class_instance') \
+                            .filter(**tag_filter_params)
 
             if tags:
                 tag_names = sorted(set(t.name for t in tags))
@@ -751,18 +755,20 @@ class Exporter():
                 if exclude_skeleton_id_constraints:
                     tag_links = tag_links.exclude(skeleton_id=exclude_skeleton_id_constraints)
 
-                tag_filter_params = {
-                    'project': self.project,
-                    'class_instance__class_column': classes['label'],
-                    'relation_id': relations['labeled_as'],
-                }
-
-                tag_links_connectors = ConnectorClassInstance.objects.select_related('class_instance') \
-                        .filter(**tag_filter_params)
-
                 self.to_serialize.append(tags)
                 self.to_serialize.append(tag_links)
-                self.to_serialize.append(tag_links_connectors)
+
+                if self.connector_mode != ConnectorMode.NoConnectors:
+                    tag_filter_params = {
+                        'project': self.project,
+                        'class_instance__class_column': classes['label'],
+                        'relation_id': relations['labeled_as'],
+                    }
+
+                    tag_links_connectors = ConnectorClassInstance.objects.select_related('class_instance') \
+                            .filter(**tag_filter_params)
+
+                    self.to_serialize.append(tag_links_connectors)
 
             # Export all annotations
             if self.export_annotations:

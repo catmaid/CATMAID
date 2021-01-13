@@ -645,8 +645,8 @@ class Exporter():
 
             # Export tags
             tags = set()
-            tag_links = set()
-            tag_links_connectors = set()
+            tag_links = TreenodeClassInstance.objects.none()
+            tag_links_connectors = ConnectorClassInstance.objects.none()
             if len(export_settings['tags']) == 0:
                 if self.export_tags and 'labeled_as' in relations:
                     tag_filter_params = {

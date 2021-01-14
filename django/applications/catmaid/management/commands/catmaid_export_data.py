@@ -665,14 +665,17 @@ class Exporter():
                     tags = set(t.class_instance for t in tag_links)
 
                     if connector_ids:
-                        tag_filter_params = {
+                        tag_link_filter_params = {
                             'project': self.project,
                             'class_instance__class_column': classes['label'],
                             'relation_id': relations['labeled_as'],
                             'connector_id__in': connector_ids,
                         }
+                        if self.allowed_tags is not None:
+                            tag_link_filter_params['class_instance__name__in'] = self.allowed_tags
+
                         tag_links_connectors = ConnectorClassInstance.objects.select_related('class_instance') \
-                                .filter(**tag_filter_params)
+                                .filter(**tag_link_filter_params)
             else:
                 tag_skeletons = set(skeleton_id_constraints)
                 n_default_tag_skeletons = len(tag_skeletons)
@@ -700,14 +703,17 @@ class Exporter():
                 tags = set(t.class_instance for t in tag_links)
 
                 if connector_ids:
-                    tag_filter_params = {
+                    tag_link_filter_params = {
                         'project': self.project,
                         'class_instance__class_column': classes['label'],
                         'relation_id': relations['labeled_as'],
                         'connector_id__in': connector_ids,
                     }
+                    if self.allowed_tags is not None:
+                        tag_link_filter_params['class_instance__name__in'] = self.allowed_tags
+
                     tag_links_connectors = ConnectorClassInstance.objects.select_related('class_instance') \
-                            .filter(**tag_filter_params)
+                            .filter(**tag_link_filter_params)
 
             if tags:
                 tag_names = sorted(set(t.name for t in tags))

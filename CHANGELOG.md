@@ -558,6 +558,11 @@ Miscellaneous:
 - Layouts: subscriptions, skeletons and options are now now properly loaded from
   tab nodes in layout specs.
 
+- Tracing data export: management command: connector tags are now exported
+  properly. Before in some cases inconsistent data was exported where either
+  connectors or tags where wrongly referenced even though they were not included
+  in the export.
+
 ## Maintenance updates
 
 - Volume widget: don't show removal options by default. It happens generally

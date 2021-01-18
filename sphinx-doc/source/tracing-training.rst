@@ -43,7 +43,7 @@ brain of a female adult Drosophila melanogaster. at a resolution of 4 x 4 x 40
 nm/vx. An example on how such a brain is dissected and prepared, Janelia's
 FlyLight team has some helpful `videos
 <https://www.janelia.org/project-team/flylight/protocols>`_. It might also be
-worthwile to check out the virtual fly brain `nomenclature
+worthwile to check out the standard fly brain `nomenclature
 <https://www.sciencedirect.com/science/article/pii/S0896627313011781>`_. A
 publicly accessible CATMAID server can be found at `spaces.itanna.org
 <https://spaces.itanna.io/catmaid/itanna>`_, which allows creating personal and

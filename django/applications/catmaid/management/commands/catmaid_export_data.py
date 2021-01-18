@@ -676,6 +676,7 @@ class Exporter():
 
                         tag_links_connectors = ConnectorClassInstance.objects.select_related('class_instance') \
                                 .filter(**tag_link_filter_params)
+                        tags = tags.union(set(t.class_instance for t in tag_links_connectors))
             else:
                 tag_skeletons = set(skeleton_id_constraints)
                 n_default_tag_skeletons = len(tag_skeletons)
@@ -714,6 +715,7 @@ class Exporter():
 
                     tag_links_connectors = ConnectorClassInstance.objects.select_related('class_instance') \
                             .filter(**tag_link_filter_params)
+                    tags = tags.union(set(t.class_instance for t in tag_links_connectors))
 
             if tags:
                 tag_names = sorted(set(t.name for t in tags))

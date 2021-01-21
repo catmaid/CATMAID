@@ -10,7 +10,7 @@ from django.urls import reverse_lazy
 from rest_framework.decorators import api_view
 
 from catmaid.control import (authentication, user, group, log, message, client,
-        common, project, stack, stackgroup, tile, tracing, stats,
+        common, deeplink, project, stack, stackgroup, tile, tracing, stats,
         annotation, textlabel, label, link, connector,
         neuron, node, treenode, suppressed_virtual_treenode, skeleton,
         skeletonexport, treenodeexport, cropping, data_view, ontology,
@@ -113,6 +113,13 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/$', project.ProjectDetail.as_view()),
     url(r'^(?P<project_id>\d+)/interpolatable-sections/$', project.interpolatable_sections),
     url(r'^(?P<project_id>\d+)/fork$', project.fork),
+]
+
+# Deep links
+urlpatterns += [
+    url(r'^(?P<project_id>\d+)/links/$', deeplink.DeepLinkList.as_view()),
+    url(r'^(?P<project_id>\d+)/links/(?P<alias>[0-9A-Za-z_\-]+)$', deeplink.DeepLinkSelector.as_view()),
+    url(r'^(?P<project_id>\d+)/links/(?P<alias>[0-9A-Za-z_\-]+)/details$', deeplink.DeepLinkDetails.as_view()),
 ]
 
 # General stack model access

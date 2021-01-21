@@ -1920,3 +1920,61 @@ class TreenodeEdge(models.Model):
 
     class Meta:
         db_table = "treenode_edge"
+
+
+class DeepLink(NonCascadingUserFocusedModel):
+    """Stores a view into a project using some predefined settings. Cascading
+    deletes are taken care of in the database.
+    """
+    alias = models.TextField(blank=True, null=True)
+    is_public = models.BooleanField(default=False)
+    password = models.CharField(max_length=255)
+
+    location_x = models.FloatField(blank=True, null=True)
+    location_y = models.FloatField(blank=True, null=True)
+    location_z = models.FloatField(blank=True, null=True)
+    active_treenode = models.ForeignKey(Treenode, on_delete=models.DO_NOTHING,
+            blank=True, null=True)
+    active_connector = models.ForeignKey(Connector, on_delete=models.DO_NOTHING,
+            blank=True, null=True)
+    active_skeleton = models.ForeignKey(ClassInstance, on_delete=models.DO_NOTHING,
+            blank=True, null=True)
+    follow_id_history = models.BooleanField(default=False)
+    layered_stacks = models.BooleanField(default=False)
+
+    layout = models.TextField(blank=True, null=True)
+    tool = models.TextField(blank=True, null=True)
+    show_help = models.BooleanField(default=False)
+    data_view = models.ForeignKey(DataView, on_delete=models.DO_NOTHING)
+
+    message = models.TextField(blank=True, null=True)
+
+    def __str__(self) -> str:
+        return f"Deep link into project {self.project_id}"
+
+    class Meta:
+        db_table = "catmaid_deep_link"
+
+
+class DeepLinkStack(NonCascadingUserFocusedModel):
+    """Links a stack to a deep links. Cascading deletes are taken care of
+    in the database.
+    """
+    deep_link = models.ForeignKey(DeepLink, related_name='stacks', on_delete=models.DO_NOTHING)
+    stack = models.ForeignKey(Stack, on_delete=models.DO_NOTHING)
+    zoom_level = models.FloatField(default=0)
+
+    class Meta:
+        db_table = "catmaid_deep_link_stack"
+
+
+class DeepLinkStackGroup(NonCascadingUserFocusedModel):
+    """Links a stack group to a deep links. Cascading deletes are taken care of
+    in the database.
+    """
+    deep_link = models.ForeignKey(DeepLink, related_name='stack_groups', on_delete=models.DO_NOTHING)
+    stack_group = models.ForeignKey(StackGroup, on_delete=models.DO_NOTHING)
+    zoom_levels = ArrayField(models.FloatField())
+
+    class Meta:
+        db_table = "catmaid_deep_link_stack_group"

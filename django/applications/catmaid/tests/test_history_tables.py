@@ -34,6 +34,9 @@ class HistoryTableTests(TransactionTestCase):
         # CATMAID tables
         'broken_slice',
         'cardinality_restriction',
+        'catmaid_deep_link',
+        'catmaid_deep_link_stack',
+        'catmaid_deep_link_stack_group',
         'catmaid_group_inactivity_period',
         'catmaid_group_inactivity_period_contact',
         'catmaid_sampler',
@@ -124,6 +127,9 @@ class HistoryTableTests(TransactionTestCase):
         # History tables of versioned CATMAID tables
         'broken_slice__history',
         'cardinality_restriction__history',
+        'catmaid_deep_link__history',
+        'catmaid_deep_link_stack__history',
+        'catmaid_deep_link_stack_group__history',
         'catmaid_group_inactivity_period__history',
         'catmaid_group_inactivity_period_contact__history',
         'catmaid_userprofile__history',

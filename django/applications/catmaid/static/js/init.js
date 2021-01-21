@@ -272,6 +272,7 @@ var project;
    * Initialize the CATMAID web front-end based on the passed in options.
    */
   Client.prototype.init = function(options) {
+    let link;
     var pid;
     var sids = [];
     var ss = [];
@@ -319,6 +320,9 @@ var project;
         this._container = options["container"];
       }
 
+      if ( options[ "pid" ] ) pid = options[ "pid" ];
+      if ( options[ "link" ] ) link = options[ "link" ];
+
       if ( !(
           typeof z == "undefined" ||
           typeof y == "undefined" ||
@@ -332,7 +336,6 @@ var project;
       }
       else
       {
-        if ( options[ "pid" ] ) pid = options[ "pid" ];
         if ( options[ "zp" ] ) zp = parseInt( options[ "zp" ] );
         if ( isNaN( zp ) ) zp = undefined;
         if ( options[ "yp" ] ) yp = parseInt( options[ "yp" ] );
@@ -466,10 +469,39 @@ var project;
       loadView = Promise.resolve();
     }
 
+    let message;
+
     // login and thereafter load stacks if requested
     loadView
       .then(function() {
         return self.login();
+      })
+      .then(() => {
+        // If a link ID is provided, try to get link info
+        if ((pid || pid === 0) && link) {
+          return CATMAID.fetch(`${pid}/links/${link}/details`)
+            .then(linkInfo => {
+              if (!xp && xp !== 0) xp = linkInfo.location_x;
+              if (!yp && yp !== 0) yp = linkInfo.location_y;
+              if (!zp && zp !== 0) zp = linkInfo.location_z;
+              if (!inittool && linkInfo.tool) inittool = linkInfo.tool;
+              if (!init_active_node_id) {
+                if (linkInfo.active_connector) init_active_node_id = linkInfo.active_connector;
+                else if (linkInfo.active_treenode) init_active_node_id = linkInfo.active_treenode;
+                else if (!init_active_skeleton_id && linkInfo.active_skeleton) init_active_skeleton_id = linkInfo.active_skeleton;
+              }
+              if (help === undefined && linkInfo.show_help) {
+                help = true;
+                this.setContextHelpVisibility(help);
+                this.contextHelpVisibilityEnforced = true;
+              }
+              if (!initialLayout && linkInfo.layout) initialLayout = linkInfo.layout;
+              if (!message && linkInfo.message) message = linkInfo.message;
+            })
+            .catch(e => {
+              throw new CATMAID.Warning('Could not load provided link');
+            });
+        }
       })
       .then(function() {
         var tools = {
@@ -596,6 +628,9 @@ var project;
           if (!CATMAID.switchToLayout(layout, true)) {
             CATMAID.warn(`Layout ${initialLayout} could not be loaded`);
           }
+        }
+        if (message) {
+          CATMAID.msg('Message', message);
         }
       });
 

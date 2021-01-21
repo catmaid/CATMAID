@@ -83,6 +83,22 @@ Project management widget:
   mainly useful for personal spaces, in which users typically have
   delete_project permissions.
 
+Link widget:
+
+- This new widget allows users to create persistent deep links into the
+  dataset using an alias, allowing for friendlier URLs of the form
+  `<catmaid-url>/<project-id>/links/<alias>`. The stored parameters are the same
+  as for regular deep links, with most of them being optional.
+
+- Like with fully parameterized URLs, features like layout, widget settings and
+  loaded skeletons can be used.
+
+- Links can be marked private, making them only accessible (and listable) by the
+  creator of the link.
+
+- An optional message can be stored with the link and is shown to the user when
+  the links is opened.
+
 Neuron renaming:
 
 - There is now a new neuron renaming dialog, which allows a search/replace

@@ -1,0 +1,41 @@
+<html>
+  <head>
+    <style>
+      html, body {
+              margin: 0;
+              padding: 0;
+              font-family: Helvetica, Arial, sans-serif;
+      }
+
+      h1 { font-size: 60px; }
+      h3 {
+              font-size: 32px;
+              font-weight: normal;
+              text-transform: uppercase;
+              letter-spacing: 4px;
+      }
+      h6 { font-size: 22px; }
+
+      .banner h1, .banner h3, .banner h6 {
+              margin: 0;
+              text-align: center;
+      }
+
+      .banner {
+              height: 300px;
+              color: darkgrey;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="banner">
+      <div class="banner-text">
+        <h3>CATMAID is not able to access this link for you.</h6>
+        <h6>Return to <a href="{% url 'catmaid:home' %}">front page</a></h6>
+      </div>
+    </div>
+  </body>
+</html>

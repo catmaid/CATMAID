@@ -325,7 +325,6 @@ var project;
           typeof x == "undefined" ||
           typeof s == "undefined" ) )
       {
-        pid = 1;
         sids = [];
         sids[ 0 ] = 1;
         ss = [];

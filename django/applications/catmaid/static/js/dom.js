@@ -163,10 +163,13 @@
   /**
    * Helper function to create a text input field with label.
    */
-  DOM.createInputSetting = function(name, val, helptext, handler)
+  DOM.createInputSetting = function(name, val, helptext, handler, placeholder)
   {
     var input = $('<input/>').attr('type', 'text')
       .addClass("ui-corner-all").val(val);
+    if (placeholder) {
+      input.attr('placeholder', placeholder);
+    }
     if (handler) {
       input.change(handler);
     }
@@ -202,13 +205,16 @@
   /**
    * Helper function to create a number input field with label.
    */
-  DOM.createNumericInputSetting = function(name, val, step, helptext, handler, min = 0)
+  DOM.createNumericInputSetting = function(name, val, step, helptext, handler, min = 0, placeholder = null)
   {
     var input = $('<input/>').attr('type', 'number')
       .attr('step', undefined === step ? 1 : step)
       .addClass("ui-corner-all").val(val);
     if (min !== null) {
       input.attr('min', min);
+    }
+    if (placeholder) {
+      input.attr('placeholder', placeholder);
     }
     if (handler) {
       input.change(handler);

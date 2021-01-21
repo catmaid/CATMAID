@@ -353,7 +353,7 @@
             // Insert section number
             row.splice(7, 0, (row[6] - stack.translation.z) / stack.resolution.z);
             // Replace user_id with username
-            row[9] = CATMAID.User.safe_get(row[9]);
+            row[9] = CATMAID.User.safe_get(row[9]).login;
             // Replace epoch seconds with date
             row[10] = formatTime(row[10]);
             // Append reviewers' names

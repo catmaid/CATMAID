@@ -417,22 +417,10 @@
         tool.deselectActiveNode();
     };
 
-    /**
-     * create a URL to the current view
-     */
-    this.createURL = function(withLayout = false, withSkeletons = true, withWidgetSettings = true) {
-      let x, y, z, activeNodeId, activeSkeletonId, stackGroupId, sgs = [],
-          stacks = [], stackScaleLevels = [];
-      let tool = project.getTool().toolname;
+    this.getStackAndStackGroupConfiguration = function() {
+      let stackGroupId, sgs = [], stacks = [], stackScaleLevels = [];
 
       if (stackViewers.length > 0) {
-        [x, y, z] = [self.coordinates.x, self.coordinates.y, self.coordinates.z];
-
-        if( tool === 'tracingtool' && !SkeletonAnnotations.atn.isRemote()) {
-          activeSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
-          activeNodeId = SkeletonAnnotations.getActiveNodeId();
-        }
-
         var sgStacks;
         if (this.lastLoadedStackGroup) {
           stackGroupId = this.lastLoadedStackGroup.id;
@@ -456,9 +444,42 @@
         }
       }
 
+      return {
+        stackGroupId: stackGroupId,
+        stackGroupScaleLevels: sgs,
+        stacks: stacks,
+        stackScaleLevels: stackScaleLevels,
+      };
+    };
+
+    /**
+     * create a URL to the current view
+     */
+    this.createURL = function(withLayout = false, withSkeletons = true, withWidgetSettings = true,
+        ignoredWindowTitle = null) {
+      let x, y, z, activeNodeId, activeSkeletonId, stackGroupId, sgs = [],
+          stacks = [], stackScaleLevels = [];
+      let tool = project.getTool().toolname;
+
+      if (stackViewers.length > 0) {
+        [x, y, z] = [self.coordinates.x, self.coordinates.y, self.coordinates.z];
+
+        if( tool === 'tracingtool' && !SkeletonAnnotations.atn.isRemote()) {
+          activeSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
+          activeNodeId = SkeletonAnnotations.getActiveNodeId();
+        }
+
+        let stackConfig = this.getStackAndStackGroupConfiguration();
+        stackGroupId = stackConfig.stackGroupId;
+        sgs = stackConfig.stackGroupScaleLevels;
+        stacks = stackConfig.stacks;
+        stackScaleLevels = stackConfig.stackScaleLevels;
+      }
+
       let layout;
       if (withLayout){
-        layout = CATMAID.Layout.makeLayoutSpecForWindow(CATMAID.rootWindow, withSkeletons, withWidgetSettings);
+        layout = CATMAID.Layout.makeLayoutSpecForWindow(CATMAID.rootWindow, withSkeletons,
+            withWidgetSettings, ignoredWindowTitle);
       }
 
       return Project.createRelativeURL(self.id, x, y, z, tool, activeNodeId,

@@ -731,24 +731,53 @@
   function mapNodeToLayoutSpec(node) {
     /* jshint validthis: true */
     return nodeToLayoutSpec(node, this.stackViewerMapping,
-        this.subscriptionInfo, this.withSkeletons);
+        this.subscriptionInfo, this.withSkeletons, this.withWidgetSettings,
+        this.ignoredWindowTitle);
   }
 
   function nodeToLayoutSpec(node, stackViewerMapping, subscriptionInfo, withSkeletons = true,
-      withWidgetSettings = true) {
+      withWidgetSettings = true, ignoredWindowTitle = null) {
     if (node instanceof CMWHSplitNode) {
-      return 'h(' + nodeToLayoutSpec(node.child1, stackViewerMapping, subscriptionInfo, withSkeletons) + ', ' +
-          nodeToLayoutSpec(node.child2, stackViewerMapping, subscriptionInfo, withSkeletons) + ', ' +
+      if (ignoredWindowTitle) {
+        if (ignoredWindowTitle === node.child1.title) {
+          return nodeToLayoutSpec(node.child2, stackViewerMapping, subscriptionInfo,
+              withSkeletons, withWidgetSettings, ignoredWindowTitle);
+        } else if (ignoredWindowTitle === node.child2.title){
+          return nodeToLayoutSpec(node.child1, stackViewerMapping, subscriptionInfo,
+              withSkeletons, withWidgetSettings, ignoredWindowTitle);
+        }
+      }
+      return 'h(' +
+          nodeToLayoutSpec(node.child1, stackViewerMapping, subscriptionInfo,
+              withSkeletons, withWidgetSettings, ignoredWindowTitle) + ', ' +
+          nodeToLayoutSpec(node.child2, stackViewerMapping, subscriptionInfo,
+              withSkeletons, withWidgetSettings, ignoredWindowTitle) + ', ' +
           Number(node.widthRatio).toFixed(2) + ')';
     } else if (node instanceof CMWVSplitNode) {
-      return 'v(' + nodeToLayoutSpec(node.child1, stackViewerMapping, subscriptionInfo, withSkeletons) + ', ' +
-          nodeToLayoutSpec(node.child2, stackViewerMapping, subscriptionInfo, withSkeletons) + ', ' +
+      if (ignoredWindowTitle) {
+        if (ignoredWindowTitle === node.child1.title) {
+          return nodeToLayoutSpec(node.child2, stackViewerMapping, subscriptionInfo,
+              withSkeletons, withWidgetSettings, ignoredWindowTitle);
+        } else if (ignoredWindowTitle === node.child2.title){
+          return nodeToLayoutSpec(node.child1, stackViewerMapping, subscriptionInfo,
+              withSkeletons, withWidgetSettings, ignoredWindowTitle);
+        }
+      }
+      return 'v(' +
+          nodeToLayoutSpec(node.child1, stackViewerMapping, subscriptionInfo,
+              withSkeletons, withWidgetSettings, ignoredWindowTitle) + ', ' +
+          nodeToLayoutSpec(node.child2, stackViewerMapping, subscriptionInfo,
+              withSkeletons, withWidgetSettings, ignoredWindowTitle) + ', ' +
           Number(node.heightRatio).toFixed(2) + ')';
     } else if (node instanceof CMWTabbedNode) {
       return 't([' + node.children.map(mapNodeToLayoutSpec, {
           stackViewerMapping: stackViewerMapping,
           subscriptionInfo: subscriptionInfo,
           withSkeletons: withSkeletons,
+          withWidgetSettings: withWidgetSettings,
+          ignoredWindowTitle: ignoredWindowTitle,
+        }).filter((c, i) => {
+          return !ignoredWindowTitle || ignoredWindowTitle !== node.children[i].title;
         }).join(', ') + '])';
     } else if (node instanceof CMWWindow) {
       var stackViewer = stackViewerMapping.get(node);
@@ -903,13 +932,14 @@
    * Create a new layout specification for the passed in window or return null
    * of this is not possible.
    */
-  Layout.makeLayoutSpecForWindow = function(rootNode, withSkeletons = true) {
+  Layout.makeLayoutSpecForWindow = function(rootNode, withSkeletons = true,
+      withWidgetSettings = true, ignoredWindowTitle = null) {
     if (!rootNode.child) {
       return null;
     }
     let stackViewerWindowMapping = new Map(project.getStackViewers().map(toWindowMapping));
     return nodeToLayoutSpec(rootNode.child, stackViewerWindowMapping,
-        getSubscriptions(rootNode.child), withSkeletons);
+        getSubscriptions(rootNode.child), withSkeletons, withWidgetSettings, ignoredWindowTitle);
   };
 
   /**

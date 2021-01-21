@@ -119,7 +119,7 @@ CATMAID.tools = CATMAID.tools || {};
   tools.parseQuery = function(url) {
     if (url) {
       var r, query;
-      query = /\?(.*?)$/i;
+      query = /\?(.*?)#?$/i;
       var r = query.exec(url);
       if (r) {
         var o, p, value;

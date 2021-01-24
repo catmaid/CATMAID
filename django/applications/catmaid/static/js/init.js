@@ -418,8 +418,7 @@ var project;
 
     $(document.body).on('click', 'a[data-role=url-to-clipboard]', function(e) {
       e.preventDefault();
-      let l = document.location;
-      CATMAID.tools.copyToClipBoard(l.origin + l.pathname + project.createURL(e.shiftKey));
+      CATMAID.tools.copyToClipBoard(this.getAndCheckUrl(e.shiftKey));
     });
 
     // Assume an unauthenticated session by default
@@ -1708,6 +1707,19 @@ var project;
   };
 
   /**
+   * Generate a URL to the current view and warn the user if this URL is too
+   * long.
+   */
+  Client.getAndCheckUrl = function(withLayout = false, withSkeletons = true, withWidgetSettings = true) {
+    let l = document.location;
+    let url = l.origin + l.pathname + project.createURL(withLayout, withSkeletons, withWidgetSettings);
+    if (url.length > 4096) {
+      CATMAID.warn('The generated URL is very long, consider creating an alias using the Link Widget.');
+    }
+    return url;
+  };
+
+  /**
    * Warns the user with a dialog about potential WebGL performance issues.
    */
   Client.warnOnPotentialGlPerformanceProblems = function () {
@@ -1930,8 +1942,7 @@ var project;
       title: 'Copy URL to view with layout',
       note: '',
       action: function() {
-        let l = document.location;
-        CATMAID.tools.copyToClipBoard(l.origin + l.pathname + project.createURL(true, true, true));
+        CATMAID.tools.copyToClipBoard(Client.getAndCheckUrl(true, true, true));
         CATMAID.msg('Success', 'Copied URL to view with layout to clipboard');
       }
     }, {
@@ -1939,8 +1950,7 @@ var project;
       title: 'Copy URL to view with layout (no skeletons)',
       note: '',
       action: function() {
-        let l = document.location;
-        CATMAID.tools.copyToClipBoard(l.origin + l.pathname + project.createURL(true, false, true));
+        CATMAID.tools.copyToClipBoard(Client.getAndCheckUrl(true, false, true));
         CATMAID.msg('Success', 'Copied URL to view with layout to clipboard, don\'t include skeletons.');
       }
     }, {
@@ -1948,8 +1958,7 @@ var project;
       title: 'Copy URL to view with layout (no widget settings)',
       note: '',
       action: function() {
-        let l = document.location;
-        CATMAID.tools.copyToClipBoard(l.origin + l.pathname + project.createURL(true, true, false));
+        CATMAID.tools.copyToClipBoard(Client.getAndCheckUrl(true, true, false));
         CATMAID.msg('Success', 'Copied URL to view with layout to clipboard, don\'t include skeletons.');
       }
     }, {
@@ -1957,8 +1966,7 @@ var project;
       title: 'Copy URL to view (location only)',
       note: '',
       action: function() {
-        let l = document.location;
-        CATMAID.tools.copyToClipBoard(l.origin + l.pathname + project.createURL(false, false, false));
+        CATMAID.tools.copyToClipBoard(Client.getAndCheckUrl(false, false, false));
         CATMAID.msg('Success', 'Copied URL to view, location only.');
       }
     }, {

@@ -10025,7 +10025,10 @@
         }
       }
       if (state.volumes) {
-        let volumes = JSON.parse(state.volumes);
+        // Parse the volume as JSON. Single quotes can occur as part of URL generation
+        // with included state. Since volume information is stored as a String above
+        // (rather than an object), we need to make sure we can parse it.
+        let volumes = JSON.parse(state.volumes.replace(/'/g, '"'));
         volumes.forEach(function(v) {
           widget.showVolume(v.id, true, v.color, v.opacity, !v.wireframe,
               v.subdiv, v.bb)

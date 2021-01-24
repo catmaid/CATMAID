@@ -818,6 +818,7 @@
       if (withWidgetSettings) {
         let state = CATMAID.getWidgetState(widgetInfo.widget);
         if (state) {
+          state = state.replace(/"/g, "'");
           widgetSettings = `"state": ${state}`;
         }
       }

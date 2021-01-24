@@ -91,7 +91,7 @@ var WindowMaker = new function()
         return stateSerializer.serialize({
           'state': widgetStateManager.getState(widget),
           'widget': widget.constructor.name,
-        }).replace(/"/g, "'");
+        });
       } catch (e) {
         return false;
       }

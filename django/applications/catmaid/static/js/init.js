@@ -415,6 +415,45 @@ var project;
       this.href = project.createURL(e.shiftKey);
       return true;
     };
+    let linkMenu = new Menu();
+    linkMenu.update([{
+      id: 'copy-current-layout-url',
+      title: 'Copy URL to view with layout',
+      note: '',
+      action: function() {
+        CATMAID.tools.copyToClipBoard(Client.getAndCheckUrl(true, true, true));
+        CATMAID.msg('Success', 'Copied URL to view with layout to clipboard');
+      }
+    }, {
+      id: 'copy-current-layout-url-no-skeletons',
+      title: 'Copy URL to view with layout (no skeletons)',
+      note: '',
+      action: function() {
+        CATMAID.tools.copyToClipBoard(Client.getAndCheckUrl(true, false, true));
+        CATMAID.msg('Success', 'Copied URL to view with layout to clipboard, don\'t include skeletons.');
+      }
+    }, {
+      id: 'copy-current-layout-url-no-settings',
+      title: 'Copy URL to view with layout (no widget settings)',
+      note: '',
+      action: function() {
+        CATMAID.tools.copyToClipBoard(Client.getAndCheckUrl(true, true, false));
+        CATMAID.msg('Success', 'Copied URL to view with layout to clipboard, don\'t include skeletons.');
+      }
+    }, {
+      id: 'copy-current-layout-url-simple',
+      title: 'Copy URL to view (location only)',
+      note: '',
+      action: function() {
+        CATMAID.tools.copyToClipBoard(Client.getAndCheckUrl(false, false, false));
+        CATMAID.msg('Success', 'Copied URL to view, location only.');
+      }
+    }]);
+    let linkMenuView = linkMenu.getView();
+    // This is done to prevent an overflow out of screen. Haven't found a good
+    // simple dynamic CSS-only version.
+    linkMenuView.style.left = '-14.5em';
+    document.getElementById('share_menu').appendChild(linkMenuView);
 
     $(document.body).on('click', 'a[data-role=url-to-clipboard]', function(e) {
       e.preventDefault();
@@ -1936,38 +1975,6 @@ var project;
             .catch(CATMAID.handleError);
         };
         dialog.show('auto', 'auto');
-      }
-    }, {
-      id: 'copy-current-layout-url',
-      title: 'Copy URL to view with layout',
-      note: '',
-      action: function() {
-        CATMAID.tools.copyToClipBoard(Client.getAndCheckUrl(true, true, true));
-        CATMAID.msg('Success', 'Copied URL to view with layout to clipboard');
-      }
-    }, {
-      id: 'copy-current-layout-url-no-skeletons',
-      title: 'Copy URL to view with layout (no skeletons)',
-      note: '',
-      action: function() {
-        CATMAID.tools.copyToClipBoard(Client.getAndCheckUrl(true, false, true));
-        CATMAID.msg('Success', 'Copied URL to view with layout to clipboard, don\'t include skeletons.');
-      }
-    }, {
-      id: 'copy-current-layout-url-no-settings',
-      title: 'Copy URL to view with layout (no widget settings)',
-      note: '',
-      action: function() {
-        CATMAID.tools.copyToClipBoard(Client.getAndCheckUrl(true, true, false));
-        CATMAID.msg('Success', 'Copied URL to view with layout to clipboard, don\'t include skeletons.');
-      }
-    }, {
-      id: 'copy-current-layout-url-simple',
-      title: 'Copy URL to view (location only)',
-      note: '',
-      action: function() {
-        CATMAID.tools.copyToClipBoard(Client.getAndCheckUrl(false, false, false));
-        CATMAID.msg('Success', 'Copied URL to view, location only.');
       }
     }, {
       id: 'copy-current-layout-spec',

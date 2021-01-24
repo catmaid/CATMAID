@@ -83,7 +83,7 @@ Project management widget:
   mainly useful for personal spaces, in which users typically have
   delete_project permissions.
 
-Link widget:
+Link widget and deep links:
 
 - This new widget allows users to create persistent deep links into the
   dataset using an alias, allowing for friendlier URLs of the form
@@ -98,6 +98,10 @@ Link widget:
 
 - An optional message can be stored with the link and is shown to the user when
   the links is opened.
+
+- The context menu for creating different types of links moved from entries
+  in the Layouts menu to its own menu that is shown when hovering the mouse
+  cursor over the "URL to this view" link.
 
 Neuron renaming:
 

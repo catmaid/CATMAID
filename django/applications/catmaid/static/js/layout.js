@@ -67,14 +67,13 @@
         let models = skeletonIds.reduce((o, skeleton) => {
           // If skeleton_ids elements are objects, we expect at least an "id" field, but also accept "color".
           if (skeleton instanceof Object) {
-            o[skeleton.id] = new CATMAID.SkeletonModel(skeleton.id, "",
-                skeleton.color ? new THREE.Color(skeleton.color) : undefined);
+             o[skeleton.id] = CATMAID.SkeletonModel.deserialize(skeleton);
           } else {
-            o[skeleton] = new CATMAID.SkeletonModel(skeleton);
+            o[skeleton.id] = new CATMAID.SkeletonModel(skeleton);
           }
           return o;
         }, {});
-        windowInfo.widget.append(models);
+        windowInfo.widget.append(models, true);
       }
     }
 
@@ -805,9 +804,7 @@
       let widgetSkeletons;
       if (withSkeletons && CATMAID.tools.isFn(widgetInfo.widget.getSkeletonModels)) {
         let models = widgetInfo.widget.getSkeletonModels();
-        let skeletons = Object.values(models).map(m => {
-          return `{ "id": ${m.id}, "color": "${m.color.getStyle()}" }`;
-        });
+        let skeletons = Object.values(models).map(m => m.serialize());
         if (skeletons.length > 0) {
           widgetSkeletons = `"skeletons": [${skeletons.join(',')}]`;
         }

@@ -74,7 +74,32 @@
     this.text_visible = other.text_visible;
     this.meta_visible = other.meta_visible;
     this.opacity = other.opacity;
+
     return this;
+  };
+
+  SkeletonModel.prototype.serialize = function() {
+    let m = this;
+    return `{ "id": ${m.id}, "color": "${m.color.getStyle()}", "selected": ${m.selected}, "pre": ${m.pre_visible}, "post": ${m.post_visible}, "text": ${m.text_visible}, 'meta': ${m.meta_visible}, 'opacity': ${m.opacity}}`;
+  };
+
+  SkeletonModel.deserialize = function(obj) {
+    let objType = typeof(obj);
+    if (objType === 'string') {
+      return SkeletonModel.deserialize(JSON.parse(obj));
+    } else if (objType === 'object') {
+      let m = new CATMAID.SkeletonModel(obj.id, "",
+          obj.color ? new THREE.Color(obj.color) : undefined);
+      if (obj.pre !== undefined) m.pre_visible = !!obj.pre;
+      if (obj.post !== undefined) m.post_visible = !!obj.post;
+      if (obj.text !== undefined) m.text_visible = !!obj.text;
+      if (obj.meta !== undefined) m.meta_visible = !!obj.meta;
+      if (obj.selected !== undefined) m.selected = !!obj.selected;
+      if (obj.opacity !== undefined) m.opacity = obj.opacity;
+      return m;
+    } else {
+      throw new CATMAID.ValueError(`Don't know how to deserialize object of type ${objType}: ${obj}`);
+    }
   };
 
   // Export skeleton model

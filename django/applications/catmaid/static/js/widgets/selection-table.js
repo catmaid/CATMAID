@@ -728,14 +728,14 @@
       }).bind(this));
   };
 
-  SelectionTable.prototype.append = function(models) {
-    return this._append(models);
+  SelectionTable.prototype.append = function(models, forceProperties = false) {
+    return this._append(models, undefined, forceProperties);
   };
 
   /**
    * Append skeleton models, optionally in an ordered fashion.
    */
-  SelectionTable.prototype._append = function(models, orderedSkeletonIds) {
+  SelectionTable.prototype._append = function(models, orderedSkeletonIds, forceProperties = false) {
     var skeleton_ids = Object.keys(models);
     if (0 === skeleton_ids.length) {
       CATMAID.info("No skeletons selected!"); // at source
@@ -776,14 +776,16 @@
         valid_skeletons.forEach(function(skeleton_id) {
           // Make sure existing widget settings are respected
           var model = models[skeleton_id];
-          model.meta_visible = this.all_items_visible['meta'];
-          model.text_visible = this.all_items_visible['text'];
-          model.pre_visible = this.all_items_visible['pre'];
-          model.post_visible = this.all_items_visible['post'];
+          if (!forceProperties) {
+            model.meta_visible = this.all_items_visible['meta'];
+            model.text_visible = this.all_items_visible['text'];
+            model.pre_visible = this.all_items_visible['pre'];
+            model.post_visible = this.all_items_visible['post'];
 
-          if (this.appendWithBatchColor) {
-            model.color.setStyle(this.batchColor);
-            model.opacity = this.batchOpacity;
+            if (this.appendWithBatchColor) {
+              model.color.setStyle(this.batchColor);
+              model.opacity = this.batchOpacity;
+            }
           }
 
           if (skeleton_id in this.skeleton_ids) {

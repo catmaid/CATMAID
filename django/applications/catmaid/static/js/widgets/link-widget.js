@@ -237,7 +237,7 @@
       createContent: function(content, widget) {
         let linkTable = content.appendChild(document.createElement('table'));
         widget.linkTable = $(linkTable).DataTable({
-          dom: '<"user-select">lrphtip',
+          dom: '<"user-select">lrfphtip',
           paging: true,
           order: [[0, 'desc']],
           autoWidth: false,
@@ -516,7 +516,7 @@
         $(propertiesPanel).append(CATMAID.DOM.createInputSetting(
             'Alias',
             widget.linkEditAlias,
-            'Alias for this link, unique in project, will becomepart of URL. Follows by default the pattern "link-123".',
+            'Alias for this link, unique in project, will becomepart of URL. By default a random unique UUID is generated.',
             function() {
               CATMAID.fetch(`${project.id}/links/${this.value}`, 'HEAD')
                 .then(response => {
@@ -526,7 +526,7 @@
                   CATMAID.msg('Alias checked', 'Link alias can be used');
                   widget.linkEditAlias = this.value;
                 });
-            }, '(Default: link-N)'));
+            }, 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'));
 
         // Public
         $(propertiesPanel).append(CATMAID.DOM.createCheckboxSetting(
@@ -700,7 +700,8 @@
             .then(response => {
               widget._initLinkEditParameters();
               CATMAID.msg('Success', `Added new link with alias "${response.alias}" and copied it to the clipboard.`);
-              let url = `${l.origin}${l.pathname}${project.id}/links/${alias}`;
+              let l = window.location;
+              let url = `${l.origin}${l.pathname}${project.id}/links/${response.alias}`;
               CATMAID.tools.copyToClipBoard(url);
               widget.update();
             })

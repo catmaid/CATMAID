@@ -1769,7 +1769,7 @@ var project;
   Client.createShareableLink = function() {
     let linkLink = document.createElement('a');
     linkLink.href = '#';
-    linkLink.target = '_new';
+    linkLink.target = '_blank';
     linkLink.style.color = 'blue';
 
     let dialog = new CATMAID.OptionsDialog("Share current view", {
@@ -1833,7 +1833,7 @@ var project;
         }, false,'deep-link-allow-alias').querySelector('input');
     let isPrivate = CATMAID.DOM.appendCheckbox(optionContainer2, 'Private',
         'Private links can only be opened by you and will only be visible to you in the Link Widget.',
-        false, updateLink, false, 'deep-link-private');
+        false, updateLink, false, 'deep-link-private').querySelector('input');
 
     dialog.appendChild(optionContainer2);
 

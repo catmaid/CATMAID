@@ -699,7 +699,9 @@
           widget.addLinkToView()
             .then(response => {
               widget._initLinkEditParameters();
-              CATMAID.msg('Success', `Added new link with alias "${response.alias}".`);
+              CATMAID.msg('Success', `Added new link with alias "${response.alias}" and copied it to the clipboard.`);
+              let url = `${l.origin}${l.pathname}${project.id}/links/${alias}`;
+              CATMAID.tools.copyToClipBoard(url);
               widget.update();
             })
             .catch(CATMAID.handleError);

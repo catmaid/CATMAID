@@ -427,33 +427,49 @@ var project;
       id: 'copy-current-layout-url',
       title: 'Copy URL to view with layout',
       note: '',
-      action: function() {
-        CATMAID.tools.copyToClipBoard(Client.getAndCheckUrl(true, true, true));
-        CATMAID.msg('Success', 'Copied URL to view with layout to clipboard');
+      action: () => {
+        Client.createDeepLink(true, true, true)
+          .then(link => {
+            CATMAID.msg('Success', 'Copied URL to view with layout to clipboard. See it also in the Link Widget.');
+            CATMAID.tools.copyToClipBoard(link);
+          })
+          .catch(CATMAID.handleErrors);
       }
     }, {
       id: 'copy-current-layout-url-no-skeletons',
       title: 'Copy URL to view with layout (no skeletons)',
       note: '',
       action: function() {
-        CATMAID.tools.copyToClipBoard(Client.getAndCheckUrl(true, false, true));
-        CATMAID.msg('Success', 'Copied URL to view with layout to clipboard, don\'t include skeletons.');
+        Client.createDeepLink(true, false, true)
+          .then(link => {
+            CATMAID.msg('Success', 'Copied URL to view with layout to clipboard, don\'t include skeletons. See it also in the Link Widget.');
+            CATMAID.tools.copyToClipBoard(link);
+          })
+          .catch(CATMAID.handleErrors);
       }
     }, {
       id: 'copy-current-layout-url-no-settings',
       title: 'Copy URL to view with layout (no widget settings)',
       note: '',
       action: function() {
-        CATMAID.tools.copyToClipBoard(Client.getAndCheckUrl(true, true, false));
-        CATMAID.msg('Success', 'Copied URL to view with layout to clipboard, don\'t include skeletons.');
+        Client.createDeepLink(true, true, false)
+          .then(link => {
+            CATMAID.msg('Success', 'Copied URL to view with layout to clipboard, don\'t include skeletons. See it also in the Link Widget.');
+            CATMAID.tools.copyToClipBoard(link);
+          })
+          .catch(CATMAID.handleErrors);
       }
     }, {
       id: 'copy-current-layout-url-simple',
       title: 'Copy URL to view (location only)',
       note: '',
       action: function() {
-        CATMAID.tools.copyToClipBoard(Client.getAndCheckUrl(false, false, false));
-        CATMAID.msg('Success', 'Copied URL to view, location only.');
+        Client.createDeepLink(false, false, false)
+          .then(link => {
+            CATMAID.msg('Success', 'Copied URL to view, location only. See it also in the Link Widget.');
+            CATMAID.tools.copyToClipBoard(link);
+          })
+          .catch(CATMAID.handleErrors);
       }
     }]);
     let linkMenuView = linkMenu.getView();
@@ -1749,6 +1765,56 @@ var project;
           CATMAID.warn("Could not find any match");
         }
         return handled;
+      });
+  };
+
+  /**
+   * Store a deep link and return the new link
+   */
+  Client.createDeepLink = function(withLayout = false, withSkeletons = true, withWidgetSettings = true,
+      alias = null, isPrivate = false) {
+    let stackConfig = project.getStackAndStackGroupConfiguration();
+    let params = {
+      alias: alias || CATMAID.tools.uuidv4(),
+      is_public: !isPrivate,
+      location_x: project.coordinates.x,
+      location_y: project.coordinates.y,
+      location_z: project.coordinates.z,
+      stacks: stackConfig.stacks.map((s,i) => [s, stackConfig.stackScaleLevels[i]]),
+    };
+
+    if (stackConfig.stackGroupId || stackConfig.stackGroupId === 0) {
+      params.stack_group = stackConfig.stackGroupId;
+      params.stack_group_scale_levels = stackConfig.stackGroupScaleLevels;
+    }
+
+    let activeNode = SkeletonAnnotations.getActiveNodeId();
+    let withActiveSkeleton = true;
+    if (withActiveSkeleton && activeNode) {
+      if (!SkeletonAnnotations.isRealNode(activeNode)) {
+        activeNode = SkeletonAnnotations.getChildOfVirtualNode(activeNode);
+      }
+      if (SkeletonAnnotations.getActiveNodeType() === SkeletonAnnotations.TYPE_NODE) {
+        params.active_treenode_id = activeNode;
+        params.active_skeleton_id = SkeletonAnnotations.getActiveSkeletonId();
+      } else {
+        params.active_connector_id = activeNode;
+      }
+    }
+
+    if (withLayout) {
+      params.layout = CATMAID.Layout.makeLayoutSpecForWindow(CATMAID.rootWindow,
+          withSkeletons, withWidgetSettings);
+    }
+
+    if (project.getTool()) {
+      params.tool = project.getTool().toolname;
+    }
+
+    return CATMAID.fetch(`${project.id}/links/`, 'POST', params)
+      .then(link => {
+        let l = document.location;
+        return `${l.origin}${l.pathname}${project.id}/links/${link.alias}`;
       });
   };
 

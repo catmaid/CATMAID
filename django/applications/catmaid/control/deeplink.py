@@ -1,5 +1,6 @@
 import json
 import datetime
+import uuid
 
 from django.db.models import Q
 from django.http import HttpResponseRedirect
@@ -98,7 +99,7 @@ class DeepLinkList(APIView):
         alias = request.POST.get('alias')
         if not alias:
             n_links = DeepLink.objects.filter(project_id=project_id).count()
-            alias = f'link-{n_links + 1}'
+            alias = uuid.uuid4()
 
         params = {
             'project_id': project_id,

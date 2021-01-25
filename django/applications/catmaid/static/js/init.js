@@ -418,7 +418,7 @@ var project;
     let linkMenu = new Menu();
     linkMenu.update([{
       id: 'create-link',
-      title: 'Create link',
+      title: 'Share link to complete view',
       note: '',
       action: function() {
         CATMAID.Client.createShareableLink();

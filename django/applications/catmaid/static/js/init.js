@@ -417,6 +417,13 @@ var project;
     };
     let linkMenu = new Menu();
     linkMenu.update([{
+      id: 'create-link',
+      title: 'Create link',
+      note: '',
+      action: function() {
+        CATMAID.Client.createShareableLink();
+      }
+    }, {
       id: 'copy-current-layout-url',
       title: 'Copy URL to view with layout',
       note: '',
@@ -455,7 +462,7 @@ var project;
     linkMenuView.style.left = '-14.5em';
     document.getElementById('share_menu').appendChild(linkMenuView);
 
-    $(document.body).on('click', 'a[data-role=url-to-clipboard]', function(e) {
+    $(document.body).on('click', 'a[data-role=url-to-clipboard]', e => {
       e.preventDefault();
       CATMAID.tools.copyToClipBoard(this.getAndCheckUrl(e.shiftKey));
     });
@@ -1753,9 +1760,177 @@ var project;
     let l = document.location;
     let url = l.origin + l.pathname + project.createURL(withLayout, withSkeletons, withWidgetSettings);
     if (url.length > 4096) {
-      CATMAID.warn('The generated URL is very long, consider creating an alias using the Link Widget.');
+      CATMAID.msg('Long URL', 'The generated URL is very long, consider creating an alias using the Link Widget.');
     }
     return url;
+  };
+
+
+  Client.createShareableLink = function() {
+    let linkLink = document.createElement('a');
+    linkLink.href = '#';
+    linkLink.target = '_new';
+    linkLink.style.color = 'blue';
+
+    let dialog = new CATMAID.OptionsDialog("Share current view", {
+      'Close': () => {},
+      'Open link ': () => {
+        createLink()
+          .then(link => {
+            linkLink.click();
+          })
+          .then(() => {
+            CATMAID.msg('Success', 'Link to view copied opened in new tab. It\'s also available in the Link Widget.');
+          })
+          .catch(CATMAID.handleError);
+      },
+      'Copy link': () => {
+        createLink()
+          .then(link => {
+            CATMAID.tools.copyToClipBoard(linkLink.href);
+            CATMAID.msg('Success', 'Link to view copied to clipboard. It\'s also available in the Link Widget.');
+          })
+          .catch(CATMAID.handleError);
+      },
+    });
+    dialog.appendMessage('Share a link to the current location. There are different options available:');
+
+    let optionContainer = document.createElement('span');
+    optionContainer.style.display = 'grid';
+    optionContainer.style.gridTemplate = '3em / 15em 10em 13em 8em';
+
+    let withLayout = CATMAID.DOM.appendCheckbox(optionContainer, 'With layout and widgets',
+        'Include widget layout information in the created URL.', true,
+        e => {
+          withSkeletons.disabled = !e.target.checked;
+          withWidgetSettings.disabled = !e.target.checked;
+          updateLink();
+        }, false, 'deep-link-layout').querySelector('input');
+    let withSkeletons = CATMAID.DOM.appendCheckbox(optionContainer, 'With skeletons',
+        'Include skeletons in widgets in layout.', true, updateLink, false,
+        'deep-link-skeletons').querySelector('input');
+    let withWidgetSettings = CATMAID.DOM.appendCheckbox(optionContainer, 'With widget settings',
+        'Include the configuration of individual widgets in the layout', true, updateLink, false,
+        'deep-link-settings').querySelector('input');
+    let showHelp = CATMAID.DOM.appendCheckbox(optionContainer, 'Show help',
+        'Show the context help when then link is opened, available through button in upper right corner.',
+        false, updateLink, false, 'deep-link-show-help').querySelector('input');
+
+    dialog.appendChild(optionContainer);
+
+    let messageField = dialog.appendField('Optional message', 'deep-link-message', '', false, '(none)');
+
+    dialog.appendMessage('Deep links that include the current layout tend to get long. Therefore by default a persistent link is created, which can be listed in the Link Widget, has a custom alias and can be private. The link will only be accessible once the dialog is closed.');
+
+    let optionContainer2 = document.createElement('span');
+    optionContainer2.style.display = 'grid';
+    optionContainer2.style.gridTemplate = '3em / 20em 15em';
+    let persistent = CATMAID.DOM.appendCheckbox(optionContainer2, 'Save link and allow optional alias',
+        'This alias needs to be unique per project and is stored on the server', true, e => {
+          aliasField.disabled = !e.target.checked;
+          isPrivate.disabled = !e.target.checked;
+          updateLink();
+        }, false,'deep-link-allow-alias').querySelector('input');
+    let isPrivate = CATMAID.DOM.appendCheckbox(optionContainer2, 'Private',
+        'Private links can only be opened by you and will only be visible to you in the Link Widget.',
+        false, updateLink, false, 'deep-link-private');
+
+    dialog.appendChild(optionContainer2);
+
+    let alias = CATMAID.tools.uuidv4();
+
+    let aliasField = dialog.appendField('Alias', 'deep-link-alias', '', false, alias);
+    aliasField.style.width = '25em';
+    let linkWrapper = document.createElement('div');
+    linkWrapper.style.maxHeight = '100px';
+    linkWrapper.style.wordBreak = 'break-all';
+    linkWrapper.style.overflow = 'auto';
+
+    dialog.appendMessage('URL to current view:');
+    linkWrapper.appendChild(linkLink);
+    dialog.appendChild(linkWrapper);
+
+    function updateLink() {
+      let url, l = window.location;
+      if (persistent.checked) {
+        url = `${l.origin}${l.pathname}${project.id}/links/${alias}`;
+      } else {
+        let message = messageField.value.trim();
+        if (message.length === 0) message = null;
+        url = l.origin + l.pathname + project.createURL(withLayout.checked,
+            withSkeletons.checked, withWidgetSettings.checked, undefined,
+            showHelp.checked, message);
+      }
+      linkLink.href = url;
+      linkLink.innerHTML = url;
+    }
+    updateLink();
+
+    aliasField.addEventListener('keydown', e => {
+      if (e.target.value.length === 0) {
+        alias = CATMAID.tools.uuidv4();
+        e.target.setAttribute('placeholder', alias);
+      } else {
+        alias = e.target.value.trim();
+      }
+      updateLink();
+    });
+
+    let withActiveSkeleton = true;
+
+    function createLink() {
+      if (persistent.checked) {
+        let stackConfig = project.getStackAndStackGroupConfiguration();
+        let params = {
+          alias: alias,
+          is_public: !isPrivate.checked,
+          location_x: project.coordinates.x,
+          location_y: project.coordinates.y,
+          location_z: project.coordinates.z,
+          show_help: showHelp.checked,
+          stacks: stackConfig.stacks.map((s,i) => [s, stackConfig.stackScaleLevels[i]]),
+        };
+
+        if (stackConfig.stackGroupId || stackConfig.stackGroupId === 0) {
+          params.stack_group = stackConfig.stackGroupId;
+          params.stack_group_scale_levels = stackConfig.stackGroupScaleLevels;
+        }
+
+        let activeNode = SkeletonAnnotations.getActiveNodeId();
+        if (withActiveSkeleton && activeNode) {
+          if (!SkeletonAnnotations.isRealNode(activeNode)) {
+            activeNode = SkeletonAnnotations.getChildOfVirtualNode(activeNode);
+            CATMAID.warn('Using child of active node. Consider using only an active skeleton!');
+          }
+          if (SkeletonAnnotations.getActiveNodeType() === SkeletonAnnotations.TYPE_NODE) {
+            params.active_treenode_id = activeNode;
+            params.active_skeleton_id = SkeletonAnnotations.getActiveSkeletonId();
+          } else {
+            params.active_connector_id = activeNode;
+          }
+        }
+
+        if (withLayout.checked) {
+          params.layout = CATMAID.Layout.makeLayoutSpecForWindow(CATMAID.rootWindow,
+              withSkeletons.checked, withWidgetSettings.checked);
+        }
+
+        if (project.getTool()) {
+          params.tool = project.getTool().toolname;
+        }
+
+        let message = messageField.value.trim();
+        if (message.length > 0) {
+          params.message = message;
+        }
+
+        return CATMAID.fetch(`${project.id}/links/`, 'POST', params);
+      } else {
+        return Promise.resolve(linkLink.href);
+      }
+    }
+
+    dialog.show(750, 'auto');
   };
 
   /**

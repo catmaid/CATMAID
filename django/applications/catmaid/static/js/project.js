@@ -456,7 +456,7 @@
      * create a URL to the current view
      */
     this.createURL = function(withLayout = false, withSkeletons = true, withWidgetSettings = true,
-        ignoredWindowTitle = null) {
+        ignoredWindowTitle = null, showHelp = null, message = null) {
       let x, y, z, activeNodeId, activeSkeletonId, stackGroupId, sgs = [],
           stacks = [], stackScaleLevels = [];
       let tool = project.getTool().toolname;
@@ -482,9 +482,13 @@
             withWidgetSettings, ignoredWindowTitle);
       }
 
+      if (showHelp === null) {
+        showHelp = CATMAID.client.showContextHelp;
+      }
+
       return Project.createRelativeURL(self.id, x, y, z, tool, activeNodeId,
         activeSkeletonId, stacks, stackScaleLevels, stackGroupId, sgs,
-        CATMAID.client.showContextHelp, layout);
+        showHelp, layout, message);
     };
 
     /** This function should return true if there was any action
@@ -656,7 +660,7 @@
   };
 
   Project.createRelativeURL = function(projectId, x, y, z, tool, activeNodeId,
-      activeSkeletonId, stacks, stackScaleLevels, stackGroupId, sgs, help, layout) {
+      activeSkeletonId, stacks, stackScaleLevels, stackGroupId, sgs, help, layout, message) {
     var url = `?pid=${projectId}&zp=${z}&yp=${y}&xp=${x}`;
     if (tool) {
       url += `&tool=${tool}`;
@@ -679,6 +683,12 @@
       for (let i=0; i<sgs.length; ++i) {
         url += `&sgs=${sgs[i]}`;
       }
+    }
+    if (help) {
+      url += `&help=true`;
+    }
+    if (message) {
+      url += `&message=${message}`;
     }
     if (layout) {
       url += `&layout=${layout}`;

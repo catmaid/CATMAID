@@ -142,7 +142,7 @@
   };
 
   OptionsDialog.prototype.appendField = function(title, fieldID,
-      initialValue, submitOnEnter) {
+      initialValue, submitOnEnter, placeholder) {
     var p = document.createElement('p');
     var label = document.createElement('label');
     label.setAttribute('for', fieldID);
@@ -151,6 +151,9 @@
     var input = document.createElement('input');
     input.setAttribute("id", fieldID);
     input.setAttribute("value", initialValue);
+    if (placeholder) {
+      input.setAttribute('placeholder', placeholder);
+    }
     p.appendChild(input);
     this.dialog.appendChild(p);
     // Make this field press okay on Enter, if wanted

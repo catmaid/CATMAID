@@ -16,6 +16,10 @@
     // Link edit properties
     this._initLinkEditParameters();
 
+    // Whether or not the link addition has been initialized with the current
+    // view.
+    this.initNewLinkWithCurrentState = true;
+
     this.initLinkWithActiveSkeleton = true;
     this.initLinkWithLayout = true;
     this.initLinkWithWidgetSkeletons = true;
@@ -492,8 +496,19 @@
         }];
       },
       createContent: function(content, widget) {
+        let initNewLinkWithCurrentState = widget.initNewLinkWithCurrentState;
+        if (initNewLinkWithCurrentState) {
+          // Only do this the first time
+          widget.initNewLinkWithCurrentState = false;
+          widget.setLinkEditParametersFromCurrentView();
+        }
+
         let infoParagraph1 = content.appendChild(document.createElement('p'));
-        infoParagraph1.appendChild(document.createTextNode('This view allows to add new links into the current project/dataset. Each link is accessible under an alias, unique in this project.'));
+        let msg = 'This view allows to add new links into the current project/dataset. Each link is accessible under an alias, unique in this project.';
+        if (initNewLinkWithCurrentState) {
+          msg += ' Initialized with the curremt view.';
+        }
+        infoParagraph1.appendChild(document.createTextNode(msg));
 
         let propertiesPanel = content.appendChild(document.createElement('p'));
 

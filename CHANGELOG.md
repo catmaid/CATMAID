@@ -101,7 +101,8 @@ Link widget and deep links:
 
 - The context menu for creating different types of links moved from entries
   in the Layouts menu to its own menu that is shown when hovering the mouse
-  cursor over the "URL to this view" link.
+  cursor over the "URL to this view" link. The first menu entry is new and opens
+  a link creation dialog, similar to the Link Widget's 'Add link' dialog.
 
 Neuron renaming:
 

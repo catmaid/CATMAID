@@ -384,6 +384,7 @@
               layer.syncFilters();
             }
             layer.redraw();
+            this.refresh();
             CATMAID.msg('Success', 'Restored settings from source specific defaults');
           } else {
             CATMAID.warn('Did not find any default setting for this layer and source');

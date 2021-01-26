@@ -524,6 +524,8 @@ Miscellaneous:
 - 3D viewer: prevent accidental double loading of volumes, if the first attempt
   didn't finish before the second.
 
+- 3D viewer: fix saving a loaded volume twice in a saved state or URL.
+
 - Volume lists (drop down menus) are now automatically refreshed if a volume is
   added, updated or removed.
 

@@ -9980,22 +9980,17 @@
       delete state['font'];
       // Add volume information
       let volumes = JSON.stringify(
-          Array.from(widget.loadedVolumes.keys()).reduce(function(o, v) {
+          Array.from(widget.loadedVolumes.keys()).map(v => {
             let volume = widget.loadedVolumes.get(v);
-            let meshes = volume.meshes;
-            for (let i=0, imax=meshes.length; i<imax; ++i) {
-              let mesh = meshes[i];
-              o.push({
-                'id': v,
-                'color': mesh.material.color.getStyle(),
-                'opacity': mesh.material.opacity,
-                'wireframe': mesh.material.wireframe,
-                'subdiv': volume.subdivisions,
-                'bb': volume.boundingBox
-              });
-            }
-            return o;
-          }, []));
+            return {
+              'id': v,
+              'color': volume.color,
+              'opacity': volume.opacity,
+              'wireframe': !volume.faces,
+              'subdiv': volume.subdivisions,
+              'bb': volume.boundingBox
+            };
+          }));
 
       // Fetch current view
       let camera = widget.space.view.camera;

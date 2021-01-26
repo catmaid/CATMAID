@@ -57,6 +57,7 @@ jobs:
       - run: bash scripts/travis/setup_database.sh
       - run: bash scripts/travis/configure_catmaid.sh
       - run: bash scripts/travis/configure_pypy_libs.sh
+        if: ${{ matrix.python-version == 'pypy3' }}
       - run: |
           cd django/projects
           python manage.py migrate --noinput

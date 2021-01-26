@@ -2409,7 +2409,7 @@
         return Promise.resolve();
       }
 
-      let volume = {
+      let volumeInfo = {
         meshes: [],
         originalGeometries: [],
         color: color,
@@ -2419,7 +2419,7 @@
         boundingBox: !!bb,
         loaded: false,
       };
-      this.loadedVolumes.set(volumeId, volume);
+      this.loadedVolumes.set(volumeId, volumeInfo);
 
       return CATMAID.Volumes.get(project.id, volumeId)
         .then(volume => {
@@ -2462,9 +2462,9 @@
               return mesh.geometry;
             });
             // Store mesh reference
-            volume.meshes = addedMeshes;
-            volume.originalGeometries = originalGeometries;
-            volume.loaded = true;
+            volumeInfo.meshes = addedMeshes;
+            volumeInfo.originalGeometries = originalGeometries;
+            volumeInfo.loaded = true;
             this.updateVolumeSelectionControls();
             this.space.render();
           } else {

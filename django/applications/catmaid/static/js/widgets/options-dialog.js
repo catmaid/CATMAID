@@ -263,7 +263,7 @@
     var table = this.dialog.appendChild(document.createElement('table'));
     var header = table.appendChild(document.createElement('thead'));
     var headerRow = header.appendChild(document.createElement('tr'));
-    var header1 = headerRow.appendChild(document.createElement('th'));
+    headerRow.appendChild(document.createElement('th'));
     var header2 = headerRow.appendChild(document.createElement('th'));
     header2.appendChild(document.createTextNode(title || 'Item'));
 
@@ -310,7 +310,6 @@
       }
       // Add original index information
       var augmentedItems = items.map(function(d, i) {
-        var originalIndex = i;
         return {
           originalIndex: originalData.indexOf(d),
           data: d

@@ -157,9 +157,6 @@ django/applications/catmaid/static/js/widgets/ontology_editor.js: line 290, col 
 django/applications/catmaid/static/js/widgets/ontology_editor.js: line 432, col 13, 'mynode' is defined but never used.
 django/applications/catmaid/static/js/widgets/ontology_editor.js: line 433, col 13, 'myparent' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/options-dialog.js: line 310, col 13, 'originalIndex' is defined but never used.
-django/applications/catmaid/static/js/widgets/options-dialog.js: line 263, col 9, 'header1' is defined but never used.
-
 django/applications/catmaid/static/js/widgets/pair-statistics-widget.js: line 386, col 13, 'groupDataTable' is defined but never used.
 django/applications/catmaid/static/js/widgets/pair-statistics-widget.js: line 440, col 13, 'extraGroupDataTable' is defined but never used.
 django/applications/catmaid/static/js/widgets/pair-statistics-widget.js: line 705, col 19, 'sg' is defined but never used.
@@ -262,4 +259,4 @@ django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 1817, col
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 1850, col 1, 'async functions' is only available in ES8 (use 'esversion: 8').
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2009, col 29, The object literal notation {} is preferable.
 
-209 errors
+202 errors

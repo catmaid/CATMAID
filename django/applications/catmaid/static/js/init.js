@@ -480,7 +480,7 @@ var project;
 
     $(document.body).on('click', 'a[data-role=url-to-clipboard]', e => {
       e.preventDefault();
-      CATMAID.tools.copyToClipBoard(this.getAndCheckUrl(e.shiftKey));
+      CATMAID.tools.copyToClipBoard(CATMAID.Client.getAndCheckUrl(e.shiftKey));
     });
 
     // Assume an unauthenticated session by default

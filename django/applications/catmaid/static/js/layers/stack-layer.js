@@ -130,7 +130,6 @@
         this.isHideable = settings[key];
       } else if (key !== 'blendMode' && key !== 'layerFilters') {
         // Blending and shading is also handled separately below after all other settings have been applied.
-      } else {
         this.setLayerSetting(key, settings[key]);
       }
     }

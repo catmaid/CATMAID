@@ -283,7 +283,6 @@
 
     var matrix = new THREE.Matrix4();
     var vertex = new THREE.Vector3();
-    var normal = new THREE.Vector3();
 
     var indexAttr = this.index;
     var positionsAttr = this.attributes.position;

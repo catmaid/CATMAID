@@ -128,7 +128,6 @@
     // Counts the number of rotations done after initialization
     var numRotations = null;
 
-    var targetDistance = camera.position.distanceTo(targetPosition);
     rSpeed = CATMAID.tools.getDefined(rSpeed, 0.01);
     backAndForth = CATMAID.tools.getDefined(backAndForth, false);
 

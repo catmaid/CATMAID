@@ -14,10 +14,13 @@
     }
 
     clear() {
+      // Ignore JSHint errors about unused variable in loop
+      /*jshint -W098 */
       for (const [_stack, manager] of this.managers.entries()) manager.unregister();
       this.managers.clear();
       this.groupManagingStack.clear();
       this.active = undefined;
+      /*jshint -W098 */
     }
 
     get(stack) {

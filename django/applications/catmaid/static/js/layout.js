@@ -539,8 +539,14 @@
 
 
   /**
-   * Functions allowed for layout specification.
+   * Functions allowed for layout specification. They are run through evil eval
+   * when "executing" a layout. Since these functions are only used in layouts,
+   * we would normally get JSHint's "defined but never used" error. To avoid
+   * this we suppress this particular error for these functions.
+   *
    */
+
+  /*jshint -W098 */
 
   function v(a, b, ratio) {
     return new VNode(a, b, ratio);
@@ -565,6 +571,8 @@
   function layout(alias, pattern) {
     return eval(pattern);
   }
+
+  /*jshint +W098 */
 
   function getViewIndex(stackViewers) {
     return stackViewers.reduce(function(o, s) {

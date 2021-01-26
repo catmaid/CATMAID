@@ -218,6 +218,12 @@ class ClientDataList(APIView):
         except ValueError as exc:
             raise ValidationError('Data value is invalid JSON: ' + str(exc))
 
+        # We expect also an actual object, not a single string or number, which
+        # is represented as a dict in Python.
+        if type(value) != dict:
+            raise ValidationError(f'Data is of type "{type(value)}", but '
+                    f'expected an object: {str(value)}')
+
         project_id = request.data.get('project_id', None)
         project = None
         if project_id:

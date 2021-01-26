@@ -1119,8 +1119,10 @@
    * @param {Object} oldLayerKey Key for the layer to be replaced.
    * @param {Object} newLayer    New layer, must be a stack layer for the
    *                             same stack as the existing layer.
+   * @param {bool} loadSettings (optional) Whether default settings for thsi
+   *                             stack should be loaed.
    */
-  StackViewer.prototype.replaceStackLayer = function (oldLayerKey, newLayer) {
+  StackViewer.prototype.replaceStackLayer = function (oldLayerKey, newLayer, loadSettings = true) {
     var oldLayer = this._layers.get(oldLayerKey);
 
     if (!oldLayer || oldLayer.stack !== newLayer.stack) {
@@ -1141,6 +1143,18 @@
     if (nextLayerKey) {
       if (CATMAID.tools.isFn(newLayer.notifyReorder)) {
         newLayer.notifyReorder(this._layers.get(nextLayerKey));
+      }
+    }
+
+    if (loadSettings && CATMAID.tools.isFn(newLayer.getSourceSpec)) {
+      try {
+        let sourceSpec = newLayer.getSourceSpec();
+        let settings = CATMAID.StackViewer.Settings.session.default_layer_config[sourceSpec];
+        if (settings) {
+          newLayer.applySettings(settings);
+        }
+      } catch (error) {
+        CATMAID.handleError(error);
       }
     }
 

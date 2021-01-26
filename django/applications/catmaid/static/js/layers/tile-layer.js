@@ -644,7 +644,7 @@
         if (!(this instanceof CATMAID.PixiTileLayer)) {
           var newTileLayer = this.constructCopy({}, CATMAID.PixiTileLayer);
           var layerKey = this.stackViewer.getLayerKey(this);
-          this.stackViewer.replaceStackLayer(layerKey, newTileLayer);
+          this.stackViewer.replaceStackLayer(layerKey, newTileLayer, true);
         }
       } else {
         if (this instanceof CATMAID.PixiTileLayer) {

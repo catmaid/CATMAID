@@ -521,6 +521,9 @@ Miscellaneous:
 - 3D viewer: the volume visibility controls are now correctly enabled if a
   volume is made visible from another widget.
 
+- 3D viewer: prevent accidental double loading of volumes, if the first attempt
+  didn't finish before the second.
+
 - Volume lists (drop down menus) are now automatically refreshed if a volume is
   added, updated or removed.
 

@@ -2409,8 +2409,20 @@
         return Promise.resolve();
       }
 
+      let volume = {
+        meshes: [],
+        originalGeometries: [],
+        color: color,
+        opacity: opacity,
+        faces: faces,
+        subdivisions: subdivisions,
+        boundingBox: !!bb,
+        loaded: false,
+      };
+      this.loadedVolumes.set(volumeId, volume);
+
       return CATMAID.Volumes.get(project.id, volumeId)
-        .then((function(volume) {
+        .then(volume => {
           // Convert X3D mesh to simple VRML and have Three.js load it
           var vrml = CATMAID.Volumes.x3dToVrml(volume.mesh);
           var loader = new THREE.VRMLLoader();
@@ -2450,25 +2462,23 @@
               return mesh.geometry;
             });
             // Store mesh reference
-            this.loadedVolumes.set(volumeId, {
-              meshes: addedMeshes,
-              originalGeometries: originalGeometries,
-              color: color,
-              opacity: opacity,
-              faces: faces,
-              subdivisions: subdivisions,
-              boundingBox: !!bb
-            });
+            volume.meshes = addedMeshes;
+            volume.originalGeometries = originalGeometries;
+            volume.loaded = true;
             this.updateVolumeSelectionControls();
             this.space.render();
           } else {
             CATMAID.warn("Couldn't parse volume \"" + volumeId + "\"");
           }
-        }).bind(this))
-        .then((function() {
+        })
+        .catch(e => {
+          this.loadedVolumes.delete(volumeId);
+          return Promise.reject(e);
+        })
+        .then(() => {
           // Set subdivisions
           this.setVolumeSubdivisions(volumeId, subdivisions);
-        }).bind(this));
+        });
     } else if (existingVolume) {
       // Remove volume
       existingVolume.meshes.forEach(function(v) {

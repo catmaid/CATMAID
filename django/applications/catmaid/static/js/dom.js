@@ -1307,7 +1307,7 @@
    * been loaded, i.e. the passed in promise has been resolved. The promise is
    * expected to return the actual element to be displayed.
    */
-  DOM.createAsyncPlaceholder = function(promise) {
+  DOM.createAsyncPlaceholder = function(promise, callback) {
     var placeholder = CATMAID.DOM.createPlaceholder();
     if (!promise || !CATMAID.tools.isFn(promise.then)) {
       throw new CATMAID.ValueError('Async musst be either a callback or promise');
@@ -1320,13 +1320,14 @@
       } else {
         throw new CATMAID.ValueError('Placeholder node doesn\'t have a parent');
       }
+      CATMAID.tools.callIfFn(callback);
     }).catch(CATMAID.handleError);
 
     return placeholder;
   };
 
-  DOM.createLabeledAsyncPlaceholder = function(label, promise, helptext) {
-    var placeholder = CATMAID.DOM.createAsyncPlaceholder(promise);
+  DOM.createLabeledAsyncPlaceholder = function(label, promise, helptext, callback) {
+    var placeholder = CATMAID.DOM.createAsyncPlaceholder(promise, callback);
     var wrapper = document.createElement('span');
     wrapper.appendChild(placeholder);
     var labeledWrapper = CATMAID.DOM.createLabeledControl(

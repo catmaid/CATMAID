@@ -2495,6 +2495,8 @@
         } else if (!c.checked && volumeLoaded) {
           c.checked = true;
           this._appendVolumeDetailControls(c.closest('li'), volumeId);
+        } else if (c.checked && volumeLoaded && !c.parentNode.nextElementSibling) {
+          this._appendVolumeDetailControls(c.closest('li'), volumeId);
         }
       });
     }
@@ -2527,20 +2529,21 @@
   };
 
   WebGLApplication.prototype._appendVolumeDetailControls = function(target, volumeId) {
+    let volume = this.loadedVolumes.get(volumeId);
     var volumeControls = target.appendChild(document.createElement('span'));
     volumeControls.setAttribute('data-role', 'volume-controls');
     volumeControls.setAttribute('data-volume-id', volumeId);
     CATMAID.DOM.appendColorButton(volumeControls, 'c',
       'Change the color of this volume',
       undefined, undefined, {
-        initialColor: this.options.meshes_color,
-        initialAlpha: this.options.meshes_opacity,
+        initialColor: volume ? volume.color : this.options.meshes_color,
+        initialAlpha: volume ? volume.opacity : this.options.meshes_opacity,
         onColorChange: updateVolumeColor.bind(window, this, volumeId)
       });
 
     var facesCb = CATMAID.DOM.appendCheckbox(volumeControls, "Faces",
         "Whether faces should be displayed for this volume",
-        this.options.meshes_faces, updateVolumeFaces.bind(window, this, volumeId));
+        volume ? volume.faces : this.options.meshes_faces, updateVolumeFaces.bind(window, this, volumeId));
     facesCb.style.display = 'inline';
 
     // Make sure a change signal is not propagated, otherwise the menu
@@ -2556,7 +2559,7 @@
 
     var subdivCb = CATMAID.DOM.appendCheckbox(volumeControls, "Subdivide",
         "Whether meshes should be smoothed by subdivision",
-        !!this.options.meshes_subdiv, (e) => {
+        volume ? !!volume.subdivisions : !!this.options.meshes_subdiv, (e) => {
           updateVolumeSubiv(this, volumeId, e.target.checked,
               parseInt(subdivInput.querySelector('input').value));
           // Stop propagation or the general volume list change handler is called.
@@ -2567,7 +2570,7 @@
 
     var bbCb = CATMAID.DOM.appendCheckbox(volumeControls, "BB",
         "Whether or not to show the bounding box of this mesh",
-        !!this.options.meshes_boundingbox, updateVolumeBb.bind(window, this, volumeId));
+        volume ? volume.boundingBox : !!this.options.meshes_boundingbox, updateVolumeBb.bind(window, this, volumeId));
     bbCb.style.display = 'inline';
   };
 

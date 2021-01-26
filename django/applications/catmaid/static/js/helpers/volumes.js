@@ -59,9 +59,9 @@
     }
     let volumeSelection;
     if (options.label){
-      volumeSelection = CATMAID.DOM.createLabeledAsyncPlaceholder(options.label, initVolumeList(options), options.title);
+      volumeSelection = CATMAID.DOM.createLabeledAsyncPlaceholder(options.label, initVolumeList(options), options.title, options.initCallback);
     } else {
-      volumeSelection = CATMAID.DOM.createAsyncPlaceholder(initVolumeList(options));
+      volumeSelection = CATMAID.DOM.createAsyncPlaceholder(initVolumeList(options), options.initCallback);
     }
     volumeSelectionWrapper.appendChild(volumeSelection);
     volumeSelectionWrapper.refresh = function(newSelectedIds){

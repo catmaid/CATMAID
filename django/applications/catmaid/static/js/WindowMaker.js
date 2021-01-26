@@ -929,7 +929,11 @@ var WindowMaker = new function()
           subdiv = loadedVolume.subdiv;
           bb = loadedVolume.boundingBox;
         }
-      }
+      },
+      initCallback: () => {
+        // This is needed mainly for initializing volumes automatically throughh URLs or stored settings.
+        WA.updateVolumeSelectionControls();
+      },
     });
 
     // Create async selection and wrap it in container to have handle on initial

@@ -15,6 +15,10 @@
     this.entries = null;
     this.api = api;
 
+
+    // A shared initialization promise.
+    this._initEntries = null;
+
     CATMAID.asEventSource(this);
   }
 
@@ -109,7 +113,17 @@
    */
   DataStore.prototype.get = function (key) {
     if (this.entries === null) {
-      return this.load().then(this.get.bind(this, key));
+      let initialized = false;
+      if (!this._initEntries) {
+        this._initEntries = this.load();
+        initialized = true;
+      }
+      return this._initEntries.then(() => {
+        if (initialized) {
+          this._initEntries = undefined;
+        }
+        return this.get(key);
+      });
     }
 
     var values = $.extend({}, this.entries.get(key));

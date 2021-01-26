@@ -421,6 +421,9 @@ Cropping tool:
 
 Miscellaneous:
 
+- The initial loading of client settings is now faster, because it performs
+  fewer requests.
+
 - Each stack viewer will now show the project name by default along with the
   stack and mirror name in its title bar. This can be adjusted in the "Stack
   view" settings of the Settings Manager.

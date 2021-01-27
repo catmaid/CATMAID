@@ -418,7 +418,7 @@ var project;
     let linkMenu = new Menu();
     linkMenu.update([{
       id: 'create-link',
-      title: 'Share link to complete view',
+      title: 'Customize link features',
       note: '',
       action: function() {
         CATMAID.Client.createShareableLink();
@@ -1837,6 +1837,9 @@ var project;
     linkLink.href = '#';
     linkLink.target = '_blank';
     linkLink.style.color = 'blue';
+    linkLink.style.display = 'none';
+    let linkLinkText = document.createElement('a');
+    linkLinkText.style.color = 'blue';
 
     let dialog = new CATMAID.OptionsDialog("Share current view", {
       'Close': () => {},
@@ -1886,15 +1889,18 @@ var project;
 
     let messageField = dialog.appendField('Optional message', 'deep-link-message', '', false, '(none)');
 
-    dialog.appendMessage('Deep links that include the current layout tend to get long. Therefore by default a persistent link is created, which can be listed in the Link Widget, has a custom alias and can be private. The link will only be accessible once the dialog is closed.');
+    dialog.appendMessage('Deep links that include the current layout tend to get long. Therefore by default a persistent link is created, which can be listed in the Link Widget, has a custom alias and can be private.');
 
     let optionContainer2 = document.createElement('span');
     optionContainer2.style.display = 'grid';
     optionContainer2.style.gridTemplate = '3em / 20em 15em';
-    let persistent = CATMAID.DOM.appendCheckbox(optionContainer2, 'Save link and allow optional alias',
+    let persistent = CATMAID.DOM.appendCheckbox(optionContainer2, 'Shorten link and add to Link Widget',
         'This alias needs to be unique per project and is stored on the server', true, e => {
           aliasField.disabled = !e.target.checked;
           isPrivate.disabled = !e.target.checked;
+          lastMessage.innerHTML = e.target.checked ? persistMsg : regularMsg;
+          linkLink.style.display = e.target.checked ? 'none' : 'block';
+          linkLinkText.style.display = e.target.checked ? 'block' : 'none';
           updateLink();
         }, false,'deep-link-allow-alias').querySelector('input');
     let isPrivate = CATMAID.DOM.appendCheckbox(optionContainer2, 'Private',
@@ -1912,8 +1918,11 @@ var project;
     linkWrapper.style.wordBreak = 'break-all';
     linkWrapper.style.overflow = 'auto';
 
-    dialog.appendMessage('URL to current view:');
+    let regularMsg = 'URL to current view:';
+    let persistMsg = 'URL to current view (Link will only be accessible once "Copy" or "Open" are pressed):';
+    let lastMessage = dialog.appendMessage(persistMsg);
     linkWrapper.appendChild(linkLink);
+    linkWrapper.appendChild(linkLinkText);
     dialog.appendChild(linkWrapper);
 
     function updateLink() {
@@ -1929,6 +1938,7 @@ var project;
       }
       linkLink.href = url;
       linkLink.innerHTML = url;
+      linkLinkText.innerHTML = url;
     }
     updateLink();
 

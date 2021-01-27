@@ -1392,7 +1392,7 @@
       transparent: opacity !== 1,
       wireframe: !this.meshes_faces,
       side: THREE.DoubleSide,
-      depthWrite: depthWrite === undefined ? opacity === 1 : depthWrite,
+      depthWrite: depthWrite === undefined ? opacity === 1 : (depthWrite && opacity > 0),
     });
   };
 
@@ -2437,23 +2437,39 @@
               // first, but back-side only. Then render the second with
               // front-side only.
               material2 = this.options.createMeshMaterial(color, opacity, true);
+              material2.name = 'fg';
               material2.wireframe = !faces;
-              material2.side = THREE.DoubleSide;
+              material2.side = THREE.FrontSide;
+              material.side = THREE.BackSide;
             }
 
             var addedMeshes = scene.children.reduce((collection, mesh) => {
+              // Position mesh relative to world origin with its center of mass.
+              mesh.geometry.computeBoundingBox();
+              mesh.geometry.boundingBox.getCenter(mesh.position);
+              mesh.geometry.center();
+
+              // Set back-side material
               mesh.material = material;
+
+              // Add mesh to 3D Viewer
               this.space.scene.project.add(mesh);
               collection.push(mesh);
 
               if (faces) {
                 // Create copy of the meseh to fix a transparency problem with
                 // intersecting transparent objects.
-                let meshCopy = mesh.clone();
-                mesh.renderOrder = 1;
-                meshCopy.material = material2;
-                this.space.scene.project.add(meshCopy);
-                collection.push(meshCopy);
+                let mesh2 = mesh.clone();
+
+                // Assign front-side material
+                mesh2.material = material2;
+
+                mesh.renderOrder = opacity === 1 ? 2 : 0;
+                mesh2.renderOrder = opacity === 1 ? 3 : 1;
+
+                // Add mesh to 3D Viewer
+                this.space.scene.project.add(mesh2);
+                collection.push(mesh2);
               }
 
               return collection;
@@ -2607,16 +2623,22 @@
     }
     var existingMeshes = volume.meshes;
     for (var i=0; i<existingMeshes.length; ++i) {
-      var material = existingMeshes[i].material;
+      let material = existingMeshes[i].material;
       if (color !== null) {
         material.color.set(color);
         material.needsUpdate = true;
       }
       if (alpha !== null) {
+        let isFrontSide = material.name === 'fg';
         material.opacity = alpha;
         material.transparent = alpha !== 1;
-        material.depthWrite = alpha === 1;
+        material.depthWrite = (isFrontSide && alpha > 0) || alpha === 1 ;
         material.needsUpdate = true;
+        if (isFrontSide) {
+          existingMeshes[i].renderOrder = alpha === 1 ? 3 : 1;
+        } else {
+          existingMeshes[i].renderOrder = alpha === 1 ? 2 : 0;
+        }
       }
     }
     this.space.render();
@@ -4852,7 +4874,6 @@
       return null;
     }
 
-    renderer.sortObjects = false;
     renderer.setSize( this.space.canvasWidth, this.space.canvasHeight );
 
     return renderer;

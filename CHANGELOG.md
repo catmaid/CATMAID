@@ -526,6 +526,8 @@ Miscellaneous:
 
 - 3D viewer: fix saving a loaded volume twice in a saved state or URL.
 
+- 3D viewer: mesh transparency is now handled in a more robust fashion.
+
 - Volume lists (drop down menus) are now automatically refreshed if a volume is
   added, updated or removed.
 

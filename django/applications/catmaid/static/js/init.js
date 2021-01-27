@@ -1843,16 +1843,6 @@ var project;
 
     let dialog = new CATMAID.OptionsDialog("Share current view", {
       'Close': () => {},
-      'Open link ': () => {
-        createLink()
-          .then(link => {
-            linkLink.click();
-          })
-          .then(() => {
-            CATMAID.msg('Success', 'Link to view copied opened in new tab. It\'s also available in the Link Widget.');
-          })
-          .catch(CATMAID.handleError);
-      },
       'Copy link': () => {
         createLink()
           .then(link => {

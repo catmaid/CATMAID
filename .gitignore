@@ -34,3 +34,5 @@ out/
 
 .vagrant/
 *.backup*
+
+django/catmaid_version.py

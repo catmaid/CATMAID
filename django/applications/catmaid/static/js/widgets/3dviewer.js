@@ -2621,6 +2621,12 @@
       CATMAID.warn("Volume not loaded");
       return;
     }
+    if (color !== null) {
+      volume.color = color;
+    }
+    if (alpha !== null) {
+      volume.opacity = alpha;
+    }
     var existingMeshes = volume.meshes;
     for (var i=0; i<existingMeshes.length; ++i) {
       let material = existingMeshes[i].material;

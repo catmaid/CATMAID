@@ -37,3 +37,4 @@ out/
 
 data/
 
+django/catmaid_version.py

@@ -2412,11 +2412,11 @@
       let volumeInfo = {
         meshes: [],
         originalGeometries: [],
-        color: color,
-        opacity: opacity,
-        faces: faces,
-        subdivisions: subdivisions,
-        boundingBox: !!bb,
+        color: color || this.options.meshes_color,
+        opacity: opacity === undefined ? this.options.meshes_opacity : opacity,
+        faces: faces === undefined ? this.options.meshes_faces : faces,
+        subdivisions: subdivisions === undefined ? this.options.meshes_subdiv : subdivisions,
+        boundingBox: bb === undefined ? this.options.meshes_boundingbox : !!bb ,
         loaded: false,
       };
       this.loadedVolumes.set(volumeId, volumeInfo);

@@ -110,6 +110,7 @@
       this.space.view.setView(
         this.initialView.target, this.initialView.pos, this.initialView.up,
         this.initialView.zoom, this.initialView.isOrthographic);
+      this.space.updateScaleBar();
     }
 
     this.initialized = true;

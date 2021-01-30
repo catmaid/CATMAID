@@ -120,6 +120,7 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/links/$', deeplink.DeepLinkList.as_view()),
     url(r'^(?P<project_id>\d+)/links/(?P<alias>[0-9A-Za-z_\-]+)$', deeplink.DeepLinkSelector.as_view()),
     url(r'^(?P<project_id>\d+)/links/(?P<alias>[0-9A-Za-z_\-]+)/details$', deeplink.DeepLinkDetails.as_view()),
+    url(r'^(?P<project_id>\d+)/links/by-id/(?P<link_id>[0-9]+)$', deeplink.DeepLinkByIdSelector.as_view()),
 ]
 
 # General stack model access

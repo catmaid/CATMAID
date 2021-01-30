@@ -234,9 +234,10 @@ class DeepLinkSelector(APIView):
         try:
             deep_link = DeepLink.objects.get(project_id=project_id, alias=alias)
             can_edit_or_fail(request.user, deep_link.id, 'catmaid_deep_link')
+            deep_link_id = deep_link.id
             deep_link.delete()
             return Response({
-                'deleted_id': deep_link.id
+                'deleted_id': deep_link_id
             })
         except DeepLink.DoesNotExist:
             return Response('Link not found', status=status.HTTP_404_NOT_FOUND)
@@ -257,5 +258,25 @@ class DeepLinkDetails(APIView):
                 raise PermissionError('Can not find or access link')
             serializer = DeepLinkSerializer(deep_link)
             return Response(serializer.data)
+        except DeepLink.DoesNotExist:
+            return Response('Link not found', status=status.HTTP_404_NOT_FOUND)
+
+
+class DeepLinkByIdSelector(APIView):
+
+    @method_decorator(requires_user_role_for_any_project([UserRole.Annotate]))
+    @never_cache
+    def delete(self, request:Request, project_id, link_id) -> Response:
+        """Delete a deep-links available to the client.
+        ---
+        serializer: DeepLinkSerializer
+        """
+        try:
+            deep_link = DeepLink.objects.get(project_id=project_id, id=link_id)
+            can_edit_or_fail(request.user, deep_link.id, 'catmaid_deep_link')
+            deep_link.delete()
+            return Response({
+                'deleted_id': link_id
+            })
         except DeepLink.DoesNotExist:
             return Response('Link not found', status=status.HTTP_404_NOT_FOUND)

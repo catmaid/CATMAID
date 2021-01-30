@@ -414,15 +414,15 @@
         }).on('click', 'a[data-role=delete-link]', function() {
           let data = widget.linkTable.row($(this).parents('tr')).data();
           if (!confirm(`Delete (!) link "${data.alias}"? This can't be undone.`)) return;
-          CATMAID.fetch(`${project.id}/links/${data.alias}`, 'DELETE')
+          CATMAID.fetch(`${project.id}/links/by-id/${data.id}`, 'DELETE')
             .then(e => {
-              CATMAID.msg('Success', `Deleted link with ID ${e.deleted_id}`);
+              CATMAID.msg('Success', `Deleted link with ID ${e.deleted_id} and alias ${data.alias}`);
               widget.refresh();
             })
             .catch(CATMAID.handleError);
         });
 
-        // Add title attributes to theader
+        // Add title attributes to the header
         $('thead th:eq(0)', linkTable).attr('title', 'The ID of the deep link');
         $('thead th:eq(1)', linkTable).attr('title', 'The user who created the deep link');
         $('thead th:eq(2)', linkTable).attr('title', 'The skeletons this link references');

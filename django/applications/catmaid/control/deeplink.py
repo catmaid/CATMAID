@@ -33,8 +33,8 @@ def make_unique_id():
     It was expanded to seven digits. This should have a chance of 0.06% of
     collission in 10000 IDs. This should be plenty here.
     """
-    first_part = int(random.random() * 46656) | 0;
-    second_part = int(random.random() * 1679616) | 0;
+    first_part = int(random.random() * 46656) | 0
+    second_part = int(random.random() * 1679616) | 0
     first_part = f'{000}{np.base_repr(first_part, base=36)}'[-3].lower()
     second_part = f'{0000}{np.base_repr(second_part, base=36)}'[-4].lower()
     return first_part + second_part
@@ -113,7 +113,7 @@ class DeepLinkList(APIView):
 
         alias = request.POST.get('alias')
         if alias:
-            if not re.match('^[a-zA-Z0-9-_\.]+$', alias):
+            if not re.match(r'^[a-zA-Z0-9-_\.]+$', alias):
                 raise ValueError("Only alphanumeric characters, '-', '_' and '.' allowed")
         else:
             n_links = DeepLink.objects.filter(project_id=project_id).count()

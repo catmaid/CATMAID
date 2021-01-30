@@ -1907,6 +1907,7 @@ var project;
     refreshAliasButton.onclick = e => {
       alias = CATMAID.DeepLink.makeUniqueId();
       aliasField.placeholder = alias;
+      aliasField.value = '';
       updateLink();
     };
     aliasField.parentNode.appendChild(refreshAliasButton);

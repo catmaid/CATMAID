@@ -1363,6 +1363,24 @@ div#dialog-confirm select {
   cursor: not-allowed;
 }
 
+#dialog-confirm input:not([type]),
+#dialog-confirm input[type=""],
+#dialog-confirm input[type=text] {
+  margin-left: 0.5em;
+}
+
+#dialog-confirm label {
+  margin-left: 0.25em;
+  margin-right: 0.25em;
+}
+
+#dialog-confirm input[type=checkbox] {
+  position: relative;
+  margin-left: 0.25em;
+  margin-bottom: 0;
+  bottom: -0.2em;
+}
+
 table.skeleton-table {
   width: 100%;
 }

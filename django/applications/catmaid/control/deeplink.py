@@ -1,6 +1,7 @@
 import json
 import datetime
-import uuid
+import random
+import numpy as np
 
 from django.db.models import Q
 from django.http import HttpResponseRedirect
@@ -23,6 +24,19 @@ from catmaid.control.authentication import (check_user_role, can_edit_or_fail,
                                            requires_user_role_for_any_project,
                                            PermissionError)
 from catmaid.models import DeepLink, DeepLinkStack, DeepLinkStackGroup, UserRole
+
+
+def make_unique_id():
+    """Generate a short (six characters) ID for a new deep link. This method is
+    based on the code suggested here: https://stackoverflow.com/a/6248722/1665417.
+    It was expanded to seven digits. This should have a chance of 0.06% of
+    collission in 10000 IDs. This should be plenty here.
+    """
+    first_part = int(random.random() * 46656) | 0;
+    second_part = int(random.random() * 1679616) | 0;
+    first_part = f'{000}{np.base_repr(first_part, base=36)}'[-3].lower()
+    second_part = f'{0000}{np.base_repr(second_part, base=36)}'[-4].lower()
+    return first_part + second_part
 
 
 class DeepLinkStackerializer(ModelSerializer):
@@ -99,7 +113,7 @@ class DeepLinkList(APIView):
         alias = request.POST.get('alias')
         if not alias:
             n_links = DeepLink.objects.filter(project_id=project_id).count()
-            alias = uuid.uuid4()
+            alias = make_unique_id()
 
         params = {
             'project_id': project_id,

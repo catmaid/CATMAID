@@ -1763,7 +1763,7 @@ var project;
       alias = null, isPrivate = false) {
     let stackConfig = project.getStackAndStackGroupConfiguration();
     let params = {
-      alias: alias || CATMAID.tools.uuidv4(),
+      alias: alias || CATMAID.DeepLink.makeUniqueId(),
       is_public: !isPrivate,
       location_x: project.coordinates.x,
       location_y: project.coordinates.y,
@@ -1893,7 +1893,7 @@ var project;
 
     dialog.appendChild(optionContainer2);
 
-    let alias = CATMAID.tools.uuidv4();
+    let alias = CATMAID.DeepLink.makeUniqueId();
 
     let aliasField = dialog.appendField('Alias', 'deep-link-alias', '', false, alias);
     aliasField.style.width = '25em';

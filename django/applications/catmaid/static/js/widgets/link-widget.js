@@ -33,7 +33,7 @@
   $.extend(LinkWidget.prototype, new InstanceRegistry());
 
   LinkWidget.prototype._initLinkEditParameters = function() {
-    this.linkEditAlias = '';
+    this.linkEditAlias = CATMAID.DeepLink.makeUniqueId();
     this.linkEditIsPublic = true;
     this.linkEditX = null;
     this.linkEditY = null;
@@ -526,7 +526,7 @@
                   CATMAID.msg('Alias checked', 'Link alias can be used');
                   widget.linkEditAlias = this.value;
                 });
-            }, 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'));
+            }, widget.linkEditAlias));
 
         // Public
         $(propertiesPanel).append(CATMAID.DOM.createCheckboxSetting(

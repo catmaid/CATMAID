@@ -425,7 +425,7 @@ var project;
       }
     }, {
       id: 'copy-current-layout-url',
-      title: 'Copy URL to view with layout',
+      title: 'Create URL to view with layout',
       note: '',
       action: () => {
         Client.createDeepLink(true, true, true)
@@ -437,7 +437,7 @@ var project;
       }
     }, {
       id: 'copy-current-layout-url-no-skeletons',
-      title: 'Copy URL to view with layout (no skeletons)',
+      title: 'Create URL to view with layout (no skeletons)',
       note: '',
       action: function() {
         Client.createDeepLink(true, false, true)
@@ -449,7 +449,7 @@ var project;
       }
     }, {
       id: 'copy-current-layout-url-no-settings',
-      title: 'Copy URL to view with layout (no widget settings)',
+      title: 'Create URL to view with layout (no widget settings)',
       note: '',
       action: function() {
         Client.createDeepLink(true, true, false)
@@ -461,7 +461,7 @@ var project;
       }
     }, {
       id: 'copy-current-layout-url-simple',
-      title: 'Copy URL to view (location only)',
+      title: 'Create URL to view (location only)',
       note: '',
       action: function() {
         Client.createDeepLink(false, false, false)
@@ -1843,7 +1843,7 @@ var project;
 
     let dialog = new CATMAID.OptionsDialog("Share current view", {
       'Close': () => {},
-      'Copy link': () => {
+      'Create link': () => {
         createLink()
           .then(link => {
             CATMAID.tools.copyToClipBoard(linkLink.href);

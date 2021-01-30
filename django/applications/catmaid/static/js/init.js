@@ -1940,7 +1940,7 @@ var project;
     }
     updateLink();
 
-    aliasField.addEventListener('keydown', e => {
+    aliasField.addEventListener('keyup', e => {
       if (e.target.value.length === 0) {
         alias = CATMAID.tools.uuidv4();
         e.target.setAttribute('placeholder', alias);

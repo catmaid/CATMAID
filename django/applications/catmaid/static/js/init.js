@@ -459,18 +459,6 @@ var project;
           })
           .catch(CATMAID.handleErrors);
       }
-    }, {
-      id: 'copy-current-layout-url-simple',
-      title: 'Create URL to view (location only)',
-      note: '',
-      action: function() {
-        Client.createDeepLink(false, false, false)
-          .then(link => {
-            CATMAID.msg('Success', 'Copied URL to view, location only. See it also in the Link Widget.');
-            CATMAID.tools.copyToClipBoard(link);
-          })
-          .catch(CATMAID.handleErrors);
-      }
     }]);
     let linkMenuView = linkMenu.getView();
     // This is done to prevent an overflow out of screen. Haven't found a good

@@ -1895,7 +1895,7 @@ var project;
 
     let alias = CATMAID.DeepLink.makeUniqueId();
 
-    let aliasField = dialog.appendField('Alias', 'deep-link-alias', '', false, alias);
+    let aliasField = dialog.appendField('Alias', 'deep-link-alias', '', true, alias);
     aliasField.style.width = '25em';
     let linkWrapper = document.createElement('div');
     linkWrapper.style.maxHeight = '100px';

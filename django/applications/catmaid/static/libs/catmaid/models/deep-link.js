@@ -6,6 +6,8 @@
 
   };
 
+  DeepLink.AllowedChars = /^[a-zA-Z0-9-_\.]+$/;
+
   /**
    * Generate a short (six characters) ID for a new deep link. This method is
    * based on the code suggested here: https://stackoverflow.com/a/6248722/1665417.

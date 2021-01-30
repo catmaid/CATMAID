@@ -1940,6 +1940,15 @@ var project;
     }
     updateLink();
 
+
+    aliasField.addEventListener('keydown', e => {
+      if (!CATMAID.DeepLink.AllowedChars.test(e.key)) {
+        CATMAID.warn("Only alphanumeric characters, '-', '_' and '.' allowed.");
+        e.preventDefault();
+        return true;
+      }
+    });
+
     aliasField.addEventListener('keyup', e => {
       if (e.target.value.length === 0) {
         alias = CATMAID.tools.uuidv4();
@@ -2005,6 +2014,9 @@ var project;
     }
 
     dialog.show(750, 'auto');
+
+    // Allow user to write immediately into alias field
+    aliasField.focus();
   };
 
   /**

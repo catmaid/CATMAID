@@ -2,6 +2,7 @@ import json
 import datetime
 import random
 import numpy as np
+import re
 
 from django.db.models import Q
 from django.http import HttpResponseRedirect
@@ -111,7 +112,10 @@ class DeepLinkList(APIView):
         project_id = int(project_id)
 
         alias = request.POST.get('alias')
-        if not alias:
+        if alias:
+            if not re.match('^[a-zA-Z0-9-_\.]+$', alias):
+                raise ValueError("Only alphanumeric characters, '-', '_' and '.' allowed")
+        else:
             n_links = DeepLink.objects.filter(project_id=project_id).count()
             alias = make_unique_id()
 

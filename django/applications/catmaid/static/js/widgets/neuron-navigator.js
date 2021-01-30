@@ -2561,7 +2561,7 @@
       var info = document.createElement('p');
       info.classList.add('help');
       info.appendChild(document.createTextNode('Below you find information on ' +
-            'the currenyly selected neuron as well as its annotations. Its ' +
+            'the currently selected neuron as well as its annotations. Its ' +
             'skeleton ID is #' + this.current_skid));
       container.append(info);
 

@@ -1872,3 +1872,11 @@ button.files-loaded {
 input[type=radio].padded {
   margin: 0.5em;
 }
+
+i.refresh-icon {
+  margin-left: 0.5em;
+}
+
+i.refresh-icon:hover {
+  color: #ff8e43;
+}

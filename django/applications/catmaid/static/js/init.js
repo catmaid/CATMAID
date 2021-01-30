@@ -1902,6 +1902,15 @@ var project;
     linkWrapper.style.wordBreak = 'break-all';
     linkWrapper.style.overflow = 'auto';
 
+    let refreshAliasButton = document.createElement('i');
+    refreshAliasButton.classList.add('fa', 'fa-refresh', 'refresh-icon');
+    refreshAliasButton.onclick = e => {
+      alias = CATMAID.DeepLink.makeUniqueId();
+      aliasField.placeholder = alias;
+      updateLink();
+    };
+    aliasField.parentNode.appendChild(refreshAliasButton);
+
     let regularMsg = 'URL to current view:';
     let persistMsg = 'URL to current view (Link will only be accessible once "Create link" is pressed):';
     let lastMessage = dialog.appendMessage(persistMsg);

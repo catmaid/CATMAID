@@ -1952,7 +1952,7 @@ var project;
 
     aliasField.addEventListener('keyup', e => {
       if (e.target.value.length === 0) {
-        alias = CATMAID.tools.uuidv4();
+        alias = CATMAID.DeepLink.makeUniqueId();
         e.target.setAttribute('placeholder', alias);
       } else {
         alias = e.target.value.trim();

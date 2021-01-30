@@ -1886,6 +1886,12 @@ var project;
     optionContainer2.style.gridTemplate = '3em / 20em 15em';
     let persistent = CATMAID.DOM.appendCheckbox(optionContainer2, 'Shorten link and add to Link Widget',
         'This alias needs to be unique per project and is stored on the server', true, e => {
+          let presentUrl = makeLongLinkAddress();
+          if (presentUrl.length > 4096) {
+            CATMAID.warn('URL would be longer than allowed 4096 characters. Please change link settings and close more widgets to use a long URL.');
+            e.target.checked = true;
+            return;
+          }
           aliasField.disabled = !e.target.checked;
           isPrivate.disabled = !e.target.checked;
           lastMessage.innerHTML = e.target.checked ? persistMsg : regularMsg;
@@ -1909,22 +1915,27 @@ var project;
     linkWrapper.style.overflow = 'auto';
 
     let regularMsg = 'URL to current view:';
-    let persistMsg = 'URL to current view (Link will only be accessible once "Copy" or "Open" are pressed):';
+    let persistMsg = 'URL to current view (Link will only be accessible once "Create link" is pressed):';
     let lastMessage = dialog.appendMessage(persistMsg);
     linkWrapper.appendChild(linkLink);
     linkWrapper.appendChild(linkLinkText);
     dialog.appendChild(linkWrapper);
+
+    function makeLongLinkAddress() {
+      let message = messageField.value.trim();
+      let l = window.location;
+      if (message.length === 0) message = null;
+      return l.origin + l.pathname + project.createURL(withLayout.checked,
+          withSkeletons.checked, withWidgetSettings.checked, undefined,
+          showHelp.checked, message);
+    }
 
     function updateLink() {
       let url, l = window.location;
       if (persistent.checked) {
         url = `${l.origin}${l.pathname}${project.id}/links/${alias}`;
       } else {
-        let message = messageField.value.trim();
-        if (message.length === 0) message = null;
-        url = l.origin + l.pathname + project.createURL(withLayout.checked,
-            withSkeletons.checked, withWidgetSettings.checked, undefined,
-            showHelp.checked, message);
+        url = makeLongLinkAddress();
       }
       linkLink.href = url;
       linkLink.innerHTML = url;

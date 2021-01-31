@@ -91,8 +91,18 @@ class DeepLinkList(APIView):
         ---
         serializer: SimpleDeepLinkSerializer
         """
-        deep_links = DeepLink.objects.filter(
-                Q(is_public=True) | Q(user_id=request.user.id), project_id=project_id)
+        only_own = get_request_bool(request.GET, 'only_own', False)
+        only_private = get_request_bool(request.GET, 'only_private', False)
+
+        filter_term = (Q(is_public=True) | Q(user_id=request.user.id)) & Q(project_id=project_id)
+
+        if only_own:
+            filter_term = filter_term & Q(user_id=request.user.id)
+
+        if only_private:
+            filter_term = filter_term & Q(is_public=False)
+
+        deep_links = DeepLink.objects.filter(filter_term)
         serializer = SimpleDeepLinkSerializer(deep_links, many=True)
         return Response(serializer.data)
 

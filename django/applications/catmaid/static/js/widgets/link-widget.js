@@ -13,6 +13,10 @@
 
     this.content = null;
 
+    // Whether only own links should be displayed
+    this.onlyOwnLinks = false;
+    this.onlyPrivate = false;
+
     // Link edit properties
     this._initLinkEditParameters();
 
@@ -231,7 +235,25 @@
           title: 'Reload the displayed links',
           onclick: e => {
             widget.refresh();
-          }
+          },
+        }, {
+          type: 'checkbox',
+          label: 'Only own links',
+          title: 'If enabled only own links will be displayed',
+          value: widget.onlyOwnLinks,
+          onclick: e => {
+            widget.onlyOwnLinks = e.target.checked;
+            widget.refresh();
+          },
+        }, {
+          type: 'checkbox',
+          label: 'Only private links',
+          title: 'If enabled only private links will be displayed',
+          value: widget.onlyPrivate,
+          onclick: e => {
+            widget.onlyPrivate = e.target.checked;
+            widget.refresh();
+          },
         }];
       },
       createContent: function(content, widget) {
@@ -243,7 +265,10 @@
           autoWidth: false,
           lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
           ajax: (data, callback, settings) => {
-            CATMAID.fetch(`${project.id}/links/`)
+            CATMAID.fetch(`${project.id}/links/`, 'GET', {
+                'only_own': widget.onlyOwnLinks,
+                'only_private': widget.onlyPrivate,
+              })
               .then(linkData => {
                 let skeletonIds = linkData.map(l => l.active_node).filter(skid => skid);
                 return CATMAID.NeuronNameService.getInstance().registerAllFromList(this, skeletonIds)

@@ -5,8 +5,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import yaml
 from typing import Set
 
-from guardian.shortcuts import get_objects_for_user
-from guardian.shortcuts import assign_perm
+from guardian.shortcuts import (assign_perm, get_objects_for_user, get_perms_for_model)
 
 from django.db import connection
 from django.db.models import Exists, OuterRef
@@ -15,10 +14,10 @@ from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 
 from catmaid.models import (BrokenSlice, Class, ClientDatastore,
-        InterpolatableSection, Location, Project, ProjectStack, Relation, Stack,
-        StackGroup, StackStackGroup, UserRole)
+        InterpolatableSection, Location, Project, ProjectStack, ProjectToken,
+        Relation, Stack, StackGroup, StackStackGroup, UserRole)
 from catmaid.control.authentication import requires_user_role
-from catmaid.control.common import get_request_bool
+from catmaid.control.common import get_request_bool, get_request_list
 
 from rest_framework.request import Request
 from rest_framework.decorators import api_view
@@ -603,12 +602,21 @@ def fork(request:HttpRequest, project_id) -> JsonResponse:
       required: false
       type: boolean
       defaultValue: false
+    - name: project_token
+      description: Whether or not a new project token should be generated
+      required: false
+      type: boolean
+      defaultValue: false
     """
     name = request.POST.get('name')
     if not name:
         raise ValueError('Need new project name')
 
     copy_volumes = get_request_bool(request.POST, 'copy_volumes', False)
+    create_project_token = get_request_bool(request.POST, 'project_token', False)
+
+    project_token_approval_needed = get_request_bool(request.POST, 'project_token_approval_needed', False);
+    project_token_default_perms = get_request_list(request.POST, 'project_token_default_permissions', []);
 
     current_p = get_object_or_404(Project, pk=project_id)
     new_p = get_object_or_404(Project, pk=project_id)
@@ -657,9 +665,28 @@ def fork(request:HttpRequest, project_id) -> JsonResponse:
             'new_project_id': new_p.id
         })
 
+    project_token_str = None
+    if create_project_token:
+        allowed_permissions = set(get_perms_for_model(Project).values_list('codename', flat=True))
+        unknown_permissions = set(project_token_default_perms) - allowed_permissions
+        if unknown_permissions:
+            raise ValueError(f'Unknown permissions: {", ".join(unknown_permissions)}')
+        project_token = ProjectToken.objects.create(**{
+            'user_id': request.user.id,
+            'project_id': new_p.id,
+            'name': "",
+            'needs_approval': project_token_approval_needed,
+            'default_permissions': project_token_default_perms,
+        })
+        project_token.name = f'Project token #{project_token.id}'
+        project_token.save()
+
+        project_token_str = project_token.token
+
     return JsonResponse({
         'new_project_id': new_p.id,
         'n_copied_stack_links': len(ps_links),
+        'project_token': project_token_str,
     })
 
 

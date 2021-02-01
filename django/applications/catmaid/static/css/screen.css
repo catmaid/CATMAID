@@ -1898,3 +1898,21 @@ i.refresh-icon {
 i.refresh-icon:hover {
   color: #ff8e43;
 }
+
+.strong-highlight {
+  border: 1px solid red;
+  padding: 0.2em;
+  width: fit-content;
+  margin-left: 0.5em;
+  margin-right: 0.5em;
+  background: cornsilk;
+  font-size: 105%;
+}
+
+.copy-button {
+  cursor: pointer;
+}
+
+.copy-button:hover {
+  color: #ff8e43;
+}

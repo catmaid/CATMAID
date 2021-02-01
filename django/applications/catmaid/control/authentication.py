@@ -1047,3 +1047,9 @@ def deactivate_inactive_users() -> List:
     """)
 
     return [row[0] for row in cursor.fetchall()]
+
+
+def list_project_permissions(request:HttpRequest) -> JsonResponse:
+	return JsonResponse({
+		'permissions': list(get_perms_for_model(Project).values_list('codename', flat=True)),
+	})

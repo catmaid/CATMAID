@@ -17,7 +17,7 @@ from catmaid.control import (authentication, user, group, log, message, client,
         classification, notifications, roi, clustering, volume, noop,
         useranalytics, user_evaluation, search, graphexport, transaction,
         graph2, circles, analytics, review, wiringdiagram, object, sampler,
-        similarity, nat, origin, point, landmarks, pointcloud, pointset)
+        similarity, nat, origin, point, landmarks, project_token, pointcloud, pointset)
 
 from catmaid.history import record_request_action as record_view
 from catmaid.views import CatmaidView
@@ -88,8 +88,14 @@ urlpatterns += [
 
 # Project permissions
 urlpatterns += [
+    url(r'permissions/$', authentication.list_project_permissions),
     url(r'^(?P<project_id>\d+)/permissions/project-user$', authentication.project_user_permission_set),
     url(r'^(?P<project_id>\d+)/permissions/project-group$', authentication.project_group_permission_set),
+]
+
+# Project permissions
+urlpatterns += [
+    url(r'^(?P<project_id>\d+)/project-tokens/$', project_token.ProjectTokenList.as_view()),
 ]
 
 # Messages

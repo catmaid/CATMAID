@@ -10,6 +10,7 @@ import sys
 from typing import Any, Dict, Tuple
 import urllib
 import urllib.parse
+import uuid
 
 from django import forms
 from django.conf import settings
@@ -1978,3 +1979,33 @@ class DeepLinkStackGroup(NonCascadingUserFocusedModel):
 
     class Meta:
         db_table = "catmaid_deep_link_stack_group"
+
+
+class ProjectToken(NonCascadingUserFocusedModel):
+    """A UUIDv4 token that can associate default permissions and user visibility
+    requirements with projects. These UUID4 tokens can then be shared among e.g.
+    students in a class to make it easy to sign up and somewhat secure by using
+    a shared secret. It is similar to an invitation code.
+    """
+    name = models.TextField()
+    token = models.UUIDField(default=uuid.uuid4, editable=False)
+    needs_approval = models.BooleanField(default=False)
+    enabled = models.BooleanField(default=True)
+    default_permissions = ArrayField(models.TextField(), default=list)
+
+    class Meta:
+        db_table = "catmaid_project_token"
+
+
+class UserProjectToken(models.Model):
+    """Represents the list of known tokens for each user.
+    """
+    user = models.ForeignKey(User, on_delete=models.DO_NOTHING)
+    project_token = models.ForeignKey(ProjectToken, on_delete=models.DO_NOTHING)
+    enabled = models.BooleanField(default=True)
+    approved = models.BooleanField(default=False)
+    creation_time = DbDefaultDateTimeField()
+    edition_time = DbDefaultDateTimeField()
+
+    class Meta:
+        db_table = "catmaid_user_project_token"

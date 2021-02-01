@@ -2517,21 +2517,43 @@ var project;
         let s = project.focusedStackViewer.s;
         let nSpaces = projects.length;
         let newName = `Space #${nSpaces + 1} - ${projectDetails.title}`;
+        let createProjectToken = false, approvalNeeded = false;
 
-        let switchToNewProject = function(newProjectId) {
-          let switchDialog = new CATMAID.OptionsDialog("Switch to new project?");
-          switchDialog.appendMessage(`Your new project has been created successfully, it has has ID ${newProjectId}. Do you want to switch to it? It is also visible from the front page views and the project menu.`);
-          switchDialog.onOK = function() {
-            // Open new space
-            let stackId = project.focusedStackViewer.primaryStack.id;
-            project.setTool(null);
-            return CATMAID.openProjectStack(newProjectId, stackId)
-              .then(stackViewer => {
-                stackViewer.moveTo(z, y, x, s);
-                CATMAID.msg("Success", "Opened newly created space");
-              })
-              .catch(CATMAID.handleError);
-          };
+        let switchToNewProject = function(result) {
+          let newProjectId = result.new_project_id;
+          let switchDialog = new CATMAID.OptionsDialog("Switch to new project?", {
+            'Cancel': e => {},
+            'Switch to new space': e => {
+              // Open new space
+              let stackId = project.focusedStackViewer.primaryStack.id;
+              project.setTool(null);
+              return CATMAID.openProjectStack(newProjectId, stackId)
+                .then(stackViewer => {
+                  stackViewer.moveTo(z, y, x, s);
+                  CATMAID.msg("Success", "Opened newly created space");
+                })
+                .catch(CATMAID.handleError);
+            },
+          });
+          if (result.project_token) {
+            switchDialog.appendMessage(`Your new project has been created successfully, it has has ID ${newProjectId}. The following project token was generated, which can be looked up in in the Project Management widget of the new project as well:`);
+            let tokenPanel = document.createElement('div');
+            let tokenContainer = tokenPanel.appendChild(document.createElement('span'));
+            tokenContainer.classList.add('strong-highlight');
+            tokenContainer.appendChild(document.createTextNode(result.project_token));
+            let copyButton = tokenPanel.appendChild(document.createElement('i'));
+            copyButton.classList.add('fa', 'fa-copy', 'copy-button');
+            copyButton.title = 'Copy token to clipboard';
+            copyButton.onclick = e => {
+              CATMAID.tools.copyToClipBoard(result.project_token);
+              CATMAID.msg('Success', 'Copyied project token to clipboard. Use it with care!');
+            };
+            switchDialog.appendChild(tokenPanel);
+            switchDialog.appendMessage('This Project Token can be shared with others, who then can use it to gain access to the new space, according to the defined permissions.');
+          switchDialog.appendMessage(`Do you want to switch to the new space? It is also visible from the front page views, the project menu and the 'My projects' view.`);
+          } else {
+            switchDialog.appendMessage(`Your new project has been created successfully, it has has ID ${newProjectId}. Do you want to switch to it? It is also visible from the front page views and the project menu.`);
+          }
 
           switchDialog.show(400, 'auto');
         };
@@ -2542,9 +2564,21 @@ var project;
             if (newName.length === 0) {
               throw new CATMAID.Warning('Empty name not allowed');
             }
-            CATMAID.Project.createFork(project.id, newName, volumeField.checked)
+            let projectTokenOptions = null;
+            if (createProjectToken) {
+              let defaultPermissions = [];
+              if (canBrowse) defaultPermissions.push('can_browse');
+              if (canAnnotate) defaultPermissions.push('can_annotate');
+              if (canImport) defaultPermissions.push('can_import');
+              if (canFork) defaultPermissions.push('can_fork');
+              projectTokenOptions = {
+                defaultPermissions: defaultPermissions,
+                approvalNeeded: approvalNeeded,
+              };
+            }
+            CATMAID.Project.createFork(project.id, newName, volumeField.checked, projectTokenOptions)
               .then(result => {
-                return switchToNewProject(result.new_project_id);
+                return switchToNewProject(result);
               })
               .then(() => {
                 return Promise.all([
@@ -2565,7 +2599,62 @@ var project;
         var volumeField = confirmationDialog.appendCheckbox("Copy volumes/meshes", undefined, true,
             "If enabled, all visible volumes/meshes will copied from this project to the new space");
 
-        return confirmationDialog.show(400, 'auto');
+        confirmationDialog.appendMessage("Optionally, you can have CATMAID create a project token (sharable invitation code) and define default permissions for it (or do this later in the Project Management widget). The token is displayed once the space is created:");
+
+        let optionContainer0 = document.createElement('span');
+        optionContainer0.style.display = 'grid';
+        optionContainer0.style.gridTemplate = '2em / 12em 18em';
+
+        CATMAID.DOM.appendCheckbox(optionContainer0, 'Create project token',
+            'A project token is a unique random text string that can be shared. Users knowing this project token will ' +
+            'get assigned the default permissions below.', createProjectToken,
+            e => {
+              createProjectToken = e.target.checked;
+              [canBrowseCb, canAnnotateCb, canImportCb, canForkCb, approvalField].forEach(
+                  cb => cb.disabled = !createProjectToken);
+            }, false, 'fork-create-token').querySelector('input');
+
+        let approvalField = CATMAID.DOM.appendCheckbox(optionContainer0, 'Require approval of new users',
+            'If users add this project token to their profile, they get assigned the default permissions of this token. If this should require the approval of a project admin, enable this.', approvalNeeded,
+            e => {
+              approvalNeeded = e.target.checked;
+            }, false, 'project-token-approval').querySelector('input');
+        approvalField.disabled = !createProjectToken;
+
+        confirmationDialog.appendChild(optionContainer0);
+
+        let optionContainer = document.createElement('span');
+        optionContainer.style.display = 'grid';
+        optionContainer.style.gridTemplate = '3em / 12em 13em 8em 7em';
+
+        let canBrowse = true, canAnnotate = false, canImport = false, canFork = true;
+
+        let canBrowseCb = CATMAID.DOM.appendCheckbox(optionContainer, 'Can read (browse)',
+            'Whether invited users should be able see the project and its data by default.', canBrowse,
+            e => {
+              canBrowse = e.target.checked;
+            }, false, 'perms-can-browse').querySelector('input');
+        canBrowseCb.disabled = !createProjectToken;
+        let canAnnotateCb = CATMAID.DOM.appendCheckbox(optionContainer, 'Can write (annotate)',
+            'Whether invited users should be able to write to the project by default', canAnnotate,
+            e => {
+              canAnnotate = e.target.checked;
+            }, false, 'perms-can-annotate').querySelector('input');
+        canAnnotateCb.disabled = !createProjectToken;
+        let canImportCb = CATMAID.DOM.appendCheckbox(optionContainer, 'Can import',
+            'Whether invited users should be able to import into the project by default', canImport,
+            e => {
+              canImport = e.target.checked;
+            }, false, 'perms-can-import').querySelector('input');
+        canImportCb.disabled = !createProjectToken;
+        let canForkCb = CATMAID.DOM.appendCheckbox(optionContainer, 'Can fork',
+            'Whether invited users should be able to fork the new space themselves.',
+            canFork, e => { canFork = e.target.checked; }, false, 'perms-can-fork').querySelector('input');
+        canForkCb.disabled = !createProjectToken;
+
+        confirmationDialog.appendChild(optionContainer);
+
+        return confirmationDialog.show(500, 'auto');
       })
       .catch(CATMAID.handleError);
   };

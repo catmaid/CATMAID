@@ -8,12 +8,12 @@ import django.db.models.deletion
 
 
 forward = """
-    DROP TRIGGER on_edit_deep_link_stack;
+    DROP TRIGGER on_edit_deep_link_stack ON catmaid_deep_link;
     CREATE TRIGGER on_edit_deep_link_stack BEFORE UPDATE ON catmaid_deep_link_stack FOR EACH ROW EXECUTE PROCEDURE on_edit();
 """
 
 backward = """
-    DROP TRIGGER on_edit_deep_link_stack;
+    DROP TRIGGER on_edit_deep_link_stack ON catmaid_deep_link_stack;
     CREATE TRIGGER on_edit_deep_link_stack BEFORE UPDATE ON catmaid_deep_link FOR EACH ROW EXECUTE PROCEDURE on_edit();
 """
 

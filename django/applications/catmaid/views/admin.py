@@ -17,7 +17,7 @@ class ProjectDeletion(ListView):
     template_name = 'catmaid/admin/delete_project_confirmation.html'
 
     def get_queryset(self):
-        project_ids = get_request_list(self.request.GET, 'ids', map_fn=int)
+        project_ids = map(int, self.request.GET.get('ids', '').split(','))
         if not project_ids:
             raise ValueError("No project IDs specified")
         return Project.objects.filter(id__in=project_ids)

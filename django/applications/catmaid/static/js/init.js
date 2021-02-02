@@ -137,6 +137,10 @@ var project;
 
     CATMAID.Project.on(CATMAID.Project.EVENT_TOOL_CHANGED,
         this._handleProjectToolChange, this);
+    CATMAID.Project.on(CATMAID.Project.EVENT_PROJECT_CHANGED,
+        this._handleProjectChanged, this);
+    CATMAID.Project.on(CATMAID.Project.EVENT_PROJECT_DELETED,
+        this._handleProjectDeleted, this);
     CATMAID.Project.on(CATMAID.Project.EVENT_PROJECT_DESTROYED,
         this._handleProjectDestroyed, this);
 
@@ -215,13 +219,6 @@ var project;
   CATMAID.Init.on(CATMAID.Init.EVENT_PROJECT_CHANGED, function (project) {
     // Update window title bar
     document.title = `CATMAID - ${project.title}`;
-
-    CATMAID.Project.offAllInContext(CATMAID.client);
-    CATMAID.Project.on(CATMAID.Project.EVENT_PROJECT_CHANGED, function (projectData) {
-      // Update window title bar
-      document.title = `CATMAID - ${projectData.title}`;
-      this.updateProjects();
-    }, CATMAID.client);
 
     // Load user settings
     CATMAID.Client.Settings
@@ -1623,6 +1620,22 @@ var project;
 
   Client.prototype._handleProjectToolChange = function() {
     this.updateContextHelp();
+  };
+
+  Client.prototype._handleProjectChanged = function(projectData) {
+    // Update window title bar
+    if (projectData) {
+      document.title = `CATMAID - ${projectData.title}`;
+    }
+    this.updateProjects();
+  };
+
+  Client.prototype._handleProjectDeleted = function(deletedProjectId) {
+    if (project && project.id == deletedProjectId) {
+      project.destroy();
+      project = null;
+    }
+    this.updateProjects();
   };
 
   Client.prototype._handleProjectDestroyed = function() {

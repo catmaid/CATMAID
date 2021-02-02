@@ -207,6 +207,7 @@
     this.sample_images = CATMAID.tools.getDefined(options.config.sample_images, false);
     this.sample_mirror_index = CATMAID.tools.getDefined(options.config.sample_mirror_index, 0);
     this.sample_slice = CATMAID.tools.getDefined(options.config.sample_slice, 0);
+    this.only_favorite = CATMAID.tools.getDefined(options.config.only_favorite, false);
     this.initial_tool = CATMAID.tools.getDefined(options.config.initial_tool);
     this.initial_zoom = CATMAID.tools.getDefined(options.config.initial_zoom);
     this.initial_location = CATMAID.tools.getDefined(options.config.initial_location);
@@ -228,6 +229,7 @@
     sample_images: false,
     sample_mirror_index: 0,
     sample_slice: 0,
+    only_favorite: false,
   };
 
   ProjectListDataView.prototype.createContent = function(content) {
@@ -358,6 +360,10 @@
       }
 
       if (p.stacks.length === 0 && !this.show_empty_projects) {
+        continue;
+      }
+
+      if (this.only_favorite && !p.favorite) {
         continue;
       }
 

@@ -13,7 +13,7 @@ from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 
-from catmaid.models import (BrokenSlice, Class, ClientDatastore,
+from catmaid.models import (BrokenSlice, Class, ClientDatastore, FavoriteProject,
         InterpolatableSection, Location, Project, ProjectStack, ProjectToken,
         Relation, Stack, StackGroup, StackStackGroup, UserRole)
 from catmaid.control.authentication import requires_user_role
@@ -313,16 +313,21 @@ def projects(request:HttpRequest) -> JsonResponse:
 
     result:List = []
     empty_tuple:Tuple = tuple()
+    fav_project_ids = set(FavoriteProject.objects.filter(user_id=request.user.id).values_list('project_id', flat=True))
     for p in projects:
         stacks = project_stack_mapping.get(p.id, empty_tuple)
         stackgroups = project_stack_groups.get(p.id, empty_tuple)
 
-        result.append({
+        response = {
             'id': p.id,
             'title': p.title,
             'stacks': stacks,
             'stackgroups': stackgroups
-        })
+        }
+        if p.id in fav_project_ids:
+            response['favorite'] = True
+
+        result.append(response)
 
     return JsonResponse(result, safe=False, json_dumps_params={
         'sort_keys': True,

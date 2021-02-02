@@ -1083,7 +1083,11 @@ var project;
           'token': tokenInput.value,
         })
         .then(result => {
-          if (result.project_id === project.id) {
+          return CATMAID.client.updateProjects()
+            .then(() => result);
+        })
+        .then(result => {
+          if (project && result.project_id === project.id) {
             CATMAID.msg('Already in project', 'You already are in the project you added a token for');
             return;
           }

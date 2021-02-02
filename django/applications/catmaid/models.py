@@ -2009,3 +2009,11 @@ class UserProjectToken(models.Model):
 
     class Meta:
         db_table = "catmaid_user_project_token"
+
+
+class FavoriteProject(NonCascadingUserFocusedModel):
+
+    rank = models.FloatField(default=0)
+
+    class Meta:
+        db_table = "catmaid_favorite_project"

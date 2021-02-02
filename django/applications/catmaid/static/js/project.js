@@ -773,10 +773,10 @@
    * @returns {Promise} Resolves once the project is deleted.
    */
   Project.delete = function(projectId) {
-    if (!CATMAID.hasPermission(project.id, 'delete_project')) {
+    if (!CATMAID.hasPermission(projectId, 'delete_project')) {
       return Promise.reject(new CATMAID.PermissionError("Need deletion permission in this project"));
     }
-    let result = CATMAID.fetch(`${project.id}/`, 'DELETE');
+    let result = CATMAID.fetch(`${projectId}/`, 'DELETE');
     result.then(result => {
       Project.trigger(Project.EVENT_PROJECT_DELETED, projectId);
     });

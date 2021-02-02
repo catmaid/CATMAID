@@ -96,6 +96,7 @@ urlpatterns += [
 # Project permissions
 urlpatterns += [
     url(r'^(?P<project_id>\d+)/project-tokens/$', project_token.ProjectTokenList.as_view()),
+    url(r'^project-tokens/apply$', project_token.ProjectTokenApplicator.as_view()),
 ]
 
 # Messages

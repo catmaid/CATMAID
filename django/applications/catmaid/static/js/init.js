@@ -1046,6 +1046,11 @@ var project;
           },
           title: "User info",
           note: ""
+        },
+        {
+          action: () => CATMAID.askForProjectToken(),
+          title: 'Use project token',
+          note: ''
         }];
 
       // If users are allowed to create new spaces, add the respective menu
@@ -1060,6 +1065,46 @@ var project;
         });
       }
       menus.user.update(userMenuItems);
+  };
+
+  CATMAID.askForProjectToken = function() {
+    let dialog = new CATMAID.OptionsDialog('Enter new Project Token', {
+      'Cancel': CATMAID.noop,
+      'Use token': e => {
+        if (tokenInput.value.trim().length === 0 || !CATMAID.tools.isUUID(tokenInput.value)) {
+          throw new CATMAID.Warning('No valid project token');
+        }
+        CATMAID.fetch('project-tokens/apply', 'POST', {
+          'token': tokenInput.value,
+        })
+        .then(result => {
+          if (result.project_id === project.id) {
+            CATMAID.msg('Already in project', 'You already are in the project you added a token for');
+            return;
+          }
+          let newProjectDialog = new CATMAID.OptionsDialog('Switch to new project?', {
+            'Cancel': CATMAID.noop,
+            'Switch to project': e => {
+              project.setTool(null);
+              return CATMAID.openProject(result.project_id)
+                .then(()=> {
+                  CATMAID.msg("Success", "Opened project");
+                })
+                .catch(CATMAID.handleError);
+            },
+          });
+          newProjectDialog.appendMessage(`You now have access to project #${result.project_id} with the following permissions: ${result.permissions.join(', ')}. You will be able to see this project in the projet menu, front-pages that show all available projects and the "My projects" view in the Home menu. Do you want to switch to the new project?`);
+          newProjectDialog.show(400, 'auto');
+          CATMAID.msg('Success', 'Added token');
+        })
+        .catch(CATMAID.handleErrors);
+      }
+    });
+    dialog.appendMessage('Please enter the project token in the input field below and click "Ok". If valid, this will allow you to access new projects.');
+    let tokenInput = dialog.appendField('Project token:', undefined, '', true, '(New project token)');
+    tokenInput.style.width = '21em';
+    dialog.appendMessage('Note: when you join a project using a project token, you make your full name available to everyone in this project.');
+    dialog.show(400, 'auto');
   };
 
   /**
@@ -2173,6 +2218,17 @@ var project;
       request = request.catch(CATMAID.handleError);
     }
     return request;
+  };
+
+
+  CATMAID.openProject = function(projectId) {
+    return CATMAID.fetch(`${projectId}/stacks`)
+      .then(stacks => {
+        if (stacks.length > 0) {
+          return CATMAID.openProjectStack(projectId, stacks[0].id);
+        }
+      })
+      .catch(CATMAID.handleError);
   };
 
   /**

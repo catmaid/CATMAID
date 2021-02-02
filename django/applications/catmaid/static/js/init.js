@@ -730,6 +730,7 @@ var project;
     menus.project.update(null);
 
     // Set a temporary loading data view
+    let currentDataView = this.current_dataview;
     this.switch_dataview(new CATMAID.DataView({
        id: null,
        type: 'empty',
@@ -741,10 +742,14 @@ var project;
 
     var self = this;
     return CATMAID.Project.list(true, false, true)
-      .then(function(json) {
+      .then(json => {
         self.projects = json;
 
         self.refresh();
+
+        if (currentDataView) {
+          this.switch_dataview(currentDataView);
+        }
 
         // maps project tags to parent menus (which are dropped if no project is tagged)
         var tagToMenuData = {

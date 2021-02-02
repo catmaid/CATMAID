@@ -553,11 +553,10 @@
             return;
           }
 
+          let projectTitle = project.title, projectId = project.id;
           CATMAID.Project.delete(project.id)
             .then(response => {
-              CATMAID.msg('Success', `Delete project "${project.title}" (ID: ${project.id})`);
-              project.destroy();
-              return CATMAID.client.updateProjects();
+              CATMAID.msg('Success', `Delete project "${projectTitle}" (ID: ${projectId})`);
             }).then(e => {
               return CATMAID.client.load_default_dataview(false);
             })

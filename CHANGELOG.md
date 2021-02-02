@@ -83,6 +83,9 @@ Project management widget:
   mainly useful for personal spaces, in which users typically have
   delete_project permissions.
 
+- The 'Project token' tab allows project admins to view existing project tokens
+  ("invitation codes") available for a project.
+
 Link widget and deep links:
 
 - This new widget allows users to create persistent deep links into the

@@ -12,7 +12,7 @@
 
     // The current edit mode
     this.mode = 'project-access';
-    this.modes = ['project-access', 'properties', 'delete'];
+    this.modes = ['project-access', 'properties', 'tokens', 'delete'];
 
     this.neuronNameService = CATMAID.NeuronNameService.getInstance();
   };
@@ -501,6 +501,138 @@
               CATMAID.msg('Success', `Properties of project "${project.title}" (ID: ${project.id}) updated`);
             })
             .catch(CATMAID.handleError);
+        });
+      },
+    },
+    'tokens': {
+      title: 'Project tokens',
+      createControls: function(target) {
+        let infoPanel = document.createElement('p');
+        infoPanel.appendChild(document.createTextNode('Administrator users can manage project tokens.'));
+        return [{
+          type: 'child',
+          element: infoPanel,
+        }];
+      },
+      createContent: function(content, widget) {
+        if (!CATMAID.hasPermission(project.id, 'can_administer')) {
+          content.appendChild(document.createTextNode('No administration permissions for this project'));
+          return;
+        }
+
+        let infoParagraph1 = content.appendChild(document.createElement('p'));
+        infoParagraph1.appendChild(document.createTextNode('This view allows project admins to manage project tokens.'));
+
+        let tokenTable = content.appendChild(document.createElement('table'));
+        tokenTable.style.width = '100%';
+        tokenTable.appendChild(document.createElement('thead'));
+        tokenTable.appendChild(document.createElement('tbody'));
+
+        let tokenDataTable = $(tokenTable).DataTable({
+          dom: "lfrtip",
+          lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
+          paging: true,
+          order: [[0, 0]],
+          ajax: (data, callback, settings) => {
+            CATMAID.fetch(`${project.id}/project-tokens/`)
+              .then(tokens => {
+                callback({
+                  'draw': data.draw,
+                  'data': tokens,
+                });
+              })
+              .catch(CATMAID.handleError);
+          },
+          columns: [{
+            data: 'id',
+            title: 'ID',
+            searchable: true,
+            orderable: true,
+          }, {
+            data: 'name',
+            title: 'Name',
+            searchable: true,
+            orderable: true,
+          }, {
+            data: 'token',
+            title: 'Token',
+            class: "cm-center",
+            searchable: true,
+            orderable: true,
+          }, {
+            data: 'needs_approval',
+            title: 'Approval req.',
+            class: "cm-center",
+            searchable: true,
+            orderable: true,
+            render: function(data, type, row, meta) {
+              if (type === 'sort') {
+                return data;
+              }
+              return data ? 'Yes' : 'No';
+            },
+          }, {
+            data: 'user',
+            title: 'User',
+            class: "cm-center",
+            searchable: true,
+            orderable: true,
+            render: function(data, type, row, meta) {
+              if (type === 'sort') {
+                return data;
+              }
+              return CATMAID.User.safe_get(data).login;
+            },
+          }, {
+            data: 'enabled',
+            title: 'Enabled',
+            class: "cm-center",
+            searchable: true,
+            orderable: true,
+            render: function(data, type, row, meta) {
+              if (type === 'sort') {
+                return data;
+              }
+              return data ? 'Yes' : 'No';
+            },
+          }, {
+            data: 'default_permissions',
+            title: 'Default permissions',
+            class: "cm-center",
+            searchable: true,
+            orderable: true,
+            render: function(data, type, row, meta) {
+              if (type === 'sort') {
+                return data ? data.length : 0;
+              }
+              return data ? data.join(', ') : '-';
+            },
+          }, {
+            data: 'edition_time',
+            title: 'Last edit (UTC)',
+            class: "cm-center",
+            searchable: true,
+            orderable: true,
+            render: function(data, type, row, meta) {
+              if (type === 'sort') {
+                return data;
+              }
+              var date = new Date(data);
+              if (date) {
+                return CATMAID.tools.dateToString(date);
+              } else {
+                return "(parse error)";
+              }
+            },
+          }, {
+            render: function(data, type, row, meta) {
+              return '<i class="fa fa-copy copy-button"></i>';
+            }
+          }],
+        }).on('click', 'i.copy-button', e => {
+          let data = tokenDataTable.row($(e.target).parents('tr')).data();
+          CATMAID.tools.copyToClipBoard(data.token);
+          CATMAID.msg('Success', 'Copyied project token to clipboard. Use it with care!');
         });
       },
     },

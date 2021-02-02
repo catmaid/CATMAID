@@ -510,6 +510,88 @@
         let infoPanel = document.createElement('p');
         infoPanel.appendChild(document.createTextNode('Administrator users can manage project tokens.'));
         return [{
+          type: 'button',
+          label: 'Refresh',
+          onclick: e => {
+            target.refresh();
+          }
+        }, {
+          type: 'button',
+          label: 'Add token',
+          onclick: e => {
+            let approvalNeeded = false;
+            let canBrowse = true, canAnnotate = false, canImport = false, canFork = true;
+            let confirmationDialog = new CATMAID.OptionsDialog("Create project token", {
+              'Cancel': CATMAID.noop,
+              'Create token': () => {
+                newName = nameField.value.trim();
+                let defaultPermissions = [];
+                if (canBrowse) defaultPermissions.push('can_browse');
+                if (canAnnotate) defaultPermissions.push('can_annotate');
+                if (canImport) defaultPermissions.push('can_import');
+                if (canFork) defaultPermissions.push('can_fork');
+                let projectTokenOptions = {
+                  default_permissions: defaultPermissions,
+                  needs_approval: approvalNeeded,
+                };
+                if (nameField.value.trim().length > 0) {
+                  projectTokenOptions.name = nameField.value.trim();
+                }
+                CATMAID.fetch(`${project.id}/project-tokens/`, `POST`, projectTokenOptions)
+                  .then(result => {
+                    target.refresh();
+                  })
+                  .catch(CATMAID.handleError);
+              },
+            });
+
+            let newName = '';
+            confirmationDialog.appendMessage("Create a new project token (sharable invitation code), give it optionally a name:");
+            var nameField = confirmationDialog.appendField("Name", undefined, newName, false, '(optional)');
+            nameField.size = 50;
+
+            confirmationDialog.appendMessage("Choose, whether each user needs to be approved and set default permissions for this token:");
+
+            let optionContainer0 = document.createElement('span');
+            optionContainer0.style.display = 'grid';
+            optionContainer0.style.gridTemplate = '2em / 18em';
+
+            CATMAID.DOM.appendCheckbox(optionContainer0, 'Require approval of new users',
+                'If users add this project token to their profile, they get assigned the default permissions of this token. If this should require the approval of a project admin, enable this.', approvalNeeded,
+                e => {
+                  approvalNeeded = e.target.checked;
+                }, false, 'project-token-approval').querySelector('input');
+
+            confirmationDialog.appendChild(optionContainer0);
+
+            let optionContainer = document.createElement('span');
+            optionContainer.style.display = 'grid';
+            optionContainer.style.gridTemplate = '3em / 12em 13em 8em 7em';
+
+            CATMAID.DOM.appendCheckbox(optionContainer, 'Can read (browse)',
+                'Whether invited users should be able see the project and its data by default.', canBrowse,
+                e => {
+                  canBrowse = e.target.checked;
+                }, false, 'perms-can-browse').querySelector('input');
+            CATMAID.DOM.appendCheckbox(optionContainer, 'Can write (annotate)',
+                'Whether invited users should be able to write to the project by default', canAnnotate,
+                e => {
+                  canAnnotate = e.target.checked;
+                }, false, 'perms-can-annotate').querySelector('input');
+            CATMAID.DOM.appendCheckbox(optionContainer, 'Can import',
+                'Whether invited users should be able to import into the project by default', canImport,
+                e => {
+                  canImport = e.target.checked;
+                }, false, 'perms-can-import').querySelector('input');
+            CATMAID.DOM.appendCheckbox(optionContainer, 'Can fork',
+                'Whether invited users should be able to fork the new space themselves.',
+                canFork, e => { canFork = e.target.checked; }, false, 'perms-can-fork').querySelector('input');
+
+            confirmationDialog.appendChild(optionContainer);
+
+            return confirmationDialog.show(500, 'auto');
+          }
+        }, {
           type: 'child',
           element: infoPanel,
         }];

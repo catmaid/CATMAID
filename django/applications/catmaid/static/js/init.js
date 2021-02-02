@@ -1628,6 +1628,7 @@ var project;
   Client.prototype._handleProjectDestroyed = function() {
     project = null;
     this.updateContextHelp(true);
+    document.title = 'CATMAID';
     CATMAID._updateUserMenu();
   };
 

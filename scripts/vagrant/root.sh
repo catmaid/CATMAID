@@ -66,3 +66,7 @@ sed -i "/^listen_addresses =.*/d" $PG_CONF
 echo "listen_addresses = '*'" >> $PG_CONF
 systemctl restart postgresql
 
+# increase number of file watchers (IDEs need this)
+echo "fs.inotify.max_user_watches=524288" | tee -a /etc/sysctl.conf
+sysctl -p
+

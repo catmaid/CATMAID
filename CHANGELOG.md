@@ -253,6 +253,14 @@ Docker:
   For instance, use "America/New_York' for US east coast time. This way,
   maintenance tasks can be moved to whenever local midnight is.
 
+Vagrant:
+
+- We now support a Vagrant configuration for setting up a full replicable development environment with minimal effort.
+
+- This is distinct from the Docker image, which is for creating an ephemeral production environment.
+
+- See the relevant developer documentation page for more details.
+
 Data sources:
 
 - A new tile source has been added: Neuroglancer Precomputed data, with ID 14.

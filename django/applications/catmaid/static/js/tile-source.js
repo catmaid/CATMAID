@@ -610,7 +610,6 @@
 
       this.hasScaleLevels = this.baseURL.includes('%SCALE_DATASET%');
       this.datasetURL = this.baseURL.substring(0, this.baseURL.lastIndexOf('/'));
-      this.datasetPathFormat = this.datasetURL.substring(this.rootURL.length + 1);
       let sliceDims = this.baseURL.substring(this.baseURL.lastIndexOf('/') + 1);
       this.sliceDims = sliceDims.split('_').map(d => parseInt(d, 10));
       this.reciprocalSliceDims = Array.from(Array(this.sliceDims.length).keys())
@@ -621,6 +620,7 @@
       this.rootURL = n5SearchIndex === -1 ?
           this.datasetURL :
           this.datasetURL.substring(0, n5SearchIndex - 1);
+      this.datasetPathFormat = this.datasetURL.substring(this.rootURL.length + 1);
 
       this.datasetAttributes = [];
       this.promiseReady = N5ImageBlockSource.loadN5()

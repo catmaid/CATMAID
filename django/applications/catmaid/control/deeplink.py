@@ -40,17 +40,20 @@ def make_unique_id():
     return first_part + second_part
 
 
-class DeepLinkStackerializer(ModelSerializer):
+class DeepLinkStackSerializer(ModelSerializer):
 
     class Meta:
         model = DeepLinkStack
         read_only_fields = ('id',)
-        fields = ('id')
+        fields = (
+            'stack_id',
+            'zoom_level',
+        )
 
 
 class DeepLinkSerializer(ModelSerializer):
 
-    stacks = DeepLinkStackerializer(read_only=True, many=True) # many=True is required
+    stacks = DeepLinkStackSerializer(read_only=True, many=True) # many=True is required
 
     class Meta:
         model = DeepLink
@@ -79,7 +82,9 @@ class SimpleDeepLinkSerializer(ModelSerializer):
     class Meta:
         model = DeepLink
         read_only_fields = ('id',)
-        fields = '__all__'
+        fields = (
+            '__all__',
+        )
 
 
 class DeepLinkList(APIView):
@@ -187,11 +192,17 @@ class DeepLinkList(APIView):
         serializer = DeepLinkSerializer(deeplink)
 
         # Stacks
-        if 'stacks' in request.POST:
+        stacks = get_request_list(request.POST, 'stacks', map_fn=float)
+        if stacks:
             # Nested lists of 2-tuples: [[stack_id, scale_level]]
-            stacks = get_request_list(request.POST, 'stacks', map_fn=float)
             for s in stacks:
-                stack_link = DeepLinkStack(deep_link=deeplink, stack_id=s[0], zoom_level=s[1])
+                stack_link = DeepLinkStack(**{
+                    'project_id': project_id,
+                    'user_id': request.user.id,
+                    'deep_link': deeplink,
+                    'stack_id': int(s[0]),
+                    'zoom_level': s[1],
+                })
                 stack_link.save()
 
         # Stack groups
@@ -199,8 +210,13 @@ class DeepLinkList(APIView):
             sg_id = int(request.POST['stack_group'])
             sg_zoom_levels = get_request_list(request.POST,
                 'stack_group_scale_levels', map_fn=float)
-            sg_link = DeepLinkStackGroup(deeplink=deeplink, stack_group_id=sg_id,
-                    zoom_levels=sg_zoom_levels)
+            sg_link = DeepLinkStackGroup(**{
+                'project_id': project_id,
+                'user_id': request.user.id,
+                'deeplink': deeplink,
+                'stack_group_id': sg_id,
+                'zoom_levels': sg_zoom_levels,
+            })
             sg_link.save()
 
         return Response(serializer.data)

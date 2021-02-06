@@ -536,6 +536,12 @@ var project;
                 else if (linkInfo.active_treenode) init_active_node_id = linkInfo.active_treenode;
                 else if (!init_active_skeleton_id && linkInfo.active_skeleton) init_active_skeleton_id = linkInfo.active_skeleton;
               }
+              if (ss.length === 0 && sids.length === 0 && linkInfo.stacks.length > 0) {
+                for (let i=0; i<linkInfo.stacks.length; ++i) {
+                  sids.push(linkInfo.stacks[i].stack_id);
+                  ss.push(linkInfo.stacks[i].zoom_level);
+                }
+              }
               if (help === undefined && linkInfo.show_help) {
                 help = true;
                 this.setContextHelpVisibility(help);

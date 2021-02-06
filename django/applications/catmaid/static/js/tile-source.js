@@ -674,7 +674,7 @@
       return this.rootURL + '/' + this.datasetPath(zoomLevel) + '/' + blockCoord.join('/');
     }
 
-    populateDatasetAttributes() {
+    populateDatasetAttributes(zoomLevel = 0) {
       let datasetPath = this.datasetPath(zoomLevel);
       return this.reader
           .dataset_exists(datasetPath)

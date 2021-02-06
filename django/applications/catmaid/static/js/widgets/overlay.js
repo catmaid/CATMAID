@@ -4300,7 +4300,7 @@ var SkeletonAnnotations = {};
             var nodeSelected = false;
             if (SkeletonAnnotations.hasOwnProperty('init_active_node_id')) {
               nodeSelected = true;
-              self.activateNode(self.nodes.get(SkeletonAnnotations.init_active_node_id));
+              SkeletonAnnotations.staticSelectNode(SkeletonAnnotations.init_active_node_id);
               delete SkeletonAnnotations.init_active_node_id;
             }
             if (SkeletonAnnotations.hasOwnProperty('init_active_skeleton_id')) {

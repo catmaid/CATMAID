@@ -82,9 +82,7 @@ class SimpleDeepLinkSerializer(ModelSerializer):
     class Meta:
         model = DeepLink
         read_only_fields = ('id',)
-        fields = (
-            '__all__',
-        )
+        fields = '__all__'
 
 
 class DeepLinkList(APIView):

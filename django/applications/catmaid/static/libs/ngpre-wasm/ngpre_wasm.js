@@ -23,18 +23,7 @@ function takeObject(idx) {
     return ret;
 }
 
-function addHeapObject(obj) {
-    if (heap_next === heap.length) heap.push(heap.length + 1);
-    const idx = heap_next;
-    heap_next = heap[idx];
-
-    heap[idx] = obj;
-    return idx;
-}
-
-let cachedTextDecoder = new TextDecoder('utf-8', { ignoreBOM: true, fatal: true });
-
-cachedTextDecoder.decode();
+let WASM_VECTOR_LEN = 0;
 
 let cachegetUint8Memory0 = null;
 function getUint8Memory0() {
@@ -43,12 +32,6 @@ function getUint8Memory0() {
     }
     return cachegetUint8Memory0;
 }
-
-function getStringFromWasm0(ptr, len) {
-    return cachedTextDecoder.decode(getUint8Memory0().subarray(ptr, ptr + len));
-}
-
-let WASM_VECTOR_LEN = 0;
 
 let cachedTextEncoder = new TextEncoder('utf-8');
 
@@ -109,6 +92,23 @@ function getInt32Memory0() {
         cachegetInt32Memory0 = new Int32Array(wasm.memory.buffer);
     }
     return cachegetInt32Memory0;
+}
+
+let cachedTextDecoder = new TextDecoder('utf-8', { ignoreBOM: true, fatal: true });
+
+cachedTextDecoder.decode();
+
+function getStringFromWasm0(ptr, len) {
+    return cachedTextDecoder.decode(getUint8Memory0().subarray(ptr, ptr + len));
+}
+
+function addHeapObject(obj) {
+    if (heap_next === heap.length) heap.push(heap.length + 1);
+    const idx = heap_next;
+    heap_next = heap[idx];
+
+    heap[idx] = obj;
+    return idx;
 }
 
 function debugString(val) {
@@ -201,7 +201,7 @@ function makeMutClosure(arg0, arg1, dtor, f) {
     return real;
 }
 function __wbg_adapter_24(arg0, arg1, arg2) {
-    wasm._dyn_core__ops__function__FnMut__A____Output___R_as_wasm_bindgen__closure__WasmClosure___describe__invoke__hea1fcf746ae5cea7(arg0, arg1, addHeapObject(arg2));
+    wasm.wasm_bindgen__convert__closures__invoke1_mut__h6d341b92f1d02704(arg0, arg1, addHeapObject(arg2));
 }
 
 function handleError(f) {
@@ -214,8 +214,8 @@ function handleError(f) {
         }
     };
 }
-function __wbg_adapter_45(arg0, arg1, arg2, arg3) {
-    wasm.wasm_bindgen__convert__closures__invoke2_mut__h92da8636eb3a6ca3(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
+function __wbg_adapter_39(arg0, arg1, arg2, arg3) {
+    wasm.wasm_bindgen__convert__closures__invoke2_mut__h06f37eb52c7a14c7(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
 }
 
 let cachegetUint64Memory0 = null;
@@ -370,8 +370,8 @@ class DatasetAttributes {
     */
     get_dimensions(zoom_level) {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.datasetattributes_get_dimensions(retptr, this.ptr, zoom_level);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -379,7 +379,7 @@ class DatasetAttributes {
             wasm.__wbindgen_free(r0, r1 * 8);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -388,8 +388,8 @@ class DatasetAttributes {
     */
     get_block_size(zoom_level) {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.datasetattributes_get_block_size(retptr, this.ptr, zoom_level);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -397,7 +397,7 @@ class DatasetAttributes {
             wasm.__wbindgen_free(r0, r1 * 4);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -406,8 +406,8 @@ class DatasetAttributes {
     */
     get_voxel_offset(zoom_level) {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.datasetattributes_get_voxel_offset(retptr, this.ptr, zoom_level);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -415,7 +415,7 @@ class DatasetAttributes {
             wasm.__wbindgen_free(r0, r1 * 4);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -423,14 +423,14 @@ class DatasetAttributes {
     */
     get_data_type() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.datasetattributes_get_data_type(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
             return getStringFromWasm0(r0, r1);
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
             wasm.__wbindgen_free(r0, r1);
         }
     }
@@ -439,14 +439,14 @@ class DatasetAttributes {
     */
     get_compression() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.datasetattributes_get_compression(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
             return getStringFromWasm0(r0, r1);
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
             wasm.__wbindgen_free(r0, r1);
         }
     }
@@ -564,7 +564,7 @@ class NgPreHTTPFetch {
     /**
     * @param {string} path_name
     * @param {DatasetAttributes} data_attrs
-    * @param {BigUint64Array} grid_position
+    * @param {BigInt64Array} grid_position
     * @returns {Promise<any>}
     */
     read_block(path_name, data_attrs, grid_position) {
@@ -589,7 +589,7 @@ class NgPreHTTPFetch {
     /**
     * @param {string} path_name
     * @param {DatasetAttributes} data_attrs
-    * @param {BigUint64Array} grid_position
+    * @param {BigInt64Array} grid_position
     * @returns {Promise<any>}
     */
     block_etag(path_name, data_attrs, grid_position) {
@@ -604,7 +604,7 @@ class NgPreHTTPFetch {
     /**
     * @param {string} path_name
     * @param {DatasetAttributes} data_attrs
-    * @param {BigUint64Array} grid_position
+    * @param {BigInt64Array} grid_position
     * @returns {Promise<any>}
     */
     read_block_with_etag(path_name, data_attrs, grid_position) {
@@ -640,8 +640,8 @@ class VecDataBlockFLOAT32 {
     */
     get_size() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.vecdatablockfloat32_get_size(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -649,7 +649,7 @@ class VecDataBlockFLOAT32 {
             wasm.__wbindgen_free(r0, r1 * 4);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -657,8 +657,8 @@ class VecDataBlockFLOAT32 {
     */
     get_grid_position() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.vecdatablockfloat32_get_grid_position(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -666,7 +666,7 @@ class VecDataBlockFLOAT32 {
             wasm.__wbindgen_free(r0, r1 * 8);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -674,8 +674,8 @@ class VecDataBlockFLOAT32 {
     */
     get_data() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.vecdatablockfloat32_get_data(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -683,7 +683,7 @@ class VecDataBlockFLOAT32 {
             wasm.__wbindgen_free(r0, r1 * 4);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -693,8 +693,8 @@ class VecDataBlockFLOAT32 {
         try {
             var ptr = this.ptr;
             this.ptr = 0;
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.vecdatablockfloat32_into_data(retptr, ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -702,7 +702,7 @@ class VecDataBlockFLOAT32 {
             wasm.__wbindgen_free(r0, r1 * 4);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -717,8 +717,8 @@ class VecDataBlockFLOAT32 {
     */
     get_etag() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.vecdatablockfloat32_get_etag(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -729,7 +729,7 @@ class VecDataBlockFLOAT32 {
             }
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
 }
@@ -756,16 +756,16 @@ class VecDataBlockFLOAT64 {
     */
     get_size() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
-            wasm.vecdatablockfloat64_get_size(retptr, this.ptr);
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
+            wasm.vecdatablockfloat32_get_size(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
             var v0 = getArrayU32FromWasm0(r0, r1).slice();
             wasm.__wbindgen_free(r0, r1 * 4);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -773,8 +773,8 @@ class VecDataBlockFLOAT64 {
     */
     get_grid_position() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.vecdatablockfloat32_get_grid_position(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -782,7 +782,7 @@ class VecDataBlockFLOAT64 {
             wasm.__wbindgen_free(r0, r1 * 8);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -790,8 +790,8 @@ class VecDataBlockFLOAT64 {
     */
     get_data() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.vecdatablockfloat64_get_data(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -799,7 +799,7 @@ class VecDataBlockFLOAT64 {
             wasm.__wbindgen_free(r0, r1 * 8);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -809,8 +809,8 @@ class VecDataBlockFLOAT64 {
         try {
             var ptr = this.ptr;
             this.ptr = 0;
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.vecdatablockfloat64_into_data(retptr, ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -818,7 +818,7 @@ class VecDataBlockFLOAT64 {
             wasm.__wbindgen_free(r0, r1 * 8);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -833,8 +833,8 @@ class VecDataBlockFLOAT64 {
     */
     get_etag() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.vecdatablockfloat32_get_etag(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -845,7 +845,7 @@ class VecDataBlockFLOAT64 {
             }
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
 }
@@ -872,16 +872,16 @@ class VecDataBlockINT16 {
     */
     get_size() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
-            wasm.vecdatablockfloat64_get_size(retptr, this.ptr);
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
+            wasm.vecdatablockfloat32_get_size(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
             var v0 = getArrayU32FromWasm0(r0, r1).slice();
             wasm.__wbindgen_free(r0, r1 * 4);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -889,8 +889,8 @@ class VecDataBlockINT16 {
     */
     get_grid_position() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.vecdatablockfloat32_get_grid_position(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -898,7 +898,7 @@ class VecDataBlockINT16 {
             wasm.__wbindgen_free(r0, r1 * 8);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -906,8 +906,8 @@ class VecDataBlockINT16 {
     */
     get_data() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.vecdatablockint16_get_data(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -915,7 +915,7 @@ class VecDataBlockINT16 {
             wasm.__wbindgen_free(r0, r1 * 2);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -925,8 +925,8 @@ class VecDataBlockINT16 {
         try {
             var ptr = this.ptr;
             this.ptr = 0;
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.vecdatablockint16_into_data(retptr, ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -934,7 +934,7 @@ class VecDataBlockINT16 {
             wasm.__wbindgen_free(r0, r1 * 2);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -949,8 +949,8 @@ class VecDataBlockINT16 {
     */
     get_etag() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.vecdatablockfloat32_get_etag(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -961,7 +961,7 @@ class VecDataBlockINT16 {
             }
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
 }
@@ -988,16 +988,16 @@ class VecDataBlockINT32 {
     */
     get_size() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
-            wasm.vecdatablockfloat64_get_size(retptr, this.ptr);
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
+            wasm.vecdatablockfloat32_get_size(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
             var v0 = getArrayU32FromWasm0(r0, r1).slice();
             wasm.__wbindgen_free(r0, r1 * 4);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -1005,8 +1005,8 @@ class VecDataBlockINT32 {
     */
     get_grid_position() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.vecdatablockfloat32_get_grid_position(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -1014,7 +1014,7 @@ class VecDataBlockINT32 {
             wasm.__wbindgen_free(r0, r1 * 8);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -1022,8 +1022,8 @@ class VecDataBlockINT32 {
     */
     get_data() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.vecdatablockint32_get_data(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -1031,7 +1031,7 @@ class VecDataBlockINT32 {
             wasm.__wbindgen_free(r0, r1 * 4);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -1041,16 +1041,16 @@ class VecDataBlockINT32 {
         try {
             var ptr = this.ptr;
             this.ptr = 0;
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
-            wasm.vecdatablockint32_into_data(retptr, ptr);
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
+            wasm.vecdatablockfloat32_into_data(retptr, ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
             var v0 = getArrayI32FromWasm0(r0, r1).slice();
             wasm.__wbindgen_free(r0, r1 * 4);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -1065,8 +1065,8 @@ class VecDataBlockINT32 {
     */
     get_etag() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.vecdatablockfloat32_get_etag(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -1077,7 +1077,7 @@ class VecDataBlockINT32 {
             }
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
 }
@@ -1104,16 +1104,16 @@ class VecDataBlockINT64 {
     */
     get_size() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
-            wasm.vecdatablockfloat64_get_size(retptr, this.ptr);
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
+            wasm.vecdatablockfloat32_get_size(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
             var v0 = getArrayU32FromWasm0(r0, r1).slice();
             wasm.__wbindgen_free(r0, r1 * 4);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -1121,8 +1121,8 @@ class VecDataBlockINT64 {
     */
     get_grid_position() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.vecdatablockfloat32_get_grid_position(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -1130,7 +1130,7 @@ class VecDataBlockINT64 {
             wasm.__wbindgen_free(r0, r1 * 8);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -1138,8 +1138,8 @@ class VecDataBlockINT64 {
     */
     get_data() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.vecdatablockint64_get_data(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -1147,7 +1147,7 @@ class VecDataBlockINT64 {
             wasm.__wbindgen_free(r0, r1 * 8);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -1157,16 +1157,16 @@ class VecDataBlockINT64 {
         try {
             var ptr = this.ptr;
             this.ptr = 0;
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
-            wasm.vecdatablockint64_into_data(retptr, ptr);
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
+            wasm.vecdatablockfloat64_into_data(retptr, ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
             var v0 = getArrayI64FromWasm0(r0, r1).slice();
             wasm.__wbindgen_free(r0, r1 * 8);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -1181,8 +1181,8 @@ class VecDataBlockINT64 {
     */
     get_etag() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.vecdatablockfloat32_get_etag(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -1193,7 +1193,7 @@ class VecDataBlockINT64 {
             }
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
 }
@@ -1220,16 +1220,16 @@ class VecDataBlockINT8 {
     */
     get_size() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
-            wasm.vecdatablockfloat64_get_size(retptr, this.ptr);
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
+            wasm.vecdatablockfloat32_get_size(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
             var v0 = getArrayU32FromWasm0(r0, r1).slice();
             wasm.__wbindgen_free(r0, r1 * 4);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -1237,8 +1237,8 @@ class VecDataBlockINT8 {
     */
     get_grid_position() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.vecdatablockfloat32_get_grid_position(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -1246,7 +1246,7 @@ class VecDataBlockINT8 {
             wasm.__wbindgen_free(r0, r1 * 8);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -1254,8 +1254,8 @@ class VecDataBlockINT8 {
     */
     get_data() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.vecdatablockint8_get_data(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -1263,7 +1263,7 @@ class VecDataBlockINT8 {
             wasm.__wbindgen_free(r0, r1 * 1);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -1273,8 +1273,8 @@ class VecDataBlockINT8 {
         try {
             var ptr = this.ptr;
             this.ptr = 0;
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.vecdatablockint8_into_data(retptr, ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -1282,7 +1282,7 @@ class VecDataBlockINT8 {
             wasm.__wbindgen_free(r0, r1 * 1);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -1297,8 +1297,8 @@ class VecDataBlockINT8 {
     */
     get_etag() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.vecdatablockfloat32_get_etag(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -1309,7 +1309,7 @@ class VecDataBlockINT8 {
             }
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
 }
@@ -1336,16 +1336,16 @@ class VecDataBlockUINT16 {
     */
     get_size() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
-            wasm.vecdatablockfloat64_get_size(retptr, this.ptr);
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
+            wasm.vecdatablockfloat32_get_size(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
             var v0 = getArrayU32FromWasm0(r0, r1).slice();
             wasm.__wbindgen_free(r0, r1 * 4);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -1353,8 +1353,8 @@ class VecDataBlockUINT16 {
     */
     get_grid_position() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.vecdatablockfloat32_get_grid_position(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -1362,7 +1362,7 @@ class VecDataBlockUINT16 {
             wasm.__wbindgen_free(r0, r1 * 8);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -1370,8 +1370,8 @@ class VecDataBlockUINT16 {
     */
     get_data() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.vecdatablockuint16_get_data(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -1379,7 +1379,7 @@ class VecDataBlockUINT16 {
             wasm.__wbindgen_free(r0, r1 * 2);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -1389,8 +1389,8 @@ class VecDataBlockUINT16 {
         try {
             var ptr = this.ptr;
             this.ptr = 0;
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.vecdatablockint16_into_data(retptr, ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -1398,7 +1398,7 @@ class VecDataBlockUINT16 {
             wasm.__wbindgen_free(r0, r1 * 2);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -1413,8 +1413,8 @@ class VecDataBlockUINT16 {
     */
     get_etag() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.vecdatablockfloat32_get_etag(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -1425,7 +1425,7 @@ class VecDataBlockUINT16 {
             }
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
 }
@@ -1452,16 +1452,16 @@ class VecDataBlockUINT32 {
     */
     get_size() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
-            wasm.vecdatablockfloat64_get_size(retptr, this.ptr);
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
+            wasm.vecdatablockfloat32_get_size(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
             var v0 = getArrayU32FromWasm0(r0, r1).slice();
             wasm.__wbindgen_free(r0, r1 * 4);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -1469,8 +1469,8 @@ class VecDataBlockUINT32 {
     */
     get_grid_position() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.vecdatablockfloat32_get_grid_position(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -1478,7 +1478,7 @@ class VecDataBlockUINT32 {
             wasm.__wbindgen_free(r0, r1 * 8);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -1486,8 +1486,8 @@ class VecDataBlockUINT32 {
     */
     get_data() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.vecdatablockuint32_get_data(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -1495,7 +1495,7 @@ class VecDataBlockUINT32 {
             wasm.__wbindgen_free(r0, r1 * 4);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -1505,16 +1505,16 @@ class VecDataBlockUINT32 {
         try {
             var ptr = this.ptr;
             this.ptr = 0;
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
-            wasm.vecdatablockuint32_into_data(retptr, ptr);
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
+            wasm.vecdatablockfloat32_into_data(retptr, ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
             var v0 = getArrayU32FromWasm0(r0, r1).slice();
             wasm.__wbindgen_free(r0, r1 * 4);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -1529,8 +1529,8 @@ class VecDataBlockUINT32 {
     */
     get_etag() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.vecdatablockfloat32_get_etag(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -1541,7 +1541,7 @@ class VecDataBlockUINT32 {
             }
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
 }
@@ -1568,16 +1568,16 @@ class VecDataBlockUINT64 {
     */
     get_size() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
-            wasm.vecdatablockfloat64_get_size(retptr, this.ptr);
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
+            wasm.vecdatablockfloat32_get_size(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
             var v0 = getArrayU32FromWasm0(r0, r1).slice();
             wasm.__wbindgen_free(r0, r1 * 4);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -1585,8 +1585,8 @@ class VecDataBlockUINT64 {
     */
     get_grid_position() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.vecdatablockfloat32_get_grid_position(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -1594,7 +1594,7 @@ class VecDataBlockUINT64 {
             wasm.__wbindgen_free(r0, r1 * 8);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -1602,8 +1602,8 @@ class VecDataBlockUINT64 {
     */
     get_data() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.vecdatablockuint64_get_data(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -1611,7 +1611,7 @@ class VecDataBlockUINT64 {
             wasm.__wbindgen_free(r0, r1 * 8);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -1621,16 +1621,16 @@ class VecDataBlockUINT64 {
         try {
             var ptr = this.ptr;
             this.ptr = 0;
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
-            wasm.vecdatablockuint64_into_data(retptr, ptr);
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
+            wasm.vecdatablockfloat64_into_data(retptr, ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
             var v0 = getArrayU64FromWasm0(r0, r1).slice();
             wasm.__wbindgen_free(r0, r1 * 8);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -1645,8 +1645,8 @@ class VecDataBlockUINT64 {
     */
     get_etag() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.vecdatablockfloat32_get_etag(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -1657,7 +1657,7 @@ class VecDataBlockUINT64 {
             }
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
 }
@@ -1684,16 +1684,16 @@ class VecDataBlockUINT8 {
     */
     get_size() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
-            wasm.vecdatablockfloat64_get_size(retptr, this.ptr);
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
+            wasm.vecdatablockfloat32_get_size(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
             var v0 = getArrayU32FromWasm0(r0, r1).slice();
             wasm.__wbindgen_free(r0, r1 * 4);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -1701,8 +1701,8 @@ class VecDataBlockUINT8 {
     */
     get_grid_position() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.vecdatablockfloat32_get_grid_position(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -1710,7 +1710,7 @@ class VecDataBlockUINT8 {
             wasm.__wbindgen_free(r0, r1 * 8);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -1718,8 +1718,8 @@ class VecDataBlockUINT8 {
     */
     get_data() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.vecdatablockuint8_get_data(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -1727,7 +1727,7 @@ class VecDataBlockUINT8 {
             wasm.__wbindgen_free(r0, r1 * 1);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -1737,16 +1737,16 @@ class VecDataBlockUINT8 {
         try {
             var ptr = this.ptr;
             this.ptr = 0;
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
-            wasm.vecdatablockuint8_into_data(retptr, ptr);
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
+            wasm.vecdatablockint8_into_data(retptr, ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
             var v0 = getArrayU8FromWasm0(r0, r1).slice();
             wasm.__wbindgen_free(r0, r1 * 1);
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
     /**
@@ -1761,8 +1761,8 @@ class VecDataBlockUINT8 {
     */
     get_etag() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.vecdatablockfloat32_get_etag(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
@@ -1773,7 +1773,7 @@ class VecDataBlockUINT8 {
             }
             return v0;
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
         }
     }
 }
@@ -1800,14 +1800,14 @@ class Version {
     */
     to_string() {
         try {
-            const retptr = wasm.__wbindgen_export_7.value - 16;
-            wasm.__wbindgen_export_7.value = retptr;
+            const retptr = wasm.__wbindgen_export_6.value - 16;
+            wasm.__wbindgen_export_6.value = retptr;
             wasm.version_to_string(retptr, this.ptr);
             var r0 = getInt32Memory0()[retptr / 4 + 0];
             var r1 = getInt32Memory0()[retptr / 4 + 1];
             return getStringFromWasm0(r0, r1);
         } finally {
-            wasm.__wbindgen_export_7.value += 16;
+            wasm.__wbindgen_export_6.value += 16;
             wasm.__wbindgen_free(r0, r1);
         }
     }
@@ -1859,26 +1859,104 @@ async function init(input) {
     }
     const imports = {};
     imports.wbg = {};
+    imports.wbg.__wbg_instanceof_ArrayBuffer_3a0fa134e6809d57 = function(arg0) {
+        var ret = getObject(arg0) instanceof ArrayBuffer;
+        return ret;
+    };
+    imports.wbg.__wbg_new_c6c0228e6d22a2f9 = function(arg0) {
+        var ret = new Uint8Array(getObject(arg0));
+        return addHeapObject(ret);
+    };
     imports.wbg.__wbindgen_object_drop_ref = function(arg0) {
         takeObject(arg0);
     };
-    imports.wbg.__wbg_new_59cb74e423758ede = function() {
-        var ret = new Error();
+    imports.wbg.__wbg_vecdatablockfloat32_new = function(arg0) {
+        var ret = VecDataBlockFLOAT32.__wrap(arg0);
         return addHeapObject(ret);
     };
-    imports.wbg.__wbg_stack_558ba5917b466edd = function(arg0, arg1) {
-        var ret = getObject(arg1).stack;
+    imports.wbg.__wbg_new_94a7dfa9529ec6e8 = function(arg0, arg1) {
+        var ret = new Error(getStringFromWasm0(arg0, arg1));
+        return addHeapObject(ret);
+    };
+    imports.wbg.__wbg_vecdatablockuint32_new = function(arg0) {
+        var ret = VecDataBlockUINT32.__wrap(arg0);
+        return addHeapObject(ret);
+    };
+    imports.wbg.__wbg_vecdatablockint32_new = function(arg0) {
+        var ret = VecDataBlockINT32.__wrap(arg0);
+        return addHeapObject(ret);
+    };
+    imports.wbg.__wbg_vecdatablockint64_new = function(arg0) {
+        var ret = VecDataBlockINT64.__wrap(arg0);
+        return addHeapObject(ret);
+    };
+    imports.wbg.__wbg_instanceof_Response_f52c65c389890639 = function(arg0) {
+        var ret = getObject(arg0) instanceof Response;
+        return ret;
+    };
+    imports.wbg.__wbg_ok_c20643e0a45dc5a0 = function(arg0) {
+        var ret = getObject(arg0).ok;
+        return ret;
+    };
+    imports.wbg.__wbg_headers_6fafb2c7669a8ac5 = function(arg0) {
+        var ret = getObject(arg0).headers;
+        return addHeapObject(ret);
+    };
+    imports.wbg.__wbg_arrayBuffer_0ba17dfaad804b6f = handleError(function(arg0) {
+        var ret = getObject(arg0).arrayBuffer();
+        return addHeapObject(ret);
+    });
+    imports.wbg.__wbg_vecdatablockfloat64_new = function(arg0) {
+        var ret = VecDataBlockFLOAT64.__wrap(arg0);
+        return addHeapObject(ret);
+    };
+    imports.wbg.__wbindgen_json_serialize = function(arg0, arg1) {
+        const obj = getObject(arg1);
+        var ret = JSON.stringify(obj === undefined ? null : obj);
         var ptr0 = passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         var len0 = WASM_VECTOR_LEN;
         getInt32Memory0()[arg0 / 4 + 1] = len0;
         getInt32Memory0()[arg0 / 4 + 0] = ptr0;
     };
-    imports.wbg.__wbg_error_4bb6c2a97407129a = function(arg0, arg1) {
-        try {
-            console.error(getStringFromWasm0(arg0, arg1));
-        } finally {
-            wasm.__wbindgen_free(arg0, arg1);
-        }
+    imports.wbg.__wbg_datasetattributes_new = function(arg0) {
+        var ret = DatasetAttributes.__wrap(arg0);
+        return addHeapObject(ret);
+    };
+    imports.wbg.__wbindgen_string_new = function(arg0, arg1) {
+        var ret = getStringFromWasm0(arg0, arg1);
+        return addHeapObject(ret);
+    };
+    imports.wbg.__wbg_vecdatablockint8_new = function(arg0) {
+        var ret = VecDataBlockINT8.__wrap(arg0);
+        return addHeapObject(ret);
+    };
+    imports.wbg.__wbindgen_json_parse = function(arg0, arg1) {
+        var ret = JSON.parse(getStringFromWasm0(arg0, arg1));
+        return addHeapObject(ret);
+    };
+    imports.wbg.__wbg_vecdatablockuint8_new = function(arg0) {
+        var ret = VecDataBlockUINT8.__wrap(arg0);
+        return addHeapObject(ret);
+    };
+    imports.wbg.__wbg_vecdatablockint16_new = function(arg0) {
+        var ret = VecDataBlockINT16.__wrap(arg0);
+        return addHeapObject(ret);
+    };
+    imports.wbg.__wbg_ngprehttpfetch_new = function(arg0) {
+        var ret = NgPreHTTPFetch.__wrap(arg0);
+        return addHeapObject(ret);
+    };
+    imports.wbg.__wbg_vecdatablockuint16_new = function(arg0) {
+        var ret = VecDataBlockUINT16.__wrap(arg0);
+        return addHeapObject(ret);
+    };
+    imports.wbg.__wbg_vecdatablockuint64_new = function(arg0) {
+        var ret = VecDataBlockUINT64.__wrap(arg0);
+        return addHeapObject(ret);
+    };
+    imports.wbg.__wbg_version_new = function(arg0) {
+        var ret = Version.__wrap(arg0);
+        return addHeapObject(ret);
     };
     imports.wbg.__wbg_self_6baf3a3aa7b63415 = handleError(function() {
         var ret = self.self;
@@ -1920,109 +1998,13 @@ async function init(input) {
         var ret = getObject(arg0).buffer;
         return addHeapObject(ret);
     };
-    imports.wbg.__wbg_new_c6c0228e6d22a2f9 = function(arg0) {
-        var ret = new Uint8Array(getObject(arg0));
-        return addHeapObject(ret);
-    };
     imports.wbg.__wbg_set_b91afac9fd216d99 = function(arg0, arg1, arg2) {
         getObject(arg0).set(getObject(arg1), arg2 >>> 0);
-    };
-    imports.wbg.__wbindgen_json_parse = function(arg0, arg1) {
-        var ret = JSON.parse(getStringFromWasm0(arg0, arg1));
-        return addHeapObject(ret);
-    };
-    imports.wbg.__wbindgen_json_serialize = function(arg0, arg1) {
-        const obj = getObject(arg1);
-        var ret = JSON.stringify(obj === undefined ? null : obj);
-        var ptr0 = passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        var len0 = WASM_VECTOR_LEN;
-        getInt32Memory0()[arg0 / 4 + 1] = len0;
-        getInt32Memory0()[arg0 / 4 + 0] = ptr0;
-    };
-    imports.wbg.__wbg_instanceof_ArrayBuffer_3a0fa134e6809d57 = function(arg0) {
-        var ret = getObject(arg0) instanceof ArrayBuffer;
-        return ret;
-    };
-    imports.wbg.__wbg_instanceof_Response_f52c65c389890639 = function(arg0) {
-        var ret = getObject(arg0) instanceof Response;
-        return ret;
     };
     imports.wbg.__wbg_json_012a7a84489a5ec5 = handleError(function(arg0) {
         var ret = getObject(arg0).json();
         return addHeapObject(ret);
     });
-    imports.wbg.__wbg_new_94a7dfa9529ec6e8 = function(arg0, arg1) {
-        var ret = new Error(getStringFromWasm0(arg0, arg1));
-        return addHeapObject(ret);
-    };
-    imports.wbg.__wbg_vecdatablockfloat64_new = function(arg0) {
-        var ret = VecDataBlockFLOAT64.__wrap(arg0);
-        return addHeapObject(ret);
-    };
-    imports.wbg.__wbg_vecdatablockint16_new = function(arg0) {
-        var ret = VecDataBlockINT16.__wrap(arg0);
-        return addHeapObject(ret);
-    };
-    imports.wbg.__wbg_vecdatablockuint64_new = function(arg0) {
-        var ret = VecDataBlockUINT64.__wrap(arg0);
-        return addHeapObject(ret);
-    };
-    imports.wbg.__wbg_version_new = function(arg0) {
-        var ret = Version.__wrap(arg0);
-        return addHeapObject(ret);
-    };
-    imports.wbg.__wbindgen_string_new = function(arg0, arg1) {
-        var ret = getStringFromWasm0(arg0, arg1);
-        return addHeapObject(ret);
-    };
-    imports.wbg.__wbg_vecdatablockuint8_new = function(arg0) {
-        var ret = VecDataBlockUINT8.__wrap(arg0);
-        return addHeapObject(ret);
-    };
-    imports.wbg.__wbg_vecdatablockfloat32_new = function(arg0) {
-        var ret = VecDataBlockFLOAT32.__wrap(arg0);
-        return addHeapObject(ret);
-    };
-    imports.wbg.__wbg_ngprehttpfetch_new = function(arg0) {
-        var ret = NgPreHTTPFetch.__wrap(arg0);
-        return addHeapObject(ret);
-    };
-    imports.wbg.__wbg_vecdatablockint8_new = function(arg0) {
-        var ret = VecDataBlockINT8.__wrap(arg0);
-        return addHeapObject(ret);
-    };
-    imports.wbg.__wbg_ok_c20643e0a45dc5a0 = function(arg0) {
-        var ret = getObject(arg0).ok;
-        return ret;
-    };
-    imports.wbg.__wbg_headers_6fafb2c7669a8ac5 = function(arg0) {
-        var ret = getObject(arg0).headers;
-        return addHeapObject(ret);
-    };
-    imports.wbg.__wbg_arrayBuffer_0ba17dfaad804b6f = handleError(function(arg0) {
-        var ret = getObject(arg0).arrayBuffer();
-        return addHeapObject(ret);
-    });
-    imports.wbg.__wbg_vecdatablockint32_new = function(arg0) {
-        var ret = VecDataBlockINT32.__wrap(arg0);
-        return addHeapObject(ret);
-    };
-    imports.wbg.__wbg_vecdatablockuint32_new = function(arg0) {
-        var ret = VecDataBlockUINT32.__wrap(arg0);
-        return addHeapObject(ret);
-    };
-    imports.wbg.__wbg_datasetattributes_new = function(arg0) {
-        var ret = DatasetAttributes.__wrap(arg0);
-        return addHeapObject(ret);
-    };
-    imports.wbg.__wbg_vecdatablockint64_new = function(arg0) {
-        var ret = VecDataBlockINT64.__wrap(arg0);
-        return addHeapObject(ret);
-    };
-    imports.wbg.__wbg_vecdatablockuint16_new = function(arg0) {
-        var ret = VecDataBlockUINT16.__wrap(arg0);
-        return addHeapObject(ret);
-    };
     imports.wbg.__wbg_new_ba07d0daa0e4677e = function() {
         var ret = new Object();
         return addHeapObject(ret);
@@ -2081,7 +2063,7 @@ async function init(input) {
                 const a = state0.a;
                 state0.a = 0;
                 try {
-                    return __wbg_adapter_45(a, state0.b, arg0, arg1);
+                    return __wbg_adapter_39(a, state0.b, arg0, arg1);
                 } finally {
                     state0.a = a;
                 }
@@ -2124,8 +2106,8 @@ async function init(input) {
         getInt32Memory0()[arg0 / 4 + 1] = len0;
         getInt32Memory0()[arg0 / 4 + 0] = ptr0;
     });
-    imports.wbg.__wbindgen_closure_wrapper1043 = function(arg0, arg1, arg2) {
-        var ret = makeMutClosure(arg0, arg1, 55, __wbg_adapter_24);
+    imports.wbg.__wbindgen_closure_wrapper990 = function(arg0, arg1, arg2) {
+        var ret = makeMutClosure(arg0, arg1, 49, __wbg_adapter_24);
         return addHeapObject(ret);
     };
 

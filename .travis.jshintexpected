@@ -251,6 +251,6 @@ django/applications/catmaid/static/libs/catmaid/volumes.js: line 805, col 15, 'd
 
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 1817, col 1, 'async functions' is only available in ES8 (use 'esversion: 8').
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 1850, col 1, 'async functions' is only available in ES8 (use 'esversion: 8').
-django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2027, col 29, The object literal notation {} is preferable.
+django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2009, col 29, The object literal notation {} is preferable.
 
 199 errors

@@ -465,6 +465,8 @@ Miscellaneous:
 - Connector table: a search filter is now available for the table that allows
   filtering across all columns.
 
+- Connectivity matrix: the loading speed has been improved significantly.
+
 - Connector selection: a search filter is now available for the table that allows
   filtering across all columns.
 

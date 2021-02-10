@@ -88,10 +88,6 @@ django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 
 django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 3766, col 11, 'sorted' is defined but never used.
 django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 4105, col 9, 'edgeData' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/connectivity-matrix.js: line 750, col 11, 'rowSkeletonIDs' is defined but never used.
-django/applications/catmaid/static/js/widgets/connectivity-matrix.js: line 751, col 11, 'colSkeletonIDs' is defined but never used.
-django/applications/catmaid/static/js/widgets/connectivity-matrix.js: line 1372, col 9, 'colTotalSum' is defined but never used.
-
 django/applications/catmaid/static/js/widgets/connectivity.js: line 465, col 9, 'widgetID' is defined but never used.
 django/applications/catmaid/static/js/widgets/connectivity.js: line 466, col 9, 'skeletons' is defined but never used.
 django/applications/catmaid/static/js/widgets/connectivity.js: line 643, col 11, 'selected' is defined but never used.
@@ -253,4 +249,4 @@ django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 1817, col
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 1850, col 1, 'async functions' is only available in ES8 (use 'esversion: 8').
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2009, col 29, The object literal notation {} is preferable.
 
-199 errors
+196 errors

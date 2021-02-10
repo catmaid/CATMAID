@@ -654,9 +654,9 @@
   };
 
   /**
-   * Refresh the UI without recreating the connectivity matrix.
+   * Refresh the UI without recreating the connectivity matrix by default.
    */
-  ConnectivityMatrixWidget.prototype.refresh = function(container) {
+  ConnectivityMatrixWidget.prototype.refresh = function(refreshMatrix = false) {
     // Clrear container and add new table
     $(this.content).empty();
 
@@ -685,11 +685,12 @@
     // Rebuild matrix with sorted skeletons (no back-end query)
     this.matrix.rowSkeletonIDs = this.rowDimension.getSelectedSkeletons();
     this.matrix.colSkeletonIDs = this.colDimension.getSelectedSkeletons();
-    this.matrix.rebuild();
+    let prepare = refreshMatrix ?
+        this.matrix.refresh() : Promise.resolve().then(() => this.matrix.rebuild());
 
     // Create table
-    this.addConnectivityMatrixTable(this.matrix, this.content, this.synapseThreshold,
-        this.rotateColumnHeaders);
+    return prepare.then(() => this.addConnectivityMatrixTable(this.matrix,
+        this.content, this.synapseThreshold, this.rotateColumnHeaders));
   };
 
   /**
@@ -706,7 +707,7 @@
   /**
    * Recreate the connectivity matrix and refresh the UI.
    */
-  ConnectivityMatrixWidget.prototype.update = function(container) {
+  ConnectivityMatrixWidget.prototype.update = function() {
     if (!(this.matrix && this.content)) {
       return;
     }
@@ -748,30 +749,30 @@
     this.matrix.filterRules.length = 0;
     this.matrix.filterRules.push.apply(this.matrix.filterRules, this.filterRules);
     this.matrix.applyFilterRules = this.applyFilterRules;
-    var self = this;
-    this.matrix.refresh()
-      .then(nns.registerAll.bind(nns, this, this.rowDimension.getSelectedSkeletonModels()))
-      .then(nns.registerAll.bind(nns, this, this.colDimension.getSelectedSkeletonModels()))
-      .then(function() {
-        if (self.relativeDisplay && !self.connectivityData) {
-          return self.updateConnectivityCounts(Array.from(skeletonIds));
+    Promise.all([
+        () => nns.registerAll(this, this.rowDimension.getSelectedSkeletonModels()),
+        () => nns.registerAll(this, this.colDimension.getSelectedSkeletonModels()),
+      ])
+      .then(() => {
+        if (this.relativeDisplay && !this.connectivityData) {
+          return this.updateConnectivityCounts(Array.from(skeletonIds));
         }
       })
-      .then((function() {
+      .then(() => {
         // Clear any message
         if (this.content.dataset.msg) delete this.content.dataset.msg;
-        // Create table
-        this.refresh();
-      }).bind(this));
+        // Refresh matrix and create table
+        this.refresh(true);
+      });
   };
 
   ConnectivityMatrixWidget.prototype.updateConnectivityCounts = function(skeletonIds) {
     if (!skeletonIds) {
-      var rowSkeletonIDs = this.rowDimension.getSelectedSkeletons();
-      var colSkeletonIDs = this.colDimension.getSelectedSkeletons();
-      skeletonIds = new Set(this.matrix.rowSkeletonIDs);
-      for (var i=0; i<this.matrix.colSkeletonIDs.length; ++i) {
-        skeletonIds.add(this.matrix.colSkeletonIDs[i]);
+      const rowSkeletonIDs = this.rowDimension.getSelectedSkeletons();
+      const colSkeletonIDs = this.colDimension.getSelectedSkeletons();
+      skeletonIds = new Set(rowSkeletonIDs);
+      for (var i=0; i<colSkeletonIDs.length; ++i) {
+        skeletonIds.add(colSkeletonIDs[i]);
       }
       skeletonIds = Array.from(skeletonIds);
     }
@@ -1389,7 +1390,6 @@
     }
     // Add row headers and connectivity matrix rows
     var r = 0;
-    var colTotalSum = 0;
     for (var dr=0; dr<nDisplayRows; ++dr) {
       var c = 0;
       // Get skeleton or rowGroup name and increase row skeleton counter

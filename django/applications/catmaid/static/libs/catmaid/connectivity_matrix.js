@@ -153,40 +153,44 @@
    * the individual synapse count.
    */
   ConnectivityMatrix.prototype.createConnectivityMatrix = function(data) {
-    // Initialize result matrix with zero connections
-    var m = new Array(this.rowSkeletonIDs.length);
+    // Initialize result matrix with zero connections. We assume these cells
+    // aren't written to and save memory by using the same read-only object for
+    // all cells.
+    let emptyCell = Object.freeze({ 'count': 0, 'data': {} });
+    let m = new Array(this.rowSkeletonIDs.length);
     for (var i=0; i<this.rowSkeletonIDs.length; ++i) {
       m[i] = new Array(this.colSkeletonIDs.length);
       for (var j=0; j<this.colSkeletonIDs.length; ++j) {
-        m[i][j] = { 'count': 0, 'data': {} };
+        m[i][j] = emptyCell;
       }
     }
 
     // Build an index cache to not be required to look up
-    var rowIndexCache = this.rowSkeletonIDs.reduce(function(c, e, i) {
+    const rowIndexCache = this.rowSkeletonIDs.reduce(function(c, e, i) {
       c[e] = i;
       return c;
     }, {});
-    var colIndexCache = this.colSkeletonIDs.reduce(function(c, e, i) {
+    const colIndexCache = this.colSkeletonIDs.reduce(function(c, e, i) {
       c[e] = i;
       return c;
     }, {});
 
     // Add connectivity counts for connections from and to row skeletons. The
     // result is organized by outgoing connections.
-    for (var sourceSkid in data) {
-      var partners = data[sourceSkid];
-      for (var partnerSkid in partners) {
+    let emptyData = Object.freeze({});
+    for (const sourceSkid in data) {
+      const partners = data[sourceSkid];
+      for (const partnerSkid in partners) {
         // Store number of connections from current source to current target
         // (i.e. row to column).
-        var rowSourceIndex = rowIndexCache[sourceSkid];
-        var colPartnerIndex = colIndexCache[partnerSkid];
+        const rowSourceIndex = rowIndexCache[sourceSkid];
+        const colPartnerIndex = colIndexCache[partnerSkid];
         if (rowSourceIndex !== undefined && colPartnerIndex !== undefined) {
-          var count = partners[partnerSkid];
+          const count = partners[partnerSkid];
           if (typeof(count) === 'number') {
             m[rowSourceIndex][colPartnerIndex] = {
               'count': count,
-              'data': {}
+              'data': emptyData
             };
           } else {
             m[rowSourceIndex][colPartnerIndex] = {

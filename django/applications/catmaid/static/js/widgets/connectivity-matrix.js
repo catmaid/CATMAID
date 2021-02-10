@@ -5,7 +5,12 @@
   var ConnectivityMatrixWidget = function() {
     this.widgetID = this.registerInstance();
     this.matrix = new CATMAID.ConnectivityMatrix();
-    var update = this.update.bind(this);
+
+    // For some larger update operations it helps performance to control updates
+    // with finer granuarity.
+    this.blockUpdates = false;
+
+    var update = this.conditionalUpdate.bind(this);
     this.rowDimension = new CATMAID.BasicSkeletonSource(this.getName() + " Rows", {
       owner: this,
       handleAddedModels: update,
@@ -171,15 +176,19 @@
                                    this.colDimension.groups), name));
             }).bind(this), (function(groupName) {
               if (loadConfirm(this, withRows, withCols)) {
+                this.blockUpdates = true;
                 if (withRows) this.rowDimension.loadAsGroup(groupName, silent);
                 if (withCols) this.colDimension.loadAsGroup(groupName, silent);
+                this.blockUpdates = false;
                 if (withRows || withCols) this.update();
               }
             }).bind(this));
           } else {
             if (loadConfirm(this, withRows, withCols)) {
+              this.blockUpdates = true;
               if (withRows) this.rowDimension.loadSource(silent);
               if (withCols) this.colDimension.loadSource(silent);
+              this.blockUpdates = false;
               if (withRows || withCols) this.update();
             }
           }
@@ -681,6 +690,17 @@
     // Create table
     this.addConnectivityMatrixTable(this.matrix, this.content, this.synapseThreshold,
         this.rotateColumnHeaders);
+  };
+
+  /**
+   * Recreate the connectivity matrix and refresh the UI. To avoid unnecessary
+   * work this widget keeps a list of skeleton IDs
+   */
+  ConnectivityMatrixWidget.prototype.conditionalUpdate = function() {
+    if (this.blockUpdates) {
+      return;
+    }
+    return this.update();
   };
 
   /**

@@ -1203,10 +1203,12 @@
     var selected_cb2 = document.createElement('input');
     selected_cb2.setAttribute('type', 'checkbox');
 
+    let showAnnotationColumns = filters.annotations && filters.annotations.length > 0;
+
     var columns1 = [selected_cb1, 'Name'];
     var columns2 = [selected_cb2, 'Name'];
 
-    if (filters.annotations) {
+    if (showAnnotationColumns) {
       columns1.push('Annotated on (UTC)', 'Link last edited on (UTC)');
       columns2.push('Annotated on (UTC)', 'Link last edited on (UTC)');
     }
@@ -1234,7 +1236,7 @@
     let extraColumns =  [];
     let printCreationTime = a => CATMAID.tools.dateToString(CATMAID.tools.isoStringToDate(a.creation_time));
     let printEditionTime = a => CATMAID.tools.dateToString(CATMAID.tools.isoStringToDate(a.edition_time));
-    if (filters.annotations) {
+    if (showAnnotationColumns) {
       extraColumns.push({
         "orderable": true,
         "render": function(data, type, row, meta) {

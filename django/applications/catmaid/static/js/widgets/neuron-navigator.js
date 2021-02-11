@@ -1347,9 +1347,11 @@
             return CATMAID.NeuronNameService.getInstance()
               .registerAll(widget,
                 json.entities.reduce(function(m, n) {
-                  n.skeleton_ids.forEach(skid => {
-                    m[skid] = new CATMAID.SkeletonModel(skid, n.name);
-                  });
+                  if (n.skeleton_ids) {
+                    n.skeleton_ids.forEach(skid => {
+                      m[skid] = new CATMAID.SkeletonModel(skid, n.name);
+                    });
+                  }
                   return m;
                 }, {}))
               .then(() => {
@@ -1598,7 +1600,7 @@
     if (skeleton_id) {
       // Highlight corresponding row if present
       this.listed_neurons.forEach(function(n) {
-        if (n.skeleton_ids.indexOf(skeleton_id) != -1) {
+        if (n.skeleton_ids && n.skeleton_ids.indexOf(skeleton_id) != -1) {
           var $row_cells = $cells.find('input[neuron_id=' + n.id + ']').
               parent().parent().find('td');
           $row_cells.css('background-color',
@@ -1613,20 +1615,24 @@
    */
   NeuronNavigator.NeuronListMixin.prototype.getSkeletonModels = function() {
     var models = this.get_entities().reduce((function(o, n) {
-      n.skeleton_ids.forEach(function(skid) {
-        var model = new CATMAID.SkeletonModel(skid, n.name,
-            new THREE.Color(1, 1, 0));
-        model.selected = false;
-        this[skid] = model;
-      }, o);
+      if (n.skeleton_ids) {
+        n.skeleton_ids.forEach(function(skid) {
+          var model = new CATMAID.SkeletonModel(skid, n.name,
+              new THREE.Color(1, 1, 0));
+          model.selected = false;
+          this[skid] = model;
+        }, o);
+      }
       return o;
     }).bind(this), {});
 
     // Mark selected ones
     this.get_entities(true).forEach(function(n) {
-      n.skeleton_ids.forEach(function(skid) {
-        this[skid].selected = true;
-      }, this);
+      if (n.skeleton_ids) {
+        n.skeleton_ids.forEach(function(skid) {
+          this[skid].selected = true;
+        }, this);
+      }
     }, models);
 
     return models;
@@ -1637,12 +1643,14 @@
    */
   NeuronNavigator.NeuronListMixin.prototype.getSelectedSkeletonModels = function() {
     return this.get_entities(true).reduce((function(o, n) {
-      n.skeleton_ids.forEach(function(skid) {
-        var model = new CATMAID.SkeletonModel(skid, n.name,
-            new THREE.Color(1, 1, 0));
-        model.selected = true;
-        o[skid] = model;
-      });
+      if (n.skeleton_ids) {
+        n.skeleton_ids.forEach(function(skid) {
+          var model = new CATMAID.SkeletonModel(skid, n.name,
+              new THREE.Color(1, 1, 0));
+          model.selected = true;
+          o[skid] = model;
+        });
+      }
       return o;
     }).bind(this), {});
   };

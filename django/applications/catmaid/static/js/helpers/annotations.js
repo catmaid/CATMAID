@@ -194,9 +194,11 @@
             CATMAID.commands.execute(new CATMAID.AddAnnotationsCommand(project.id,
                 entity_ids, skeleton_ids, annotations, meta_annotations));
 
-        return add;
+        return Promise.all([annotationSelection, add]);
       })
-      .then(function(result) {
+      .then(function(results) {
+        let annotationSelection = results[0];
+        let result = results[1];
         if (result.annotations.length == 1) {
           var name = result.annotation_names[0];
           if (result.used_annotations.length > 0) {
@@ -215,8 +217,10 @@
           if (result.existing_annotations.length > 0) {
             CATMAID.info(`${result.existing_annotations.length} annotations exist already.`);
           }
-          let nNotAddedAnnotations = result.annotations.length -
-              result.existing_annotations.length - result.new_annotations.length;
+          let annotations = new Set(annotationSelection.annotations);
+          let meta_annotations = new Set(annotationSelection.metaAnnotations);
+          let existingAnnotations = new Set(result.annotation_names);
+          let nNotAddedAnnotations = annotations.union(meta_annotations).difference(existingAnnotations).size;
           if (nNotAddedAnnotations > 0) {
             CATMAID.warn(`Couldn't add ${nNotAddedAnnotations} annotations.`);
           }

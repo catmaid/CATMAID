@@ -2664,33 +2664,38 @@ var project;
         var volumeField = confirmationDialog.appendCheckbox("Copy volumes/meshes", undefined, true,
             "If enabled, all visible volumes/meshes will copied from this project to the new space");
 
-        confirmationDialog.appendMessage("Optionally, you can have CATMAID create a project token (sharable invitation code) and define default permissions for it (or do this later in the Project Management widget). The token is displayed once the space is created:");
+        confirmationDialog.appendHTML("<strong>By default the project is only visible to you.</strong> If you want to invite other users into this new projects, you can create a sharable <em>project token</em>. <strong>This is optional</strong> and also possible in the Project Management widget. The token is displayed once the space is created.");
 
         let optionContainer0 = document.createElement('span');
         optionContainer0.style.display = 'grid';
-        optionContainer0.style.gridTemplate = '2em / 12em 18em';
+        optionContainer0.style.gridTemplate = '1.5em / 12em 18em';
 
         CATMAID.DOM.appendCheckbox(optionContainer0, 'Create project token',
             'A project token is a unique random text string that can be shared. Users knowing this project token will ' +
             'get assigned the default permissions below.', createProjectToken,
             e => {
               createProjectToken = e.target.checked;
+              permissionContainer.style.display = createProjectToken ? 'block' : 'none';
               [canBrowseCb, canAnnotateCb, canImportCb, canForkCb, approvalField].forEach(
                   cb => cb.disabled = !createProjectToken);
             }, false, 'fork-create-token').querySelector('input');
 
-        let approvalField = CATMAID.DOM.appendCheckbox(optionContainer0, 'Require approval of new users',
-            'If users add this project token to their profile, they get assigned the default permissions of this token. If this should require the approval of a project admin, enable this.', approvalNeeded,
-            e => {
-              approvalNeeded = e.target.checked;
-            }, false, 'project-token-approval').querySelector('input');
-        approvalField.disabled = !createProjectToken;
-
         confirmationDialog.appendChild(optionContainer0);
+
+        let permissionContainer = document.createElement('span');
+        permissionContainer.style.display = createProjectToken ? 'block' : 'none';
+        permissionContainer.style.background = 'aliceblue';
+        permissionContainer.style.padding = '0.5em';
+        confirmationDialog.appendChild(permissionContainer);
+
+        let permissionInfo = permissionContainer.appendChild(document.createElement('span'));
+        permissionInfo.style.display = 'block';
+        permissionInfo.style.marginBottom = '1em';
+        permissionInfo.appendChild(document.createTextNode('Select the permissions that users knowing this token will have by default:'));
 
         let optionContainer = document.createElement('span');
         optionContainer.style.display = 'grid';
-        optionContainer.style.gridTemplate = '3em / 12em 13em 8em 7em';
+        optionContainer.style.gridTemplate = '2.5em / 12em 13em 8em 7em';
 
         let canBrowse = true, canAnnotate = false, canImport = false, canFork = true;
 
@@ -2717,7 +2722,20 @@ var project;
             canFork, e => { canFork = e.target.checked; }, false, 'perms-can-fork').querySelector('input');
         canForkCb.disabled = !createProjectToken;
 
-        confirmationDialog.appendChild(optionContainer);
+        permissionContainer.appendChild(optionContainer);
+
+        let optionContainer2 = document.createElement('span');
+        optionContainer2.style.display = 'grid';
+        optionContainer2.style.gridTemplate = '2.5em / 20em';
+
+        let approvalField = CATMAID.DOM.appendCheckbox(optionContainer2, 'Require approval of new users',
+            'If users add this project token to their profile, they get assigned the default permissions of this token. If this should require the approval of a project admin, enable this.', approvalNeeded,
+            e => {
+              approvalNeeded = e.target.checked;
+            }, false, 'project-token-approval').querySelector('input');
+        approvalField.disabled = !createProjectToken;
+
+        permissionContainer.appendChild(optionContainer2);
 
         return confirmationDialog.show(500, 'auto');
       })

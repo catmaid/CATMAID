@@ -612,6 +612,11 @@ def fork(request:HttpRequest, project_id) -> JsonResponse:
       required: false
       type: boolean
       defaultValue: false
+    - name: add_to_favorites
+      description: Whether or not the new project is marked as a favorite
+      required: false
+      type: boolean
+      defaultValue: true
     """
     name = request.POST.get('name')
     if not name:
@@ -622,6 +627,7 @@ def fork(request:HttpRequest, project_id) -> JsonResponse:
 
     project_token_approval_needed = get_request_bool(request.POST, 'project_token_approval_needed', False);
     project_token_default_perms = get_request_list(request.POST, 'project_token_default_permissions', []);
+    add_to_favorites = get_request_bool(request.POST, 'add_to_favorites', True);
 
     current_p = get_object_or_404(Project, pk=project_id)
     new_p = get_object_or_404(Project, pk=project_id)
@@ -687,6 +693,12 @@ def fork(request:HttpRequest, project_id) -> JsonResponse:
         project_token.save()
 
         project_token_str = project_token.token
+
+    if add_to_favorites:
+        FavoriteProject.objects.create(**{
+            'project_id': new_p.id,
+            'user_id': request.user.id,
+        })
 
     return JsonResponse({
         'new_project_id': new_p.id,

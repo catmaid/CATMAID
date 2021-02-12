@@ -1050,6 +1050,6 @@ def deactivate_inactive_users() -> List:
 
 
 def list_project_permissions(request:HttpRequest) -> JsonResponse:
-	return JsonResponse({
-		'permissions': list(get_perms_for_model(Project).values_list('codename', flat=True)),
-	})
+    return JsonResponse({
+        'permissions': list(get_perms_for_model(Project).values_list('codename', flat=True)),
+    })

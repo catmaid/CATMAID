@@ -625,9 +625,9 @@ def fork(request:HttpRequest, project_id) -> JsonResponse:
     copy_volumes = get_request_bool(request.POST, 'copy_volumes', False)
     create_project_token = get_request_bool(request.POST, 'project_token', False)
 
-    project_token_approval_needed = get_request_bool(request.POST, 'project_token_approval_needed', False);
-    project_token_default_perms = get_request_list(request.POST, 'project_token_default_permissions', []);
-    add_to_favorites = get_request_bool(request.POST, 'add_to_favorites', True);
+    project_token_approval_needed = get_request_bool(request.POST, 'project_token_approval_needed', False)
+    project_token_default_perms = get_request_list(request.POST, 'project_token_default_permissions', [])
+    add_to_favorites = get_request_bool(request.POST, 'add_to_favorites', True)
 
     current_p = get_object_or_404(Project, pk=project_id)
     new_p = get_object_or_404(Project, pk=project_id)

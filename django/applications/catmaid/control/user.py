@@ -107,7 +107,6 @@ def user_list(request:HttpRequest) -> JsonResponse:
                 (user != anon_user or user.has_perm('catmaid.can_browse'))
 
         if can_see_all_users:
-            result = []
             for u in User.objects.all().select_related('userprofile') \
                     .order_by('last_name', 'first_name'):
                 up = u.userprofile

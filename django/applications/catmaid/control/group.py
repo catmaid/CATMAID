@@ -45,11 +45,9 @@ class GroupList(APIView):
         elif settings.PROJECT_TOKEN_USER_VISIBILITY:
             groups = []
         else:
-            groups = Group.objects.all()
-
             groups = [{
                 'id': g.id,
                 'name': g.name,
-            } for g in groups]
+            } for g in Group.objects.all()]
 
         return JsonResponse(groups, safe=False)

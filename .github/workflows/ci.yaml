@@ -98,16 +98,12 @@ jobs:
       - run: pip install -r django/requirements.txt
       - run: bash scripts/travis/setup_database.sh
       - run: bash scripts/travis/configure_catmaid.sh
-      - run: |
-          cd django/projects
-          python manage.py migrate --noinput
+      - run: python django/projects/manage.py migrate --noinput
         name: Apply migrations
-      - run: |
-          cd django/projects
-          python manage.py collectstatic --link --noinput
+      - run: python django/projects/manage.py collectstatic --link --noinput
       - run: |
           sed -i 's/login_required(\([^)]*\))/\1/g' django/applications/catmaid/urls.py
-          python -Wall -Wignore::ImportWarning manage.py django/projects/manage.py runserver &
+          python -Wall -Wignore::ImportWarning django/projects/manage.py runserver &
           sleep 5
         name: Start development server
       - run: npm run karma

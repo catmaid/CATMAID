@@ -10022,6 +10022,7 @@
             let volume = widget.loadedVolumes.get(v);
             return {
               'id': v,
+              'project_id': project.id,
               'color': volume.color,
               'opacity': volume.opacity,
               'wireframe': !volume.faces,
@@ -10076,9 +10077,18 @@
         // (rather than an object), we need to make sure we can parse it.
         let volumes = JSON.parse(state.volumes.replace(/'/g, '"'));
         volumes.forEach(function(v) {
-          widget.showVolume(v.id, true, v.color, v.opacity, !v.wireframe,
-              v.subdiv, v.bb)
-            .catch(CATMAID.handleError);
+          if (v.project_id === undefined) {
+            // If no project ID is available, ignore unavailable volumes, because
+            // they were likely stored for another project.
+            widget.showVolume(v.id, true, v.color, v.opacity, !v.wireframe, v.subdiv, v.bb)
+              .catch(e => {
+                if (e instanceof CATMAID.ResourceUnavailableError) return;
+                CATMAID.handleError(e);
+              });
+          } else if (project_id === project.id) {
+            widget.showVolume(v.id, true, v.color, v.opacity, !v.wireframe, v.subdiv, v.bb)
+              .catch(CATMAID.handleError);
+          }
         });
       }
 

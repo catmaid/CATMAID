@@ -589,7 +589,8 @@
     function handleActiveNodeChange(node, skeletonChanged, api) {
       // If this node is found in a tracing layer that is not the main back-end
       // layer, update the active tracing layer.
-      setActiveTracingLayer(node);
+      // FIXME: Conditional? This is quite expensive every click.
+      setActiveTracingLayer(!!node);
 
       let projectId = node.project_id === undefined ? project.id : node.project_id;
 

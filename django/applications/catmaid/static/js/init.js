@@ -1094,7 +1094,9 @@ var project;
           let newProjectDialog = new CATMAID.OptionsDialog('Switch to new project?', {
             'Cancel': CATMAID.noop,
             'Switch to project': e => {
-              project.setTool(null);
+              if (project) {
+                project.setTool(null);
+              }
               return CATMAID.openProject(result.project_id)
                 .then(()=> {
                   CATMAID.msg("Success", "Opened project");

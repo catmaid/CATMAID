@@ -125,3 +125,8 @@ overridden in ``settings.py``. Below is an explanation of all available settings
    ``USER_REGISTRATION_CONFIRM_TERMS_TEXT``
    The terms and conditions users need to accept upon registering, if this
    confirmation is required.
+
+.. glossary::
+   ``PROJECT_TOKEN_USER_VISIBILITY``
+   If enabled, logged in users will only see other users when they share a
+   project token. Disabled by default.

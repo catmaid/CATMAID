@@ -526,3 +526,7 @@ INSTANCE_CLIENT_SETTINGS = None
 # should be reset every time CATMAID starts. Otherwise, they will only be
 # applied if they don't exist already.
 FORCE_CLIENT_SETTINGS = False
+
+# If enabled, logged in users will only see other users and groups if they share
+# a project token.
+PROJECT_TOKEN_USER_VISIBILITY = False

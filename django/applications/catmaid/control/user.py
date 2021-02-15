@@ -29,6 +29,9 @@ def user_list(request:HttpRequest) -> JsonResponse:
     anonymous user, only the anonymous user is returned unless the anonymous
     user has can_browse permissions, which allows it to retrieve all users.
 
+    If the settings.py setting PROJECT_TOKEN_USER_VISIBILITY = True, logged in
+    users will only see those users that share project tokens with them.
+
     An administrator can export users including their salted and encrpyted
     password. This is meant to import users into other CATMAID instances.
     ---

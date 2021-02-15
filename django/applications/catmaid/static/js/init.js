@@ -2621,7 +2621,7 @@ var project;
             },
           });
           if (result.project_token) {
-            switchDialog.appendMessage(`Your new project has been created successfully, it has has ID ${newProjectId}. The following project token was generated, which can be looked up in in the Project Management widget of the new project as well:`);
+            switchDialog.appendMessage(`Your new space (project) has been created successfully. The following project token was generated, which can be looked up in in the Project Management widget of the new project as well:`);
             let tokenPanel = document.createElement('div');
             let tokenContainer = tokenPanel.appendChild(document.createElement('span'));
             tokenContainer.classList.add('strong-highlight');

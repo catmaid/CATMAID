@@ -50,7 +50,7 @@ class HistoryTableTests(TransactionTestCase):
         'catmaid_samplerstate',
         'catmaid_user_project_token',
         'catmaid_project_token',
-        'catmaid_favorite_project'
+        'catmaid_favorite_project',
         'catmaid_userprofile',
         'catmaid_volume',
         'change_request',

@@ -405,14 +405,14 @@
      * given stack viewer.
      */
     var activateBindings = function(stackViewer, layer) {
-
+      var c = self.prototype.mouseCatcher;
       // Make sure the parent navigator doesn't handle clicks.
       var view = layer.tracingOverlay.view;
       var proto_onpointerdown = self.prototype._onpointerdown;
       view.removeEventListener('pointerdown', proto_onpointerdown);
+      c.removeEventListener('pointerdown', proto_onpointerdown);
 
       var handlers = bindings.get(stackViewer);
-      var c = self.prototype.mouseCatcher;
       for (var fn in handlers) {
         c.addEventListener(fn, handlers[fn]);
       }

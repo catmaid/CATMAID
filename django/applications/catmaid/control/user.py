@@ -5,6 +5,8 @@ from typing import Any, Dict, Iterable
 
 from guardian.utils import get_anonymous_user
 
+from django.conf import settings
+from django.db import connection
 from django.http import HttpRequest, JsonResponse
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth import views as auth_views
@@ -51,30 +53,81 @@ def user_list(request:HttpRequest) -> JsonResponse:
                     "encrypted user passwords")
 
     user = request.user
-    can_see_all_users = user.is_authenticated and \
-            (user != get_anonymous_user() or user.has_perm('catmaid.can_browse'))
+    anon_user = get_anonymous_user()
 
-    if can_see_all_users:
-        result = []
-        for u in User.objects.all().select_related('userprofile') \
-                .order_by('last_name', 'first_name'):
-            up = u.userprofile
-            user_data = {
-                "id": u.id,
-                "login": u.username,
-                "full_name": u.get_full_name(),
-                "first_name": u.first_name,
-                "last_name": u.last_name,
-                "color": (up.color.r, up.color.g, up.color.b),
-                "primary_group_id": up.primary_group_id,
-            }
-            if with_passwords:
-                # Append encypted user password
-                user_data['password'] = u.password
-            result.append(user_data)
+    user_list = []
+    if settings.PROJECT_TOKEN_USER_VISIBILITY:
+        cursor = connection.cursor()
+        cursor.execute("""
+            WITH project_tokens AS (
+                SELECT DISTINCT project_token_id AS id
+                FROM catmaid_user_project_token
+                WHERE user_id = %(user_id)s
+
+                UNION
+
+                SELECT id
+                FROM catmaid_project_token
+                WHERE user_id = %(user_id)s
+            )
+            SELECT DISTINCT ON (au.id) au.id, au.username, au.first_name,
+                au.last_name, (up.color).r, (up.color).g, (up.color).b,
+                up.primary_group_id
+            FROM project_tokens pt
+            JOIN catmaid_user_project_token upt
+                ON pt.id = upt.project_token_id
+            JOIN auth_user au
+                ON au.id = upt.user_id
+            JOIN catmaid_userprofile up
+                ON up.user_id = au.id
+
+            UNION
+
+            SELECT au.id, au.username, au.first_name, au.last_name,
+                (up.color).r, (up.color).g, (up.color).b, up.primary_group_id
+            FROM auth_user au
+            JOIN catmaid_userprofile up
+                ON up.user_id = au.id
+            WHERE au.id = %(user_id)s OR au.id = %(anon_user_id)s
+        """, {
+            'user_id': user.id,
+            'anon_user_id': anon_user.id,
+        })
+        user_list = list(map(lambda u: {
+            "id": u[0],
+            "login": u[1],
+            "full_name": f'{u[2]} {u[3]}',
+            "first_name": u[2],
+            "last_name": u[3],
+            "color": (u[4], u[5], u[6]),
+            "primary_group_id": u[7],
+        }, cursor.fetchall()))
     else:
+        can_see_all_users = user.is_authenticated and \
+                (user != anon_user or user.has_perm('catmaid.can_browse'))
+
+        if can_see_all_users:
+            result = []
+            for u in User.objects.all().select_related('userprofile') \
+                    .order_by('last_name', 'first_name'):
+                up = u.userprofile
+                user_data = {
+                    "id": u.id,
+                    "login": u.username,
+                    "full_name": u.get_full_name(),
+                    "first_name": u.first_name,
+                    "last_name": u.last_name,
+                    "color": (up.color.r, up.color.g, up.color.b),
+                    "primary_group_id": up.primary_group_id,
+                }
+                if with_passwords:
+                    # Append encypted user password
+                    user_data['password'] = u.password
+                user_list.append(user_data)
+
+    if not user_list:
         up = user.userprofile
-        result = [{
+        user_list = [{
             "id": user.id,
             "login": user.username,
             "full_name": user.get_full_name(),
@@ -84,7 +137,7 @@ def user_list(request:HttpRequest) -> JsonResponse:
             "primary_group_id": up.primary_group_id
         }]
 
-    return JsonResponse(result, safe=False)
+    return JsonResponse(user_list, safe=False)
 
 @user_passes_test(access_check)
 def user_list_datatable(request:HttpRequest) -> JsonResponse:

@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import logging
 
+from django.db import connection
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.contrib.auth.decorators import user_passes_test
@@ -36,13 +38,18 @@ class GroupList(APIView):
         if member_id is not None:
             member_id = int(member_id)
             user = User.objects.get(pk=member_id)
-            groups = user.groups.all()
+            groups = [{
+                'id': g.id,
+                'name': g.name,
+            } for g in user.groups.all()]
+        elif settings.PROJECT_TOKEN_USER_VISIBILITY:
+            groups = []
         else:
             groups = Group.objects.all()
 
-        groups = [{
-            'id': g.id,
-            'name': g.name,
-        } for g in groups]
+            groups = [{
+                'id': g.id,
+                'name': g.name,
+            } for g in groups]
 
         return JsonResponse(groups, safe=False)

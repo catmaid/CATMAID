@@ -11,7 +11,8 @@ from xml.etree import ElementTree as ET
 
 from django.conf import settings
 from django.db import connection
-from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest, JsonResponse
+from django.http import (HttpRequest, HttpResponse, HttpResponseBadRequest,
+        JsonResponse, Http404)
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 
@@ -455,7 +456,7 @@ def get_volume_details(project_id, volume_id) -> Dict[str, Any]:
     volume = cursor.fetchone()
 
     if not volume:
-        raise ValueError("Could not find volume " + volume_id)
+        raise Http404(f"Could not find volume {volume_id}")
 
     # Parse bounding box into dictionary, coming in format "BOX3D(0 0 0,1 1 1)"
     bbox_matches = re.search(_bbox_re, volume[8])

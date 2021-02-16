@@ -1,6 +1,8 @@
 import os
+import math
 import time
 import xml.etree.ElementTree
+import traceback
 
 from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth import get_user_model
@@ -101,22 +103,30 @@ class TrakEM2Layer(object):
         """
         if self.transform_list:
             new_loc = self.transform_list.apply((loc_entry[0], loc_entry[1]))
-            loc_entry[0] = new_loc[0]
-            loc_entry[1] = new_loc[1]
         else:
-            loc_entry[0] = loc_entry[0] * self.affine_transform[0] + loc_entry[1] * self.affine_transform[2] + self.affine_transform[4]
-            loc_entry[1] = loc_entry[0] * self.affine_transform[1] + loc_entry[1] * self.affine_transform[3] + self.affine_transform[5]
-        return loc_entry
+            new_loc = [
+                loc_entry[0] * self.affine_transform[0] + loc_entry[1] * self.affine_transform[2] + self.affine_transform[4],
+                loc_entry[0] * self.affine_transform[1] + loc_entry[1] * self.affine_transform[3] + self.affine_transform[5]
+            ]
+
+        dist = math.sqrt((new_loc[0] - loc_entry[0]) ** 2 + (new_loc[1] - loc_entry[1]) ** 2)
+
+        loc_entry[0] = new_loc[0]
+        loc_entry[1] = new_loc[1]
+
+        return dist
 
 
 class CoordTransformer(object):
 
-    def __init__(self, project_id, target_xml, res_x, res_z, editor=None):
+    def __init__(self, project_id, target_xml, res_x, res_z, editor=None,
+            review_reset_distance=None):
         self.project_id = project_id
         self.xml = target_xml
         self.res_x = res_x
         self.res_z = res_z
         self.last_editor = editor or get_system_user()
+        self.review_reset_distance = review_reset_distance
 
         # Parse target XML file to find transformation for each section.
         target_data = xml.etree.ElementTree.parse(self.xml)
@@ -143,6 +153,7 @@ class CoordTransformer(object):
         """
         start_time = time.time()
         cursor = connection.cursor()
+        n_total_reviews_reset = 0
         for n, l in enumerate(self.layers):
             log(f'Transforming layer {n+1}/{len(self.layers)}: [{l.z_start}, {l.z_end})')
             cursor.execute("""
@@ -159,10 +170,14 @@ class CoordTransformer(object):
             })
 
             # Get lists rather than tuples and transform points
+            reset_reviews_for = []
             locations = list(map(list, cursor.fetchall()))
             for loc in locations:
-                l.transform_point_entry(loc)
-            log(f'  Found and transformed {len(locations)} locations')
+                dist = l.transform_point_entry(loc)
+                if self.review_reset_distance and dist > self.review_reset_distance:
+                    reset_reviews_for.append(loc[3])
+
+            log(f'  Found and transformed {len(locations)} locations, considering {len(reset_reviews_for)} locations for review reset')
 
             # Write points back into database
             execute_batch(cursor, """
@@ -170,6 +185,20 @@ class CoordTransformer(object):
                 SET location_x = %s, location_y = %s, editor_id = %s
                 WHERE id = %s
             """, locations, page_size=100)
+
+            n_reset_reviews = 0
+            if self.review_reset_distance and reset_reviews_for:
+                cursor.execute("""
+                    DELETE FROM review
+                    WHERE id = ANY(%(reset_reviews_for)s::bigint[])
+                    RETURNING id
+                """, {
+                    'reset_reviews_for': reset_reviews_for,
+                })
+                n_reset_reviews = len(list(cursor.fetchall()))
+                n_total_reviews_reset += n_reset_reviews
+
+            log(f'  Updated locations in database, reset {n_reset_reviews} reviews')
 
         log(f'Rebuilding edge table of project {self.project_id}')
         rebuild_edge_tables(project_ids=[self.project_id], log=log)
@@ -182,7 +211,7 @@ class CoordTransformer(object):
         })
 
         end_time = time.time()
-        log(f'Transformation complete (took {end_time - start_time:.2f} sec)')
+        log(f'Transformation complete (took {end_time - start_time:.2f} sec), reset {n_total_reviews_reset} reviews')
 
 
 class Command(BaseCommand):
@@ -209,6 +238,9 @@ class Command(BaseCommand):
             help='The Z resolution in nm of the TrakEM2 project')
         parser.add_argument('--user', dest='user', required=False,
             help='The username of the user who is used to make the changes. By default first superuser available.')
+        parser.add_argument('--review-reset-distance',
+                dest='review_reset_distance', required=False, type=float, default=None,
+                help='If set, any treenode reviews will be reset if the new location is farther away than X nm.')
 
     def handle(self, *args, **options):
         try:
@@ -238,7 +270,8 @@ class Command(BaseCommand):
         log(f'Making edits with user {editor}')
 
         transformer = CoordTransformer(options['project_id'], options['xml'],
-                res_x=options['res_x'], res_z=options['res_z'], editor=editor)
+                res_x=options['res_x'], res_z=options['res_z'], editor=editor,
+                review_reset_distance=options['review_reset_distance'])
 
         self.stdout.write("Found the following layers:")
         for layer in transformer.layers:
@@ -252,7 +285,6 @@ class Command(BaseCommand):
                 add_log_entry(editor.id, 'admin.transform_node_location', transformer.project_id)
         except Exception as e:
             traceback.print_exc()
-            transformer.destroy()
 
     def check_env(self, options):
         # Check environment variable

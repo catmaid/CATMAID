@@ -111,11 +111,12 @@ class TrakEM2Layer(object):
 
 class CoordTransformer(object):
 
-    def __init__(self, project_id, target_xml, res_x, res_z):
+    def __init__(self, project_id, target_xml, res_x, res_z, editor=None):
         self.project_id = project_id
         self.xml = target_xml
         self.res_x = res_x
         self.res_z = res_z
+        self.last_editor = editor or get_system_user()
 
         # Parse target XML file to find transformation for each section.
         target_data = xml.etree.ElementTree.parse(self.xml)
@@ -141,7 +142,6 @@ class CoordTransformer(object):
         back.
         """
         start_time = time.time()
-        last_editor = get_system_user()
         cursor = connection.cursor()
         for n, l in enumerate(self.layers):
             log(f'Transforming layer {n+1}/{len(self.layers)}: [{l.z_start}, {l.z_end})')
@@ -155,7 +155,7 @@ class CoordTransformer(object):
                 'project_id': self.project_id,
                 'z_start': l.z_start,
                 'z_end': l.z_end,
-                'last_editor_id': last_editor.id,
+                'last_editor_id': self.last_editor.id,
             })
 
             # Get lists rather than tuples and transform points
@@ -207,6 +207,8 @@ class Command(BaseCommand):
             help='The X resolution in nm of the TrakEM2 project')
         parser.add_argument('--res-z', dest='res_z', required=True, type=float,
             help='The Z resolution in nm of the TrakEM2 project')
+        parser.add_argument('--user', dest='user', required=False,
+            help='The username of the user who is used to make the changes. By default first superuser available.')
 
     def handle(self, *args, **options):
         try:
@@ -228,8 +230,15 @@ class Command(BaseCommand):
 
         self.check_env(options)
 
+        editor_username = options['user']
+        if editor_username:
+            editor = User.objects.get(username=editor_username)
+        else:
+            editor = get_system_user()
+        log(f'Making edits with user {editor}')
+
         transformer = CoordTransformer(options['project_id'], options['xml'],
-                res_x=options['res_x'], res_z=options['res_z'])
+                res_x=options['res_x'], res_z=options['res_z'], editor=editor)
 
         self.stdout.write("Found the following layers:")
         for layer in transformer.layers:
@@ -237,11 +246,10 @@ class Command(BaseCommand):
 
         try:
             with transaction.atomic():
-                last_editor = get_system_user()
                 log('Starting transformation')
                 transformer.transform()
                 # Add log entry
-                add_log_entry(last_editor.id, 'admin.transform_node_location', transformer.project_id)
+                add_log_entry(editor.id, 'admin.transform_node_location', transformer.project_id)
         except Exception as e:
             traceback.print_exc()
             transformer.destroy()

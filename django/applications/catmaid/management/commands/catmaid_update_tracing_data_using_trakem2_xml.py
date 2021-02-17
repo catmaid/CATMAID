@@ -81,7 +81,7 @@ class TrakEM2Layer(object):
 
         if ict_transform_list:
             from jnius import autoclass
-            self.transform_list = MPICBG.CoordinateTransformList()
+            self.transform_list = MPICBG.CoordinateTransformList() # type: ignore
             for xform in ict_transform_list:
                 if xform.tag not in ('iict_transform', 'ict_transform'):
                     raise ValueError(f'Unsupported transformation type: {xform.tag}')
@@ -139,9 +139,10 @@ class CoordTransformer(object):
         # Get first available layer set
         self.layers = []
         target_data_layerset = target_data_root.find('t2_layer_set')
-        for layer_data in target_data_layerset.findall('t2_layer'):
-            layer = TrakEM2Layer(layer_data, res_x, res_z)
-            self.layers.append(layer)
+        if target_data_layerset:
+            for layer_data in target_data_layerset.findall('t2_layer'):
+                layer = TrakEM2Layer(layer_data, res_x, res_z)
+                self.layers.append(layer)
 
         # Sort layers by Z
         sorted(self.layers, key=lambda x: x.z_start)

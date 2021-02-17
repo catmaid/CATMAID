@@ -26,6 +26,7 @@ before_install:
   - bash scripts/travis/install_postgres.sh
   - bash scripts/travis/install_python.sh
   - bash scripts/travis/install_gdal.sh
+  - if python --version | grep PyPy; then curl https://sh.rustup.rs -sSf | sh -s -- -y; source $HOME/.cargo/env; fi
   - bash scripts/travis/configure_pypy_libs.sh
   - nvm install 11
 install:

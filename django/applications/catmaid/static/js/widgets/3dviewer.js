@@ -2107,7 +2107,7 @@
         let nameservices = modelCollections.map(mc => {
           return CATMAID.NeuronNameService.getInstance(mc.api).registerAll(this, mc.models);
         });
-        Promise.all(nameservices)
+        return Promise.all(nameservices)
           .then(() => {
             if (self.hasActiveFilters()) {
               return self.insertIntoNodeWhitelist(models);

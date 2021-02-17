@@ -459,6 +459,14 @@ Miscellaneous:
 - The minimum zoom level can now be configured in the Settings Widget using the
   "Min zoom level" control of the "Stack view" section.
 
+- Stack viewers can now have an optional layer offset configured. Accessible
+  through the Layer Controls, it allows users to configure one or more Z steps
+  from a stack space Z coordinate z1 to z2, that will cause an offset of the
+  current location in XY if the move from z1 to z2 is performed by the user
+  (e.g. by pressing comma or period). This can optionally be constrained by a
+  location and a radius. Generally, this helps working with registration
+  problems e.g. at TEM gaps.
+
 - Node distance measurements (icon in tracing tool bar) are now allowed also
   between nodes of different skeletons. In this case only the straight line
   distance will be displayed. Both the straight line distance and the path

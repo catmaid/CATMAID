@@ -85,6 +85,56 @@
     offsetSelect.append(offsetTable);
     $view.append(offsetSelect);
 
+    var layerOffsetcb = $('<input/>')
+        .attr('type', 'checkbox')
+        .prop('checked', CATMAID.StackViewer.Settings.session.apply_layer_offsets)
+        .change(function () {
+          CATMAID.StackViewer.Settings.set('apply_layer_offsets', this.checked, 'session');
+          layerOffsetInput.prop('disabled', !this.checked);
+        });
+    var layerOffsetInput = $('<input />')
+        .attr({
+          disabled: !CATMAID.StackViewer.Settings.session.apply_layer_offsets,
+          value: CATMAID.StackViewer.Settings.session.layer_offsets.length > 0 ?
+              JSON.stringify(CATMAID.StackViewer.Settings.session.layer_offsets) : '',
+          placeholder: '[{"z": [z1, z1], "offset": [x, y], "radius:: [x, y, r]}]',
+          title: 'This can be a JSON list with objects of the form {"z": [z1, z2], "offset": [x, y], radius: [x, z, r]}, with radius being optional. All coordinates are in stack space. If enabled, the current location will be adjusted automatically by the given planar offset as soon as the user moves from z1 to z2. If the user moves from z2 to z1, the offset will be applied inversely. By default it doesn\'t matter ay which X and Y one enters the new Z plane. If a radius is provided, this offset effect will only be applied to locations within the given radius on the Z slic, centered at the X and Y coordinate of the defined location',
+        })
+        .css({'width': '20em'})
+        .change(function() {
+          try {
+            let val = this.value.length > 0 ? JSON.parse(this.value) : [];
+            if (val instanceof Array) {
+              CATMAID.StackViewer.Settings.set('layer_offsets', val, 'session');
+            } else {
+              CATMAID.warn('Please provide a JSON list of objects.');
+            }
+          } catch (e) {
+            CATMAID.warn('Could not parse layer offsets. They need to be a JSON list of objects.');
+          }
+        });
+    var layerOffsetlabel = $('<div/>')
+        .addClass('setting')
+        .append($('<label/>').append(layerOffsetcb).append(
+            $('<span />')
+              .append('Layer offsets ')
+              .append(layerOffsetInput)
+              .append($('<button />')
+                .append('Add current loc.')
+                .attr('title', 'Add offset template for current location')
+                .click(e => {
+                  let nextZ = stackViewer.toValidZ(stackViewer.z + 1, 1);
+                  let offsets = CATMAID.tools.deepCopy(CATMAID.StackViewer.Settings.session.layer_offsets);
+                  offsets.push({
+                    "z": [stackViewer.z, nextZ],
+                    "offset": [0, 0],
+                    "radius": [stackViewer.x, stackViewer.y, 0],
+                  });
+                  CATMAID.StackViewer.Settings.set('layer_offsets', offsets, 'session');
+                  layerOffsetInput.val(JSON.stringify(offsets));
+                }))));
+    $view.append(layerOffsetlabel);
+
     var uniqueStackIds = new Set(stackViewer._stacks.map(function(s) {
       return s.id;
     }));

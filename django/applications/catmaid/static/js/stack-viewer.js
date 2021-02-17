@@ -782,6 +782,28 @@
       zs -= this._offset[2];
       ys -= this._offset[1];
       xs -= this._offset[0];
+
+      if (CATMAID.StackViewer.Settings.session.apply_layer_offsets) {
+        // Check all layer offset entries if they match the current Z step. If
+        // they do, apply the offset. If they match in reverse, apply the
+        // inverse offset.
+        for (let i=0; i<CATMAID.StackViewer.Settings.session.layer_offsets.length; ++i) {
+          let layerOffset = CATMAID.StackViewer.Settings.session.layer_offsets[i];
+          if (!layerOffset.radius || (layerOffset.radius[2] > 0 && Math.sqrt(
+              Math.pow(layerOffset.radius[0] - this.x, 2) + Math.pow(layerOffset.radius[1] - this.y, 2)) <= layerOffset.radius[2])) {
+            if (layerOffset.z[0] === zs && layerOffset.z[1] === this.z) {
+              xs += layerOffset.offset[0];
+              ys += layerOffset.offset[1];
+              CATMAID.msg('Layer offset applied', 'A layer offset has been applied for the last move');
+            } else if (layerOffset.z[1] === zs && layerOffset.z[0] === this.z) {
+              xs -= layerOffset.offset[0];
+              ys -= layerOffset.offset[1];
+              CATMAID.msg('Layer offset applied', 'A layer offset has been applied for the last move');
+            }
+          }
+        }
+      }
+
       return this._project.moveToProject(
         this.primaryStack.stackToProjectZ( zs, ys, xs ),
         this.primaryStack.stackToProjectY( zs, ys, xs ),
@@ -1304,6 +1326,31 @@
           // stack using the voxel_offset field.
           apply_primary_voxel_offset: {
             default: true
+          },
+          /**
+           * A collection of locations along with an optional radius to define
+           * areas on sections of the displayed stacks. If the view is centered
+           * at a location within such an area, an offset is applied
+           * automatically to the project location. The list of locations is
+           * defined like this: All coordinates are physical coordinates.
+           *
+           * [{
+           *    z: [z1, z2],
+           *    offset: [x, y],
+           *    radius: [x, y, r],
+           * }]
+           *
+           * These offsets are only applied if the apply_location_offset setting
+           * is enabled.
+           */
+          layer_offsets: {
+            default: [],
+          },
+          /**
+           * Whether or not to apply above layer offsets.
+           */
+          apply_layer_offsets: {
+            default: false,
           },
         },
         migrations: {}

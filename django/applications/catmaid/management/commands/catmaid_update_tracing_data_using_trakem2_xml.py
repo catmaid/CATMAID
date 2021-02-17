@@ -77,7 +77,7 @@ class TrakEM2Layer(object):
         ict_transform_lists = self.patch.findall('ict_transform_list')
         if ict_transform_lists and len(ict_transform_lists) > 1:
             raise ValueError('Can handle only one <ict_transform_list> entry')
-        ict_transform_list =  ict_transform_lists[0] if ict_transform_lists else None
+        ict_transform_list = ict_transform_lists[0] if ict_transform_lists else None
 
         if ict_transform_list:
             from jnius import autoclass

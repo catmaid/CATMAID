@@ -311,12 +311,12 @@
             }
           }
 
-          // Add client to the list of known clients.
-          if (-1 === clients.indexOf(client)) {
-            clients.push(client);
-          }
-
           if (0 === unknownSkids.length) {
+            // Add client to the list of known clients.
+            if (-1 === clients.indexOf(client)) {
+              clients.push(client);
+            }
+
             // Execute callback and return if there aren't any unknown skeleton ID
             return new Promise(function(resolve, reject) {
               resolve();
@@ -326,7 +326,19 @@
             });
           } else {
             return this.updateNames(unknownSkids, callback)
-              .then(this.notifyClients.bind(this));
+              .then(() => {
+                try {
+                  this.notifyClients();
+                } catch (e) {
+                  CATMAID.handleError(e);
+                }
+                // Add client to the list of known clients after all other clients have been notified
+                // about updated names. This is done to avoid calling the new client already about a
+                // name update.
+                if (-1 === clients.indexOf(client)) {
+                  clients.push(client);
+                }
+            });
           }
         },
 

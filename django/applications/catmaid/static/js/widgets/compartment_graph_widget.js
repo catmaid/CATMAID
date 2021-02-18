@@ -2093,6 +2093,9 @@
         edgeLabelStrategy.requires.has('originIndex');
 
     let modelCollections = CATMAID.API.getModelCollections(models, project.id);
+    if (modelCollections.length > 1) {
+      throw new CATMAID.Warning('Mixing skeletons from different APIs is currently not supported');
+    }
     return Promise.all(modelCollections.map(mc => CATMAID.fetch({
         url: `${mc.projectId}/skeletons/confidence-compartment-subgraph`,
         method: "POST",
@@ -2107,8 +2110,9 @@
         id: 'graph_widget_request',
         api: mc.api,
       })))
-      // TODO: merge sources
-      .then(json => this.updateGraph(json, models, undefined, positions, sizes))
+      // Currently only a single API source is supported, therefore we know there is
+      // only one response to handle.
+      .then(responses => this.updateGraph(responses[0], models, undefined, positions, sizes))
       .then(() => {
         this.triggerAdd(models);
       })

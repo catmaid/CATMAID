@@ -80,14 +80,6 @@ django/applications/catmaid/static/js/widgets/clustering_widget.js: line 634, co
 django/applications/catmaid/static/js/widgets/clustering_widget.js: line 691, col 13, 'x' is defined but never used.
 django/applications/catmaid/static/js/widgets/clustering_widget.js: line 691, col 25, 'h' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 1351, col 13, 'orders' is defined but never used.
-django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 1876, col 11, 'one' is defined but never used.
-django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 2354, col 9, 'accum' is defined but never used.
-django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 3049, col 11, 'startId' is defined but never used.
-django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 3395, col 13, 'intragroup' is defined but never used.
-django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 3779, col 11, 'sorted' is defined but never used.
-django/applications/catmaid/static/js/widgets/compartment_graph_widget.js: line 4118, col 9, 'edgeData' is defined but never used
-
 django/applications/catmaid/static/js/widgets/connectivity.js: line 465, col 9, 'widgetID' is defined but never used.
 django/applications/catmaid/static/js/widgets/connectivity.js: line 466, col 9, 'skeletons' is defined but never used.
 django/applications/catmaid/static/js/widgets/connectivity.js: line 643, col 11, 'selected' is defined but never used.
@@ -249,4 +241,4 @@ django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 1817, col
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 1850, col 1, 'async functions' is only available in ES8 (use 'esversion: 8').
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2009, col 29, The object literal notation {} is preferable.
 
-196 errors
+189 errors

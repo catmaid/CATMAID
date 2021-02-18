@@ -1348,8 +1348,7 @@
         }, {});
         clusterIDs = Object.keys(clusters);
         // Else, create subgraph
-        var orders = ap.arbor.nodesOrderFrom(ap.arbor.root),
-            roots = {},
+        var roots = {},
             keepers = {};
         clusterIDs.forEach(function(clusterID) {
           var cluster_nodes_with_synapses = {};
@@ -1872,8 +1871,7 @@
 
     // Determine which nodes to update, which to remove, and which to add anew
     this.cy.nodes().each(function(i, node) {
-      var skeletons = node.data('skeletons'),
-          one = 1 === skeletons.length;
+      var skeletons = node.data('skeletons');
 
       // Iterate a copy of the node's skeleton models
       skeletons.slice(0).forEach(function(skeleton, i) {
@@ -2350,8 +2348,7 @@
 
   GroupGraph.prototype.growGraph = function(params = undefined) {
     var p = CATMAID.tools.getDefined(params, this._getGrowParameters()),
-        s = this._findSkeletonsToGrow(this.cy.nodes(), p.min_downstream, p.min_upstream),
-        accum = $.extend({}, s.split_partners); // TODO unused?
+        s = this._findSkeletonsToGrow(this.cy.nodes(), p.min_downstream, p.min_upstream);
 
     var grow = (skids, n_circles, callback) => {
         CATMAID.fetch(project.id + "/graph/circlesofhell", "POST", {
@@ -3046,7 +3043,6 @@
       }
 
       var data = edge.data();
-      var startId = data.start;
 
       var rscratch = edge._private.rscratch;
 
@@ -3391,8 +3387,7 @@
             source = member_of[d.source],
             target = member_of[d.target],
             sourceInGroup = source !== undefined,
-            targetInGroup = target !== undefined,
-            intragroup = source === target && sourceInGroup && targetInGroup;
+            targetInGroup = target !== undefined;
         if (sourceInGroup || targetInGroup) {
           source = source ? source : d.source;
           target = target ? target : d.target;
@@ -3776,13 +3771,13 @@
   GroupGraph.prototype.distributeCoordinate = function(axis) {
     if ('x' !== axis && 'y' !== axis) return alert("Invalid axis: " + axis);
     this.whenMinSelected(3, function(nodes) {
-      var sorted = nodes.sort(function(a, b) {
+      nodes.sort(function(a, b) {
         var ca = a.position(axis),
             cb = b.position(axis);
         return ca < cb ? -1 : 1;
-      }),
-          span = nodes[nodes.length - 1].position(axis) - nodes[0].position(axis),
-          offset = nodes[0].position(axis);
+      });
+      let span = nodes[nodes.length - 1].position(axis) - nodes[0].position(axis),
+           offset = nodes[0].position(axis);
       for (var i=1, l=nodes.length -1; i<l; ++i) {
         nodes[i].position(axis, offset + i * (span / l));
       }
@@ -4115,7 +4110,6 @@
       preferName = true, invertY = true, setSize = true, nodeScale = 1.0) {
     let xml = $.parseXML(xmlData);
     let nodeData = Array.from(xml.querySelectorAll('node'));
-    let edgeData = Array.from(xml.querySelectorAll('edge'));
 
     if (!nodeData || nodeData.length === 0) {
       throw new CATMAID.ValueError("Could not find any nodes");

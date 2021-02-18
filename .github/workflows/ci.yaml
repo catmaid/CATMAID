@@ -37,7 +37,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.6', '3.7', '3.8', 'pypy3']
+        python-version: ['3.6', '3.7', '3.8', '3.9', 'pypy3']
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
@@ -57,6 +57,7 @@ jobs:
       - run: bash scripts/travis/setup_database.sh
       - run: bash scripts/travis/configure_catmaid.sh
       - run: bash scripts/travis/configure_pypy_libs.sh
+        if: ${{ matrix.python-version == 'pypy3' }}
       - run: |
           cd django/projects
           python manage.py migrate --noinput

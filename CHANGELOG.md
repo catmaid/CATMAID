@@ -44,6 +44,8 @@
   Instead of hard-coding the 1024px, the minimum tile size defined in the mirror
   set is used. Without any mirrors, no extra zoom levels will be assumed.
 
+- A virtualenv update is required.
+
 ### Features and enhancements
 
 Notes widget:

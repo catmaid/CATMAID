@@ -750,8 +750,8 @@
     this.matrix.filterRules.push.apply(this.matrix.filterRules, this.filterRules);
     this.matrix.applyFilterRules = this.applyFilterRules;
     Promise.all([
-        () => nns.registerAll(this, this.rowDimension.getSelectedSkeletonModels()),
-        () => nns.registerAll(this, this.colDimension.getSelectedSkeletonModels()),
+        nns.registerAll(this, this.rowDimension.getSelectedSkeletonModels()),
+        nns.registerAll(this, this.colDimension.getSelectedSkeletonModels()),
       ])
       .then(() => {
         if (this.relativeDisplay && !this.connectivityData) {

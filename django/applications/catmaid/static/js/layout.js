@@ -60,6 +60,14 @@
       throw new CATMAID.ValueError("Could not create window for: " + name);
     }
 
+    // TODO: This should be better taken care of in the WindowMaker namespace,
+    // but will be okay for now here.
+    if (state && state.env) {
+      if (state.env.ignoreLocal !== undefined){
+        windowInfo.widget.ignoreLocal = state.env.ignoreLocal;
+      }
+    }
+
     // If initial skeleton IDs are provided, try to add them to the created
     // widget.
     if (skeletonIds && windowInfo.widget) {

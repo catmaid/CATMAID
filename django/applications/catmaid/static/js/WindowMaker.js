@@ -91,6 +91,9 @@ var WindowMaker = new function()
         return stateSerializer.serialize({
           'state': widgetStateManager.getState(widget),
           'widget': widget.constructor.name,
+          'env': {
+            'ignoreLocal': widget.ignoreLocal,
+          }
         });
       } catch (e) {
         return false;
@@ -119,8 +122,13 @@ var WindowMaker = new function()
     }
     if (serializedWidgetData) {
       var widgetData = stateSerializer.deserialize(serializedWidgetData);
-      if (widgetData && widgetData.state) {
-        stateManager.setState(widget, widgetData.state);
+      if (widgetData) {
+        if (widgetData.state) {
+          stateManager.setState(widget, widgetData.state);
+        }
+        if (widgetData.env && widgetData.env.ignoreLocal !== undefined) {
+          widget.ignoreLocal = widgetData.ignoreLocal;
+        }
       }
       return true;
     } else {

@@ -636,6 +636,10 @@ Miscellaneous:
   connectors or tags where wrongly referenced even though they were not included
   in the export.
 
+- Split/merge dialog: both annotation lists (one for each partner) maintain now
+  a height of 50% in the dialog and don't cause enlarging the dialog with long
+  lists.
+
 ## Maintenance updates
 
 - Volume widget: don't show removal options by default. It happens generally

@@ -158,9 +158,11 @@
     topContainer.style.display = 'flex';
     topContainer.style.flexDirection = 'row';
     topContainer.style.width = '100%';
+    topContainer.style.height = '50%';
     bottomContainer.style.display = 'flex';
     bottomContainer.style.flexDirection = 'row';
     bottomContainer.style.width = '100%';
+    bottomContainer.style.height = '50%';
 
     // Let both containers grow equally, but keep a marin between them
     topContainer.style.marginBottom = '1%';

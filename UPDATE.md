@@ -28,6 +28,8 @@ and other administration related changes are listed in order.
   This also requires updating all installed R packages. In all likelihood this
   requires executing "manage.py catmaid_setup_nblast_environment".
 
+- A virtualenv update is required.
+
 ## 2020.02.15
 
 - Python 3.5 is not supported anymore. Use Python 3.6, 3.7 or 3.8.

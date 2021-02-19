@@ -2094,6 +2094,10 @@
       }, this).map(Number);
 
       if (missingSkeletonIds.length > 0) {
+        let missingModels = missingSkeletonIds.reduce((o, skid) => {
+          o[skid] = models[skid];
+          return o;
+        }, {});
         var options = this.options;
         var lean = options.lean_mode;
         var self = this;
@@ -2103,14 +2107,14 @@
         }
 
         // Register with the neuron name service and fetch the skeleton data
-        let modelCollections = CATMAID.API.getModelCollections(models, project.id);
+        let modelCollections = CATMAID.API.getModelCollections(missingModels, project.id);
         let nameservices = modelCollections.map(mc => {
           return CATMAID.NeuronNameService.getInstance(mc.api).registerAll(this, mc.models);
         });
         return Promise.all(nameservices)
           .then(() => {
             if (self.hasActiveFilters()) {
-              return self.insertIntoNodeWhitelist(models);
+              return self.insertIntoNodeWhitelist(missingModels);
             }
           })
           .then(function() {

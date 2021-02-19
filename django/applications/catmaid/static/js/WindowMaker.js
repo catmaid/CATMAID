@@ -2679,6 +2679,33 @@ var WindowMaker = new function()
     }
   };
 
+  this.refreshWidgetControls = function(widget) {
+    let win;
+    for (let key of windows.keys()) {
+      let widgetInfo = windows.get(key);
+      if (widgetInfo) {
+        for (let [known_win, known_widget] of widgetInfo.entries()) {
+          if (widget === known_widget) {
+            win = known_win;
+            break;
+          }
+        }
+      }
+    }
+
+    if (win) {
+      let controls = win.getFrame().querySelector('.buttonpanel');
+      if (controls && CATMAID.tools.isFn(widget.getWidgetConfiguration)) {
+        let newControls = document.createElement('div');
+        newControls.id = controls.id;
+        newControls.classList.add('windowpanel', 'buttonpanel');
+        let config = widget.getWidgetConfiguration();
+        config.createControls.call(widget, newControls);
+        controls.parentNode.replaceChild(newControls, controls);
+      }
+    }
+  };
+
 }();
 
 
@@ -2703,6 +2730,8 @@ var WindowMaker = new function()
   CATMAID.registerState = function(type, options) {
     WindowMaker.registerState(type, options);
   };
+
+  CATMAID.refreshWidgetControls = WindowMaker.refreshWidgetControls;
 
   CATMAID.WindowMaker = WindowMaker;
 

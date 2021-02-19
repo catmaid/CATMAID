@@ -15,12 +15,6 @@ from catmaid.models import Project
 
 from psycopg2.extras import execute_batch
 
-try:
-    import scyjava_config
-    scyjava_config.add_options('-Xmx14g')
-except ValueError as e:
-    print(e)
-
 import imagej
 
 User = get_user_model()

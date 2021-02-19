@@ -272,6 +272,22 @@
         openSwapped.onclick = this.cloneWidget.bind(this, true);
         tabs['Main'].appendChild(openSwapped);
 
+        var saveJSON = document.createElement('input');
+        saveJSON.setAttribute("type", "button");
+        saveJSON.setAttribute("value", "Save JSON");
+        saveJSON.setAttribute("title", "Save all loaded skeletons and display configuration in a JSON file");
+        saveJSON.onclick = () => this.saveJSON();
+        tabs['Main'].appendChild(saveJSON);
+
+        var fileButton = tabs['Main'].appendChild(CATMAID.DOM.createFileButton(
+            'cm-file-dialog-' + this.widgetID, false, e => this.loadJSONFile(e.target.files)));
+        var loadJSON = document.createElement('input');
+        loadJSON.setAttribute("type", "button");
+        loadJSON.setAttribute("value", "Open JSON");
+        loadJSON.setAttribute("title", "Load skeletons from a saved JSON file.");
+        loadJSON.onclick = () => fileButton.click();
+        tabs['Main'].appendChild(loadJSON);
+
         var max = 20;
         var synapseThresholdSelect = document.createElement('select');
         for (var i=1; i <= max; ++i) {
@@ -1624,6 +1640,107 @@
       colorIndex: colorIndex,
       filename: 'catmaid-connectivity-matrix'
     });
+  };
+
+  /**
+   * Store the loaded skeleton IDs and gorups as JSON.
+   */
+  ConnectivityMatrixWidget.prototype.saveJSON = function() {
+    var fileName = "catmaid-connectivity-matrix.json";
+
+    let state = JSON.parse(CATMAID.getWidgetState(this));
+
+    let data = {
+      'rowSkeletonIds': this.rowDimension.getSelectedSkeletons(),
+      'colSkeletonIds': this.colDimension.getSelectedSkeletons(),
+      'rowGroups': this.rowDimension.groups,
+      'colGroups': this.colDimension.groups,
+      'state': state ? state.state : undefined,
+    };
+
+    saveAs(new Blob([JSON.stringify(data)], {type: 'application/json'}), fileName);
+  };
+
+  /**
+   * Load saved JSON files into this Connectivity Matrix.
+   */
+  ConnectivityMatrixWidget.prototype.loadJSON = function(json) {
+    this.clear(true, true);
+
+    let data = JSON.parse(json);
+    let rowSkeletonModels = CATMAID.tools.listToIdMap(data.rowSkeletonIds.map(skid => new CATMAID.SkeletonModel(skid)));
+    let colSkeletonModels = CATMAID.tools.listToIdMap(data.colSkeletonIds.map(skid => new CATMAID.SkeletonModel(skid)));
+
+    // Only do a single update at the end.
+    this.blockUpdates = true;
+
+    this.rowDimension.append(rowSkeletonModels);
+    this.colDimension.append(colSkeletonModels);
+
+    for (let g in data.rowGroups) {
+      let groupModels = CATMAID.tools.listToIdMap(data.rowGroups[g].map(skid => new CATMAID.SkeletonModel(skid)));
+      this.rowDimension.appendAsGroup(groupModels, g);
+    }
+
+    for (let g in data.colGroups) {
+      let groupModels = CATMAID.tools.listToIdMap(data.colGroups[g].map(skid => new CATMAID.SkeletonModel(skid)));
+      this.colDimension.appendAsGroup(groupModels, g);
+    }
+
+    this.blockUpdates = false;
+
+    if (data.state) {
+      let dialog = new CATMAID.OptionsDialog('Load widget settings from JSON?', {
+        'No': () => {
+          this.update();
+          CATMAID.msg('Success', 'File loaded');
+        },
+        'Yes': () => {
+          CATMAID.loadStateIntoWidget(this, data.state);
+          CATMAID.refreshWidgetControls(this);
+          this.update();
+          CATMAID.msg('Success', 'File loaded');
+        },
+      });
+      dialog.appendMessage('This JSON file includes a widget configuration. Do you want to apply it?');
+      dialog.show(300, 'auto');
+    } else {
+      this.update();
+      CATMAID.msg('Success', 'File loaded');
+    }
+  };
+
+  ConnectivityMatrixWidget.prototype.loadJSONFile = function(files) {
+    try {
+      if (0 === files.length) throw new CATMAID.Error("Choose at least one file!");
+      if (files.length > 1) throw new CATMAID.Error("Choose one file only!");
+
+      let file = files[0];
+      let nameComponents = file.name.split('.');
+      if (nameComponents.length === 1) {
+        throw new CATMAID.ValueError("A file extension is needed");
+      }
+      let extension = nameComponents[nameComponents.length - 1];
+      let supportedExtensions = ['json'];
+      if (supportedExtensions.indexOf(extension) === -1) {
+        throw new CATMAID.ValueError("Unsupported file type: " + extension);
+      }
+
+      var reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          let data = e.target.result;
+          if (extension === 'json') {
+            this.loadJSON(data);
+          }
+        } catch (error) {
+          CATMAID.error("Failed to parse file", error);
+        }
+      };
+      reader.readAsText(file);
+    } catch (e) {
+      CATMAID.handleError(e);
+    }
   };
 
   let knownAggregates = {

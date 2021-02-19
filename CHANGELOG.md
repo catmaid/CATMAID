@@ -138,6 +138,13 @@ Neuron search:
 - The CSV export includes now the skeleton ID as well and will export metadata
   like cable length, if metadata display is enabled in the UI.
 
+Connectivity Matrix:
+
+- The new buttons "Save JSON" and "Open JSON" can be used to save the row and
+  column skeletons, including groups and widget settings.
+
+- Connectivity matrix: the loading speed has been improved significantly.
+
 Layouts:
 
 - New layout menu item: "Copy URL to view with layout". This will create a URL
@@ -487,8 +494,6 @@ Miscellaneous:
 
 - Connector table: a search filter is now available for the table that allows
   filtering across all columns.
-
-- Connectivity matrix: the loading speed has been improved significantly.
 
 - Connector selection: a search filter is now available for the table that allows
   filtering across all columns.

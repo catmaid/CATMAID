@@ -11,7 +11,7 @@
         DataView.defaultOptions);
 
     this.id = options.id;
-    this.type = options.code_type;
+    this.type = options.type;
 
     this.container = document.createElement('div');
 

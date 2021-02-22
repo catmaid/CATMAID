@@ -54,6 +54,7 @@
     }
 
     this.container = container;
+    this.container.classList.add(`data-view-${this.type}`);
 
     return Promise.resolve();
   };

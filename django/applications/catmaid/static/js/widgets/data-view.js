@@ -212,6 +212,8 @@
     this.initial_zoom = CATMAID.tools.getDefined(options.config.initial_zoom);
     this.initial_location = CATMAID.tools.getDefined(options.config.initial_location);
     this.initial_layout = CATMAID.tools.getDefined(options.config.initial_layout);
+    this.projectFilterPlaceholder = CATMAID.tools.getDefined(options.config.project_filter_placeholder);
+    this.stackFilterPlaceholder = CATMAID.tools.getDefined(options.config.stack_filter_placeholder);
 
     this.cacheLoadingTimeout = null;
   };
@@ -230,6 +232,8 @@
     sample_mirror_index: 0,
     sample_slice: 0,
     only_favorite: false,
+    project_filter_placeholder: 'Project filter',
+    stack_filter_placeholder: 'Stack filter',
   };
 
   ProjectListDataView.prototype.createContent = function(content) {
@@ -256,7 +260,7 @@
     var projectSearchInput = document.createElement('input');
     projectSearchInput.setAttribute('type', 'text');
     projectSearchInput.setAttribute('data-role', 'project-filter');
-    projectSearchInput.setAttribute('placeholder', 'Project filter');
+    projectSearchInput.setAttribute('placeholder', this.projectFilterPlaceholder);
     if (this.projectFilterTerm.length > 0) {
       projectSearchInput.value = this.projectFilterTerm;
     }
@@ -266,7 +270,7 @@
     var stackSearchInput = document.createElement('input');
     stackSearchInput.setAttribute('type', 'text');
     stackSearchInput.setAttribute('data-role', 'stack-filter');
-    stackSearchInput.setAttribute('placeholder', 'Stack filter');
+    stackSearchInput.setAttribute('placeholder', this.stackFilterPlaceholder);
     stackSearchInput.style.marginLeft = '0.5em';
     if (this.stackFilterTerm.length > 0) {
       stackSearchInput.value = this.stackFilterTerm;

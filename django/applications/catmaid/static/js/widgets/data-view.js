@@ -198,7 +198,8 @@
     // Call super constructor
     DataView.call(this, options);
 
-    this.filter = options.config.filter;
+    this.project_filter = options.config.project_filter;
+    this.stack_filter = options.config.stack_filter;
     this.projectFilterTerm = options.config.projectFilterTerm;
     this.stackFilterTerm = options.config.stackFilterTerm;
     this.with_stacks = options.config.with_stacks;
@@ -222,7 +223,8 @@
   ProjectListDataView.prototype.constructor = DataView;
 
   ProjectListDataView.defaultOptions = {
-    filter: true,
+    project_filter: true,
+    stack_filter: true,
     projectFilterTerm: "",
     stackFilterTerm: "",
     with_stacks: true,
@@ -252,35 +254,41 @@
 
     var searchForm = document.createElement('form');
     searchForm.setAttribute('data-role', 'filter');
-    if (!this.filter) {
+    if (!this.project_filter && !this.stack_filter) {
       searchForm.style.display = 'none';
     }
     hp.appendChild(searchForm);
 
-    var projectSearchInput = document.createElement('input');
-    projectSearchInput.setAttribute('type', 'text');
-    projectSearchInput.setAttribute('data-role', 'project-filter');
-    projectSearchInput.setAttribute('placeholder', this.projectFilterPlaceholder);
-    if (this.projectFilterTerm.length > 0) {
-      projectSearchInput.value = this.projectFilterTerm;
+    if (this.project_filter) {
+      var projectSearchInput = document.createElement('input');
+      projectSearchInput.setAttribute('type', 'text');
+      projectSearchInput.setAttribute('data-role', 'project-filter');
+      projectSearchInput.setAttribute('placeholder', this.projectFilterPlaceholder);
+      if (this.projectFilterTerm.length > 0) {
+        projectSearchInput.value = this.projectFilterTerm;
+      }
+      projectSearchInput.onkeyup = this.refreshDelayed.bind(this);
+      searchForm.appendChild(projectSearchInput);
     }
-    projectSearchInput.onkeyup = this.refreshDelayed.bind(this);
-    searchForm.appendChild(projectSearchInput);
 
-    var stackSearchInput = document.createElement('input');
-    stackSearchInput.setAttribute('type', 'text');
-    stackSearchInput.setAttribute('data-role', 'stack-filter');
-    stackSearchInput.setAttribute('placeholder', this.stackFilterPlaceholder);
-    stackSearchInput.style.marginLeft = '0.5em';
-    if (this.stackFilterTerm.length > 0) {
-      stackSearchInput.value = this.stackFilterTerm;
+    if (this.stack_filter) {
+      var stackSearchInput = document.createElement('input');
+      stackSearchInput.setAttribute('type', 'text');
+      stackSearchInput.setAttribute('data-role', 'stack-filter');
+      stackSearchInput.setAttribute('placeholder', this.stackFilterPlaceholder);
+      stackSearchInput.style.marginLeft = '0.5em';
+      if (this.stackFilterTerm.length > 0) {
+        stackSearchInput.value = this.stackFilterTerm;
+      }
+      stackSearchInput.onkeyup = this.refreshDelayed.bind(this);
+      searchForm.appendChild(stackSearchInput);
     }
-    stackSearchInput.onkeyup = this.refreshDelayed.bind(this);
-    searchForm.appendChild(stackSearchInput);
 
-    var searchIndicator = document.createElement('span');
-    searchIndicator.setAttribute('data-role', 'filter-indicator');
-    searchForm.appendChild(searchIndicator);
+    if (this.project_filter || this.stack_filter) {
+      var searchIndicator = document.createElement('span');
+      searchIndicator.setAttribute('data-role', 'filter-indicator');
+      searchForm.appendChild(searchIndicator);
+    }
 
     var projectDisplay = document.createElement('dl');
     projectDisplay.setAttribute('data-role', 'project-display');
@@ -326,10 +334,10 @@
   ProjectListDataView.prototype.refresh = function(content) {
     DataView.prototype.refresh.call(this, content);
 
-    this.projectFilterTerm = $('input[data-role=project-filter]', this.container).val();
+    this.projectFilterTerm = $('input[data-role=project-filter]', this.container).val() || '';
     var projectRegEx = this.projectFilterTerm.length > 0 ? new RegExp(this.projectFilterTerm, "i") : null;
 
-    this.stackFilterTerm = $('input[data-role=stack-filter]', this.container).val();
+    this.stackFilterTerm = $('input[data-role=stack-filter]', this.container).val() || '';
     var stackRegEx = this.stackFilterTerm.length > 0 ? new RegExp(this.stackFilterTerm, "i") : null;
 
     var matchingProjects = 0,
@@ -529,8 +537,28 @@
       }, 500);
   };
 
+  let ResourceSpaceDataView = class ResourceSpaceDataView extends ProjectListDataView {
+    constructor(options) {
+      if (!options.config.message) {
+        options.config.message = 'View one of these public projects, or log in to work in your own Space.';
+      }
+      if (!options.config.project_filter_placeholder) {
+        options.config.project_filter_placeholder = 'Filter by name';
+      }
+      if (options.config.project_filter === undefined) {
+        options.config.project_filter = true;
+      }
+      if (options.config.stack_filter === undefined) {
+        options.config.stack_filter = false;
+      }
+      super(options);
+    }
+  };
+
+
   // Export data view
   CATMAID.ProjectListDataView = ProjectListDataView;
+  CATMAID.ResourceSpaceDataView = ResourceSpaceDataView;
 
 
   /**
@@ -539,6 +567,7 @@
   DataView.dataviewTypes = {
     'empty': DataView,
     'simple_project_list_data_view': ProjectListDataView,
+    'spaces_resources': ResourceSpaceDataView,
     'project_list_data_view': BackendDataView,
     'project_table_data_view': BackendDataView,
     'dynamic_projects_list_data_view': BackendDataView,

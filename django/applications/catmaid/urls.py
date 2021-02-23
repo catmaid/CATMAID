@@ -88,7 +88,7 @@ urlpatterns += [
 
 # Project permissions
 urlpatterns += [
-    url(r'permissions/$', authentication.list_project_permissions),
+    url(r'^permissions/$', authentication.list_project_permissions),
     url(r'^(?P<project_id>\d+)/permissions/project-user$', authentication.project_user_permission_set),
     url(r'^(?P<project_id>\d+)/permissions/project-group$', authentication.project_group_permission_set),
 ]

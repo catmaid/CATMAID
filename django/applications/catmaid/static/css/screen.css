@@ -468,6 +468,38 @@ div#data_view.data-view-spaces_resources [data-role=project-header] {
   display: none;
 }
 
+div#data_view.data-view-spaces_resources .project-legend {
+  margin: 1em 0 1em 0;
+}
+
+div#data_view.data-view-spaces_resources .project-legend > span {
+  color: white;
+  background-color: black;
+  padding: 0.2em;
+}
+
+div#data_view.data-view-spaces_resources .project-legend [data-type=resource] {
+  border-left: 0.8em solid #c141c1;
+}
+
+div#data_view.data-view-spaces_resources .project-legend [data-type=space] {
+  border-left: 0.8em solid #49a949;
+}
+
+div#data_view.data-view-spaces_resources .image-entry[data-type=resource] img {
+  border-left: 0.5em solid #c141c1;
+}
+
+div#data_view.data-view-spaces_resources .image-entry[data-type=space] img {
+  border-left: 0.5em solid #49a949;
+}
+
+div#data_view.data-view-spaces_resources span.project-sub-title {
+  display: block;
+  color: grey;
+  font-weight: normal;
+}
+
 div#ontology_editor_widget div#ontology_known_roots {
 	margin-top: 10px;
 }

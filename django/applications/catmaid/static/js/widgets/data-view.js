@@ -68,7 +68,8 @@
     $('div.header h1', this.container).attr('title',
         'Version: ' + CATMAID.CLIENT_VERSION);
 
-    $('p[data-role=message]', this.container).text(this.message);
+    let msgContainer = this.container.querySelector('p[data-role=message]');
+    if (msgContainer) msgContainer.innerHTML = this.message;
   };
 
   DataView.defaultOptions = {
@@ -237,6 +238,7 @@
     only_favorite: false,
     project_filter_placeholder: 'Project filter',
     stack_filter_placeholder: 'Stack filter',
+    project_list_title: 'Projects',
   };
 
   ProjectListDataView.prototype.createContent = function(content) {
@@ -380,8 +382,10 @@
         continue;
       }
 
+      let canAnnotate = CATMAID.hasPermission(p.id, 'can_annotate') ;
       let rowSpan = pp.appendChild(document.createElement('span'));
       rowSpan.classList.add('project-member-entry');
+      rowSpan.dataset.type = canAnnotate ? 'space' : 'resource';
 
       if (this.sample_images) {
         rowSpan.classList.add('image-entry');
@@ -425,7 +429,7 @@
       span.classList.add('stack-entry');
 
       dt = span.appendChild(document.createElement("dt"));
-      dt.appendChild(document.createTextNode(p.title));
+      dt.innerHTML = this.getProjectTitle(p);
 
       // add a link for each stack group
       var matchingStackGroups = 0;
@@ -538,24 +542,35 @@
       }, 500);
   };
 
+  ProjectListDataView.prototype.getProjectTitle = function(p) {
+    return p.title;
+  };
+
   let ResourceSpaceDataView = class ResourceSpaceDataView extends ProjectListDataView {
     constructor(options) {
       if (!options.config.message) {
-        options.config.message = 'View one of these public projects, or log in to work in your own Space.';
+        options.config.message = [
+          'View one of these public projects, or log in to work in your own Space.',
+          '<div class="project-legend">',
+          '<span data-type="resource" title="Read-only">Resource</span>',
+          '<span data-type="space" title="Read-write">Space</span>',
+          '</div>',
+        ].join('\n');
       }
-      if (!options.config.project_filter_placeholder) {
-        options.config.project_filter_placeholder = 'Filter by name';
-      }
-      if (options.config.project_filter === undefined) {
-        options.config.project_filter = true;
-      }
-      if (options.config.stack_filter === undefined) {
-        options.config.stack_filter = false;
-      }
+      if (!options.config.project_filter_placeholder) options.config.project_filter_placeholder = 'Filter by name';
+      if (options.config.project_filter === undefined) options.config.project_filter = true;
+      if (options.config.stack_filter === undefined) options.config.stack_filter = false;
+      if (options.config.sample_images === undefined) options.config.sample_images = true;
       super(options);
     }
   };
 
+  ResourceSpaceDataView.prototype.getProjectTitle = function(p) {
+    let subTitle = CATMAID.hasPermission(p.id, 'can_annotate') ?
+        (CATMAID.hasPermission(p.id, 'can_administer') ? 'Space (read-write; you are the owner)' : 'Space (read-write)') :
+        'Resource (read-only)';
+    return `${p.title}<span class="project-sub-title">${subTitle}</span>`;
+  };
 
   // Export data view
   CATMAID.ProjectListDataView = ProjectListDataView;

@@ -1037,7 +1037,7 @@
 
           // Retrieve review status, if there are any skeletons
           if (addedModels.length > 0 ) {
-            var skeleton_ids = addedModels.map(m => m.skeletonId);
+            var skeleton_ids = addedModels.map(m => m.id);
             var postData = {
                 skeleton_ids: skeleton_ids,
                 whitelist: self.review_filter === 'Team'};

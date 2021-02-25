@@ -673,6 +673,57 @@ def _get_neuronname_from_skeletonid( project_id, skeleton_id ):
 def neuronname(request:HttpRequest, project_id=None, skeleton_id=None) -> JsonResponse:
     return JsonResponse(_get_neuronname_from_skeletonid(project_id, skeleton_id))
 
+@requires_user_role([UserRole.Browse])
+def neurondetails(request:HttpRequest, project_id=None, skeleton_id=None) -> JsonResponse:
+    cursor = connection.cursor()
+    cursor.execute("""
+        WITH model_of AS (
+            SELECT id FROM relation
+            WHERE relation_name = 'model_of' AND project_id = %(project_id)s
+            LIMIT 1
+        ), neuron_class AS (
+            SELECT id FROM class
+            WHERE class_name = 'neuron' AND project_id = %(project_id)s
+            LIMIT 1
+        ), skeleton_class AS (
+            SELECT id FROM class
+            WHERE class_name = 'skeleton' AND project_id = %(project_id)s
+            LIMIT 1
+        )
+        SELECT cib.id, cib.project_id, cib.name, cib.user_id, cib.creation_time
+        FROM model_of, neuron_class, skeleton_class,
+            class_instance_class_instance cici
+        JOIN class_instance cia
+            ON (cia.id = cici.class_instance_a)
+        JOIN class_instance cib
+            ON (cib.id = cici.class_instance_b)
+        WHERE cici.project_id = %(project_id)s AND
+              cici.class_instance_a = %(skeleton_id)s AND
+              cici.relation_id = model_of.id AND
+              cia.class_id = skeleton_class.id AND
+              cib.class_id = neuron_class.id
+    """, {
+        'project_id': project_id,
+        'skeleton_id': skeleton_id,
+    })
+
+    neuron_detail_entries = cursor.fetchall()
+    if len(neuron_detail_entries) == 0:
+        raise Http404('No matching neuron found')
+    if len(neuron_detail_entries) > 1:
+        raise ValueError(f'Found more than one neuron for skeleton {skeleton_id}')
+
+    neuron_details = neuron_detail_entries[0]
+
+    return JsonResponse({
+        'neuron_id': neuron_details[0],
+        'project_id': neuron_details[1],
+        'name': neuron_details[2],
+        'user_id': neuron_details[3],
+        'creation_time': neuron_details[4],
+    })
+
+
 def _neuronnames(skeleton_ids, project_id) -> dict:
     qs = ClassInstanceClassInstance.objects.filter(
             relation__relation_name='model_of',

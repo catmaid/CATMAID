@@ -138,13 +138,14 @@
 
   NeuronNavigator.prototype.set_neuron_node_from_skeleton = function(skeleton_id)
   {
-    CATMAID.fetch(project.id + '/skeleton/' + skeleton_id + '/neuronname',
-        'POST', {})
+    CATMAID.Skeletons.getNeuronDetails(project.id, skeleton_id)
       .then((function(json) {
         var n = {
-          'name': json.neuronname,
+          'id': json.neuron_id,
+          'name': json.name,
           'skeleton_ids': [skeleton_id],
-          'id': json.neuronid
+          'user_id': json.user_id,
+          'creation_time': json.creation_time,
         };
         var home_node = new NeuronNavigator.HomeNode(this.widgetID);
         home_node.link(this, null);
@@ -1530,15 +1531,21 @@
 
     // If a neuron is selected a neuron filter node is created
     $('#' + table_id).on('dblclick', 'tbody tr', function () {
-        var neuronData = datatable.fnGetData(this);
-        var neuron = {
-          'name': neuronData.name,
-          'skeleton_ids': neuronData.skeleton_ids,
-          'id': neuronData.id,
-        };
-        var node = new NeuronNavigator.NeuronNode(neuron);
-        node.link(self.navigator, self);
-        self.navigator.select_node(node);
+      let neuronData = datatable.fnGetData(this);
+      CATMAID.Skeletons.getNeuronDetails(project.id, neuronData.skeleton_ids[0])
+        .then(function(json) {
+          var n = {
+            'id': json.neuron_id,
+            'name': json.name,
+            'skeleton_ids': neuronData.skeleton_ids,
+            'user_id': json.user_id,
+            'creation_time': json.creation_time,
+          };
+          var node = new NeuronNavigator.NeuronNode(n);
+          node.link(self.navigator, self);
+          self.navigator.select_node(node);
+        })
+        .catch(CATMAID.handleError);
     });
 
     // If search is used, make sure 'select all' checkbox is unselected
@@ -2067,6 +2074,8 @@
     this.neuron_id = neuron.id;
     this.neuron_name = neuron.name;
     this.skeleton_ids = neuron.skeleton_ids;
+    this.neuron_user_id = neuron.user_id;
+    this.neuron_creation_time = neuron.creation_time;
 
     // Number of initially displayed annotations per page
     this.annotationListLength = 25;
@@ -2365,6 +2374,7 @@
 
     /* Skeletons: Request compact JSON data */
     var content = document.createElement('div');
+    content.style.marginTop = '1em';
     content.setAttribute('id', 'navigator_skeletonlist_content' +
         this.navigator.widgetID);
 
@@ -2384,12 +2394,20 @@
 
     content.appendChild(table);
 
+    // Add neuron name to caption
+    let neuronMetaData = content.appendChild(document.createElement('div'));
+    neuronMetaData.classList.add('neuron-meta');
+    $(neuronMetaData)
+      .append($('<div/>').addClass('nodeneuronname').html(`Name: ${this.neuron_name}`))
+      .append($('<div/>').html(`Initial creator: ${CATMAID.User.safe_get(this.neuron_user_id).login} (${this.neuron_user_id})`))
+      .append($('<div/>').html(`Creation time: ${this.neuron_creation_time}`));
+
     // Add table to DOM
     container.append(content);
 
     var skeleton_datatable = $(table).dataTable({
       "bDestroy": true,
-      "sDom": '<"H"<"neuron-meta">r>t<"F">',
+      "sDom": '<"H"r>t<"F">',
       // default: <"H"lfr>t<"F"ip>
       "bProcessing": true,
       "bAutoWidth": false,
@@ -2397,10 +2415,6 @@
       "bJQueryUI": true,
       "bSort": false
     });
-
-    // Add neuron name to caption
-    $('div.neuron-meta', container).append(
-      $('<div/>').addClass('nodeneuronname').html(`Name: ${this.neuron_name}`));
 
     // Manually request compact-json object for skeleton
     var loader_fn = function(skeleton_id) {
@@ -2580,19 +2594,20 @@
       var node_content = $(document.createElement('div'));
       container.append(node_content);
 
-      CATMAID.fetch(project.id + '/skeleton/' + this.current_skid + '/neuronname',
-          'POST', {})
-        .then((function(json) {
+      CATMAID.Skeletons.getNeuronDetails(project.id, this.current_skid)
+        .then(json => {
           this.skeleton_ids = [this.current_skid];
-          this.neuron_id = json.neuronid;
+          this.neuron_id = json.neuron_id;
           // Update the neuron name
-          this.neuron_name = json.neuronname;
+          this.neuron_name = json.name;
+          this.neuron_creation_time = json.creation_time;
+          this.neuron_user_id = json.user_id;
           // Call neuron node content creation. The neuron ID changed and we
           // want the content to reflect that. Therefore, the filters have
           // to be re-created.
           NeuronNavigator.NeuronNode.prototype.add_content.call(this,
               node_content, this.get_filter_set());
-        }).bind(this))
+        })
         .catch(CATMAID.handleError);
     } else {
       // Reset neuron data

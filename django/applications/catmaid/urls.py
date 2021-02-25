@@ -333,6 +333,7 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/root$', skeleton.root_for_skeleton),
     url(r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/sampler-count$', skeleton.sampler_count),
     url(r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/cable-length$', skeleton.cable_length),
+    url(r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/neuron-details$', skeleton.neurondetails),
     url(r'^(?P<project_id>\d+)/skeleton/split$', record_view("skeletons.split")(skeleton.split_skeleton)),
     url(r'^(?P<project_id>\d+)/skeleton/ancestry$', skeleton.skeleton_ancestry),
     url(r'^(?P<project_id>\d+)/skeleton/join$', record_view("skeletons.merge")(skeleton.join_skeleton)),

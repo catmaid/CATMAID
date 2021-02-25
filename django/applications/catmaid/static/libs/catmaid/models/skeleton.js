@@ -36,6 +36,17 @@
       });
     },
 
+    /**
+     * Getinformation on the neuron a skeleton is linked to.
+     */
+    getNeuronDetails: function(projectId, skeletonId, api = undefined) {
+      return CATMAID.fetch({
+        url: `${projectId}/skeletons/${skeletonId}/neuron-details`,
+        method: 'GET',
+        api: api,
+      });
+    },
+
     getNodeCount: function(projectId, skeletonId, api = undefined) {
       return CATMAID.fetch({
         url: `${projectId}/skeleton/${skeletonId}/node_count`,

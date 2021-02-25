@@ -56,7 +56,8 @@ def user_list(request:HttpRequest) -> JsonResponse:
     anon_user = get_anonymous_user()
 
     user_list = []
-    if settings.PROJECT_TOKEN_USER_VISIBILITY:
+    # Super users get to see all users, regardless of the backend setting.
+    if settings.PROJECT_TOKEN_USER_VISIBILITY and not user.is_superuser:
         cursor = connection.cursor()
         cursor.execute("""
             WITH project_tokens AS (

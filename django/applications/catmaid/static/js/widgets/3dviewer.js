@@ -10089,7 +10089,7 @@
                 if (e instanceof CATMAID.ResourceUnavailableError) return;
                 CATMAID.handleError(e);
               });
-          } else if (project_id === project.id) {
+          } else if (v.project_id === project.id) {
             widget.showVolume(v.id, true, v.color, v.opacity, !v.wireframe, v.subdiv, v.bb)
               .catch(CATMAID.handleError);
           }

@@ -2389,7 +2389,7 @@
 
     var skeleton_datatable = $(table).dataTable({
       "bDestroy": true,
-      "sDom": '<"H"<"nodeneuronname">r>t<"F">',
+      "sDom": '<"H"<"neuron-meta">r>t<"F">',
       // default: <"H"lfr>t<"F"ip>
       "bProcessing": true,
       "bAutoWidth": false,
@@ -2399,7 +2399,8 @@
     });
 
     // Add neuron name to caption
-    $('div.nodeneuronname', container).html('Name: ' + this.neuron_name);
+    $('div.neuron-meta', container).append(
+      $('<div/>').addClass('nodeneuronname').html(`Name: ${this.neuron_name}`));
 
     // Manually request compact-json object for skeleton
     var loader_fn = function(skeleton_id) {

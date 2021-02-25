@@ -633,6 +633,11 @@ div.clustering-content .content {
   margin-left: 0.2em;
 }
 
+.navigator_content .neuron-meta {
+  margin: 0.5em 0.2em 0.5em 0.2em;
+  display: flex;
+}
+
 table.neuron_annotations_query_fields {
   border-spacing: 0.5em 0.1em;
 }

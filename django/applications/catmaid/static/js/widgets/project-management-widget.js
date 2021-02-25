@@ -161,8 +161,8 @@
             CATMAID.Project.getUserPermissions()
               .then(permissions => {
                 let defaultData = {'permissions': []};
-                let data = CATMAID.User.list().map(u => {
-                  let userData = permissions[u.id] || defaultData;
+                let data = Object.keys(permissions).map(userId => {
+                  let userData = permissions[userId] || defaultData;
                   let userPerms = userData.permissions;
                   return {
                     'id': u.id,

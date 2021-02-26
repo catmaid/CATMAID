@@ -128,9 +128,9 @@ class GroupMemberships(APIView):
             raise ValueError('Action needs to be "add" or "revoke"')
 
         # Collect user and group information
-        source_users =  set(get_request_list(request.POST, 'source_users', [], int))
+        source_users = set(get_request_list(request.POST, 'source_users', [], int))
         source_groups = set(get_request_list(request.POST, 'source_groups', [], int))
-        target_users =  set(get_request_list(request.POST, 'target_users', [], int))
+        target_users = set(get_request_list(request.POST, 'target_users', [], int))
         target_groups = set(get_request_list(request.POST, 'target_groups', [], int))
 
         # Check permissions

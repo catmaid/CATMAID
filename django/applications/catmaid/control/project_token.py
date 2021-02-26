@@ -11,9 +11,7 @@ from rest_framework.response import Response
 from rest_framework.serializers import ModelSerializer, ValidationError
 from rest_framework.views import APIView
 
-from catmaid.control.authentication import (check_user_role, can_edit_or_fail,
-                                           requires_user_role_for_any_project,
-                                           PermissionError)
+from catmaid.control.authentication import requires_user_role, PermissionError
 from catmaid.control.common import get_request_bool, get_request_list
 from catmaid.models import (FavoriteProject, Project, ProjectToken, UserRole,
         UserProjectToken)
@@ -29,7 +27,7 @@ class SimpleProjectTokenSerializer(ModelSerializer):
 
 class ProjectTokenList(APIView):
 
-    @method_decorator(requires_user_role_for_any_project([UserRole.Admin]))
+    @method_decorator(requires_user_role([UserRole.Admin]))
     @never_cache
     def get(self, request:Request, project_id) -> Response:
         """List project tokens available for this project, if the user is an
@@ -41,7 +39,7 @@ class ProjectTokenList(APIView):
         serializer = SimpleProjectTokenSerializer(tokens, many=True)
         return Response(serializer.data)
 
-    @method_decorator(requires_user_role_for_any_project([UserRole.Admin]))
+    @method_decorator(requires_user_role([UserRole.Admin]))
     def post(self, request:Request, project_id) -> Response:
         """Create a new project token.
 

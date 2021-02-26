@@ -192,7 +192,7 @@
           }, {
             title: 'User name',
             render: function(data, type, row, meta) {
-              return `${row.full_name} (${row.login})`;
+              return `${row.full_name.length > 0 ? row.full_name : 'Unknown'} (${row.login})`;
             },
           }, {
             data: 'can_browse',

@@ -160,9 +160,8 @@
           ajax: (data, callback, settings) => {
             CATMAID.Project.getUserPermissions()
               .then(permissions => {
-                let defaultData = {'permissions': []};
                 let data = Object.keys(permissions).map(userId => {
-                  let userData = permissions[userId] || defaultData;
+                  let userData = permissions[userId];
                   let userPerms = userData.permissions;
                   let u = CATMAID.User.safe_get(userId);
                   return {

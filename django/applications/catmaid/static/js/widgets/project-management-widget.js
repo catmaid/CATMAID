@@ -290,6 +290,12 @@
           let data = permissionsDataTable.row($(e.target).parents('tr')).data();
           let perms = {};
           perms[perm] = e.target.checked;
+          if (perm === 'can_administer' && !e.target.checked &&
+              !confirm('Are you sure you want to remove admin permissions?')) {
+            e.target.checked = true;
+            return;
+          }
+
           CATMAID.Project.updateUserPermission(project.id, data.id, perms)
             .then(() => {
               CATMAID.msg("Success", `Updated ${perm} for user ${data.login}`);

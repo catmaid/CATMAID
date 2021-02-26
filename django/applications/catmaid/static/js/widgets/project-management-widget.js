@@ -164,6 +164,7 @@
                 let data = Object.keys(permissions).map(userId => {
                   let userData = permissions[userId] || defaultData;
                   let userPerms = userData.permissions;
+                  let u = CATMAID.User.safe_get(userId);
                   return {
                     'id': u.id,
                     'login': u.login,

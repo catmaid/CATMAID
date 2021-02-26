@@ -85,7 +85,10 @@ Project management widget:
   mainly useful for personal spaces, in which users typically have
   delete_project permissions.
 
-- The 'Project token' tab allows project admins to view existing project tokens
+- The "User data permissions" tab allows to configure user level edit
+  permissions (who is allowed to edit who's data).
+
+- The "Project token" tab allows project admins to view existing project tokens
   ("invitation codes") available for a project.
 
 Link widget and deep links:

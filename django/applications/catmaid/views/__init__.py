@@ -15,6 +15,8 @@ from django.apps import apps
 from allauth.socialaccount import providers
 from allauth.utils import get_request_param
 
+from catmaid.control.group import update_group_memberships
+
 User = get_user_model()
 
 
@@ -115,48 +117,15 @@ class GroupMembershipHelper(TemplateView):
         target_users = set(map(int, request.POST.getlist('target-users')))
         target_groups = set(map(int, request.POST.getlist('target-groups')))
 
-        # Find all users in source groups
-        def explode_group_into_users(groups, users):
-            if groups:
-                group_users = User.objects.filter(groups__in=groups) \
-                    .values_list('id', flat=True)
-                users.update(group_users)
+        updated, warnings = update_group_memberships(action, source_users, source_groups,
+                target_users, target_groups)
 
-        explode_group_into_users(source_groups, source_users)
-        if not source_users:
-            messages.error(request, 'Need at least one source user or '
-                           'non-empty source group')
-            return HttpResponseRedirect(redirect_url)
+        for w in warnings:
+            messages.warning(request, w)
 
-        explode_group_into_users(target_groups, target_users)
-        if not target_users:
-            messages.error(request, 'Need at least one target user or '
-                           'non-empty target group')
-            return HttpResponseRedirect(redirect_url)
+        if updated:
+            messages.success(request, f'Successfully updated {updated} permissions')
+        else:
+            messages.error('No permission updated')
 
-        # We now have a set of source users and a set of target users. This
-        # allows us to create the requested group memberships. Each source
-        # user is added to each target user group.
-        updated = 0
-        for target_user in target_users:
-            users = User.objects.filter(id=target_user)
-            n_user_instances = len(users)
-            if 0 == n_user_instances:
-                messages.warning(request, f'Could not find user with ID {target_user}')
-                continue
-            if 1 < n_user_instances:
-                messages.warning(request, f'Found more than one user with ID {target_user}')
-                continue
-
-            user = users[0]
-
-            group, _ = Group.objects.get_or_create(name=user.username)
-            if 'add' == action:
-                group.user_set.add(*source_users)
-                updated += 1
-            elif 'revoke' == action:
-                group.user_set.remove(*source_users)
-                updated += 1
-
-        messages.success(request, f'Successfully updated {updated} permissions')
         return HttpResponseRedirect(redirect_url)

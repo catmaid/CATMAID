@@ -1,9 +1,12 @@
+from django.conf import settings
+from django.db import connection
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404
 
 from guardian.shortcuts import assign_perm, get_perms_for_model
+from guardian.utils import get_anonymous_user
 
 from rest_framework import status
 from rest_framework.request import Request
@@ -15,6 +18,58 @@ from catmaid.control.authentication import requires_user_role, PermissionError
 from catmaid.control.common import get_request_bool, get_request_list
 from catmaid.models import (FavoriteProject, Project, ProjectToken, UserRole,
         UserProjectToken)
+
+
+def get_token_visible_groups(user_id):
+    """
+    For now it is not possible to get a list of token visible groups.
+    """
+    return []
+
+
+def get_token_visible_users(user_id, with_anon_user=True):
+    cursor = connection.cursor()
+    query = """
+        WITH project_tokens AS (
+            SELECT DISTINCT project_token_id AS id
+            FROM catmaid_user_project_token
+            WHERE user_id = %(user_id)s
+
+            UNION
+
+            SELECT id
+            FROM catmaid_project_token
+            WHERE user_id = %(user_id)s
+        )
+        SELECT DISTINCT ON (au.id) au.id
+        FROM project_tokens pt
+        JOIN catmaid_user_project_token upt
+            ON pt.id = upt.project_token_id
+        JOIN auth_user au
+            ON au.id = upt.user_id
+        JOIN catmaid_userprofile up
+            ON up.user_id = au.id
+    """
+    params = {
+        'user_id': user_id,
+    }
+
+    if with_anon_user:
+        anon_user = get_anonymous_user()
+        query += """
+            UNION
+
+            SELECT au.id
+            FROM auth_user au
+            JOIN catmaid_userprofile up
+                ON up.user_id = au.id
+            WHERE au.id = %(user_id)s OR au.id = %(anon_user_id)s
+        """
+        params['anon_user_id'] = anon_user.id
+
+    cursor.execute(query, params)
+
+    return list(map(lambda x: x[0], cursor.fetchall()))
 
 
 class SimpleProjectTokenSerializer(ModelSerializer):

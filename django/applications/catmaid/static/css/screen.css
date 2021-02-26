@@ -1958,3 +1958,19 @@ i.refresh-icon:hover {
 .copy-button:hover {
   color: #ff8e43;
 }
+
+.split-tabs div.container {
+  width: 50%;
+  float: left;
+}
+
+.split-tabs div.divider {
+  clear: both;
+}
+
+.split-tabs span.header {
+  font-weight: bold;
+  margin: 2px 0;
+  padding: 2px 3px;
+  vertical-align: middle;
+}

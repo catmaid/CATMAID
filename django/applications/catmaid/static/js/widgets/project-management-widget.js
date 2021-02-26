@@ -12,7 +12,7 @@
 
     // The current edit mode
     this.mode = 'project-access';
-    this.modes = ['project-access', 'properties', 'tokens', 'delete'];
+    this.modes = ['project-access', 'user-permissions', 'properties', 'tokens', 'delete'];
 
     this.neuronNameService = CATMAID.NeuronNameService.getInstance();
   };
@@ -102,6 +102,33 @@
     // Update actual content
     let mode = ProjectManagementWidget.MODES[this.mode];
     mode.createContent(this.content, this);
+  };
+
+  ProjectManagementWidget.prototype.applyUserPermissions = function() {
+    let container = document.querySelector('div[data-role=group-membership]');
+    if (!container) {
+      return Promise.reject('No group membership data found');
+    }
+
+    let sourceUsers = Array.from(container.querySelectorAll('input[name=source-users]')).filter(e => e.checked).map(e => e.value);
+    let sourceGroups = Array.from(container.querySelectorAll('input[name=source-groups]')).filter(e => e.checked).map(e => e.value);
+    let targetUsers = Array.from(container.querySelectorAll('input[name=target-users]')).filter(e => e.checked).map(e => e.value);
+    let targetGroups = Array.from(container.querySelectorAll('input[name=target-groups]')).filter(e => e.checked).map(e => e.value);
+
+    let action = container.querySelector('select[name=action]').value;
+
+    return CATMAID.fetch(`${project.id}/groups/memberships/`, 'POST', {
+        'action': action,
+        'source_users': sourceUsers,
+        'source_groups': sourceGroups,
+        'target_users': targetUsers,
+        'target_groups': targetGroups,
+      })
+      .then(response => {
+        CATMAID.msg('Success', `Group membership of ${response.users} updated`);
+        this.refresh();
+      })
+      .catch(CATMAID.handleError);
   };
 
   ProjectManagementWidget.prototype.setMode = function(mode) {
@@ -463,6 +490,165 @@
             .catch(CATMAID.handleError);
         });
       }
+    },
+    'user-permissions': {
+      title: 'User data permissions',
+      createControls: function(widget) {
+        let infoPanel = document.createElement('p');
+        infoPanel.appendChild(document.createTextNode(' Define which user can edit who\'s data (e.g. treenodes, connectors)'));
+
+        return [{
+          type: 'button',
+          label: 'Refresh',
+          onclick: e => {
+            widget.refresh();
+          },
+        }, {
+          type: 'button',
+          label: 'Apply',
+          onclick: e => {
+            if (!confirm('Apply permission changes?')) return;
+            widget.applyUserPermissions();
+          },
+        }, {
+          type: 'child',
+          element: infoPanel,
+        }];
+      },
+      createContent: function(content, widget) {
+        if (!CATMAID.hasPermission(project.id, 'can_administer')) {
+          content.appendChild(document.createTextNode('No administration permissions'));
+          return;
+        }
+
+        let msg = content.appendChild(document.createElement('p'));
+        msg.classList.add('info-text');
+        msg.appendChild(document.createTextNode('To give one user permission to ' +
+          'edit data created by another users, groups can be used: If user A is ' +
+          'member of a group named B, user A can edit data of user B.  For now ' +
+          'such data includes only skeleton reconstruction data.'));
+
+        let msg2 = content.appendChild(document.createElement('p'));
+        msg2.classList.add('info-text');
+        msg2.appendChild(document.createTextNode('This view provides an easy way ' +
+          'to create and revoke such group memberships for multiple users at ' +
+          'once. Below you will find two columns. You can select groups and users ' +
+          'on the left and give them permission to edit data of groups and users ' +
+          'of the right. Press "Apply" in the widget controls if you want to save ' +
+          'all selected changes.'));
+
+        let users = CATMAID.User.list();
+        let container = content.appendChild(document.createElement('div'));
+        container.dataset.role = 'group-membership';
+        container.classList.add('split-tabs');
+        CATMAID.Group.list()
+          .then(groups => {
+            container.innerHTML = `
+                <div class="container">
+                  <label>
+                  <select name="action">
+                    <option value="add">Give permission to</option>
+                    <option value="revoke">Revoke permission from</option>
+                  </select>
+                  <span class="header">the following users...</span>
+                  </label>
+                </div>
+                <div class="container">
+                  <label>
+                  <span class="header">...to edit objects created by these users.</span>
+                  </label>
+                </div>
+                <div class="divider"></div>
+                <div class="container">
+                  <div id="source-tabs">
+                    <ul>
+                      <li><a href="#source-tabs-users">Users</a></li>
+                      <li><a href="#source-tabs-groups">Groups</a></li>
+                    </ul>
+                    <div id="source-tabs-users">
+                      <label>
+                        <input type="checkbox" class="select-all" />
+                        Select all
+                      </label>
+                      <div>
+                       <input placeholder="Filter users" class="filterbox" type="text" />
+                      </div>
+                      <ul id="source-users">
+                      ${users.map(u => '<li><label><input type="checkbox" name="source-users" value="' + u.id + '" id="source-user-' + u.id + '" />' + u.login + '</label></li>').join('\n')}
+                      </ul>
+                    </div>
+                    <div id="source-tabs-groups">
+                      <label>
+                        <input type="checkbox" class="select-all" />
+                        Select all
+                      </label>
+                      <div>
+                       <input placeholder="Filter groups" class="filterbox" type="text" />
+                      </div>
+                      <ul id="source-groups">
+                      ${groups.map(g => '<li><label><input type="checkbox" name="source-groups" value="' + g.id + '" id="source-user-' + g.id + '" />' + g.name + '</label></li>').join('\n')}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                <div class="container">
+                  <div id="target-tabs">
+                    <ul>
+                      <li><a href="#target-tabs-users">Users</a></li>
+                      <li><a href="#target-tabs-groups">Groups</a></li>
+                    </ul>
+                    <div id="target-tabs-users">
+                      <label>
+                        <input type="checkbox" class="select-all" />
+                        Select all
+                      </label>
+                      <div>
+                       <input placeholder="Filter users" class="filterbox" type="text" />
+                      </div>
+                      <ul id="target-users">
+                      ${users.map(u => '<li><label><input type="checkbox" name="target-users" value="' + u.id + '" id="target-user-' + u.id + '" />' + u.login + '</label></li>').join('\n')}
+                      </ul>
+                    </div>
+                    <div id="target-tabs-groups">
+                      <label>
+                        <input type="checkbox" class="select-all" />
+                        Select all
+                      </label>
+                      <div>
+                       <input placeholder="Filter groups" class="filterbox" type="text" />
+                      </div>
+                      <ul id="target-groups">
+                      ${groups.map(g => '<li><label><input type="checkbox" name="target-groups" value="' + g.id + '" id="target-user-' + g.id + '" />' + g.name + '</label></li>').join('\n')}
+                      </ul>
+                    </div>
+                  </div>
+                </div>`;
+
+            $("#source-tabs", container).tabs();
+            $("#target-tabs", container).tabs();
+
+            $(".select-all", container).change(function() {
+              var selected = this.checked;
+              $(this).closest('div').find('input[type=checkbox]:visible')
+                .prop('checked', selected);
+            });
+
+            $(".filterbox", container).keyup(function() {
+              var filter = $(this).val().toLowerCase();
+              // Get sibling list element
+              var list = $(this).closest('div').next("ul");
+              list.find("li").each(function() {
+                var val = $(this).text().trim().toLowerCase();
+                if (0 === filter.length || 0 === val.indexOf(filter)) {
+                  $(this).show();
+                } else {
+                  $(this).hide();
+                }
+              });
+            });
+          })
+          .catch(CATMAID.handleError);
+      },
     },
     'properties': {
       title: 'Project properties',

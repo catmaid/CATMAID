@@ -71,7 +71,8 @@ urlpatterns += [
 
 # Groups
 urlpatterns += [
-    url(r'^groups/$', group.GroupList.as_view())
+    url(r'^groups/$', group.GroupList.as_view()),
+    url(r'^(?P<project_id>\d+)/groups/memberships/$', group.GroupMemberships.as_view()),
 ]
 
 # Log

@@ -3,7 +3,7 @@ Screenshots and videos
 
 .. raw:: html
 
-        <div class="figure"><iframe width="560" height="315" src="https://www.youtube.com/embed/CZpaTCuSQao" frameborder="0" allowfullscreen></iframe>
+        <div class="figure"><iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/CZpaTCuSQao" frameborder="0"  allowfullscreen></iframe>
         <p class="caption"><span class="caption-text">Tom Kazimiers with an introduction to CATMAID at NEUBIAS Academy 2021</span></p></div>
 
 .. raw:: html

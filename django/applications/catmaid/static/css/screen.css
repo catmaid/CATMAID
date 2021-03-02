@@ -500,6 +500,13 @@ div#data_view.data-view-spaces_resources span.project-sub-title {
   font-weight: normal;
 }
 
+div#data_view.data-view-spaces_resources span.project-description {
+  display: block;
+  color: grey;
+  margin: 1em 0 1em 0;
+  font-weight: normal;
+}
+
 div#ontology_editor_widget div#ontology_known_roots {
 	margin-top: 10px;
 }

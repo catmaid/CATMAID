@@ -569,7 +569,7 @@
     let subTitle = CATMAID.hasPermission(p.id, 'can_annotate') ?
         (CATMAID.hasPermission(p.id, 'can_administer') ? 'Space (read-write; you are the owner)' : 'Space (read-write)') :
         'Resource (read-only)';
-    return `${p.title}<span class="project-sub-title">${subTitle}</span>`;
+    return `${p.title}<span class="project-sub-title">${subTitle}</span><span class="project-description">${p.comment || ""}</span>`;
   };
 
   // Export data view

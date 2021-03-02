@@ -321,6 +321,7 @@ def projects(request:HttpRequest) -> JsonResponse:
         response = {
             'id': p.id,
             'title': p.title,
+            'comment': p.comment,
             'stacks': stacks,
             'stackgroups': stackgroups
         }

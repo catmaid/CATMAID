@@ -2583,7 +2583,7 @@ var project;
         let [x, y, z] = [project.coordinates.x, project.coordinates.y, project.coordinates.z];
         let s = project.focusedStackViewer.s;
         let nSpaces = projects.length;
-        let newName = `Space #${nSpaces + 1} - ${projectDetails.title}`;
+        let newName = `Space #${nSpaces + 1} - ${projectDetails.title.replace(/^Space #[0-9]+ - /, '')}`;
         let createProjectToken = false, approvalNeeded = false;
 
         let originProjectId = project.id;

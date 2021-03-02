@@ -648,12 +648,13 @@
   /**
    * Create a fork of this project with this name.
    */
-  Project.createFork = function(projectId, name, copyVolumes = false, projectTokenOptions = null) {
+  Project.createFork = function(projectId, name, description = null, copyVolumes = false, projectTokenOptions = null) {
     return CATMAID.fetch({
       url: `${projectId}/fork`,
       method: 'POST',
       data: {
         name: name,
+        description: description,
         copy_volumes: copyVolumes,
         project_token: !!projectTokenOptions,
         project_token_default_permissions: projectTokenOptions ? projectTokenOptions.defaultPermissions : undefined,

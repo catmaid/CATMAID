@@ -602,6 +602,10 @@ def fork(request:HttpRequest, project_id) -> JsonResponse:
       description: Name of new project
       required: true
       type: string
+    - name: description
+      description: Description of new project
+      required: false
+      type: string
     - name: copy_volumes
       description: Whether volumes will be copied to the new project
       required: false
@@ -622,6 +626,7 @@ def fork(request:HttpRequest, project_id) -> JsonResponse:
     if not name:
         raise ValueError('Need new project name')
 
+    description = request.POST.get('description')
     copy_volumes = get_request_bool(request.POST, 'copy_volumes', False)
     create_project_token = get_request_bool(request.POST, 'project_token', False)
 
@@ -634,6 +639,7 @@ def fork(request:HttpRequest, project_id) -> JsonResponse:
 
     new_p.id = None
     new_p.title = name
+    new_p.comment = description
     new_p.save()
 
     # Copy all project-stack links

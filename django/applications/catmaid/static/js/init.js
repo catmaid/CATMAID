@@ -2584,6 +2584,7 @@ var project;
         let s = project.focusedStackViewer.s;
         let nSpaces = projects.length;
         let newName = `Space #${nSpaces + 1} - ${projectDetails.title.replace(/^Space #[0-9]+ - /, '')}`;
+        let description = '';
         let createProjectToken = false, approvalNeeded = false;
 
         let originProjectId = project.id;
@@ -2647,7 +2648,7 @@ var project;
 
         let confirmationDialog = new CATMAID.OptionsDialog("Create own copy of project", {
           'Create copy': () => {
-            newName = nameField.value.trim();
+            newName = newName.trim();
             if (newName.length === 0) {
               throw new CATMAID.Warning('Empty name not allowed');
             }
@@ -2663,7 +2664,7 @@ var project;
                 approvalNeeded: approvalNeeded,
               };
             }
-            CATMAID.Project.createFork(originProjectId, newName, volumeField.checked, projectTokenOptions)
+            CATMAID.Project.createFork(originProjectId, newName, description, volumeField.checked, projectTokenOptions)
               .then(result => {
                 return switchToNewProject(result);
               })
@@ -2680,8 +2681,32 @@ var project;
           }
         });
         confirmationDialog.appendMessage("Please confirm the creation of the new space. Update the name if you like.");
-        var nameField = confirmationDialog.appendField("Name", undefined, newName);
-        nameField.size = 50;
+
+        let basicOptions = document.createElement('div');
+        confirmationDialog.appendChild(basicOptions);
+        basicOptions.style.display = 'grid';
+        basicOptions.style.gridTemplate = 'auto auto / 7em auto';
+        basicOptions.style.gridGap = '1em';
+
+        basicOptions.appendChild(document.createElement('span')).appendChild(document.createTextNode('Name'));
+        CATMAID.DOM.appendElement(basicOptions, {
+          type: 'text',
+          value: newName,
+          length: 20,
+          onchange: e => {
+            newName = e.target.value;
+          },
+        });
+
+        basicOptions.appendChild(document.createElement('span')).appendChild(document.createTextNode('Description'));
+        CATMAID.DOM.appendElement(basicOptions, {
+          type: 'text',
+          placeholder: '(optional)',
+          length: 20,
+          onchange: e => {
+            description = e.target.value;
+          }
+        });
 
         var defaultLayerField = confirmationDialog.appendCheckbox("Show tracing data of this project", undefined, true,
             "If enabled, the tracing data of the current project is shown by default");

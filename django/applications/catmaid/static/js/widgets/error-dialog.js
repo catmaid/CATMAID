@@ -10,6 +10,16 @@
       var title = "An error occured";
       var metaMsg = "Several errors have occured";
       var id = "error-dialog-confirm";
+
+      // Prepend CATMAID version to error details, if any
+      if (detail) {
+        // Make sure we deal with a string representation of the error details.
+        if (typeof(detail) === 'object') {
+          detail = `Error object: ${JSON.stringify(detail)}`;
+        }
+        detail = `Version: ${CATMAID.CLIENT_VERSION}\n${detail}`;
+      }
+
       CATMAID.DetailDialog.call(this, text, detail, title, metaMsg, id);
     };
 

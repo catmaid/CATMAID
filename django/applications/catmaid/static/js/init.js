@@ -1054,6 +1054,14 @@ var project;
           note: ""
         },
         {
+          action: () => {
+            CATMAID.tools.copyToClipBoard(CATMAID.CLIENT_VERSION);
+            CATMAID.msg('Copied to clipboard', `Version: ${CATMAID.CLIENT_VERSION}`);
+          },
+          title: "Copy CATMAID version",
+          note: ""
+        },
+        {
           action: () => CATMAID.askForProjectToken(),
           title: 'Use project token',
           note: ''

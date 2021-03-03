@@ -490,6 +490,10 @@ Miscellaneous:
   using the "Store settings" button in the widget settings panel, available by
   clicking the window icon right next to the widget title.
 
+- Tracing layer: Shift + Delete will now attempt to delete a node even if it is
+  not in view. This is mainly useful for deleting nodes in previously visible
+  broken sections.
+
 - Neuron navigator: neuron widget nodes (like the active neuron display) show
   now also the initial creator of the neuron and the initial creation time.
 

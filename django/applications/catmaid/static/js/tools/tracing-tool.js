@@ -1394,12 +1394,12 @@
     }));
 
     this.addAction(new CATMAID.Action({
-      helpText: "Delete the active node (or suppress it if it is virtual)",
-      keyShortcuts: { 'DEL': [ "Delete" ] },
+      helpText: "Delete the active node (or suppress it if it is virtual), <kbd>Shift</kbd> delete even if projected from other section",
+      keyShortcuts: { 'DEL': [ "Delete", "Shift + Delete" ] },
       run: function (e) {
         if (!CATMAID.mayEdit())
           return false;
-        activeTracingLayer.tracingOverlay.deleteActiveNode()
+        activeTracingLayer.tracingOverlay.deleteActiveNode(e.shiftKey)
           .catch(CATMAID.handleError);
         return true;
       }

@@ -5803,10 +5803,10 @@ var SkeletonAnnotations = {};
    * the active node to change before it is queried. This is useful for instance to
    * quickly delete multiple nodes and a changed active node is required.
    */
-  CATMAID.TracingOverlay.prototype.deleteActiveNode = function() {
+  CATMAID.TracingOverlay.prototype.deleteActiveNode = function(force = false) {
     var self = this;
     let deleteNode = this.submit.promise(function() {
-        return self.deleteNode(SkeletonAnnotations.getActiveNodeId());
+        return self.deleteNode(SkeletonAnnotations.getActiveNodeId(), force);
       });
     return this.submit.promise(deleteNode);
   };
@@ -5815,7 +5815,7 @@ var SkeletonAnnotations = {};
    * Delete a node with the given ID. The node can either be a connector or a
    * treenode.
    */
-  CATMAID.TracingOverlay.prototype.deleteNode = function(nodeId) {
+  CATMAID.TracingOverlay.prototype.deleteNode = function(nodeId, force = false) {
     var node = this.nodes.get(nodeId);
 
     if (!node) {
@@ -5846,7 +5846,7 @@ var SkeletonAnnotations = {};
       return false;
     }
 
-    if (!this.isInView(node.x, node.y, node.z)) {
+    if (!force && !this.isInView(node.x, node.y, node.z)) {
       CATMAID.msg("Error",
                   "Can not delete nodes outside the current view area. " +
                   "Press A to bring the node into view then try again.");

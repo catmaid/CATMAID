@@ -405,6 +405,7 @@ var project;
 
     CATMAID.statusBar = new CATMAID.Console();
     document.body.appendChild( CATMAID.statusBar.getView() );
+    this.showVersionInStatusBar();
 
     var a_url = document.getElementById( "a_url" );
     a_url.onpointerover = function( e )
@@ -1705,6 +1706,11 @@ var project;
     this.updateContextHelp(true);
     document.title = 'CATMAID';
     CATMAID._updateUserMenu();
+    this.showVersionInStatusBar();
+  };
+
+  Client.prototype.showVersionInStatusBar = function() {
+    CATMAID.statusBar.replaceLast(`CATMAID Version ${CATMAID.CLIENT_VERSION}`, 'grey');
   };
 
   Client.prototype._handleRequestStart = function() {

@@ -27,6 +27,7 @@
           this.dialog.insertAdjacentHTML("afterbegin", "<h3>" + _metaMsg + "</h3>");
         }
       }
+      this.dialog.classList.add('error-dialog');
       // Create error message tags
       var msg = document.createElement('p');
       msg.appendChild(document.createTextNode(text));
@@ -34,11 +35,14 @@
       // Create detail field, if detail available
       if (detail) {
         var detail_head = document.createElement('p');
-        var detail_head_em = document.createElement('em');
-        detail_head_em.appendChild(document.createTextNode('Show/hide detail'));
-        detail_head.appendChild(detail_head_em);
+        detail_head.classList.add('error-detail-button');
+        detail_head.appendChild(document.createTextNode('Click to show/hide detail '));
+        let detailNote = detail_head.appendChild(document.createElement('span'));
+        detailNote.appendChild(document.createTextNode('(please include in bug reports)'));
+
         this.dialog.appendChild(detail_head);
         var detail_text = document.createElement('p');
+        detail_text.classList.add('error-details');
         // Split detail text by line breaks
         if (typeof(detail) === "string") {
           var detail_lines = detail.split("\n");
@@ -61,7 +65,6 @@
         $(detail_head).click(function() {
           $(detail_text).toggle();
         });
-        $(detail_head_em).css('cursor', 'pointer');
       }
     };
 

@@ -1981,3 +1981,18 @@ i.refresh-icon:hover {
   padding: 2px 3px;
   vertical-align: middle;
 }
+
+.error-dialog .error-detail-button {
+  font-style: italic;
+  color: #1024e2;
+  cursor: pointer;
+}
+
+.error-dialog .error-detail-button span {
+  color: gray;
+}
+
+.error-dialog .error-details {
+  background-color: aliceblue;
+  padding: 0.5em;
+}

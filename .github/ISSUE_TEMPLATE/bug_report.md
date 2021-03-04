@@ -9,7 +9,7 @@ assignees: ''
 
 {{Delete or replace all double-braced text.}}
 
-- CATMAID version: {{find by hovering over "CATMAID" on the instance home page}}
+- CATMAID version: {{in the error dialogue/ the front page status bar/ and the user menu; or hover over "CATMAID" on the front page on older versions}}
 - CATMAID instance: {{URL to your CATMAID instance; does not need to be accessible}}
 - Browser: {{see if the bug can be reproduced on other browsers before submitting}}
 - Operating system:

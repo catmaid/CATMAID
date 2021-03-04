@@ -207,37 +207,33 @@ def projects(request:HttpRequest) -> JsonResponse:
           $ref: project_api_element
         required: true
     """
-
-    # Get all projects that are visisble for the current user
-    projects = get_project_qs_for_user(request.user).order_by('title')
     has_tracing_data = get_request_bool(request.GET, 'has_tracing_data', False)
     with_mirrors = get_request_bool(request.GET, 'with_mirrors', False)
 
-    if has_tracing_data:
-        projects = projects.annotate(
-            no_locations=~Exists(Location.objects.filter(project=OuterRef('pk')))
-        ).filter(
-            no_locations=False
-        )
-
-    if 0 == len(projects):
-        return JsonResponse([], safe=False)
+    # Get all projects that are visisble for the current user
+    visible_projects = list(get_project_qs_for_user(request.user).order_by('title'))
 
     cursor = connection.cursor()
-    user_project_ids = [p.id for p in projects]
 
-    tracing_data_join = ''
-    extra_where = []
     if has_tracing_data:
-        tracing_data_join = '''
+        cursor.execute('''
+            SELECT id
+            FROM UNNEST(%(project_ids)s::integer[]) visible_project(id)
             INNER JOIN LATERAL (
-                SELECT EXISTS (SELECT 1 FROM location WHERE project_id = ps.project_id)
+                SELECT EXISTS (SELECT 1 FROM location WHERE project_id = visible_project.id)
             ) sub(has_tracing_data)
                 ON TRUE
-        '''
-        extra_where.append('''
-            sub.has_tracing_data = True
-        ''')
+            WHERE sub.has_tracing_data = True
+        ''', {
+            'project_ids': [p.id for p in visible_projects],
+        })
+        tracing_project_ids = set([r[0] for r in cursor.fetchall()])
+        visible_projects = list(filter(lambda x: x.id in tracing_project_ids, visible_projects))
+
+    if 0 == len(visible_projects):
+        return JsonResponse([], safe=False)
+
+    visible_project_ids = [p.id for p in visible_projects]
 
     project_stack_mapping:Dict = dict()
     if with_mirrors:
@@ -256,19 +252,19 @@ def projects(request:HttpRequest) -> JsonResponse:
             ) sm
               ON TRUE;
         """, {
-            'user_project_ids': user_project_ids,
+            'user_project_ids': visible_project_ids,
         })
     else:
         cursor.execute("""
             SELECT DISTINCT ON (ps.project_id, ps.stack_id) ps.project_id,
-            ps.stack_id, s.title, s.comment, s.dimension
+                ps.stack_id, s.title, s.comment, s.dimension
             FROM project_stack ps
             JOIN UNNEST(%(user_project_ids)s::integer[]) user_project(id)
                 ON ps.project_id = user_project.id
             JOIN stack s
                 ON ps.stack_id = s.id
         """, {
-            'user_project_ids': user_project_ids,
+            'user_project_ids': visible_project_ids,
         })
 
     for row in cursor.fetchall():
@@ -298,7 +294,7 @@ def projects(request:HttpRequest) -> JsonResponse:
         INNER JOIN UNNEST(%(user_project_ids)s::integer[]) user_project(id)
           ON ps.project_id = user_project.id
     """, {
-        'user_project_ids': user_project_ids,
+        'user_project_ids': visible_project_ids,
     })
     for row in cursor.fetchall():
         groups = project_stack_groups.get(row[0])
@@ -314,7 +310,8 @@ def projects(request:HttpRequest) -> JsonResponse:
     result:List = []
     empty_tuple:Tuple = tuple()
     fav_project_ids = set(FavoriteProject.objects.filter(user_id=request.user.id).values_list('project_id', flat=True))
-    for p in projects:
+
+    for p in visible_projects:
         stacks = project_stack_mapping.get(p.id, empty_tuple)
         stackgroups = project_stack_groups.get(p.id, empty_tuple)
 

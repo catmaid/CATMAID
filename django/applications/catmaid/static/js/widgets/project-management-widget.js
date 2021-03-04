@@ -670,6 +670,7 @@
         infoParagraph1.appendChild(document.createTextNode('This view allows project admins to update different properties of this project. After having made a change that should get saved, click the "Save" button at the bottom of the page.'));
 
         let projectName = project.title;
+        let projectDescription = project.comment;
 
         let propertiesPanel = content.appendChild(document.createElement('p'));
         $(propertiesPanel).append(CATMAID.DOM.createInputSetting(
@@ -678,6 +679,13 @@
             'The name of this project',
             function() {
               projectName = this.value;
+            }));
+        $(propertiesPanel).append(CATMAID.DOM.createInputSetting(
+            'Project description',
+            projectDescription,
+            'A description or comment for this project (optional)',
+            function() {
+              projectDescription = this.value;
             }));
 
         let savePanel = content.appendChild(document.createElement('p'));
@@ -688,6 +696,7 @@
         saveB.addEventListener('click', function() {
           project.updateProperties({
               title: projectName,
+              comment: projectDescription,
             })
             .then(response => {
               CATMAID.msg('Success', `Properties of project "${project.title}" (ID: ${project.id}) updated`);

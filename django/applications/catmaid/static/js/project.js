@@ -809,6 +809,7 @@
     let result = CATMAID.fetch(`${this.id}/`, 'POST', properties);
     result.then(response => {
       this.title = response.title;
+      this.comment = response.comment;
       Project.trigger(Project.EVENT_PROJECT_CHANGED, response);
     });
 

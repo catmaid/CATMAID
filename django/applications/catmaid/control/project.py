@@ -751,6 +751,8 @@ class ProjectDetail(APIView):
         project = get_object_or_404(Project, pk=project_id)
         if 'title' in request.data:
             project.title = request.data.get('title')
+        if 'comment' in request.data:
+            project.comment = request.data.get('comment')
 
         project.save()
 

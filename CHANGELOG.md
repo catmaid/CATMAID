@@ -78,7 +78,7 @@ Project management widget:
 - Clicking any checkbox will store the value right away.
 
 - If a user has "can_administer" permissions in a project, they can edit the
-  project title in the second tab.
+  project title and project description (comment) in the second tab.
 
 - If a user has "can_administer" and "delete_project" permissions in a project,
   the project management widget allows to delete the current project. This is

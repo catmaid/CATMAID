@@ -216,14 +216,56 @@ def projects(request:HttpRequest) -> JsonResponse:
     cursor = connection.cursor()
 
     if has_tracing_data:
+        # Checking location table or child tables directly is rather costly on
+        # large tables, because Postgres doesn't support "loose index scans"
+        # directly. They can be replicated like below:
+        # https://wiki.postgresql.org/wiki/Loose_indexscan
         cursor.execute('''
-            SELECT id
-            FROM UNNEST(%(project_ids)s::integer[]) visible_project(id)
-            INNER JOIN LATERAL (
-                SELECT EXISTS (SELECT 1 FROM location WHERE project_id = visible_project.id)
-            ) sub(has_tracing_data)
-                ON TRUE
-            WHERE sub.has_tracing_data = True
+            -- Any treenodes in those projects?
+			SELECT project_id
+			FROM (
+					WITH RECURSIVE t AS (
+					   (SELECT project_id FROM treenode ORDER BY project_id LIMIT 1)
+					   UNION ALL
+					   SELECT (SELECT project_id FROM treenode WHERE project_id > t.project_id ORDER BY project_id LIMIT 1)
+					   FROM t
+					   WHERE t.project_id IS NOT NULL
+					   )
+					SELECT project_id FROM t WHERE project_id IS NOT NULL
+			) sub(project_id)
+			WHERE project_id = ANY(%(project_ids)s::integer[])
+
+            UNION
+
+            -- Any connectors in those projects?
+			SELECT project_id
+			FROM (
+					WITH RECURSIVE t AS (
+					   (SELECT project_id FROM connector ORDER BY project_id LIMIT 1)
+					   UNION ALL
+					   SELECT (SELECT project_id FROM connector WHERE project_id > t.project_id ORDER BY project_id LIMIT 1)
+					   FROM t
+					   WHERE t.project_id IS NOT NULL
+					   )
+					SELECT project_id FROM t WHERE project_id IS NOT NULL
+			) sub(project_id)
+			WHERE project_id = ANY(%(project_ids)s::integer[])
+
+            UNION
+
+            -- Any volumes in those projects?
+			SELECT project_id
+			FROM (
+					WITH RECURSIVE t AS (
+					   (SELECT project_id FROM catmaid_volume ORDER BY project_id LIMIT 1)
+					   UNION ALL
+					   SELECT (SELECT project_id FROM catmaid_volume WHERE project_id > t.project_id ORDER BY project_id LIMIT 1)
+					   FROM t
+					   WHERE t.project_id IS NOT NULL
+					   )
+					SELECT project_id FROM t WHERE project_id IS NOT NULL
+			) sub(project_id)
+			WHERE project_id = ANY(%(project_ids)s::integer[]);
         ''', {
             'project_ids': [p.id for p in visible_projects],
         })

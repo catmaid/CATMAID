@@ -93,22 +93,80 @@ connection pooling and communicates efficiently with Nginx.
    same as the uWSGI location block in the Nginx configuration in step 5,
    including whether there is an ending slash character.
 
+.. _nginx-cors:
+
+CORS
+----
+
+Serving image data works the same way as serving CATMAID static data. If the
+image data is going to be accessed from websites that aren't served from the
+same server, `CORS
+<https://en.wikipedia.org/wiki/Cross-origin_resource_sharing>`_  has to be set
+up. CORS stands for Cross Origin Resource Sharing and manages security of
+web-clients accessing a particular resource. The same has to be done if a CATMAID
+API should be accessible by other CATMAID servers.
+
+In its simplest form, this can be done by adding the following line to an Nginx
+``location`` block. It's only this simple though if no basic HTTP authentication is
+in use::
+
+ Access-Control-Allow-Origin *
+
+Without this header, only a CATMAID instance served from the *same* domain name
+as the image data will be able to access it. If the image data or CATMAID server
+should be accessed by CATMAID instances served on other domains, this header is
+required.
+
+In order to support basic HTTP authentication and allow caching of preflight
+requests, consider the following more complete example, which can be added to
+any ``location`` block::
+
+   # Require HTTP Bsic Auth, except for OPTIONS requests. This is needed
+   # for CORS preflight requests. If no HTTP basic auth is wanted, this block
+   # can be skipped.
+   limit_except OPTIONS {
+           auth_basic "Restricted";
+           auth_basic_user_file /path/to/logins;
+   }
+
+   # Allow any origin (be more restrictive if wanted)
+   add_header 'Access-Control-Allow-Origin' '*' always;
+   # Credentials can be cookies, authorization headers or TLS client certificates
+   add_header 'Access-Control-Allow-Credentials' 'true' always;
+   # What methods should be allowed when accessing the resource in response to a preflight request
+   add_header 'Access-Control-Allow-Methods' 'GET, POST, PATCH, PUT, DELETE, OPTIONS' always;
+   # Access-Control-Allow-Headers response header is used in response to a preflight request to indicate which HTTP headers can be used during the actual request.
+   add_header 'Access-Control-Allow-Headers' 'DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,X-Authorization,Authorization' always;
+
+   # Preflighted requests. Headers from above are repeated, because of the
+   # new context being created due to the return statement (causing above
+   # headers to not be visible).
+   if ($request_method = 'OPTIONS' ) {
+           # We need to re-add these headers, because the return statement in the if-block causes this to be a different context.
+           add_header 'Access-Control-Allow-Origin' '*' always;
+           add_header 'Access-Control-Allow-Credentials' 'true' always;
+           add_header 'Access-Control-Allow-Methods' 'GET, POST, PATCH, PUT, DELETE, OPTIONS' always;
+           add_header 'Access-Control-Allow-Headers' 'DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,X-Authorization,Authorization' always;
+           # Tell client that this pre-flight info is valid for 20 days
+           add_header 'Access-Control-Max-Age' 1728000;
+           add_header 'Content-Type' 'text/plain charset=UTF-8';
+           add_header 'Content-Length' 0;
+           return 204;
+   }
+
+Note that this allows any other client to access the API, if added to the
+regular WSGI ``location`` block. It also makes sure preflight requests are
+cached.
+
 .. _nginx-image-data:
 
 Image data
 ----------
 
-Serving image data works the same way as serving CATMAID static data. However,
-you might want to add a so called
-`CORS <https://en.wikipedia.org/wiki/Cross-origin_resource_sharing>`_ header to
-your Nginx location block::
-
- Access-Control-Allow-Origin *
-
-Without this header, only a CATMAID instance served from the *same* domain name
-as the image data will be able to access it. If the image data should be accessed
-by CATMAID instances served  on other domains, this header is required. A
-typical tile data location block could look like this::
+Image data often is supposed to be accessed from many different clients, some of
+which aren't originating from the same domain name the images are hosted. In
+order to make this as seamless as possible, CORS needs to be set up (see
+previous section). A typical tile data location block could look like this::
 
  location /tiles/ {
    # Regular cached tile access

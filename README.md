@@ -29,3 +29,19 @@ is tagged and then merged into `master` and `dev`. In case a release requires
 additional fixes maintenance branches are created based on the respective
 release commits. Maintenance branches are considered stable and are merged into
 both `master` and `dev`.
+
+### Screenshots
+
+CATMAID's neuron tracing and analysis environment in the FAFB Drosophila
+dataset:
+
+![Image of CATMAID's neuron tracing and analysis environment in the FAFB Drosophila dataset](sphinx-doc/source/_static/screenshots/catmaid-screenshot-workplace-2.jpeg?raw=true "Image of CATMAID's neuron tracing and analysis environment in the FAFB Drosophila dataset")
+
+CATMAID's neuron tracing environment and NBLAST similarity analysis in the L1
+Drosophila dataset:
+
+![Image of CATMAID's neuron tracing environment and NBLAST similarity analysis in the L1 Drosophila dataset](sphinx-doc/source/_static/screenshots/catmaid-screenshot-workplace.jpeg?raw=true "Image of CATMAID's neuron tracing environment and NBLAST similarity analysis in the L1 Drosophila dataset")
+
+Drosophila multi-channel light data with different ontology annotation and analysis tools:
+
+![Image of Drosophila light data and different ontology annotation and analysis tools](sphinx-doc/source/_static/screenshots/catmaid-onto.png?raw=true "Image of Drosophila light data and different ontology annotation and analysis tools")

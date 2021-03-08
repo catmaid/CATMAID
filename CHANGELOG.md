@@ -268,6 +268,10 @@ Docker:
   For instance, use "America/New_York' for US east coast time. This way,
   maintenance tasks can be moved to whenever local midnight is.
 
+- CORS header are now enabled by default and allow also authentication. This is
+  useful to allow other web services to access a Docker back-end directly. This
+  can be disabled by setting "-e CORS_OPEN=false" with e.g. "docker run".
+
 Vagrant:
 
 - We now support a Vagrant configuration for setting up a full replicable development environment with minimal effort.

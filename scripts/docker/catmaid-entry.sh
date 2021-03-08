@@ -47,6 +47,7 @@ CM_CELERY_WORKER_CONCURRENCY=$(sanitize "${CM_CELERY_WORKER_CONCURRENCY:-1}")
 CM_RUN_CELERY=$(sanitize "${CM_RUN_CELERY:-true}")
 CM_CELERY_TIMEZONE=$(sanitize "${CM_CELERY_TIMEZONE:-""}")
 CM_RUN_ASGI=$(sanitize "${CM_RUN_ASGI:-true}")
+CORS_OPEN=$(sanitize "${CORS_OPEN:-true}")
 TIMEZONE=`readlink /etc/localtime | sed "s/.*\/\(.*\)$/\1/"`
 PG_VERSION='12'
 
@@ -320,6 +321,13 @@ if [ "$1" = 'standalone' ]; then
   echo "Linking /home/scripts/docker/nginx-catmaid.conf"
   rm -f /etc/nginx/sites-enabled/default
   ln -sf /home/scripts/docker/nginx-catmaid.conf /etc/nginx/sites-enabled/
+  if [[ "$CORS_OPEN" = true ]]; then
+    echo "Allowing open CORS access: linking /home/scripts/docker/nginx-cors.conf"
+    ln -sf /home/scripts/docker/nginx-cors.conf /etc/nginx/
+  else
+    echo "CORS access will not be allowed"
+    echo '' > /etc/nginx/nginx-cors.conf
+  fi
 
   handle_shutdown
 

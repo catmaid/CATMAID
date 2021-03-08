@@ -532,3 +532,8 @@ password should be changed to something more secure (``CM_INITIAL_ADMIN_PASS``).
   ``TIMEZONE``
     The timezone this server runs in. By default CATMAID tries to guess.
     Otherwise see https://en.wikipedia.org/wiki/List_of_tz_zones_by_name.
+
+.. glossary::
+  ``CORS_OPEN``
+  Whether or not the webserver configuration in the container will allow open
+  CORS access, including optional authentication. Defaults to true.

@@ -1482,6 +1482,7 @@
   SelectionTable.prototype._updateAnnotationMap = function(force) {
     var get;
     if (!this.annotationMapping || force) {
+      var models = this.skeletons.reduce(function (o, sk) { o[sk.id] = sk; return o; }, {});
       let modelCollections = CATMAID.API.getModelCollections(models, project.id);
 
       get = Promise.all(modelCollections.map(mc => {

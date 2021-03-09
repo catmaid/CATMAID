@@ -760,6 +760,22 @@ def import_volumes(request, project_id) -> Union[HttpResponse, JsonResponse]:
             fnames_to_id[filename] = mesh.save()
         else:
             return HttpResponse(f'File type "{extension}" not understood. Known file types: stl', status=415)
+    else:
+        fmt = request.POST.get('format')
+        if fmt == 'stl':
+            try:
+                vertices, triangles = _stl_ascii_to_indexed_triangles(request.POST.get('mesh'))
+            except InvalidSTLError as e:
+                raise ValueError(f"Invalid STL file ({e})")
+
+            name = request.POST.get('name', 'Unnamed volume')
+            mesh = TriangleMeshVolume(
+                project_id, request.user.id,
+                {"type": "trimesh", "title": name, "mesh": [vertices, triangles]}
+            )
+            fnames_to_id[name] = mesh.save()
+        else:
+            raise ValueError('No known volume format found')
 
     return JsonResponse(fnames_to_id)
 

@@ -1450,6 +1450,30 @@ class SkeletonOrigin(NonCascadingUserFocusedModel):
     def __str__(self) -> str:
         return f"Skeleton {self.skeleton_id} from {self.data_source_id} ({self.source_id})"
 
+
+class VolumeOrigin(NonCascadingUserFocusedModel):
+    """Keeps track of imported volumes by storing the import time, transaction
+    ID, source volume ID and source URL. If a volume is not listed
+    in here, it is by definition created in this CATMAID instance. This table is
+    tracked by the history system.
+    """
+
+    class Meta:
+        db_table = "volume_origin"
+
+    # Cascading deletion is taken care of in database.
+    volume = models.OneToOneField(ClassInstance, on_delete=models.DO_NOTHING,
+            db_index=True, primary_key=True)
+
+    # Cascading deletion is taken care of in database.
+    data_source = models.ForeignKey(DataSource, on_delete=models.DO_NOTHING)
+    source_id = models.IntegerField(null=False)
+    source_type = models.TextField()
+
+    def __str__(self) -> str:
+        return f"Volume {self.volume_id} from {self.data_source_id} ({self.source_id})"
+
+
 class StatsSummary(models.Model):
     class Meta:
         db_table = "catmaid_stats_summary"

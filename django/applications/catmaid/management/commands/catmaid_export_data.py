@@ -1151,7 +1151,7 @@ class Command(BaseCommand):
             will_export.append('connectors (only intra)')
         elif connector_mode == ConnectorMode.IntraConnectorsAndPlaceholders:
             will_export.append('connectors (intra + new placeholders)')
-        elif connector_mode == ConnectorMode.IntraConnectorsOnly:
+        elif connector_mode == ConnectorMode.IntraConnectorsAndOriginalPlaceholders:
             will_export.append('connectors (intra + original placeholders)')
         elif connector_mode != ConnectorMode.NoConnectors:
             logger.warn(f'Unknown connector mode: {connector_mode}')

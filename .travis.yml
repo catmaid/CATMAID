@@ -54,7 +54,7 @@ script:
   # a non-zero exit code (1) when a new migration is created and otherwise zero.
   - python manage.py makemigrations catmaid
   # Run tests
-  - coverage run manage.py test catmaid.tests
+  - travis_wait 45 coverage run manage.py test catmaid.tests
   # Remove login requirement from QUnit test page
   - sed -i 's/login_required(\([^)]*\))/\1/g' ../applications/catmaid/urls.py
   - python -Wall -Wignore::ImportWarning manage.py runserver &

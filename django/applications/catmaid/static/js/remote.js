@@ -119,6 +119,44 @@
   };
 
 
+  /**
+   * Open a 3D dialog that has all volumes from the remote CATMAID project
+   * loaded that are annotated with the passed in annotation. The following
+   * options can be configured in the the options argument: api, buttons, title.
+   */
+  Remote.previewVolumes = function(projectId, volumeIds, options = {}) {
+    return Promise.resolve()
+      .then(() => {
+        // Create dialog
+        var dialog = new CATMAID.Confirmation3dDialog({
+          title: options.title || `Preview of all ${volumeIds.length} remote volumes`,
+          showControlPanel: false,
+          extraControls: options.extraControls,
+          buttons: options.buttons || {
+            "Close": () => dialog.close(),
+          }});
+
+        dialog.show();
+
+        var viewer = dialog.webglapp;
+
+        let color = CATMAID.tools.getDefined(options.color, undefined);
+        let opacity = CATMAID.tools.getDefined(options.opacity, 0.8);
+        let faces = CATMAID.tools.getDefined(options.faces, true);
+
+        let results = Promise.all(volumeIds.map(vId => viewer.showVolume(vId, true,
+            color, opacity, faces, undefined, undefined, options.api, projectId)));
+
+        results.then(() => {
+            viewer.lookAtCenterOfMass(true);
+          })
+          .catch(CATMAID.handleError);
+
+        return results;
+      })
+      .then(() => CATMAID.msg('Success', 'Loaded all volumes'));
+  };
+
 
   /**
    * Open a 3D dialog that has all neurons from the remote CATMAID project
@@ -285,6 +323,53 @@
   };
 
   /**
+   * Load the respective volumes, optionally from a remote server,
+   * if the `api` option is passed in. This is done by first requesting the STL
+   * from the API and importing it. The options object can contain the following
+   * fields: api, getMeta(), The `getMeta(volumeId)` function is expected to
+   * return an object with the field `name` for each volume.
+   */
+  Remote.importVolumes = function(sourceProjectId, targetProjectId,
+      volumeIds, options = {}) {
+    let getMeta = options.getMeta || function(volumeId) {
+      return {
+        name: undefined,
+        api: undefined,
+      };
+    };
+
+    // Get STL for each volume ID
+    var headers = {Accept: ['model/x.stl-ascii', 'model/stl']};
+    return Promise.all(volumeIds.map(volumeId => CATMAID.fetch({
+        url: `/${sourceProjectId}/volumes/${volumeId}/export.stl`,
+        method: 'GET',
+        headers: headers,
+        raw: true,
+        api: getMeta(volumeId).api,
+      })
+      .then(volumeData => {
+        let meta = getMeta(volumeId);
+        return CATMAID.fetch({
+          url: `${targetProjectId}/volumes/import`,
+          method: "POST",
+          data: {
+            format: 'stl',
+            mesh: volumeData,
+            name: meta.name,
+            annotations: meta.annotations,
+            source_id: volumeId,
+            source_url: meta.api ? meta.api.url : undefined,
+            source_project_id: sourceProjectId,
+          },
+        });
+      })))
+      .then(importResults => {
+        CATMAID.msg('Success', `Imported ${importResults.length} remote volumes`);
+        return importResults;
+      });
+  };
+
+  /**
    * Load the respective skeleton morphologies, optionally from a remote server,
    * if the `api` option is passed in. This is done by first requesting the SWC
    * from the API and importing it. The options object can contain the following
@@ -322,6 +407,82 @@
         CATMAID.msg('Success', `Imported ${importedSkeletons.length} remote skeletons`);
         return importedSkeletons;
       });
+  };
+
+  Remote.importRemoteVolumesWithPreview = function(api, sourceProjectId,
+      volumeIds, annotations, entityMap, callback, previewOptions = {}) {
+    let plural = volumeIds.length > 0 ? 's' : '';
+    let title = `Please confirm the import of the following volume${plural}`;
+    let showImportedVolumesIn3d = true;
+    return new Promise((resolve, reject) => {
+      CATMAID.Remote.previewVolumes(sourceProjectId, volumeIds, {
+        api: api,
+        title: title,
+        extraControls: [
+          {
+            type: 'checkbox',
+            label: 'Show imported volumes in new 3D Viewer',
+            class: 'ui-button',
+            value: showImportedVolumesIn3d,
+            onclick: e => showImportedVolumesIn3d = e.target.checked,
+          }
+        ],
+        buttons: {
+          'Confirm import': function() {
+            // Initate import
+            CATMAID.Remote.importVolumes(sourceProjectId, project.id, volumeIds, {
+                getMeta: (volumeId) => {
+                  let e = entityMap[volumeId];
+                  if (!e) {
+                    throw new CATMAID.ValueError("No skeleton meta data found");
+                  }
+                  return {
+                    'name': e.name,
+                    'annotations': annotations,
+                  };
+                },
+                api: api,
+              })
+              .then(result => {
+                if (CATMAID.tools.isFn(callback)) callback(result);
+                resolve(result);
+                if (showImportedVolumesIn3d) {
+                  let widget3d = WindowMaker.create('3d-viewer').widget;
+                  let lut = new THREE.Lut("greenred", result.length);
+
+                  return Promise.all([
+                    // Hide all currently visible volumes
+                    ...Array.from(widget3d.loadedVolumes.keys()).map(
+                      (volumeId, i) => widget3d.showVolume(volumeId, false)),
+                    // Show imported volumes
+                    ...result.reduce((o, iv, i) => {
+                      for (let vn in iv) {
+                        o.push(widget3d.showVolume(iv[vn], true, lut.getColor(i), 0.7, true));
+                      }
+                      return o;
+                    }, [])
+                  ])
+                  .then(results => {
+                    widget3d.lookAtCenterOfMass(true);
+                  });
+                }
+              })
+              .catch(reject);
+            $(this).dialog("close");
+          },
+          'Cancel': function() {
+            $(this).dialog("close");
+            reject(new CATMAID.CanceledByUser());
+          }
+        }
+      });
+    })
+    .catch(e => {
+      if (e instanceof CATMAID.CanceledByUser) {
+        return;
+      }
+      CATMAID.handleError(0);
+    });
   };
 
   Remote.importRemoteSkeletonsWithPreview = function(api, sourceProjectId,

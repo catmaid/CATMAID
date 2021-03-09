@@ -33,12 +33,17 @@
      *
      * @param {integer} projectId        The project the volume is part of
      * @param {integer} volumeId         The volume to retrieve
+     * @param {API}     api              (optional) API to use
      *
      * @returns {Object} Promise that is resolved with the requested volume
      */
-    get: function(projectId, volumeId) {
+    get: function(projectId, volumeId, api = undefined) {
       var url = projectId + '/volumes/' + volumeId + '/';
-      return CATMAID.fetch(url, 'GET');
+      return CATMAID.fetch({
+        url: url,
+        method: 'GET',
+        api: api,
+      });
     },
 
     /**
@@ -295,6 +300,101 @@
       let url = project.id + "/volumes/" + volumeId + "/update-meta-info";
       return CATMAID.fetch(url);
     },
+
+    /**
+     * Get a list of volume IDs based on their annotation, optionally from a
+     * remote server. The search options object can contain the following
+     * fields: name, annotatios, includeSubAnnotations, annotationReference.
+     */
+    search: function(projectId, searchOptions = {}, api = undefined) {
+      let params = {
+        'name': searchOptions.name || undefined,
+        'annotated_with': searchOptions.annotations,
+        'sub_annotated_with': searchOptions.includeSubAnnotations ? annotations : undefined,
+        'annotation_reference': searchOptions.annotationReference || 'name',
+        'types': ['volume'],
+      };
+      return CATMAID.fetch({
+          url: projectId + '/annotations/query-targets',
+          method: 'POST',
+          data: params,
+          api: api,
+          parallel: true,
+        }).then(result => {
+          if (result.entities.length === 0) {
+            return [
+              result,
+              {},
+            ];
+          }
+          let entityIds = result.entities.map(e => e.id);
+          return Promise.all([
+            result,
+            CATMAID.fetch({
+              url: `${projectId}/volumes/from-entities`,
+              method: 'POST',
+              data: {
+                entity_ids: entityIds,
+              },
+              api: api,
+              parallel: true,
+            })
+          ]);
+        })
+        .then(([queryResult, volumeMapping]) => {
+          for (let i=0; i<queryResult.entities.length; i++) {
+            queryResult.entities[i].volumeId = volumeMapping[queryResult.entities[i].id];
+          }
+          return {
+            volumeIds: Object.values(volumeMapping),
+            resultEntities: queryResult.entities,
+          };
+        });
+    },
+
+    /**
+     * Iterate over all vertices of the passed in geometry to compute the center
+     * of mass.
+     *
+     * @param geometry {THREE.Geometry} The geometry to compute the CoM for
+     *
+     * @returns center of mass as THREE.Vector3
+     */
+    computeCenterOfMass: function(mesh) {
+      mesh.geometry.computeBoundingBox();
+      const boundingBox = mesh.geometry.boundingBox;
+
+      const x0 = boundingBox.min.x;
+      const x1 = boundingBox.max.x;
+      const y0 = boundingBox.min.y;
+      const y1 = boundingBox.max.y;
+      const z0 = boundingBox.min.z;
+      const z1 = boundingBox.max.z;
+
+      const bWidth = ( x0 > x1 ) ? x0 - x1 : x1 - x0;
+      const bHeight = ( y0 > y1 ) ? y0 - y1 : y1 - y0;
+      const bDepth = ( z0 > z1 ) ? z0 - z1 : z1 - z0;
+
+      const centroidX = x0 + ( bWidth / 2 ) + mesh.position.x;
+      const centroidY = y0 + ( bHeight / 2 )+ mesh.position.y;
+      const centroidZ = z0 + ( bDepth / 2 ) + mesh.position.z;
+
+      return new THREE.Vector3(centroidX, centroidY, centroidZ);
+    },
+
+    /**
+     * Get a mapping from volume entity IDs to mesh IDs.
+     *
+     * @param entityIds {int[]} A list of volume entity IDs.
+     *
+     * @returns a promise resolving in a mapping from entity IDs to volume/mesh IDs.
+     */
+    fromEntities: function(entityIds) {
+      return CATMAID.fetch(`${project.id}/volumes/from-entities`, 'POST', {
+        entity_ids: entityIds,
+      });
+    },
+
   };
 
   // Add events

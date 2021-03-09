@@ -2,6 +2,9 @@ from catmaid.models import DataSource
 
 
 def normalize_source_url(source_url):
+    if not source_url:
+        # To represent this instance
+        return ''
     if source_url[-1] == '/':
         source_url = source_url[:-1]
     return source_url

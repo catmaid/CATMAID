@@ -562,6 +562,8 @@ urlpatterns += [
 urlpatterns += [
     url(r'^(?P<project_id>\d+)/volumes/$', volume.volume_collection),
     url(r'^(?P<project_id>\d+)/volumes/add$', record_view("volumes.create")(volume.add_volume)),
+    url(r'^(?P<project_id>\d+)/volumes/from-origin$', volume.from_origin),
+    url(r'^(?P<project_id>\d+)/volumes/from-entities$', volume.from_entities),
     url(r'^(?P<project_id>\d+)/volumes/import$', record_view("volumes.create")(volume.import_volumes)),
     url(r'^(?P<project_id>\d+)/volumes/entities/$', volume.get_volume_entities),
     url(r'^(?P<project_id>\d+)/volumes/skeleton-innervations$', volume.get_skeleton_innervations),

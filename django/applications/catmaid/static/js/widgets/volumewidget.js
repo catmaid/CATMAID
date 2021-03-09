@@ -19,7 +19,7 @@
 
     // The current edit mode
     this.mode = 'list';
-    this.modes = ['list', 'add', 'innervations'];
+    this.modes = ['list', 'add', 'innervations', 'import'];
 
     this.content = null;
     // Stores information about current widget mode
@@ -134,6 +134,10 @@
   };
 
   VolumeManagerWidget.prototype.initMode = function(modeKey) {
+    if (!modeKey) {
+      modeKey = this.mode;
+    }
+
     let content = document.querySelector(`div#${this.idPrefix}-content-${modeKey}`);
     if (!content) {
       throw new CATMAID.ValueError(`Could not find content element for mode "${modeKey}"`);
@@ -475,6 +479,26 @@
     });
   };
 
+  VolumeManagerWidget.prototype.getEffectiveAnnotations = function() {
+    return CATMAID.TracingTool.getEffectiveImportAnnotations(this.importAnnotations, this.sourceRemote);
+  };
+
+  /**
+   * Show a confirmation dialog for all passed in volumes and initiate the
+   * import of them.
+   */
+  VolumeManagerWidget.prototype.importRemoteVolumes = function(volumeIds, annotations) {
+    let api = CATMAID.Remote.getAPI(this.sourceRemote);
+    let entityMap = this.importCatmaidResult.resultEntities.reduce((o,e) => {
+      o[e.volumeId] = e;
+      return o;
+    }, {});
+
+    return CATMAID.Remote.importRemoteVolumesWithPreview(api,
+        this.sourceProject, volumeIds, annotations, entityMap,
+        this.redraw.bind(this));
+  };
+
   function handleFilteredData(target, filter, filters, filtered) {
     for (let isectSkeletonId of filtered.skeletons) {
       let volumeList = target.get(isectSkeletonId);
@@ -710,10 +734,14 @@
     let lut = new THREE.Lut("rainbow", 10);
     lut.setMax(volumeIds.length - 1);
 
-    volumeIds.forEach(function(v, i) {
-      let color = (colorMap ? colorMap.get(v.id) : null) || lut.getColor(i);
-      widget3d.showVolume(v.id, true, color, 0.3, true);
-    });
+    Promise.all(volumeIds.map(function(v, i) {
+        let color = (colorMap ? colorMap.get(v) : null) || lut.getColor(i);
+        return widget3d.showVolume(v, true, color, 0.3, true);
+      }))
+      .then(() => {
+        widget3d.lookAtCenterOfMass(true);
+      })
+      .catch(CATMAID.handleError);
   };
 
   VolumeManagerWidget.prototype.refresh = function() {
@@ -818,7 +846,7 @@
           onclick: function() {
             let selectedVolumes = widget.datatable.rows().data().toArray().filter(function(v) {
               return v.selected;
-            });
+            }).map(v => v.id);
             widget.showSelectedVolumesIn3d(selectedVolumes);
           }
         }, {
@@ -1202,6 +1230,323 @@
         widget.editVolume(null, content);
       }
     },
+    import: {
+      title: 'Import from CATMAID',
+      createControls: function(widget) {
+        // The currently selected source CATMAID instance, for CATMAID based import.
+        widget.sourceRemote = '';
+        widget.sourceProject = project.id;
+
+        let searchSection = document.createElement('span');
+        searchSection.classList.add('section-header');
+        searchSection.appendChild(document.createTextNode('Search'));
+
+        // Remote select
+        let remoteSelect = CATMAID.Remote.createRemoteSelect(widget.sourceRemote, true,
+            'Source instance', e => {
+              widget.sourceRemote = e.target.value;
+              widget.sourceProject = null;
+              // Try to get all projects from the selected remote and update the
+              // displayed project options.
+              updateProjectList();
+              updateAnnotationTitle();
+            });
+
+        let remoteSelectWrapper = CATMAID.DOM.wrapInLabel("Source remote",
+            remoteSelect, "Select the source CATMAID instance that contains " +
+            "the source volumes. The current remote is selected by default.");
+
+        // Project select
+        var projectSelectSettingWrapper = document.createElement('span');
+        var updateProjectList = function() {
+          while (projectSelectSettingWrapper.lastChild) {
+            projectSelectSettingWrapper.removeChild(projectSelectSettingWrapper.lastChild);
+          }
+          let asyncProjectList = CATMAID.Remote.createAsyncProjectSelect(widget.sourceRemote,
+              widget.sourceProject, undefined, e => {
+                widget.sourceProject = parseInt(e.target.value, 10);
+
+                // TODO: If the source project is the current project, the
+                // regular source select and source group select are shown.
+                // Otherwise hidden.
+                //let currentProjectMode = widget.sourceProject == project.id ? 'block' : 'none';
+              });
+          let projectSelect = CATMAID.DOM.createAsyncPlaceholder(asyncProjectList);
+          let projectSelectWrapper = CATMAID.DOM.wrapInLabel("Source project",
+              projectSelect, "Select the project that contains the source " +
+              "volumes. The current project is selected by default.");
+          projectSelectSettingWrapper.appendChild(projectSelectWrapper);
+        };
+
+        // Init project list for current project
+        updateProjectList();
+
+        // Add table with remote skeletons
+        let resultSection = document.createElement('span');
+        resultSection.classList.add('section-header');
+        resultSection.appendChild(document.createTextNode('Results'));
+
+        let nameFilter = '';
+        let annotationFilter = '';
+        let withSubAnnotations = false;
+
+        let getAnnotationTitle = function() {
+          let annotations = widget.getEffectiveAnnotations().join(', ');
+          return `A set of annotations, separated by comma, that will be added to the imported volumes. Every occurence of "{group}" will be replaced with your primary group (or your username, should now primary group be defined). Every occurence of "{source}" will be replaced with the handle of the import source (e.g. the server name).\n\nCurrent set of annotations: ${annotations}`;
+        };
+
+        var updateAnnotationTitle = function() {
+          let target = document.getElementById(`import-annotations-${widget.widgetID}`);
+          target.title = getAnnotationTitle();
+        };
+
+        return [{
+            type: 'child',
+            element: searchSection,
+          },
+          {
+            type: 'child',
+            element: remoteSelectWrapper,
+          },
+          {
+            type: 'child',
+            element: projectSelectSettingWrapper,
+          },
+          {
+            type: 'text',
+            label: 'Name',
+            placeholder: 'Use / for RegEx',
+            onchange: e => {
+              nameFilter = e.target.value;
+            },
+          },
+          {
+            type: 'text',
+            label: 'Annotation',
+            onchange: e => {
+              annotationFilter = e.target.value;
+            },
+          },
+          {
+            type: 'checkbox',
+            label: 'Incl. sub-annotations',
+            onchange: e => {
+              withSubAnnotations = e.target.checked;
+            },
+          },
+          {
+            type: 'button',
+            label: 'Search volumes',
+            onclick: e => {
+              let api = CATMAID.Remote.getAPI(widget.sourceRemote);
+              CATMAID.Volumes.search(widget.sourceProject, {
+                name: nameFilter,
+                annotations: [annotationFilter],
+                withSubAnnotations: withSubAnnotations,
+              }, api)
+              .then(result => {
+                if (!result || !result.resultEntities || result.resultEntities.length === 0) {
+                  CATMAID.msg("Could not find any volumes");
+                  return;
+                }
+                widget.importCatmaidResult = result;
+
+                // Add selection information
+                result.resultEntities.forEach((e, i) => {
+                  e.index = i;
+                  e.selected = true;
+                  e.localVolumeId = undefined;
+                });
+                CATMAID.msg('Success', `Found ${result.resultEntities.length} remote volumes`);
+
+                // Redraw result content
+                widget.initMode();
+              })
+              .catch(CATMAID.handleError);
+            },
+          },
+          {
+            type: 'child',
+            element: resultSection,
+          },
+          {
+            type: 'text',
+            id: `import-annotations-${widget.widgetID}`,
+            label: 'Annotations',
+            length: 15,
+            title: getAnnotationTitle(),
+            value: widget.importAnnotations,
+            onchange: e => {
+              widget.importAnnotations = e.target.value.split(',').map(v => v.trim());
+              updateAnnotationTitle();
+            },
+          },
+          {
+            type: 'button',
+            label: 'Show selected in 3D',
+            title: "Show all selected remote volumes in a new 3D Viewer without importing them.",
+            onclick: e => {
+              if (!widget.importCatmaidResult) {
+                CATMAID.warn("No remote volumes queried yet. Please search remote volumes first.");
+                return;
+              }
+              let volumeIds = widget.importCatmaidResult.resultEntities.filter(e => e.selected).map(e => e.volumeId);
+              CATMAID.Remote.previewVolumes(widget.sourceProject, volumeIds, {
+                  api: CATMAID.Remote.getAPI(widget.sourceRemote),
+                  title: "The following skeletons can be imported",
+                })
+                .catch(CATMAID.handleError);
+            },
+          },
+          {
+            type: 'button',
+            label: 'Import selected volumes',
+            title: "Import all selected result volumes",
+            onclick: e => {
+              let volumeIds = widget.importCatmaidResult.resultEntities.filter(e => e.selected).map(e => e.volumeId);
+              widget.importRemoteVolumes(volumeIds, widget.getEffectiveAnnotations());
+            },
+          },
+        ];
+      },
+      createContent(container, widget) {
+        if (!widget.importCatmaidResult) {
+          container.msg = 'Please search for a set of remote skeletons';
+          return;
+        }
+        let volumeIds = widget.importCatmaidResult.volumeIds;
+        if (!volumeIds || volumeIds.length === 0) {
+          container.msg = 'Could not find any volumes matching your query.';
+          return;
+        }
+
+        let api = widget.sourceRemote ? CATMAID.Remote.getAPI(widget.sourceRemote) : null;
+
+        // Create datatable with results
+        let table = container.appendChild(document.createElement('table'));
+        table.style.width = '100%';
+        let datatable = $(table).DataTable({
+          //dom: 'th<ip>',
+          dom: 'lfrtip',
+          order: [],
+          data: widget.importCatmaidResult.resultEntities,
+          language: {
+            info: "Showing _START_ to _END_  of _TOTAL_ remote volumes(s)",
+            infoFiltered: "(filtered from _MAX_ total remote volume(s))",
+            emptyTable: 'No volume skeletons found',
+            zeroRecords: 'No volume skeletons found'
+          },
+          columns: [{
+            data: 'id',
+            render: function(data, type, row, meta) {
+              let checked = row.selected ? 'checked=checked' : '';
+              return `<label><input type="checkbox" data-action="select-import" ${checked}/></label>`;
+            },
+          }, {
+            data: 'name',
+            title: 'Remote volume name',
+          }, {
+            data: 'id',
+            title: 'Remote volume ID',
+            class: 'cm-center',
+            render: function(data, type, row, meta) {
+              return data;
+            },
+          }, {
+            title: 'Local volume ID (past import)',
+            class: 'cm-center',
+            render: function(data, type, row, meta) {
+              if (row.localVolumeId) {
+                return `<a href="#" data-action="select-local-volume">${row.localVolumeId}</a>`;
+              }
+              return '-';
+            },
+          }, {
+            title: 'Action',
+            width: '10em',
+            class: 'cm-center',
+            render: function(data, type, row, meta) {
+              return `<ul class="resultTags"><li><a href="#" data-action="preview-volume">Show</a></li><li><a href="#" data-action="import-volume">Import</a></li></li></ul>`;
+            },
+          }],
+        });
+
+        datatable.on('change', 'input[data-action=select-import]', function(e) {
+          let table = $(this).closest('table');
+          let tr = $(this).closest('tr');
+          let data =  $(table).DataTable().row(tr).data();
+          // Uncheck in data, no need to refresh the table.
+          data.selected = this.checked;
+          widget.importCatmaidResult.resultEntities[data.index].selected = this.checked;
+        });
+
+        datatable.on('click', 'a[data-action=preview-volume]', function(e) {
+          let table = $(this).closest('table');
+          let tr = $(this).closest('tr');
+          let data =  $(table).DataTable().row(tr).data();
+          // Preview single skeleton
+          CATMAID.Remote.previewVolumes(widget.sourceProject, [data.volumeId], {
+              api: CATMAID.Remote.getAPI(widget.sourceRemote),
+            })
+            .catch(CATMAID.handleError);
+        });
+
+        datatable.on('click', 'a[data-action=import-volume]', function(e) {
+          let table = $(this).closest('table');
+          let tr = $(this).closest('tr');
+          let data =  $(table).DataTable().row(tr).data();
+          // Import single skeleton
+          let api = CATMAID.Remote.getAPI(widget.sourceRemote);
+          widget.importRemoteVolumes([data.volumeId], widget.getEffectiveAnnotations(), api);
+        });
+
+        datatable.on('click', 'a[data-action=select-local-volume]', function(e) {
+          let table = $(this).closest('table');
+          let tr = $(this).closest('tr');
+          let data =  $(table).DataTable().row(tr).data();
+          // Show in 3D
+          if (data.localVolumeId) {
+            CATMAID.Volumes.fromEntities([data.localVolumeId])
+              .then(response => {
+                let meshId = response[data.localVolumeId];
+                if (meshId !== undefined) {
+                  widget.showSelectedVolumesIn3d([meshId]);
+                }
+              })
+              .catch(CATMAID.handleError);
+          }
+        });
+
+        // Fetch origin information
+        CATMAID.fetch({
+            url: `${project.id}/volumes/from-origin`,
+            method: 'POST',
+            data: {
+              'source_ids': volumeIds,
+              'source_url': api ? api.url : undefined,
+              'source_project_id': widget.sourceProject,
+            },
+            parallel: true,
+          })
+          .then(result => {
+            if (CATMAID.tools.isEmpty(result)) {
+              return;
+            }
+            let entityMap = widget.importCatmaidResult.resultEntities.reduce((o,e) => {
+              o[e.volumeId] = e;
+              return o;
+            }, {});
+            for (let sourceId in result) {
+              let queryResult = entityMap[sourceId];
+              if (queryResult) {
+                queryResult.localVolumeId = result[sourceId];
+              }
+            }
+            datatable.rows().invalidate();
+          })
+          .catch(CATMAID.handleError);
+      }
+    },
     innervations: {
       title: 'Skeleton innervations',
       createControls: function(widget) {
@@ -1268,7 +1613,7 @@
             let selectedVolumes = volumes.filter(function(v, i) {
               colorMap.set(v.id, lut.getColor(i));
               return v.selected;
-            });
+            }).map(v => v.id);
 
             widget.showSelectedVolumesIn3d(selectedVolumes, skeletonIds, colorMap);
           },

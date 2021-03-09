@@ -19,7 +19,8 @@ from django.utils.decorators import method_decorator
 from catmaid.control.annotation import get_annotated_entities
 from catmaid.control.authentication import requires_user_role, user_can_edit
 from catmaid.control.common import get_request_list
-from catmaid.models import UserRole, Project, Volume
+from catmaid.control.provenance import get_data_source, normalize_source_url
+from catmaid.models import ClassInstance, UserRole, Project, Volume, VolumeOrigin
 from catmaid.serializers import VolumeSerializer
 
 from rest_framework import renderers
@@ -730,6 +731,31 @@ def import_volumes(request, project_id) -> Union[HttpResponse, JsonResponse]:
             each being imported as a mesh named by its base filename.
         paramType: body
         dataType: File
+      - name: source_id
+        description: >
+            If specified, this source ID will be saved and mapped to the new
+            volume ID.
+        paramType: form
+        type: integer
+      - name: source_project_id
+        description: >
+            If specified, this source project ID will be saved and mapped to the
+            new volume ID. This is only valid together with source_id and
+            source_url.
+        paramType: form
+        type: integer
+      - name: source_url
+        description: >
+            If specified, this source URL will be saved and mapped to the new
+            volume ID.
+        paramType: form
+        type: string
+      - name: source_type
+        description: >
+            Can be either 'mesh' or 'segmentation', to further specify of
+            what type the origin data is.
+        paramType: form
+        type: string
     type:
       '{base_filename}':
         description: ID of the volume created from this file
@@ -757,7 +783,7 @@ def import_volumes(request, project_id) -> Union[HttpResponse, JsonResponse]:
                 project_id, request.user.id,
                 {"type": "trimesh", "title": name, "mesh": [vertices, triangles]}
             )
-            fnames_to_id[filename] = mesh.save()
+            fnames_to_id[filename] = mesh_id = mesh.save()
         else:
             return HttpResponse(f'File type "{extension}" not understood. Known file types: stl', status=415)
     else:
@@ -773,9 +799,23 @@ def import_volumes(request, project_id) -> Union[HttpResponse, JsonResponse]:
                 project_id, request.user.id,
                 {"type": "trimesh", "title": name, "mesh": [vertices, triangles]}
             )
-            fnames_to_id[name] = mesh.save()
+            fnames_to_id[name] = mesh_id = mesh.save()
         else:
             raise ValueError('No known volume format found')
+
+    source_id = request.POST.get('source_id', None)
+    source_url = request.POST.get('source_url', None)
+    source_project_id = request.POST.get('source_project_id', None)
+    source_type = request.POST.get('source_type', 'mesh')
+
+    # Try to track origin of this import.
+    if source_id and source_project_id:
+        data_source = get_data_source(project_id, source_url, source_project_id,
+                request.user.id)
+        mesh_entity_id = _get_volume_entities(project_id, [mesh_id])[mesh_id]
+        skeleton_origin = VolumeOrigin.objects.create(project_id=project_id,
+                user_id=request.user.id, data_source=data_source,
+                volume_id=mesh_entity_id, source_id=source_id, source_type=source_type)
 
     return JsonResponse(fnames_to_id)
 
@@ -887,6 +927,12 @@ def get_volume_entities(request, project_id) -> JsonResponse:
     """
     volume_ids = get_request_list(request.POST, 'volume_ids', map_fn=int)
 
+    return JsonResponse(_get_volume_entities(project_id, volume_ids))
+
+
+def _get_volume_entities(project_id, volume_ids) -> JsonResponse:
+    """Retrieve a mapping of volume IDs to entity (class instance) IDs.
+    """
     cursor = connection.cursor()
     cursor.execute("""
         SELECT vci.volume_id, vci.class_instance_id
@@ -904,7 +950,7 @@ def get_volume_entities(request, project_id) -> JsonResponse:
         'project_id': project_id
     })
 
-    return JsonResponse(dict(cursor.fetchall()))
+    return dict(cursor.fetchall())
 
 
 def get_primary_volumes_by_name(project_id):
@@ -1340,3 +1386,125 @@ def get_volume_data(project_id, volume_ids):
         }
 
     return volumes
+
+
+@api_view(['GET', 'POST'])
+@requires_user_role(UserRole.Browse)
+def from_origin(request:HttpRequest, project_id=None) -> JsonResponse:
+    """Find mappings to existing volumes for potential imports.
+    ---
+    parameters:
+      - name: project_id
+        description: Project to operate in
+        type: integer
+        paramType: path
+        required: true
+      - name: source_ids[]
+        description: IDs of the source IDs to query origin for
+        required: true
+        type: array
+        items:
+          type: integer
+        paramType: form
+      - name: source_url
+        description: Source URL of volumes. If not provided, this server is assumed to be the source.
+        type: string
+        paramType: path
+        required: false
+      - name: source_project_id
+        description: Source project ID of volumes
+        type: integer
+        paramType: path
+        required: true
+    """
+
+    if request.method == 'GET':
+        data = request.GET
+    elif request.method == 'POST':
+        data = request.POST
+    else:
+        raise ValueError("Invalid HTTP method: " + request.method)
+
+    source_ids = get_request_list(data, 'source_ids', map_fn=int)
+    if not source_ids:
+        raise ValueError('Need at least one source ID')
+
+    # If none, we assume that the source is this server
+    source_url = normalize_source_url(data.get('source_url'))
+
+    source_project_id = data.get('source_project_id')
+    if source_project_id is None:
+        raise ValueError("Need source_project_id for origin lookup")
+
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT so.source_id, so.volume_id
+        FROM volume_origin so
+        JOIN UNNEST(%(source_ids)s::bigint[]) query(source_id)
+            ON query.source_id = so.source_id
+        JOIN data_source ds
+            ON ds.id = so.data_source_id
+        WHERE so.project_id = %(project_id)s
+            AND ds.project_id = %(project_id)s
+            AND ds.url = %(source_url)s
+            AND ds.source_project_id = %(source_project_id)s
+    """, {
+        'source_ids': source_ids,
+        'project_id': project_id,
+        'source_url': source_url,
+        'source_project_id': source_project_id,
+    })
+
+    return JsonResponse(dict(cursor.fetchall()))
+
+
+@api_view(['GET', 'POST'])
+@requires_user_role(UserRole.Browse)
+def from_entities(request:HttpRequest, project_id=None) -> JsonResponse:
+    """Find mappings to existing volumes for the passed in entity (class
+    instance) IDs..
+    ---
+    parameters:
+      - name: project_id
+        description: Project to operate in
+        type: integer
+        paramType: path
+        required: true
+      - name: entity_ids[]
+        description: IDs of the entity IDs to get volumes for
+        required: true
+        type: array
+        items:
+          type: integer
+        paramType: form
+    """
+
+    if request.method == 'GET':
+        data = request.GET
+    elif request.method == 'POST':
+        data = request.POST
+    else:
+        raise ValueError("Invalid HTTP method: " + request.method)
+
+    entity_ids = get_request_list(data, 'entity_ids', map_fn=int)
+    if not entity_ids:
+        raise ValueError('Need at least one volume entity ID')
+
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT vci.class_instance_id, vci.volume_id
+        FROM volume_class_instance vci
+        JOIN UNNEST(%(entity_ids)s::int[]) entity(id)
+            ON entity.id = vci.class_instance_id
+        WHERE project_id = %(project_id)s
+        AND relation_id = (
+            SELECT id FROM relation
+            WHERE relation_name = 'model_of'
+            AND project_id = %(project_id)s
+        )
+    """, {
+        'entity_ids': entity_ids,
+        'project_id': project_id
+    })
+
+    return JsonResponse(dict(cursor.fetchall()))

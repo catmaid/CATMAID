@@ -2004,14 +2004,35 @@
 
   /**
    * Look at the center of mass of all loaded skeletons.
+   *
+   * @param includeVolumes {Boolean} (Optional) Whether or not to include loaded
+   *                                            volumes into the center of mass
+   *                                            computation. Default is false.
    */
-  WebGLApplication.prototype.lookAtCenterOfMass = function() {
+  WebGLApplication.prototype.lookAtCenterOfMass = function(includeVolumes = false) {
     let loadedSkeletonIds =  Object.keys(this.space.content.skeletons);
     let factor = 1.0 / loadedSkeletonIds.length;
     let com = loadedSkeletonIds.reduce(
         (avg, skId) => avg.addScaledVector(
             this.space.content.skeletons[skId].getCenterOfMass(), factor),
         new THREE.Vector3());
+
+    if (includeVolumes) {
+      let aggComVol = com;
+      let n = loadedSkeletonIds.length > 0 ? 1 : 0;
+      for (let volume of this.loadedVolumes.values()) {
+        for (var i=0; i<volume.meshes.length; ++i) {
+          let comVol = CATMAID.Volumes.computeCenterOfMass(volume.meshes[i]);
+          aggComVol.add(comVol);
+          n++;
+        }
+      }
+      if (n > 0) {
+        aggComVol.divideScalar(n);
+        com = aggComVol;
+      }
+    }
+
     this.lookAt(com);
   };
 
@@ -2413,9 +2434,12 @@
    * @param {bool}   faces    Whether to show faces or a wireframe
    * @param {number} subdivisions (optional) Number of smoothing subdivisions
    * @param {bool}   bb       (optional) Whether to show the bounding box of the volume
+   * @param {API}    api      (optional) A remote API to load the volume from
+   * @param {number} projectId (optional) The project to load the volume from
    */
   WebGLApplication.prototype.showVolume = function(volumeId, visible, color,
-      opacity, faces, subdivisions, bb) {
+      opacity, faces, subdivisions, bb, api = undefined, projectId = undefined) {
+    projectId = CATMAID.tools.getDefined(projectId, project.id);
     var existingVolume = this.loadedVolumes.get(volumeId);
     if (visible) {
       // Bail out if the volume in question is already visible
@@ -2436,7 +2460,7 @@
       };
       this.loadedVolumes.set(volumeId, volumeInfo);
 
-      return CATMAID.Volumes.get(project.id, volumeId)
+      return CATMAID.Volumes.get(projectId, volumeId, api)
         .then(volume => {
           // Convert X3D mesh to simple VRML and have Three.js load it
           var vrml = CATMAID.Volumes.x3dToVrml(volume.mesh);

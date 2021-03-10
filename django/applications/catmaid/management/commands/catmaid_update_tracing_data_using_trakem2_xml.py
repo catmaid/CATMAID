@@ -73,15 +73,26 @@ class TrakEM2Layer(object):
             raise ValueError('Can handle only one <ict_transform_list> entry')
         ict_transform_list = ict_transform_lists[0] if ict_transform_lists else None
 
+        def parse_transform(xform):
+            if xform.tag in ('iict_transform', 'ict_transform'):
+                Transform = autoclass(xform.attrib['class'])
+                t = Transform()
+                t.init(xform.attrib['data'])
+                return t
+            elif xform.tag == 'ict_transform_list':
+                l = MPICBG.CoordinateTransformList() # type: ignore
+                for sub_xform in xform:
+                    l.add(parse_transform(sub_xform))
+                return l
+            else:
+                raise ValueError(f'Unsupported transformation type: {xform.tag}')
+
+
         if ict_transform_list:
             from jnius import autoclass
             self.transform_list = MPICBG.CoordinateTransformList() # type: ignore
             for xform in ict_transform_list:
-                if xform.tag not in ('iict_transform', 'ict_transform'):
-                    raise ValueError(f'Unsupported transformation type: {xform.tag}')
-                Transform = autoclass(xform.attrib['class'])
-                t = Transform()
-                t.init(xform.attrib['data'])
+                t = parse_transform(xform)
                 self.transform_list.add(t)
         else:
             self.transform_list = None

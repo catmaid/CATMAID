@@ -340,8 +340,9 @@
   {
     if (this.current_node.updateNeuronNames) {
       this.current_node.updateNeuronNames();
+    } else {
+      this.select_node(this.current_node);
     }
-    this.select_node(this.current_node);
   };
 
 
@@ -1870,6 +1871,14 @@
       filters)
   {
     this.add_neuronlist_content(container, filters);
+  };
+
+  NeuronNavigator.NeuronListNode.prototype.updateNeuronNames = function() {
+    if (!this.navigator) return;
+    let datatable = document.querySelector(`navigator_neuronlist_table${this.navigator.widgetID}`);
+    if (datatable) {
+      datatable.rows().invalidate();
+    }
   };
 
 

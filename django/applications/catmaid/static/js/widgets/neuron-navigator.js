@@ -1401,11 +1401,14 @@
       ].concat(extraColumns)
     });
 
-    // Wire up handlers
+    // Focus search input by default
+    let searchInput = datatable.parent().find('div.dataTables_filter input[type=search]');
+    if (searchInput) searchInput.focus();
 
     // Make self accessible in callbacks more easily
     var self = this;
 
+    // Wire up handlers
     var getSelectedNeurons = function() {
       var cb_selector = '#navigator_neuronlist_table' +
           self.navigator.widgetID + ' tbody td.selector_column input';

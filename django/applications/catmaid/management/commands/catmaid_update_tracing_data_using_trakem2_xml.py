@@ -80,10 +80,10 @@ class TrakEM2Layer(object):
                 t.init(xform.attrib['data'])
                 return t
             elif xform.tag == 'ict_transform_list':
-                l = MPICBG.CoordinateTransformList() # type: ignore
+                coord_list = MPICBG.CoordinateTransformList() # type: ignore
                 for sub_xform in xform:
-                    l.add(parse_transform(sub_xform))
-                return l
+                    coord_list.add(parse_transform(sub_xform))
+                return coord_list
             else:
                 raise ValueError(f'Unsupported transformation type: {xform.tag}')
 

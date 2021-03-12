@@ -800,3 +800,35 @@ class ProjectDetail(APIView):
             'title': project.title,
             'comment': project.comment,
         })
+
+class ProjectFavorite(APIView):
+
+    @method_decorator(requires_user_role(UserRole.Browse))
+    def post(self, request:Request, project_id:int) -> JsonResponse:
+        """Mark this project as a favorite.
+        """
+        project = get_object_or_404(Project, pk=project_id)
+
+        _, created = FavoriteProject.objects.get_or_create(**{
+            'project_id': project.id,
+            'user_id': request.user.id,
+        })
+
+        return JsonResponse({
+            'new': created,
+        })
+
+    @method_decorator(requires_user_role(UserRole.Browse))
+    def delete(self, request:Request, project_id:int) -> JsonResponse:
+        """Delete this project as a favorite.
+        """
+        project = get_object_or_404(Project, pk=project_id)
+
+        deleted = FavoriteProject.objects.filter(**{
+            'project_id': project.id,
+            'user_id': request.user.id,
+        }).delete()
+
+        return JsonResponse({
+            'deleted': deleted,
+        })

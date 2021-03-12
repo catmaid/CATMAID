@@ -397,16 +397,16 @@
             let tileSource = CATMAID.TileSources.get(mirror.id,
               mirror.tile_source_type, mirror.image_base, mirror.file_extension,
               mirror.tile_width, mirror.tile_height);
-            if (tileSource instanceof CATMAID.AbstractTileSourceWithOverview) {
-              let link = imgSpan.appendChild(document.createElement('a'));
-              link.href = '#';
-              link.dataset.type = 'stack';
-              link.dataset.pid = p.id;
-              link.dataset.sid = stack.id;
-              // Use overview image
-              let img = link.appendChild(document.createElement('img'));
-              img.onerror = showErrorImage;
-              try {
+            let link = imgSpan.appendChild(document.createElement('a'));
+            link.href = '#';
+            link.dataset.type = 'stack';
+            link.dataset.pid = p.id;
+            link.dataset.sid = stack.id;
+            // Use overview image
+            let img = link.appendChild(document.createElement('img'));
+            img.onerror = showErrorImage;
+            try {
+              if (tileSource instanceof CATMAID.AbstractTileSourceWithOverview) {
                 let sampleSlice = this.sample_slice;
                 if (sampleSlice === 'center') {
                   sampleSlice = Math.floor(stack.dimensions[2] * 0.5);
@@ -416,10 +416,13 @@
                   sampleSlice = 0;
                 }
                 img.src = tileSource.getOverviewURL(null, [sampleSlice]);
-              } catch (error) {
+              } else {
                 // Show placeholder if overview is unavailable
                 img.src = CATMAID.makeStaticURL('/images/overview-placeholder.png');
               }
+            } catch (error) {
+              // Show placeholder if overview is unavailable
+              img.src = CATMAID.makeStaticURL('/images/overview-placeholder.png');
             }
           }
         }

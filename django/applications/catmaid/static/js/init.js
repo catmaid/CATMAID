@@ -439,7 +439,7 @@ var project;
             CATMAID.msg('Success', 'Copied URL to view with layout to clipboard. See it also in the Link Widget.');
             CATMAID.tools.copyToClipBoard(link);
           })
-          .catch(CATMAID.handleErrors);
+          .catch(CATMAID.handleError);
       }
     }, {
       id: 'copy-current-layout-url-no-skeletons',
@@ -451,7 +451,7 @@ var project;
             CATMAID.msg('Success', 'Copied URL to view with layout to clipboard, don\'t include skeletons. See it also in the Link Widget.');
             CATMAID.tools.copyToClipBoard(link);
           })
-          .catch(CATMAID.handleErrors);
+          .catch(CATMAID.handleError);
       }
     }, {
       id: 'copy-current-layout-url-no-settings',

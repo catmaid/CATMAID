@@ -170,6 +170,7 @@ Name                    Options                                     Default
 ``with_stackgroups``    ``true, false``                             ``true``
 ``show_empty_projects`` ``true, false``                             ``false``
 ``show_controls``       ``true, false``                             ``false``
+``favorites_first``     ``true, false``                             ``true``
 ``sample_images``       ``true, false``                             ``false``
 ``sample_mirror_index`` ``position of mirror to use``               ``0``
 ``sample_slice``        ``slice index, "first", "center", "last"``  ``"center"``

@@ -212,6 +212,7 @@
     this.sample_mirror_index = CATMAID.tools.getDefined(options.config.sample_mirror_index, 0);
     this.sample_slice = CATMAID.tools.getDefined(options.config.sample_slice, 0);
     this.only_favorite = CATMAID.tools.getDefined(options.config.only_favorite, false);
+    this.favorites_first = CATMAID.tools.getDefined(options.config.favorites_first, true);
     this.initial_tool = CATMAID.tools.getDefined(options.config.initial_tool);
     this.initial_zoom = CATMAID.tools.getDefined(options.config.initial_zoom);
     this.initial_location = CATMAID.tools.getDefined(options.config.initial_location);
@@ -237,6 +238,8 @@
     sample_mirror_index: 0,
     sample_slice: 0,
     only_favorite: false,
+    favorites_first: true,
+    show_controls: false,
     project_filter_placeholder: 'Project filter',
     stack_filter_placeholder: 'Stack filter',
     project_list_title: 'Projects',
@@ -366,8 +369,10 @@
     $('[data-role=filter-message]', this.container).text('');
     // add new projects according to filter
     var projects = CATMAID.client.projects;
-    for (var projectId in projects) {
-      p = projects[projectId];
+    if (this.favorites_first) {
+      projects = projects.filter(p => p.favorite).concat(projects.filter(p => !p.favorite));
+    }
+    for (var p of projects) {
       toappend = [];
 
       title = p.title;

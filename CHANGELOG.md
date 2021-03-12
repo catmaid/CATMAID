@@ -453,6 +453,14 @@ Data views:
 - The data view menu (Home button) will now highlight the currently active data
   view.
 
+- A new front-end based data view type is available: resources and spaces. It
+  organizes projects in resources (read-only) and spaces (write) and indicates
+  this with different colors.
+
+- The front-end data views now support the option "with_controls" (false by
+  default). If enabled favorite projects are indicated with a little star, which
+  also allows to toggle the favorite state.
+
 Cropping tool:
 
 - A new radio button in front of both the top and the bottom Z index sliders

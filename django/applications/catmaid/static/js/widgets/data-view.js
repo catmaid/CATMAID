@@ -440,11 +440,12 @@
               let controls = imgSpan.appendChild(document.createElement('span'));
               controls.classList.add('project-controls');
               controls.innerHTML = '<i class="fa fa-star" data-role="favorite" title="Mark or unmark project as favorite"></i>';
-              if (isAdmin) {
-                controls.innerHTML += '<i class="fa fa-pencil" data-role="rename" title="Rename project and edit description"></i>';
-              }
               if (p.token) {
                 controls.innerHTML += '<i class="fa fa-sign-out" data-role="exit-project" title="Revoke project token based project membership"></i>';
+              }
+              if (isAdmin) {
+                controls.innerHTML += '<i class="fa fa-pencil" data-role="rename" title="Rename project and edit description"></i>';
+                controls.innerHTML += '<i class="fa fa-trash" data-role="delete" title="Delete this project and all its data"></i>';
               }
             }
           }
@@ -538,6 +539,14 @@
           .then(() => {
             CATMAID.msg('Success', `Signed out of project "${p.title}"`);
             this.refresh();
+          })
+          .catch(CATMAID.handleError);
+      } else if (e.target.matches('i[data-role=delete]')) {
+        if (!confirm(`Are you sure you want to delete project "${p.title}" and all its contents?`)) return;
+        if (!confirm(`Are you REALLY sure you want to delete project "${p.title}" and all its contents?`)) return;
+        CATMAID.Project.delete(p.id)
+          .then(response => {
+            CATMAID.msg('Success', `Delete project "${p.title}" (ID: ${p.id})`);
           })
           .catch(CATMAID.handleError);
       }

@@ -795,8 +795,8 @@
    *                            'title', 'comment'.
    * @returns {Promise} Resolves once the project is updated.
    */
-  Project.prototype.updateProperties = function(properties) {
-    if (!CATMAID.hasPermission(this.id, 'can_administer')) {
+  Project.updateProperties = function(projectId, properties) {
+    if (!CATMAID.hasPermission(projectId, 'can_administer')) {
       return Promise.reject(new CATMAID.PermissionError("Need administration permissions in this project"));
     }
     const allowedFields = new Set(['title', 'comment']);
@@ -806,7 +806,19 @@
       }
     }
 
-    let result = CATMAID.fetch(`${this.id}/`, 'POST', properties);
+    return CATMAID.fetch(`${projectId}/`, 'POST', properties);
+  };
+
+  /**
+   * Update properties of this project.
+   *
+   * @param projectId {Integer} The project to delete.
+   * @param properties {Object} An object containing one or more of the fields
+   *                            'title', 'comment'.
+   * @returns {Promise} Resolves once the project is updated.
+   */
+  Project.prototype.updateProperties = function(properties) {
+    let result = CATMAID.Project.updateProperties(this.id, properties);
     result.then(response => {
       this.title = response.title;
       this.comment = response.comment;

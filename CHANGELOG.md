@@ -459,7 +459,9 @@ Data views:
 
 - The front-end data views now support the option "with_controls" (false by
   default). If enabled favorite projects are indicated with a little star, which
-  also allows to toggle the favorite state.
+  also allows to toggle the favorite state by clicking on it. Onluy for admins
+  visible, right next to it, there is a pencil button to open a dialog to edit
+  the project title and description.
 
 Cropping tool:
 

@@ -388,6 +388,7 @@
         continue;
       }
 
+      let isAdmin = CATMAID.hasPermission(p.id, 'can_administer') ;
       let canAnnotate = CATMAID.hasPermission(p.id, 'can_annotate') ;
       let rowSpan = pp.appendChild(document.createElement('span'));
       rowSpan.classList.add('project-member-entry');
@@ -438,7 +439,10 @@
             if (this.show_controls) {
               let controls = imgSpan.appendChild(document.createElement('span'));
               controls.classList.add('project-controls');
-              controls.innerHTML = '<i class="fa fa-star" data-role="favorite"></i>';
+              controls.innerHTML = '<i class="fa fa-star" data-role="favorite" title="Mark or unmark project as favorite"></i>';
+              if (isAdmin) {
+                controls.innerHTML += '<i class="fa fa-pencil" data-role="rename" title="Rename project and edit description"></i>';
+              }
             }
           }
         }
@@ -480,11 +484,11 @@
     }
 
     // Wire up event listeners
-    this.container.addEventListener('click', e => {
+    this.container.onclick = e => {
+      let pEntry = e.target.closest('.project-member-entry');
+      let projectId = parseInt(pEntry.dataset.id, 10);
+      let p = CATMAID.client.projectsById[projectId];
       if (e.target.matches('i[data-role=favorite]')) {
-        let pEntry = e.target.closest('.project-member-entry');
-        let projectId = parseInt(pEntry.dataset.id, 10);
-        let p = CATMAID.client.projectsById[projectId];
         let newValue = !p.favorite;
         CATMAID.fetch(`${projectId}/favorite`, newValue ? 'POST' : 'DELETE')
           .then(() => {
@@ -496,8 +500,27 @@
             }
           })
           .catch(CATMAID.handleError);
+      } else if (e.target.matches('i[data-role=rename]')) {
+        let dialog = new CATMAID.OptionsDialog('Rename project');
+        let name = dialog.appendField('Project name', 'new-project-name', p.title, true);
+        let description = dialog.appendField('Project description', 'new-project-description', p.comment, true);
+        dialog.onOK = e => {
+          CATMAID.Project.updateProperties(p.id, {
+              title: name.value.trim(),
+              comment: description.value.trim(),
+            })
+            .then(() => {
+              return CATMAID.client.updateProjects();
+            })
+            .then(() => {
+              CATMAID.msg('Success', `Properties of project "${p.title}" (ID: ${p.id}) updated`);
+              this.refresh();
+            })
+            .catch(CATMAID.handleError);
+        };
+        dialog.show(400, 'auto');
       }
-    });
+    };
 
     let tools = {
       navigator: CATMAID.Navigator,

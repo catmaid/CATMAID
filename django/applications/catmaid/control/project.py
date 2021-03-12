@@ -15,7 +15,7 @@ from django.utils.decorators import method_decorator
 
 from catmaid.models import (BrokenSlice, Class, ClientDatastore, FavoriteProject,
         InterpolatableSection, Location, Project, ProjectStack, ProjectToken,
-        Relation, Stack, StackGroup, StackStackGroup, UserRole)
+        Relation, Stack, StackGroup, StackStackGroup, UserProjectToken, UserRole)
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.common import get_request_bool, get_request_list
 
@@ -353,6 +353,8 @@ def projects(request:HttpRequest) -> JsonResponse:
     empty_tuple:Tuple = tuple()
     fav_project_ids = set(FavoriteProject.objects.filter(user_id=request.user.id).values_list('project_id', flat=True))
 
+    token_project_ids = set(UserProjectToken.objects.filter(user_id=request.user.id).values_list('project_token__project_id', flat=True))
+
     for p in visible_projects:
         stacks = project_stack_mapping.get(p.id, empty_tuple)
         stackgroups = project_stack_groups.get(p.id, empty_tuple)
@@ -366,6 +368,8 @@ def projects(request:HttpRequest) -> JsonResponse:
         }
         if p.id in fav_project_ids:
             response['favorite'] = True
+        if p.id in token_project_ids:
+            response['token'] = True
 
         result.append(response)
 

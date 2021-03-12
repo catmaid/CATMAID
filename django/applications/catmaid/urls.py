@@ -97,6 +97,8 @@ urlpatterns += [
 # Project permissions
 urlpatterns += [
     url(r'^(?P<project_id>\d+)/project-tokens/$', project_token.ProjectTokenList.as_view()),
+    url(r'^(?P<project_id>\d+)/user-project-tokens/$', project_token.UserProjectTokenList.as_view()),
+    url(r'^(?P<project_id>\d+)/project-tokens/revoke$', project_token.ProjectTokenRevoker.as_view()),
     url(r'^project-tokens/apply$', project_token.ProjectTokenApplicator.as_view()),
 ]
 

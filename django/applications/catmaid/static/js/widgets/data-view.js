@@ -369,7 +369,7 @@
     $('[data-role=filter-message]', this.container).text('');
     // add new projects according to filter
     var projects = CATMAID.client.projects;
-    if (this.favorites_first) {
+    if (this.favorites_first && projects) {
       projects = projects.filter(p => p.favorite).concat(projects.filter(p => !p.favorite));
     }
     for (var p of projects) {
@@ -436,12 +436,15 @@
               img.src = CATMAID.makeStaticURL('/images/overview-placeholder.png');
             }
 
-            if (this.show_controls) {
+            if (this.show_controls && CATMAID.session.is_authenticated) {
               let controls = imgSpan.appendChild(document.createElement('span'));
               controls.classList.add('project-controls');
               controls.innerHTML = '<i class="fa fa-star" data-role="favorite" title="Mark or unmark project as favorite"></i>';
               if (isAdmin) {
                 controls.innerHTML += '<i class="fa fa-pencil" data-role="rename" title="Rename project and edit description"></i>';
+              }
+              if (p.token) {
+                controls.innerHTML += '<i class="fa fa-sign-out" data-role="exit-project" title="Revoke project token based project membership"></i>';
               }
             }
           }
@@ -486,6 +489,7 @@
     // Wire up event listeners
     this.container.onclick = e => {
       let pEntry = e.target.closest('.project-member-entry');
+      if (!pEntry) return;
       let projectId = parseInt(pEntry.dataset.id, 10);
       let p = CATMAID.client.projectsById[projectId];
       if (e.target.matches('i[data-role=favorite]')) {
@@ -519,6 +523,23 @@
             .catch(CATMAID.handleError);
         };
         dialog.show(400, 'auto');
+      } else if (e.target.matches('i[data-role=exit-project]')) {
+        CATMAID.fetch(`${p.id}/user-project-tokens/`)
+          .then(response => {
+            if (response.length > 0) {
+              if (!confirm(`Are you sure you want to remove all access to project "${p.title}"?`)) {
+                return;
+              }
+              return Promise.all(response.map(r => CATMAID.fetch(`${p.id}/project-tokens/revoke`, 'POST', { token_id: r })));
+            } else {
+              CATMAID.warn('No tokens for project found');
+            }
+          })
+          .then(() => {
+            CATMAID.msg('Success', `Signed out of project "${p.title}"`);
+            this.refresh();
+          })
+          .catch(CATMAID.handleError);
       }
     };
 

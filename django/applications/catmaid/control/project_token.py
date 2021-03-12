@@ -1,11 +1,12 @@
 from django.conf import settings
 from django.db import connection
+from django.http import JsonResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404
 
-from guardian.shortcuts import assign_perm, get_perms_for_model
+from guardian.shortcuts import assign_perm, get_perms_for_model, remove_perm
 from guardian.utils import get_anonymous_user
 
 from rest_framework import status
@@ -127,6 +128,19 @@ class ProjectTokenList(APIView):
         return Response(serializer.data)
 
 
+class UserProjectTokenList(APIView):
+
+    @never_cache
+    def get(self, request:Request, project_id) -> JsonResponse:
+        """List project tokens available for this project and user.
+        ---
+        serializer: SimpleProjectTokenSerializer
+        """
+        token_ids = list(ProjectToken.objects.filter(project_id=project_id,
+                userprojecttoken__user_id=request.user.id).values_list('id', flat=True))
+        return JsonResponse(token_ids, safe=False)
+
+
 class ProjectTokenApplicator(APIView):
 
     @method_decorator(login_required)
@@ -163,4 +177,32 @@ class ProjectTokenApplicator(APIView):
             'project_id': token.project_id,
             'permissions': token.default_permissions,
             'needs_approval': token.needs_approval,
+        })
+
+
+class ProjectTokenRevoker(APIView):
+
+    @method_decorator(login_required)
+    def post(self, request:Request, project_id) -> Response:
+        """Revoke a project token.
+        ---
+        parameters:
+          - name: token
+            required: true
+
+        serializer: SimpleProjectTokenSerializer
+        """
+        if request.user.is_anonymous:
+            raise PermissionError("Anonymous users can't revoke tokens")
+
+        token = get_object_or_404(ProjectToken, pk=request.POST.get('token_id'))
+
+        for perm in token.default_permissions:
+            remove_perm(perm, request.user, token.project)
+
+        delete = UserProjectToken.objects.filter(project_token=token,
+                user_id=request.user.id).delete()
+
+        return Response({
+            'delete': delete,
         })

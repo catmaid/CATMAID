@@ -1016,7 +1016,7 @@ var project;
       document.getElementById("account").value = "";
       document.getElementById("password").value = "";
       document.getElementById("session_longname").replaceChild(
-      document.createTextNode(CATMAID.session.longname),
+          document.createTextNode(CATMAID.session.longname),
           document.getElementById("session_longname").firstChild);
 
       // Update user menu

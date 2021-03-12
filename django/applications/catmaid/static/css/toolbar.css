@@ -302,6 +302,7 @@ div#message_box {
   display: none;
 }
 
+.catmaid.authenticated .login_link,
 .catmaid.authenticated div#login_box {
   display: none;
 }

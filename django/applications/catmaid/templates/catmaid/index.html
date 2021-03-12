@@ -114,13 +114,15 @@
             id="logout" name="logout" title="Logout" onclick="CATMAID.client.logout();" href="#">Logout</a></p></div>
         <div id="login_box" class="box">
           <form>
-            <p>account&nbsp;</p>
-            <p><input type="text" id="account" name="account" size="8" /></p>
-            <p>&nbsp;&nbsp;password&nbsp;</p>
-            <p><input type="password" id="password" name="password" size="8" /></p>
-            <div class="menu_item box" onpointerover="this.lastChild.style.display = 'block';" onpointerout="this.lastChild.style.display = 'none';">
+            <span class="local_login">
+              <p><label>Username <input type="text" id="account" name="account" size="8" /></label></p>
+              <p>&nbsp;&nbsp;</p>
+              <p><label>Password <input type="password" id="password" name="password" size="8" /></label></p>
+            </span>
+            <div class="menu_item box local_login" onpointerover="this.lastChild.style.display = 'block';" onpointerout="this.lastChild.style.display = 'none';">
               <p>&nbsp;&nbsp;<a id="login" name="login" title="Login" href="#" onclick="CATMAID.client.login( document.getElementById( 'account' ).value, document.getElementById( 'password' ).value );">Login</a></p>
               <div class="pulldown" id="login_menu"></div></div>
+              <p class="external_login" id='external-login-options'></p>
             {% if USER_REGISTRATION_ALLOWED %}
             <p>&nbsp;&nbsp;<a id="register" name="register" title="Create a new account"
               href="{% url 'catmaid:register' %}">Register</a>

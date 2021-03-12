@@ -213,6 +213,14 @@ var project;
         warn_on_potential_gl_issues: {
           default: true,
         },
+        show_regular_login_controls: {
+          default: true,
+          overridable: false,
+        },
+        show_external_login_controls: {
+          default: false,
+          overridable: false,
+        },
       }
     });
 
@@ -471,6 +479,12 @@ var project;
 
     // Assume an unauthenticated session by default
     this.setAuthenticated(false);
+    CATMAID.Client.Settings
+        .load()
+        .then(() => {
+          this._updateLoginControls();
+        })
+        .catch(CATMAID.handleError);
 
     // Create the toolboxes
     $('#toolbox_project').replaceWith(CATMAID.createButtonsFromActions(
@@ -1016,6 +1030,34 @@ var project;
     }
   };
 
+  Client.prototype._updateLoginControls = function() {
+    if (this._container) {
+      if (Client.Settings.session.show_regular_login_controls) {
+        this._container.classList.remove('no_local_login');
+      } else {
+        this._container.classList.add('no_local_login');
+      }
+
+      let externalLoginContainer = this._container.querySelector('#external-login-options');
+      while (externalLoginContainer.lastChild) externalLoginContainer.removeChild(externalLoginContainer.lastChild);
+
+      if (Client.Settings.session.show_external_login_controls) {
+        this._container.classList.remove('no_external_login');
+        let loginOptions = Object.keys(CATMAID.extraAuthConfig).sort().map(cId => {
+          let c = CATMAID.extraAuthConfig[cId];
+          let loginElement = document.createElement('a');
+          loginElement.append(`Login with ${c.name}`);
+          loginElement.href =c.login_url;
+          loginElement.classList.add('external-login-option');
+          return loginElement;
+        });
+        externalLoginContainer.append(...loginOptions);
+      } else {
+        this._container.classList.add('no_external_login');
+      }
+    }
+  };
+
   // Publicly accessible session
   CATMAID.session = null;
 
@@ -1078,6 +1120,17 @@ var project;
           action: () => CATMAID.forkCurrentProject(),
         });
       }
+
+      // Super-users also habe button to open the instance settings dialog.
+      let isSuperUser = s.is_authenticated && s.is_superuser;
+      if (isSuperUser) {
+          userMenuItems.push({
+            title: "Instance configuration",
+            note: "",
+            action: () => CATMAID.editInstanceConfig(),
+          });
+      }
+
       menus.user.update(userMenuItems);
   };
 
@@ -2577,6 +2630,47 @@ var project;
     };
 
     dialog.show(460, 200, true);
+  };
+
+
+  CATMAID.editInstanceConfig = function() {
+    let isSuperUser = CATMAID.session.is_authenticated && CATMAID.session.is_superuser;
+    if (!isSuperUser) {
+      CATMAID.warn("You don't have the required permissions to edit the instance configuration");
+      return;
+    }
+
+    let dialog = new CATMAID.OptionsDialog("CATMAID instance configuration", {
+      'Close': CATMAID.noop,
+    });
+
+    let showRegularLogin = CATMAID.DOM.createCheckboxSetting('Show regular login',
+      CATMAID.Client.Settings.global.show_regular_login_controls,
+      'Whether or not to show the common username and password fields in the upper right corner',
+      e => {
+        CATMAID.Client.Settings.set('show_regular_login_controls', e.target.checked, 'global')
+          .then(() => {
+            CATMAID.msg('Success', 'Setting updated, reload for it to take effect');
+            CATMAID.client._updateLoginControls();
+          })
+          .catch(CATMAID.handleError);
+      })[0];
+    dialog.appendChild(showRegularLogin);
+
+    let showExternalLogin = CATMAID.DOM.createCheckboxSetting('Show external login',
+      CATMAID.Client.Settings.global.show_external_login_controls,
+      'Whether or not to show buttons for external logins (if any) in the upper right corner',
+      e => {
+        CATMAID.Client.Settings.set('show_external_login_controls', e.target.checked, 'global')
+          .then(() => {
+            CATMAID.msg('Success', 'Setting updated, reload for it to take effect');
+            CATMAID.client._updateLoginControls();
+          })
+          .catch(CATMAID.handleError);
+      })[0];
+    dialog.appendChild(showExternalLogin);
+
+    dialog.show(500, 'auto');
   };
 
   /**

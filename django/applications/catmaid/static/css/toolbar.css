@@ -318,6 +318,18 @@ div#message_box {
   display: block;
 }
 
+.catmaid.no_local_login .local_login {
+  display: none;
+}
+
+.catmaid.no_external_login .external_login {
+  display: none;
+}
+
+.catmaid .external-login-option {
+	margin-left: 2em;
+}
+
 #toolbar_nav {
   display: flex;
 }

@@ -325,7 +325,7 @@ Administration:
   many zoom levels until the whole image fits on one tile (rather than two like
   before). It also accepts now an additional optional argument with which the
   number of zoom levels to generate can be specified. Moreover it also provides
-  an option to specificy an output directory and knows the common default value
+  an option to specify an output directory and knows the common default value
   for the overview size (192px).
 
 - System check widget: more information regarding a potential transaction ID
@@ -334,9 +334,13 @@ Administration:
 - User account creation now supports confirmation emails and welcome emails. The
   User Accounts section of the manual has more details on this.
 
+- Superusers will now see an extra menu item in their user menu (upper right
+  corner user name): Instance configuration. It opens a dialog which currently
+  presents two options: whether to show local and external login controls.
+
 Tracing data export:
 
-- The management command catmaid_export_data supports now the sepcification of
+- The management command catmaid_export_data supports now the specification of
   export options for tags, annotations and connectors per publication. To tell
   the exporter which annotations/publications are allowed to carry these
   settings, the "--settings-meta-annotation <annotation>" can be provided to the

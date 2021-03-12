@@ -526,9 +526,9 @@ div#data_view.data-view-spaces_resources span.project-controls i {
   padding: 0.3em 0.3em 0.6em 0.3em;
 }
 
-div#data_view.data-view-spaces_resources .favorite span.project-controls i {
+div#data_view.data-view-spaces_resources .favorite span.project-controls i[data-role=favorite] {
   color: orange;
-  display: block;
+  display: unset;
 }
 
 div#data_view.data-view-spaces_resources .favorite span.project-controls i:hover {

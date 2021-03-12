@@ -207,6 +207,7 @@
     this.with_stacks = options.config.with_stacks;
     this.with_stackgroups = options.config.with_stackgroups;
     this.show_empty_projects = options.config.show_empty_projects;
+    this.show_controls = CATMAID.tools.getDefined(options.config.show_controls, false);
     this.sample_images = CATMAID.tools.getDefined(options.config.sample_images, false);
     this.sample_mirror_index = CATMAID.tools.getDefined(options.config.sample_mirror_index, 0);
     this.sample_slice = CATMAID.tools.getDefined(options.config.sample_slice, 0);
@@ -386,6 +387,10 @@
       let rowSpan = pp.appendChild(document.createElement('span'));
       rowSpan.classList.add('project-member-entry');
       rowSpan.dataset.type = canAnnotate ? 'space' : 'resource';
+      if (p.favorite) {
+        rowSpan.classList.add('favorite');
+      }
+      rowSpan.dataset.id = p.id;
 
       if (this.sample_images) {
         rowSpan.classList.add('image-entry');
@@ -423,6 +428,12 @@
             } catch (error) {
               // Show placeholder if overview is unavailable
               img.src = CATMAID.makeStaticURL('/images/overview-placeholder.png');
+            }
+
+            if (this.show_controls) {
+              let controls = imgSpan.appendChild(document.createElement('span'));
+              controls.classList.add('project-controls');
+              controls.innerHTML = '<i class="fa fa-star" data-role="favorite"></i>';
             }
           }
         }
@@ -462,6 +473,26 @@
 
       ++matchingProjects;
     }
+
+    // Wire up event listeners
+    this.container.addEventListener('click', e => {
+      if (e.target.matches('i[data-role=favorite]')) {
+        let pEntry = e.target.closest('.project-member-entry');
+        let projectId = parseInt(pEntry.dataset.id, 10);
+        let p = CATMAID.client.projectsById[projectId];
+        let newValue = !p.favorite;
+        CATMAID.fetch(`${projectId}/favorite`, newValue ? 'POST' : 'DELETE')
+          .then(() => {
+            p.favorite = newValue;
+            if (newValue) {
+              pEntry.classList.add('favorite');
+            } else {
+              pEntry.classList.remove('favorite');
+            }
+          })
+          .catch(CATMAID.handleError);
+      }
+    });
 
     let tools = {
       navigator: CATMAID.Navigator,

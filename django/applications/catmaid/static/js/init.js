@@ -759,6 +759,10 @@ var project;
     return CATMAID.Project.list(true, false, true)
       .then(json => {
         self.projects = json;
+        self.projectsById = json.reduce((o, p) => {
+          o[p.id] = p;
+          return o;
+        }, {});
 
         self.refresh();
 

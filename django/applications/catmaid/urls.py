@@ -121,6 +121,7 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/$', project.ProjectDetail.as_view()),
     url(r'^(?P<project_id>\d+)/interpolatable-sections/$', project.interpolatable_sections),
     url(r'^(?P<project_id>\d+)/fork$', project.fork),
+    url(r'^(?P<project_id>\d+)/favorite$', project.ProjectFavorite.as_view()),
 ]
 
 # Deep links

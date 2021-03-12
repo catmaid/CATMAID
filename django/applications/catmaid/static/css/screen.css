@@ -507,6 +507,38 @@ div#data_view.data-view-spaces_resources span.project-description {
   font-weight: normal;
 }
 
+div#data_view.data-view-spaces_resources .image-entry:hover span.project-controls i {
+  display: inline;
+  background-color: gray;
+}
+
+div#data_view.data-view-spaces_resources span.project-controls {
+  left: 1em;
+  top: -2em;
+  position: relative;
+  display: block;
+  height: 0.5em;
+}
+
+div#data_view.data-view-spaces_resources span.project-controls i {
+  display: none;
+  cursor: pointer;
+  padding: 0.3em 0.3em 0.6em 0.3em;
+}
+
+div#data_view.data-view-spaces_resources .favorite span.project-controls i {
+  color: orange;
+  display: block;
+}
+
+div#data_view.data-view-spaces_resources .favorite span.project-controls i:hover {
+  color: #fc750a;
+}
+
+div#data_view.data-view-spaces_resources span.project-controls i:hover {
+  color: orange;
+}
+
 div#ontology_editor_widget div#ontology_known_roots {
 	margin-top: 10px;
 }

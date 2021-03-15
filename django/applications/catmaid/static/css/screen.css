@@ -914,8 +914,13 @@ table.neuron_annotations_query_fields {
   margin-right: 12px;
 }
 
-.partner_table .syncount {
+.partner_table tbody .syncount {
   text-align: center;
+  font-size: 0;
+}
+
+.partner_table tbody .syncount a {
+  font-size: 11px;
 }
 
 .partner_table tfoot {
@@ -1040,6 +1045,7 @@ table.neuron_annotations_query_fields {
   float: right;
   position: relative;
   top: -0.2em;
+  cursor: pointer;
 }
 
 .connectivity_widget .connectivity_table_actions {

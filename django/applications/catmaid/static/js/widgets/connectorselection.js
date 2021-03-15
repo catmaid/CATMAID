@@ -120,7 +120,7 @@
 
   ConnectorSelection.prototype.init = function() {
     if (table) {
-      table.remove();
+      $(table).remove();
     }
 
     table = $('#connectorselectiontable').DataTable({

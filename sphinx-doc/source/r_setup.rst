@@ -13,11 +13,11 @@ should be similar for other operating systems.
 Installing a recent version of R
 --------------------------------
 
-Add the R 3.6 repository along with its public keys::
+Add the R 4.0 repository along with its public keys::
 
-  sudo gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-key E084DAB9
-  sudo gpg -a --export E084DAB9 | sudo apt-key add -
-  echo "deb https://cloud.r-project.org/bin/linux/ubuntu xenial-cran35/" | sudo tee -a /etc/apt/sources.list
+  sudo gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-key E298A3A825C0D65DFD57CBB651716619E084DAB9
+  sudo gpg -a --export E298A3A825C0D65DFD57CBB651716619E084DAB9 | sudo apt-key add -
+  sudo add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu focal-cran40/'
 
 Install R and its development packages as well as two additional dependencies
 that are required to install all needed R packages::
@@ -60,7 +60,18 @@ paths. To make CATMAID aware of this as well, add the following the
   R_LIBS_USER = '<catmaid-path>/django/projects/r_libs/'
   os.environ['R_LIBS_USER'] = R_LIBS_USER
 
-With this in place it should be enough to call the following management command
+With this in place, the NBLAST R dependencies can be installed. Since this
+includes quite a few packages in their development version, one optional step is
+recommended before we do this though: setting the ``GITHUB_PAT`` environment
+variable to a valid Personal Access Token for your GitHub account (if you have
+one). Such a token can be generated in the "Developer settings" section of
+the User settings view. With a PAT generated, make it available in the current
+session::
+
+  export GITHUB_PAT='<a-random-string-of-letters-and-digits'
+
+Like said above, this is optional, but might speed up the installation a bit.
+With this done, it should be enough to call the following management command
 to install all needed R dependencies into the new R library folder::
 
   manage.py catmaid_setup_nblast_environment

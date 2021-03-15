@@ -266,7 +266,7 @@ def setup_environment() -> None:
     common Drosophila template brains."""
     robjects.r("""
         install.packages("doMC")
-        install.packages(c("curl", "httr", "R.utils"))
+        install.packages(c("curl", "httr", "R.utils", "git2r"))
 
         if(!require("devtools")) install.packages("devtools")
         devtools::install_github(c("natverse/nat", "natverse/nat.nblast",

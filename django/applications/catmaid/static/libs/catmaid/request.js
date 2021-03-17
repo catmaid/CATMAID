@@ -267,6 +267,38 @@
     return q;
   };
 
+  RequestQueue.encodeSet = function( a, p ) {
+    var q = "";
+    let i = 0;
+    for ( var e of a )
+    {
+      var r = `${p}[${i}]`;
+
+      switch ( typeof e )
+      {
+      case "undefined":
+        break;
+      case "function":
+      case "object":
+        if ( e.constructor == Array && e.length > 0 )
+          q += RequestQueue.encodeArray( e, r ) + "&";
+        else if ( e.constructor == Set && e.size > 0 )
+          q += RequestQueue.encodeSet( e, r ) + "&";
+        else
+          q += RequestQueue.encodeObject( e, r ) + "&";
+        break;
+      default:
+        q += r + "=" + encodeURIComponent( e ) + "&";
+        break;
+      }
+
+      i++;
+    }
+    q = q.replace( /\&$/, "" );
+
+    return q;
+  };
+
   RequestQueue.encodeObject = function( o, p )
   {
     if (o instanceof FormData) {
@@ -292,6 +324,8 @@
         }
         if ( o[ k ].constructor == Array && o[ k ].length > 0 )
           q += RequestQueue.encodeArray( o[ k ], r ) + "&";
+        else if ( o[ k ].constructor == Set && o[ k ].size > 0 )
+          q += RequestQueue.encodeSet( o[ k ], r ) + "&";
         else
           q += RequestQueue.encodeObject( o[ k ], r ) + "&";
         break;

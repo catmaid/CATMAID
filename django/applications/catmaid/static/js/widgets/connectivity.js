@@ -98,10 +98,11 @@
 
   PartnerSet.prototype.getLinkCount = function(skid, partners) {
     partners = partners || this.getSynCountSortedPartners();
-    var thresholds = this.thresholds;
-    return partners.reduce(function(sum, partner) {
-      return sum + filter_synapses(partner.skids[skid], thresholds.confidence[skid]);
-    }, 0);
+    let sum = 0;
+    for (let i=0; i<partners.length; ++i) {
+      sum += filter_synapses(partners[i].skids[skid], this.thresholds.confidence[skid]);
+    }
+    return sum;
   };
 
   /**
@@ -707,18 +708,6 @@
       this.triggerChange(CATMAID.tools.idMap(model));
   };
 
-  /**
-   * Update the selection of displayed checkboxes, based on the internal
-   * selection state.
-   */
-  SkeletonConnectivity.prototype.redrawSelectionState = function() {
-    var self = this;
-    this.partnerSets.forEach(function(ps) {
-      var table = $("#" + ps.id + '_connectivity_table' + self.widgetID).DataTable();
-      table.cells(null, 'select:name').invalidate('data').draw(false);
-    }, this);
-  };
-
   SkeletonConnectivity.prototype.redraw = function() {
     // Re-create connectivity tables
     this.createConnectivityTable();
@@ -752,11 +741,11 @@
 
   SkeletonConnectivity.prototype.updateReviewSummaries = function () {
     var self = this;
-    var partnerSkids = this.partnerSets.reduce(function(skids, partnerSet) {
+    var partnerSkids = new Set(this.partnerSets.reduce(function(skids, partnerSet) {
       return skids.concat(Object.keys(partnerSet.partners));
-    }, []);
+    }, []));
 
-    if (!partnerSkids.length) return new Promise(function (resolve) { resolve(); });
+    if (!partnerSkids.size) return new Promise(function (resolve) { resolve(); });
 
     var self = this;
     var request = {skeleton_ids: partnerSkids, whitelist: this.reviewFilter === 'whitelist'};
@@ -766,23 +755,8 @@
         self.reviews = json;
 
         self.partnerSets.forEach(function(partnerSet) {
-          var table = $("#" + partnerSet.id + '_connectivity_table' + self.widgetID);
+          var table = $(`#${partnerSet.id}_connectivity_table${self.widgetID}`);
           var datatable = table.DataTable();
-
-          // Update table data
-          var data = datatable.rows().data();
-          for (var i=0; i<data.length; ++i) {
-            var row = data[i];
-            var skeletonId = row[0];
-
-            // Review column
-            var counts = self.reviews[skeletonId];
-            var p = counts ? parseInt(Math.floor(100 * counts[1] / counts[0])) || 0 : 0;
-            row[row.length - 2] = p;
-
-            // Node count column
-            row[row.length - 1] = (counts && counts.length > 0) ? counts[0] : '...';
-          }
 
           // Queue a review background color update
           self.updateReviewColors(datatable);
@@ -791,15 +765,19 @@
           datatable.cells(null, ['review:name', 'nodecount:name']).invalidate('data').draw(false);
         });
       });
-
   };
 
   SkeletonConnectivity.prototype.updateReviewColors = function(datatable) {
-    datatable.rows(function(idx, data, node) {
-      var td = node.childNodes[node.childNodes.length - 2];
-      var p = data[data.length - 2];
-      td.style.backgroundColor = CATMAID.ReviewSystem.getBackgroundColor(p);
-    });
+    if (this.reviews) {
+      datatable.rows((idx, data, node) => {
+        if (node) {
+          let td = node.childNodes[node.childNodes.length - 2];
+          let counts = this.reviews[data.partner.id];
+          var p = counts ? parseInt(Math.floor(100 * counts[1] / counts[0])) || 0 : 0;
+          td.style.backgroundColor = CATMAID.ReviewSystem.getBackgroundColor(p);
+        }
+      });
+    }
   };
 
   SkeletonConnectivity.prototype.redrawReviewSummaries = function() {
@@ -896,18 +874,28 @@
       var row = $('<tr />');
       row.append( $('<th />').text("select").attr('rowspan', headerRows));
       row.append( $('<th />').text(partnerSet.partnerTitle).attr('rowspan', headerRows));
-      row.append( $('<th />').text(partnerSet.connectorShort + " count").attr('rowspan', 1).attr('colspan',
-          extraCols ? skids.length + 1 : 1));
+      if (extraCols) {
+        // The + 1 is needed to represent the first Sum column
+        let nSynColumns = (skids.length + 1);
+        let nBatches = Math.ceil(nSynColumns/1000);
+        for (let i=0; i<nBatches; ++i) {
+          let colSpan = Math.min((i+1)*1000, nSynColumns - (i*1000));
+          row.append( $('<th />').text(`${partnerSet.connectorShort} count`).attr('colspan', colSpan));
+        }
+      } else {
+        row.append( $('<th />').text(partnerSet.connectorShort + " count"));
+      }
       row.append( $('<th />').text("reviewed").attr('rowspan', headerRows));
       row.append( $('<th />').text("node count").attr('rowspan', headerRows));
       thead.append( row );
       if (extraCols) {
         row = $('<tr />');
-        row.append( $('<th />').text("Sum").attr('rowspan', '1').attr('colspan', '1'));
+        row
+        .append( $('<th />').text("Sum"));
         skids.forEach(function(s, i) {
           let title = nameInHeader ? nns.getName(s) : ((i + 1) + '.');
           let headerContent = $('<span />').text(title);
-          let header = $('<th />').attr('rowspan', '1').attr('colspan', '1').append(headerContent);
+          let header = $('<th />').append(headerContent);
           if (rotateHeader) {
             header.addClass('vertical-table-header-outer');
             headerContent.addClass('vertical-table-header-inner');
@@ -963,40 +951,6 @@
         };
       })(tbody));
 
-      /**
-       * Support function to add a table cell that links to a connector selection,
-       * displaying a connector count.
-       */
-      function createSynapseCountCell(count, partner, skid) {
-        var td = document.createElement('td');
-        var title = skid ?
-            count + " synapse(s) for neuron '" +
-                CATMAID.NeuronNameService.getInstance().getName(skid) + "'." :
-            count + " synapses for all selected neurons.";
-        td.setAttribute('class', 'syncount');
-        // Only add the count as displayed text if it is greater zero. This
-        // reduces visual noise for larger tables.
-        if (count > 0) {
-          // Create a links that will open a connector selection when clicked. The
-          // handler to do this is created separate to only require one handler.
-          var a = document.createElement('a');
-          td.appendChild(a);
-          a.textContent = count;
-          a.setAttribute('href', '#');
-          a.setAttribute('partnerID', partner.id);
-          if (skid) a.setAttribute('data-skeleton-id', skid);
-        } else { // Make a hidden span including the zero for semantic clarity and table exports.
-          var s = document.createElement('span');
-          td.appendChild(s);
-          s.textContent = count;
-          s.style.display = 'none';
-        }
-        // Create tool-tip
-        td.setAttribute('title', title);
-        if (skid) td.setAttribute('skid', skid);
-        return td;
-      }
-
       // Create a table row for every partner and remember the ignored ones
       var activeNodeFilters = this.applyFilterRules && this.filterRules.length > 0;
       var nFilteredLinksTotal = 0;
@@ -1005,7 +959,7 @@
         return o;
       }, new Map());
       var nFilteredLinksPerSkeletonBuffer = new Map();
-      var filtered = partners.reduce((function(filtered, partner) {
+      var splitPartners = partners.reduce((function(o, partner) {
         // Reset per partner per skeleton link counter
         for (var i=0; i<skids.length; ++i) {
           nFilteredLinksPerSkeletonBuffer.set(skids[i], 0);
@@ -1047,8 +1001,8 @@
         ignore = ignore || partner.num_nodes < hidePartnerThreshold;
 
         if (ignore) {
-          filtered.push(partner);
-          return filtered;
+          o.filtered.push(partner);
+          return o;
         }
 
         // Update total counter and per skeleton counter only with non-ignored
@@ -1063,60 +1017,26 @@
           }
         }
 
-        var tr = document.createElement('tr');
-        tr.dataset.skeletonId = partner.id;
-        tbody.append(tr);
+        o.data.push({
+          partner: partner,
+          nFilteredLinks: nFilteredLinks,
+        });
 
-        // Cell with checkbox for adding to Selection Table
-        var td = document.createElement('td');
-        td.appendChild(document.createTextNode(partner.id));
-        tr.appendChild(td);
-
-        // Cell with partner neuron name
-        var td = document.createElement('td');
-        tr.appendChild(td);
-
-        // Cell with synapses with partner neuron
-        var finalLinkCount = partner.synaptic_count - nFilteredLinks;
-        tr.appendChild(createSynapseCountCell(finalLinkCount, partner));
-        // Extra columns for individual neurons
-        if (extraCols) {
-          skids.forEach(function(skid, i) {
-            var count = filter_synapses(partner.skids[skid], thresholds.confidence[skid]);
-            if (activeNodeFilters) {
-              // This count needs to be corrected, if there are filtered links
-              count = count - nFilteredLinksPerSkeletonBuffer.get(skid);
-            }
-            this.appendChild(createSynapseCountCell(count, partner, skid));
-          }, tr);
-        }
-
-        // Cell with percent reviewed of partner neuron
-        var td = document.createElement('td');
-        td.className = 'review-summary';
-        td.setAttribute('skid', partner.id);
-        td.textContent = '...';
-        tr.appendChild(td);
-
-        // Cell with number of nodes of partner neuron
-        var td = document.createElement('td');
-        td.className = 'node-count';
-        td.setAttribute('skid', partner.id);
-        td.textContent = '...';
-        tr.appendChild(td);
-
-        return filtered;
-      }).bind(this), []);
+        return o;
+      }).bind(this), {
+        filtered: [],
+        data: []
+      });
 
       // If some partners have been filtered (e.g. due to thresholding, hidden
       // one-node-neurons), add another table row to provide information about
       // this.
-      if (filtered.length > 0) {
+      if (splitPartners.filtered.length > 0) {
         // The filtered synapse count
-        var filtered_synaptic_count = getSum(filtered, 'synaptic_count');
+        var filtered_synaptic_count = getSum(splitPartners.filtered, 'synaptic_count');
         var finalFilteredSynapseCount = filtered_synaptic_count + nFilteredLinksTotal;
         // Build the row
-        var footerMessage = filtered.length + ' hidden partners';
+        var footerMessage = splitPartners.filtered.length + ' hidden partners';
         if (nFilteredLinksTotal > 0) {
           footerMessage += ' and ' + nFilteredLinksTotal + ' filtered links';
         }
@@ -1130,9 +1050,10 @@
         // Synapse count single neuron columns
         if (extraCols) {
           skids.forEach(function(skid, i) {
-            var count = filtered.reduce(function(sum, partner) {
-              return sum + filter_synapses(partner.skids[skid], thresholds.confidence[skid]);
-            }, 0);
+            let count = 0;
+            for (let j=0; j<splitPartners.filtered.length; ++j) {
+              count += filter_synapses(splitPartners.filtered[j].skids[skid], thresholds.confidence[skid]);
+            }
             if (activeNodeFilters) {
               // This count needs to be corrected, if there are filtered links
               count = count + nFilteredLinksPerSkeleton.get(skid);
@@ -1150,7 +1071,10 @@
         $(table).append($('<tfoot />').append($tr));
       }
 
-      return table;
+      return {
+        table: table,
+        data: splitPartners.data,
+      };
     };
 
     /**
@@ -1173,11 +1097,10 @@
         var table = $("#" + partnerSet.id + '_connectivity_table' + widget.widgetID);
         var datatable = table.DataTable();
         datatable.rows({search: 'applied'}).data().each(function(row) {
-          var skeletonId = row[0];
+          var skeletonId = row.partner.id;
           widget.skeletonSelection[skeletonId] = selfChecked;
         });
 
-        widget.redrawSelectionState();
         widget.triggerChange(widget.getSkeletonModels());
       });
     };
@@ -1273,86 +1196,60 @@
               .append(thresholdSummary.map(function(ts) {
                 return thresholdHeaders[ts.partnerSet.id][ts.type];
               }))));
-    // Add a row for each neuron looked at
-    this.ordered_skeleton_ids.forEach(function(skid, i) {
-      var id = this.widgetID + '-' + skid;
-
-      var thresholdSelectors = thresholdSummary.map(function (ts) {
-        return createThresholdSelector( ts.partnerSet.id, ts.type, skid,
-          ts.partnerSet.thresholds[ts.type][skid] || 1);
-      });
-
-      // Make a neuron selected by default
-      if (!(skid in this.skeletonSelection)) {
-        this.skeletonSelection[skid] = true;
-      }
-
-      // Create a selection checkbox
-      var selectionCb = $('<input />')
-          .attr('id', 'neuron-selector-' + id)
-          .attr('type', 'checkbox')
-          .change(function(widget, neuronId) {
-            return function() {
-              widget.selectSkeleton(skid, this.checked);
-            };
-          }(this, skid));
-      if (this.skeletonSelection[skid]) {
-          selectionCb.prop('checked', true);
-      }
-
-      // Create small icon to remove this neuron from list
-      var removeSkeleton = $('<span />')
-        .attr('class', 'ui-icon ui-icon-close skeleton-action')
-        .attr('title', 'Remove this neuron from list')
-        .attr('data-action', 'remove');
-
-      var moveSkeletonUp = $('<span />')
-        .attr('class', 'ui-icon ui-icon-triangle-1-n skeleton-action')
-        .attr('title', 'Move this neuron up in list')
-        .attr('data-action', 'move-up');
-
-      var moveSkeletonDown = $('<span />')
-        .attr('class', 'ui-icon ui-icon-triangle-1-s skeleton-action')
-        .attr('title', 'Move this neuron down in list')
-        .attr('data-action', 'move-down');
-
-      // Create and append row for current skeleton
-      var row = $('<tr />')
-          .attr('data-skeleton-id', skid)
-          .attr('data-pos', i)
-          .append($('<td />')
-            .append((i + 1) + '.')
-            .append(removeSkeleton)
-            .append(moveSkeletonDown)
-            .append(moveSkeletonUp))
-          .append($('<td />').attr('class', 'input-container')
-              .append(selectionCb))
-          .append($('<td />').append(
-              createNameElement(this.skeletons[skid].baseName, skid)))
-          .append(thresholdSelectors.map(function (selector, i) {
-            return $('<td />').append(selector)
-                .attr('class', 'input-container' + (i > 3 ? ' gj_column column_hidden' : ''));
-          }));
-      neuronTable.append(row);
-    }, this);
     content.append(neuronTable);
+
+    let nns = CATMAID.NeuronNameService.getInstance();
 
     // The neuron table columns consist of three base columns and two threshold
     // columns for each partner set.
-    var neuronTableColumns = [
-        {orderable: false, width: '6em'},
-        {orderable: false, width: '8em'},
-        null
-    ];
-    thresholdSummary.forEach(function(ts) {
-      this.push({orderable: false});
-    }, neuronTableColumns);
+    var neuronTableColumns = [{
+        orderable: false,
+        width: '6em',
+        render: (data, type, row, meta) => {
+           return `${meta.row + 1}. <span class='ui-icon ui-icon-close skeleton-action' title='Remove this neuron from list' data-action='remove'></span><span class='ui-icon ui-icon-triangle-1-n skeleton-action' title='Move this neuron up in list' data-action='move-up'></span><span class='ui-icon ui-icon-triangle-1-s skeleton-action' title='Move this neuron down in list' data-action='move-down'></span>`;
+        }
+      }, {
+        orderable: false,
+        class: 'input-container',
+        width: '3em',
+        render: (data, type, row, meta) => {
+          return `<input type='checkbox' id='neuron-selector-${this.widgetID}-${row}' data-skeleton-id="${row}" ${row in this.skeletonSelection ? '' : 'checked '}></input>`;
+        },
+      }, {
+        orderable: false,
+        render: (data, type, row, meta) => {
+          return `<a href='#' id='a-connectivity-table-${this.widgetID}-${row}' data-role="name" data-skeleton-id='${row}'>${nns.getName(row)}</a>`;
+        },
+      }];
+
+    // Cache for default case
+    let maxThresholdOptions = {
+      '6': new Array(5).fill().map((_, i) => `<option value='${i+1}'${i == 0 ? ' selected' : ''}>${i+1}</option>`).join(''),
+      '21': new Array(20).fill().map((_, i) => `<option value='${i+1}'${i == 0 ? ' selected' : ''}>${i+1}</option>`).join(''),
+    };
+
+    thresholdSummary.forEach((ts, i) => {
+      var max = ts.type === 'count' ? 21 : 6;
+      neuronTableColumns.push({
+        orderable: false,
+        width: '3em',
+        class: `input-container${i > 3 ? ' gj_column column_hidden' : ''}`,
+        render: (data, type, row, meta) => {
+          let selectedIndex = (ts.partnerSet.thresholds[ts.type][row] || 1) - 1;
+          let options = selectedIndex == 1 ? maxThresholdOptions[max] :
+              new Array(max).fill().map((_, j) => `<option value='${i+1}'${j == selectedIndex ? ' selected' : ''}>${j+1}</option>`).join('');
+          return `<select class='threshold' data-partner-set-id='${ts.partnerSet.id}' data-type='${ts.type} data-skeleton-id='${row}>${options}</select>`;
+        },
+      });
+    });
 
     // Make the target neuron table a data table so that sorting is done in a
     // consistent fashion.
     neuronTable.DataTable({
       dom: "t",
+      deferRender: true,
       autoWidth: false,
+      data: this.ordered_skeleton_ids,
       paging: false,
       serverSide: false,
       order: this.currentOrder,
@@ -1374,9 +1271,10 @@
 
     neuronTable.on('click', '.skeleton-action', this, function (e) {
       var widget = e.data;
-      var tr = $(this).closest('tr');
-      var skeletonId = parseInt(tr.data('skeleton-id'), 10);
-      var pos = parseInt(tr.data('pos'), 10);
+      let tr = $(this).closest('tr');
+      let row =$(this).closest('table').DataTable().row(tr);
+      var pos = row.index();
+      var skeletonId = widget.ordered_skeleton_ids[pos];
 
       var action = $(this).data('action');
       if ('remove' === action) {
@@ -1406,6 +1304,8 @@
       } else {
         throw new CATMAID.ValueError('Unknown skeleton action: ' + action);
       }
+    }).on('click', 'input[type=checkbox][data-skeleton-id]', e => {
+      widget.selectSkeleton(parseInt(e.target.dataset.skeletonId, 10), e.target.checked);
     });
 
     neuronTable.on('change', '.threshold', this, function (e) {
@@ -1428,7 +1328,7 @@
 
     // Check the select all box, if all skeletons are selected
     var notSelected = function(skid) {
-      return !this.skeletonSelection[skid];
+      return !this.skeletonSelection[skid] && skid in this.skeletonSelection;
     };
     selectAllCb.prop('checked', !this.ordered_skeleton_ids.some(notSelected, this));
 
@@ -1554,8 +1454,7 @@
       // Update page length of all tables and update review information
       $(".partner_table", "#connectivity_widget" + widget.widgetID)
         .dataTable().api().page.len(widget.pageLength).draw();
-      widget.redrawReviewSummaries();
-      widget.redrawSelectionState();
+      widget.updateReviewColors();
     });
 
     var paginationContainer = $('<label />')
@@ -1564,22 +1463,129 @@
       .append(paginationControl);
     tableSettings.append(paginationContainer);
 
-    let nns = CATMAID.NeuronNameService.getInstance();
+    let activeNodeFilters = this.applyFilterRules && this.filterRules.length > 0;
 
     var widget = this;
     var tableContainers = this.partnerSets.map(function(partnerSet) {
       var tableContainer = $('<div />');
-      var table = create_table.call(this, this.ordered_skeleton_ids,
+      var tableConfig = create_table.call(this, this.ordered_skeleton_ids,
         this.skeletons, partnerSet, this.hidePartnerThreshold,
         this.reviewFilter, this.showNeuronNameInHeader,
         this.rotateColumnHeaders, this.annotationMapping);
-      tableContainer.append(table);
+
+      tableContainer.append(tableConfig.table);
+
+      let partnerTableColumns = [{
+          // Checkbox column
+          // FIXME: tr.dataset.skeletonId = partner.id;
+          name: 'select',
+          width: '3em',
+          className: 'input-container',
+          render: function(data, type, row, meta) {
+            var skeletonId = row.partner.id;
+            if (type === "display") {
+              return `<input id="${partnerSet.relation}-show-skeleton-${widget.widgetID}-${skeletonId}" type="checkbox" value="${skeletonId}" data-skeleton-id="${skeletonId}" ${widget.skeletonSelection[skeletonId] ? 'checked ' : ''}/>`;
+            } else {
+              return !!widget.skeletonSelection[skeletonId];
+            }
+          }
+        }, {
+          // Neuron name column
+          name: 'name',
+          type: 'html',
+          searchable: true,
+          render: function(data, type, row, meta) {
+            var skeletonId = row.partner.id;
+            var name = nns.getName(skeletonId);
+            if (type === "display") {
+              return `<a href="#" id="a-connectivity-table-${widget.widgetID}-${skeletonId}" data-role="name" data-skeleton-id="${skeletonId}">${name}</a>`;
+            } else {
+              return name;
+            }
+          }
+        }, {
+          // Synapses with partner
+          class: 'syncount',
+          render: (data, type, row, meta) => {
+            var finalLinkCount = row.partner.synaptic_count - row.nFilteredLinks;
+            if (type === 'display') {
+              if (finalLinkCount > 0) {
+                return `<a href='#' title='${finalLinkCount} synapses for all selected neurons'>${finalLinkCount}</a>`;
+              } else {
+                return 0;
+              }
+            } else {
+              return finalLinkCount;
+            }
+          },
+        }];
+
+      let renderSynapseCell = (data, type, row, meta) => {
+        // The first three columns are non-partner columns
+        let skid = widget.ordered_skeleton_ids[meta.col - 3];
+        var count = filter_synapses(row.partner.skids[skid], partnerSet.thresholds.confidence[skid]);
+        if (activeNodeFilters) {
+          // This count needs to be corrected, if there are filtered links
+          count = count - nFilteredLinksPerSkeletonBuffer.get(skid);
+        }
+
+        if (count > 0) {
+          return `<a href='#' title='${count} synapses with neuron: ${nns.getName(skid)}'>${count}</a>`;
+        } else {
+          return 0;
+        }
+      };
+
+      // Add extra columns
+      if (this.ordered_skeleton_ids.length > 1) {
+        for (let i=0; i<this.ordered_skeleton_ids.length; ++i) {
+          let skid = this.ordered_skeleton_ids[i];
+          partnerTableColumns.push({
+            type: 'html-num-fmt',
+            class: 'syncount',
+            searchable: false,
+            render: renderSynapseCell,
+          });
+        }
+      }
+
+      // Add last columns
+      partnerTableColumns.push({
+          // Review column
+          name: 'review',
+          class: 'cm-center review-summary',
+          render: function(data, type, row, meta) {
+            if (widget.reviews) {
+              let counts = widget.reviews[row.partner.id];
+              var p = counts ? parseInt(Math.floor(100 * counts[1] / counts[0])) || 0 : 0;
+              return type === "display" ? `${p}%` : p;
+            } else {
+              return '...';
+            }
+          }
+        }, {
+          name: 'nodecount',
+          class: 'cm-center node-count',
+          type: 'html-num-fmt',
+          searchable: false,
+          render: function(data, type, row, meta) {
+            if (widget.reviews) {
+              let counts = widget.reviews[row.partner.id];
+              return counts && counts.length > 0 ? counts [0] : '...';
+            } else {
+              return '...';
+            }
+          }
+        });
 
       // Initialize datatable
+      let table = tableConfig.table;
       var dataTable = table.DataTable({
         sorting: [[2, 'desc']],
         destroy: true,
+        deferRender: true,
         dom: 'R<"connectivity_table_actions">rtip',
+        data: tableConfig.data,
         filter: true,
         paginate: true,
         displayLength: widget.pageLength,
@@ -1587,67 +1593,14 @@
         processing: true,
         serverSide: false,
         autoWidth: false,
-        columnDefs: [
-          {
-            name: 'select',
-            width: '5em',
-            // Checkbox column
-            targets: [0],
-            className: 'input-container',
-            render: function(data, type, row, meta) {
-              var skeletonId = data;
-              if (type === "display") {
-                var checkbox = '<input id="' + partnerSet.relation +
-                    '-show-skeleton-' + widget.widgetID + '-' + skeletonId +
-                    '" type="checkbox" value="' + skeletonId +
-                    '" data-skeleton-id="' + skeletonId + '"';
-                if (widget.skeletonSelection[skeletonId]) {
-                  checkbox = checkbox + ' checked';
-                }
-                checkbox = checkbox + ' />';
-                return checkbox;
-              } else {
-                return !!widget.skeletonSelection[skeletonId];
-              }
-            }
-          },
-          {
-            // Neuron name column
-            name: 'name',
-            targets: [1],
-            type: 'html',
-            searchable: true,
-            render: function(data, type, row, meta) {
-              var skeletonId = row[0];
-              var name = nns.getName(skeletonId);
-              if (type === "display") {
-                var nameLink = '<a href="#" id="a-connectivity-table-' +
-                    widget.widgetID + '-' + skeletonId + '" data-role="name" data-skeleton-id="' +
-                    skeletonId + '">' + name + '</a>';
-                return nameLink;
-              } else {
-                return name;
-              }
-            }
-          },
-          {
-            // Review column
-            name: 'review',
-            class: 'cm-center',
-            targets: [-2],
-            render: function(data, type, row, meta) {
-              return type === "display" ? (data + "%") : data;
-            }
-          },
-          {
-            name: 'nodecount',
-            class: 'cm-center',
-            type: 'html-num-fmt',
-            searchable: false,
-            targets: [-1],
-          },
-          { targets: ['_all'], type: 'html-num-fmt', searchable: false } // All other columns
-        ]
+        columns: partnerTableColumns,
+        createdRow: (row, data, dataIndex, cells) => {
+          let skeletonId = data.partner.id;
+          row.dataset.skeletonId = skeletonId;
+        },
+        initComplete: (settings, json) => {
+          this.updateReviewColors($(table).DataTable());
+        },
       });
 
       $(table).siblings('.connectivity_table_actions')
@@ -1712,20 +1665,13 @@
         )
       );
 
-      // Redraw review info if the page was changed
-      var pageChanged = false;
-      $(this).on('page.dt', function(e) {
-        pageChanged = true;
-      }).on('draw.dt', widget, function(e) {
-        if (pageChanged) {
-          pageChanged = false;
-          e.data.redrawReviewSummaries();
-          e.data.redrawSelectionState();
-        }
+      // Redraw review info after the table is rendered.
+      $(tableContainer).on('draw.dt', widget, function(e) {
+        e.data.updateReviewColors(dataTable);
       });
 
       // Add a handler for openening connector selections for individual partners
-      tableContainer.on('click', 'a[partnerID]', createPartnerClickHandler(
+      tableContainer.on('click', 'td.syncount a', createPartnerClickHandler(
             partnerSet.partners, partnerSet.relation));
 
       // Add 'select all' checkboxes
@@ -1776,8 +1722,8 @@
 
     function createPartnerClickHandler(partners, relation) {
       return function() {
-        var partnerID = $(this).attr('partnerID');
-        var skeletonId = this.dataset.skeletonId;
+        var partnerID = this.closest('tr').dataset.skeletonId;
+        var skeletonId = widget.ordered_skeleton_ids[this.closest('td').cellIndex - 3];
         var partner = partners[partnerID];
         if (!partner) {
           CATMAID.error("Could not find partner with ID " + partnerID +
@@ -1861,7 +1807,7 @@
           }
           return synCountHeader;
         }).join(','),
-        quote("reviewed"),
+        quote("review"),
         quote("node count")
       ].join(','),
       [
@@ -2242,19 +2188,20 @@
     }
   });
 
-  var add = function(a, b) {
-    return a + b;
-  };
-
   /**
    * Helper to get the number of synapses with confidence greater than or
-   * equal to a threshold.
+   * equal to a threshold. We can assume that a valid threshold is passed
+   * in and that synapses is a 5-element array.
    */
-  var filter_synapses = function (synapses, threshold) {
-    if (!synapses) return 0;
-    return synapses
-            .slice(threshold - 1)
-            .reduce(add, 0);
+  const filter_synapses = function (synapses, threshold) {
+    if (synapses) {
+      let sum = 0;
+      for (let i=threshold || 1; i<(synapses.length+1); ++i) {
+        sum += synapses[i-1];
+      }
+      return sum;
+    }
+    return 0;
   };
 
   /**

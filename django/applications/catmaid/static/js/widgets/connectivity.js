@@ -1213,7 +1213,7 @@
       neuronTableColumns.push({
         orderable: false,
         width: '3em',
-        class: `input-container${i > 3 ? ' gj_column column_hidden' : ''}`,
+        class: `input-container${i > 3 ? ' gj_column' : ''}`,
         render: (data, type, row, meta) => {
           let selectedIndex = (ts.partnerSet.thresholds[ts.type][row] || 1) - 1;
           let options = selectedIndex == 1 ? maxThresholdOptions[max] :

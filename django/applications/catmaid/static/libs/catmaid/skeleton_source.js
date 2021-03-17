@@ -287,6 +287,10 @@
     }, {}));
   };
 
+  SkeletonSource.prototype.getInputModels = function(onlySelected) {
+    return this.getSkeletonModels(onlySelected);
+  };
+
   /**
    * Get a list of source skeleton IDs.
    */

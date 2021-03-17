@@ -457,6 +457,18 @@
   /**
    * Get models for all skeletons in this source.
    */
+  SkeletonConnectivity.prototype.getInputModels = function(onlySelected = false) {
+    return this.ordered_skeleton_ids.reduce((o, skeletonId) => {
+      if (!onlySelected || self.skeletonSelection[skeletonId]) {
+        o[skeletonId] = this.getSkeletonModel(skeletonId);
+      }
+      return o;
+    }, {});
+  };
+
+  /**
+   * Get models for all skeletons in this source.
+   */
   SkeletonConnectivity.prototype.getSkeletonModels = function(onlySelected) {
     return this._getSkeletonModels(onlySelected, true);
   };

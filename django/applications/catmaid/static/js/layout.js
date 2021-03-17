@@ -818,11 +818,18 @@
 
       // Store skeletons, if any.
       let widgetSkeletons;
-      if (withSkeletons && CATMAID.tools.isFn(widgetInfo.widget.getSkeletonModels)) {
-        let models = widgetInfo.widget.getSkeletonModels();
-        let skeletons = Object.values(models).map(m => m.serialize());
-        if (skeletons.length > 0) {
-          widgetSkeletons = `"skeletons": [${skeletons.join(',')}]`;
+      if (withSkeletons) {
+        let models;
+        if (CATMAID.tools.isFn(widgetInfo.widget.getInputModels)) {
+          models = widgetInfo.widget.getInputModels();
+        } else if (CATMAID.tools.isFn(widgetInfo.widget.getSkeletonModels)) {
+          models = widgetInfo.widget.getSkeletonModels();
+        }
+        if (models) {
+          let skeletons = Object.values(models).map(m => m.serialize());
+          if (skeletons.length > 0) {
+            widgetSkeletons = `"skeletons": [${skeletons.join(',')}]`;
+          }
         }
       }
 

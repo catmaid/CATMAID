@@ -1184,7 +1184,7 @@
     // columns for each partner set.
     var neuronTableColumns = [{
         orderable: false,
-        width: '6em',
+        width: '7.5em',
         render: (data, type, row, meta) => {
            return `${meta.row + 1}. <span class='ui-icon ui-icon-close skeleton-action' title='Remove this neuron from list' data-action='remove'></span><span class='ui-icon ui-icon-triangle-1-n skeleton-action' title='Move this neuron up in list' data-action='move-up'></span><span class='ui-icon ui-icon-triangle-1-s skeleton-action' title='Move this neuron down in list' data-action='move-down'></span>`;
         }

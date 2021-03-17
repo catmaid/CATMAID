@@ -463,8 +463,6 @@
 
   SkeletonConnectivity.prototype._getSkeletonModels = function(onlySelected, filter) {
     var self = this;
-    var widgetID = this.widgetID;
-    var skeletons = this.skeletons;
 
     // Copy selected neurons from top list
     var models = this.ordered_skeleton_ids.reduce(function(o, skid) {
@@ -641,7 +639,6 @@
 
       // Register this widget with the name service for all neurons
       var newModels = {};
-      var selected = false;
       self.partnerSets.forEach(function(ps) {
         for (var skid in ps.partners) {
           if (skid in self.skeletons || skid in oldPartnerModels) { continue; }
@@ -821,21 +818,6 @@
   SkeletonConnectivity.prototype.createConnectivityTable = function() {
     // Simplify access to this widget's ID in sub functions
     var widgetID = this.widgetID;
-    // Simplify access to pre-bound skeleton source and instance registry methods
-    var getSkeletonModel = this.getSkeletonModel.bind(this);
-
-    /**
-     * Support function for creating a neuron/skeleton name link element in the
-     * neuron list and both pre- and postsynaptic tables.
-     */
-    var createNameElement = function(name, skeleton_id) {
-      var a = document.createElement('a');
-      a.appendChild(document.createTextNode(CATMAID.NeuronNameService.getInstance().getName(skeleton_id)));
-      a.setAttribute('href', '#');
-      a.setAttribute('id', 'a-connectivity-table-' + widgetID + '-' + skeleton_id);
-      a.setAttribute('data-skeleton-id', skeleton_id);
-      return a;
-    };
 
     /**
      * Support function for creating a partner table.
@@ -846,8 +828,6 @@
 
       var thresholds = partnerSet.thresholds;
       var partners = partnerSet.getSynCountSortedPartners();
-      var title = partnerSet.partnerTitle;
-      var relation = partnerSet.relation;
       var collapsed = partnerSet.collapsed;
       var collapsedCallback = (function() {
         this.collapsed = !this.collapsed;
@@ -1334,8 +1314,6 @@
 
     // If there is more than one neuron looked at, add a sum row
     if (this.ordered_skeleton_ids.length > 1) {
-      var id = this.widgetID + '-sum';
-
       var thresholdSelectors = thresholdSummary.map(function (ts) {
         if (ts.type === 'confidence') return; // No meaningful sum for confidence.
         return createThresholdSelector(ts.partnerSet.id, ts.type, 'sum',
@@ -1539,7 +1517,6 @@
       // Add extra columns
       if (this.ordered_skeleton_ids.length > 1) {
         for (let i=0; i<this.ordered_skeleton_ids.length; ++i) {
-          let skid = this.ordered_skeleton_ids[i];
           partnerTableColumns.push({
             type: 'html-num-fmt',
             class: 'syncount',
@@ -1619,7 +1596,7 @@
                 // Trim regex delimiters from search string.
                 search = search.slice(1, search[search.length - 1] === '/' ? search.length - 1 : undefined);
                 try {
-                  var re = new RegExp(search);
+                  new RegExp(search);
                   // Regex is valid
                   $(this).removeClass('ui-state-error');
                   table.DataTable().column(1).search(search, true, false).draw();
@@ -1788,8 +1765,6 @@
       return;
     }
 
-    var self = this;
-
     var table = $('#' + partnerSet.id + '_connectivity_table' + this.widgetID);
     var data = table.DataTable().rows({order: 'current', search: 'applied'}).data();
 
@@ -1852,13 +1827,12 @@
   };
 
   SkeletonConnectivity.prototype.openStackedBarChart = function() {
-    var SF = WindowMaker.create("synapse-fractions");
+    WindowMaker.create("synapse-fractions");
   };
 
   SkeletonConnectivity.prototype.listLinks = function() {
     let skeletonIds = this.getSelectedSkeletons().map(Number);
-    let connectorListHandles = CATMAID.ConnectorList.fromSkeletonIds(
-        skeletonIds, undefined, undefined, this.getName());
+    CATMAID.ConnectorList.fromSkeletonIds(skeletonIds, undefined, undefined, this.getName());
   };
 
   /**

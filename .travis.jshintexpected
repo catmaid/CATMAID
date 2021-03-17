@@ -80,19 +80,6 @@ django/applications/catmaid/static/js/widgets/clustering_widget.js: line 634, co
 django/applications/catmaid/static/js/widgets/clustering_widget.js: line 691, col 13, 'x' is defined but never used.
 django/applications/catmaid/static/js/widgets/clustering_widget.js: line 691, col 25, 'h' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/connectivity.js: line 465, col 9, 'widgetID' is defined but never used.
-django/applications/catmaid/static/js/widgets/connectivity.js: line 466, col 9, 'skeletons' is defined but never used.
-django/applications/catmaid/static/js/widgets/connectivity.js: line 643, col 11, 'selected' is defined but never used.
-django/applications/catmaid/static/js/widgets/connectivity.js: line 871, col 11, 'title' is defined but never used.
-django/applications/catmaid/static/js/widgets/connectivity.js: line 872, col 11, 'relation' is defined but never used.
-django/applications/catmaid/static/js/widgets/connectivity.js: line 1669, col 23, 're' is defined but never used.
-django/applications/catmaid/static/js/widgets/connectivity.js: line 1579, col 11, 'dataTable' is defined but never used.
-django/applications/catmaid/static/js/widgets/connectivity.js: line 847, col 9, 'getSkeletonModel' is defined but never used.
-django/applications/catmaid/static/js/widgets/connectivity.js: line 1437, col 11, 'id' is defined but never used.
-django/applications/catmaid/static/js/widgets/connectivity.js: line 1845, col 9, 'self' is defined but never used.
-django/applications/catmaid/static/js/widgets/connectivity.js: line 1909, col 9, 'SF' is defined but never used.
-django/applications/catmaid/static/js/widgets/connectivity.js: line 1914, col 9, 'connectorListHandles' is defined but never used.
-
 django/applications/catmaid/static/js/widgets/connector-list.js: line 120, col 13, 'relationMap' is defined but never used.
 django/applications/catmaid/static/js/widgets/connector-list.js: line 123, col 13, 'connectorList' is defined but never used.
 django/applications/catmaid/static/js/widgets/connector-list.js: line 502, col 13, 'seenLinkTypes' is defined but never used.
@@ -241,4 +228,4 @@ django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 1817, col
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 1850, col 1, 'async functions' is only available in ES8 (use 'esversion: 8').
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2009, col 29, The object literal notation {} is preferable.
 
-189 errors
+177 errors

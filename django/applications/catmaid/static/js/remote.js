@@ -353,10 +353,10 @@
                 resolve(result);
               })
               .catch(reject);
-            $(this).dialog("destroy");
+            $(this).dialog("close");
           },
           'Cancel': function() {
-            $(this).dialog("destroy");
+            $(this).dialog("close");
             reject(new CATMAID.CanceledByUser());
           }
         }
@@ -401,10 +401,10 @@
                 });
               })
               .catch(reject);
-            $(this).dialog("destroy");
+            $(this).dialog("close");
           },
           'Cancel': function() {
-            $(this).dialog("destroy");
+            $(this).dialog("close");
             reject(new CATMAID.CanceledByUser());
           }
         }

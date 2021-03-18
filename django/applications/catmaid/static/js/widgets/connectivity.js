@@ -12,6 +12,8 @@
     this.widgetID = this.registerInstance();
     CATMAID.SkeletonSource.call(this, true);
     this.init();
+    // A reference to the content DOM element of this widget.
+    this.content = null;
     // Default table layout to be side by side. Have it seperate from init() as
     // long as it is part of the top button row.
     this.tablesSideBySide = true;
@@ -362,7 +364,11 @@
 
       contentID: "connectivity_widget" + this.widgetID,
       class: 'connectivity_widget',
-      createContent: function() {},
+      createContent: function(content) {
+        // Store a reference to the content DOM element to not require it being
+        // added to the DOM for later lookup.
+        this.conentent = content;
+      },
       filter: {
         rules: this.filterRules,
         update: this.updateFilter.bind(this)
@@ -1123,7 +1129,7 @@
     this._clearGUI();
 
     // The content container
-    var content = $("#connectivity_widget" + widgetID);
+    var content = $(this.content);
 
     // A select all check box
     var selectAllCb = $('<input />').attr({

@@ -287,6 +287,12 @@
     }, {}));
   };
 
+  /**
+   * This method is meant to return only models that can be considered "input"
+   * to a widget/source. Most widgets don't make this distinction, but for
+   * instance the Connectivity Widget has a set of input neurons as query and a
+   * set of partner neurons as result.
+   */
   SkeletonSource.prototype.getInputModels = function(onlySelected) {
     return this.getSkeletonModels(onlySelected);
   };

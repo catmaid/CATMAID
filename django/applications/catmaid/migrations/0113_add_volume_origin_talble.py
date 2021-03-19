@@ -2,6 +2,7 @@ from django.conf import settings
 from django.db import migrations, models
 import django.db.models.deletion
 import django.utils.timezone
+import catmaid.fields
 
 
 forward = """
@@ -54,11 +55,11 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RunSQL(forward, backward, [
             migrations.CreateModel(
-                name='SkeletonOrigin',
+                name='VolumeOrigin',
                 fields=[
-                    ('edition_time', models.DateTimeField(default=django.utils.timezone.now)),
+                    ('edition_time', catmaid.fields.DbDefaultDateTimeField(default=django.contrib.postgres.functions.TransactionNow)),
                     ('volume', models.OneToOneField(on_delete=django.db.models.deletion.DO_NOTHING, primary_key=True, serialize=False, to='catmaid.ClassInstance')),
-                    ('creation_time', models.DateTimeField(default=django.utils.timezone.now)),
+                    ('creation_time', catmaid.fields.DbDefaultDateTimeField(default=django.contrib.postgres.functions.TransactionNow)),
                     ('source_id', models.IntegerField()),
                     ('source_type', models.TextField()),
                     ('data_source', models.ForeignKey(on_delete=django.db.models.deletion.DO_NOTHING, to='catmaid.DataSource')),

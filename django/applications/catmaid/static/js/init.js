@@ -2820,13 +2820,13 @@ var project;
           }
         });
 
-        var defaultLayerField = confirmationDialog.appendCheckbox("Show tracing data of this project", undefined, true,
+        var defaultLayerField = confirmationDialog.appendCheckbox("Show tracing data of source project (the current project)", undefined, true,
             "If enabled, the tracing data of the current project is shown by default");
 
         var volumeField = confirmationDialog.appendCheckbox("Copy volumes/meshes", undefined, true,
             "If enabled, all visible volumes/meshes will copied from this project to the new space");
 
-        confirmationDialog.appendHTML("<strong>By default the project is only visible to you.</strong> If you want to invite other users into this new projects, you can create a sharable <em>project token</em>. <strong>This is optional</strong> and also possible in the Project Management widget. The token is displayed once the space is created.");
+        confirmationDialog.appendHTML("<strong>By default the new project is only visible to you.</strong> If you want to invite other users into this new projects, you can create a sharable <em>project token</em>. <strong>This is optional</strong> and also possible in the Project Management widget. The token is displayed once the space is created.");
 
         let optionContainer0 = document.createElement('span');
         optionContainer0.style.display = 'grid';

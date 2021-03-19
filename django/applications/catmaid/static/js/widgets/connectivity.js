@@ -1099,6 +1099,8 @@
           widget.skeletonSelection[skeletonId] = selfChecked;
         });
 
+        datatable.cells(null, 'select:name').invalidate('data').draw(false);
+
         widget.triggerChange(widget.getSkeletonModels());
       });
     };

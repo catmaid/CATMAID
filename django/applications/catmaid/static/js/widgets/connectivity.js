@@ -367,7 +367,7 @@
       createContent: function(content) {
         // Store a reference to the content DOM element to not require it being
         // added to the DOM for later lookup.
-        this.conentent = content;
+        this.content = content;
       },
       filter: {
         rules: this.filterRules,

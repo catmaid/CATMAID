@@ -166,18 +166,15 @@ following settings to your ``postgresql.conf`` file::
   promote_trigger_file = '/var/lib/postgresql/12/main/primary.now'
   #restore_command = 'cp /opt/postgresql_wal/%f "%p"
 
-To let the cluster know that it runs in standby mode, create the file
-``standby.signal`` in the Postgres data directory
-(``/var/lib/postgresql/12/main/`` in this example). This file needs to be owned
-by the ``postgres`` user and the ``postgres`` group. Otherwise, the server will
-start as regular primary, which would likely render the database unusable for
-replication without further action. Therefore: make sure the ``standby.signal``
-file is present on the replica!
+To promote a standby/replica cluster to a primary, create the file
+``primary.now`` in the Postgres data directory (``/var/lib/postgresql/12/main/``
+in this example). This file needs to be owned by the ``postgres`` user and the
+``postgres`` group.
 
 This configuration makes Postgres start as a standby (read-only) server. It will
-automatically contact the primary server to stay up-to-date. If the file
-``/var/lib/postgresql/12/main/standby.signal`` doesn't exist anymore, the
-replica is promoted to a primary.
+automatically contact the primary server to stay up-to-date until it is promoted
+to a primary using a file like ``primary.now`` or using tools like
+``pg_promote``.
 
 .. note::
 
@@ -213,6 +210,20 @@ to actually restore the backup into a data directory. The
 also allow to bring a replica server "up to speed" (get to the current database
 version) after a longer downtime with the WAL being already removed in the
 primary.
+
+Testing the setup
+^^^^^^^^^^^^^^^^^
+
+In order to get an idea what the replication status of both primary and replica
+are, the following commands can be used as a starting point.
+
+On the Primary::
+
+  SELECT * FROM pg_stat_replication;
+
+And on the replica::
+
+  SELECT * FROM pg_stat_wal_receiver;
 
 Configure CATMAID
 ^^^^^^^^^^^^^^^^^

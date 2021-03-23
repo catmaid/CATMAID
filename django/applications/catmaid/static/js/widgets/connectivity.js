@@ -1786,7 +1786,22 @@
     }
 
     var table = $('#' + partnerSet.id + '_connectivity_table' + this.widgetID);
-    var data = table.DataTable().rows({order: 'current', search: 'applied'}).data();
+    let nColumns = table.DataTable().columns().header().length;
+    var data = table.DataTable().cells({order: 'current', search: 'applied'}, '')
+        .render('order').toArray().reduce((o, c, i) => {
+          if (i % nColumns === 0) {
+            // Don't store the selectio state
+             o.push([]);
+          } else {
+            o[o.length - 1].push(c);
+          }
+          return o;
+        }, []);
+
+    if (data.length === 0) {
+      CATMAID.warn('No partner data to export');
+      return;
+    }
 
     // Create table header manually
     var nns = CATMAID.NeuronNameService.getInstance();
@@ -1823,11 +1838,8 @@
     var text = headerLines.join('\n');
 
     // Export table body
-    var notFirstColumn = function(c, i) { return i > 0; };
-    text += '\n' + data.map(function (r) {
-      // Add neuron name, which isn't stored as part of the model
-      r[1] = CATMAID.NeuronNameService.getInstance().getName(r[0]);
-      return r.map(cellToText).filter(notFirstColumn).join(',');
+    text += '\n' + data.map(r => {
+      return r.map(cellToText).join(',');
     }).join('\n');
     saveAs(new Blob([text], {type: 'text/plain'}), 'connectivity.csv');
   };

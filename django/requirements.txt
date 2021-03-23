@@ -28,5 +28,5 @@ pytz==2019.3
 PyYAML==5.3
 requests==2.22.0
 scipy==1.5.4
-trimesh==3.5.13
+trimesh==3.9.10
 ujson==1.35

@@ -268,7 +268,7 @@ class CATMAIDConfig(AppConfig):
         # Init R interface, which is used by some parts of CATMAID
         if r_available:
             rpy2.rinterface_lib.embedded.set_initoptions(('rpy2', '--no-save',
-                    '--no-restore', '--no-init-file', '--no-environ'))
+                    '--no-restore', '--no-init-file', '--no-environ', '--max-ppsize=500000'))
             rinterface.initr()
 
     # A list of settings that are expected to be available.

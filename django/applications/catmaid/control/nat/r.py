@@ -988,7 +988,6 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
         # Target objects, only needed if no all-by-all computation is done
         if all_by_all:
             logger.debug('All-by-all computation: using query objects and dps for target')
-            target_objects = query_objects
             target_dps = query_dps
         else:
             if target_type == 'skeleton':

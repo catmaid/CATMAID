@@ -907,7 +907,8 @@
     let td_cable = document.createElement('td');
     let span_cable = document.createElement('span');
     span_cable.dataset.key = [...path, entity.id].join('-');
-    span_cable.appendChild(document.createTextNode(Math.round(entity.cable_length) || emptyMeta));
+    span_cable.appendChild(document.createTextNode(
+        entity.cable_length === undefined ? emptyMeta : Math.round(entity.cable_length)));
     td_cable.appendChild(span_cable);
     tr.appendChild(td_cable);
 

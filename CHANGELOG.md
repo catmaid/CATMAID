@@ -529,6 +529,10 @@ Miscellaneous:
 - Connector table: a search filter is now available for the table that allows
   filtering across all columns.
 
+- Global Search (looking glass icon): Neuron names are now properly displayed
+  using the general naming service. This makes the naming respect global naming
+  patterns.
+
 - Connectivity widget: larger input and partner sets can now be displayed.
 
 - Connector selection: a search filter is now available for the table that allows

@@ -2,10 +2,15 @@
 
   "use strict";
 
-  var SearchWidget = function() {};
+  var SearchWidget = function() {
+    this.widgetID = this.registerInstance();
+  };
+
+  SearchWidget.prototype = new InstanceRegistry();
+  SearchWidget.prototype.constructor = SearchWidget;
 
   SearchWidget.prototype.getName = function() {
-    return "Search";
+    return `Search ${this.widgetID}`;
   };
 
   SearchWidget.prototype.getWidgetConfiguration = function() {
@@ -37,6 +42,19 @@
         $('input#search-box', this.content).focus();
       }
     };
+  };
+
+  SearchWidget.prototype.destroy = function() {
+    CATMAID.NeuronNameService.unregister(this);
+    this.unregisterInstance();
+  };
+
+  /**
+   * This method is called from the neuron name service, if neuron names are
+   * changed.
+   */
+  SearchWidget.prototype.updateNeuronNames = function() {
+    $(`#search-widget-result-${this.widgetID}`).DataTable().rows().invalidate().draw();
   };
 
   SearchWidget.prototype.setSearchingMessage = function(message) {
@@ -100,25 +118,40 @@
     this.setSearchingMessage('Search in progress...');
 
     CATMAID.fetch(project.id + '/search', "GET", { substring: searchTerm })
-      .then(function(data) {
-        if (!data) {
+      .then(result => {
+        if (!result) {
           self.setSearchingMessage('Search failed, received no data.');
           return;
         }
 
         $('#search-results').empty();
-        $('#search-results').append($('<i/>').data('Found '+data.length+' results:'));
+        $('#search-results').append($('<i/>').data(`Found ${result.length} results:`));
         var table = $('<table/>');
+        table.attr('id', `search-widget-result-${this.widgetID}`);
         $('#search-results').append(table);
-        var tbody = $('<tbody/>');
 
-        let datatable = $(table).DataTable({
+        $(table).DataTable({
           dom: "lfrtip",
           autoWidth: false,
           paging: true,
           lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
           order: [],
-          data: data,
+          ajax: (data, callback, settings)  => {
+            // Find all skeletons and register them with the Neuron Name Service
+            let skeletons = result.filter(r => r.class_name === 'skeleton');
+            let skeletonIds = skeletons.map(r => r.id);
+
+            CATMAID.NeuronNameService.getInstance().registerAllFromList(this, skeletonIds)
+              .then(() => {
+                callback({
+                  draw: result.draw,
+                  recordsTotal: result.length,
+                  recordsFiltered: data.length,
+                  data: result,
+                });
+              })
+              .catch(CATMAID.handleError);
+          },
           language: {
             search: 'Filter',
           },
@@ -148,7 +181,11 @@
               orderable: true,
               width: '50%',
               render: function(data, type, row, meta) {
-                return row.name || '(none)';
+                if (row.class_name === 'skeleton') {
+                  return CATMAID.NeuronNameService.getInstance().getName(row.id);
+                } else {
+                  return row.name || '(none)';
+                }
               }
             },
             {

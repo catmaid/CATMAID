@@ -574,7 +574,7 @@
                        <input placeholder="Filter users" class="filterbox" type="text" />
                       </div>
                       <ul id="source-users">
-                      ${users.map(u => '<li><label><input type="checkbox" name="source-users" value="' + u.id + '" id="source-user-' + u.id + '" />' + u.login + '</label></li>').join('\n')}
+                      ${users.map(u => '<li><label><input type="checkbox" name="source-users" value="' + u.id + '" id="source-user-' + u.id + '" />' +  u.fullName + ' <span class="help">(' + u.login + ')</span></label></li>').join('\n')}
                       </ul>
                     </div>
                     <div id="source-tabs-groups">
@@ -606,7 +606,7 @@
                        <input placeholder="Filter users" class="filterbox" type="text" />
                       </div>
                       <ul id="target-users">
-                      ${users.map(u => '<li><label><input type="checkbox" name="target-users" value="' + u.id + '" id="target-user-' + u.id + '" />' + u.login + '</label></li>').join('\n')}
+                      ${users.map(u => '<li><label><input type="checkbox" name="target-users" value="' + u.id + '" id="target-user-' + u.id + '" />' + u.fullName + ' <span class="help">(' + u.login + ')</span></label></li>').join('\n')}
                       </ul>
                     </div>
                     <div id="target-tabs-groups">

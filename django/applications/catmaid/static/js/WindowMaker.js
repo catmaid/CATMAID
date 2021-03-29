@@ -570,6 +570,8 @@ var WindowMaker = new function()
               }
             }
           },
+          ['Orthographic mode', o.camera_view === 'orthographic', function() { WA.updateCameraView(this.checked); }, false],
+          ['Lock view', o.lock_view, function() { WA.options.lock_view = this.checked;  }, false],
         ]);
 
     // Wait for the 3D viewer to have initialized to get existing views

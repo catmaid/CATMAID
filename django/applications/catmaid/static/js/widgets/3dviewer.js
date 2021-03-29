@@ -1277,6 +1277,8 @@
     this.pointcloud_text = false;
     this.pointcloud_scale = 500;
     this.pointcloud_sample = 1.0;
+    this.zoom_delta = 0.25;
+    this.camera_pos_delta = 3500;
     this.text_scaling = 1.0;
     this.show_missing_sections = false;
     this.missing_section_height = 20;
@@ -5738,10 +5740,9 @@
       var camera = this.CATMAID_view.camera;
       if ((ev.ctrlKey || ev.altKey) && !camera.inOrthographicMode) {
         // Move the camera and the target in target direction
-        var absUpdateDistance = 3500;
         var movingForward = ev.wheelDelta > 0;
         var dirFactor = movingForward ? -1 : 1;
-        var distance = absUpdateDistance * dirFactor;
+        var distance = this.CATMAID_view.space.options.camera_pos_delta * dirFactor;
         var controls = this.CATMAID_view.controls;
 
         let change = this.CATMAID_view.moveToAim(distance, controls);
@@ -5755,9 +5756,9 @@
         // orthographic projection, the depth is fixed.
         var new_zoom = camera.zoom;
         if ((ev.deltaX + ev.deltaY) < 0) {
-          new_zoom += 0.25;
+          new_zoom += this.CATMAID_view.space.options.zoom_delta;
         } else {
-          new_zoom -= 0.25;
+          new_zoom -= this.CATMAID_view.space.options.zoom_delta;
         }
         new_zoom = Math.max(new_zoom, 1.0);
         camera.setZoom( new_zoom );

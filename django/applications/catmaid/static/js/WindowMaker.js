@@ -540,8 +540,36 @@ var WindowMaker = new function()
           [vrGroup],
           [connectorRestrictions],
           ['Refresh active skeleton', function() { WA.updateActiveSkeleton(); }],
-          ['Orthographic mode', o.camera_view === 'orthographic', function() { WA.updateCameraView(this.checked); }, false],
-          ['Lock view', o.lock_view, function() { WA.options.lock_view = this.checked;  }, false],
+          {
+            type: 'numeric',
+            min: 0,
+            step: 0.01,
+            value: WA.options.zoom_delta,
+            length: 6,
+            label: 'Zoom delta',
+            title: 'The change in camera zoom with one mouse wheel change. Larger values result in coarser steps.',
+            onchange: e => {
+              let val = Number(e.target.value);
+              if (val && !Number.isNaN(val)) {
+                WA.options.zoom_delta = val;
+              }
+            }
+          },
+          {
+            type: 'numeric',
+            min: 0,
+            step: 100,
+            value: WA.options.camera_pos_delta,
+            length: 6,
+            label: 'Cam pos delta',
+            title: 'The change in distance the camera is moved with each Ctrl + mouse wheel change. Larger values result in coarser steps.',
+            onchange: e => {
+              let val = Number(e.target.value);
+              if (val && !Number.isNaN(val)) {
+                WA.options.camera_pos_delta = val;
+              }
+            }
+          },
         ]);
 
     // Wait for the 3D viewer to have initialized to get existing views

@@ -1087,6 +1087,10 @@ class NblastSkeletonSourceType(models.Model):
         db_table = "nblast_skeleton_source_type"
 
 
+def get_default_some_tags():
+    return ['soma']
+
+
 class NblastSimilarity(NonCascadingUserFocusedModel):
     """A model to represent computed similarity matrices for a particular
     configuration using a set of query and target objects (skeleton IDs or point
@@ -1096,7 +1100,10 @@ class NblastSimilarity(NonCascadingUserFocusedModel):
     name = models.TextField()
     status = models.TextField()
     config = models.ForeignKey(NblastConfig, on_delete=models.DO_NOTHING)
-    scoring = ArrayField(ArrayField(models.FloatField()))
+    # The computed NBLAST scores. Stored as a Large Object in Postgres, a byte
+    # array representing a numpy ndarray. This is done to be able to represent
+    # results larger than 2GB.
+    scoring = models.IntegerField(null=True)
     query_type = models.ForeignKey(NblastSkeletonSourceType,
         related_name='query_type_set', on_delete=models.DO_NOTHING)
     target_type = models.ForeignKey(NblastSkeletonSourceType,
@@ -1122,6 +1129,13 @@ class NblastSimilarity(NonCascadingUserFocusedModel):
     # To not neccessarily store large scoring matrixes with a lot of low score
     # results, only store the the top N results for each query. Disabled using 0.
     top_n = models.IntegerField(default=0, blank=True, null=True)
+    # The minimum number of nodes a query or target skeleton has to have in
+    # order to be considered.
+    min_length = models.FloatField(default=15000)
+    # The number of minimum nodes if a soma is found
+    min_soma_length = models.FloatField(default=1000)
+    # Tags that mark a node as a soma node.
+    soma_tags = ArrayField(models.TextField(), default=get_default_some_tags)
 
     class Meta:
         db_table = "nblast_similarity"

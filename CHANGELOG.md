@@ -34,6 +34,9 @@
 
 ### Features and enhancements
 
+NBLAST:
+
+- Result scoring matrix of more than 16384*16384 elements can now be stored.
 
 Neuron similarity widget:
 

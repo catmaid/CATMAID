@@ -1277,7 +1277,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
             # as rows, because it matches our expected queries more. Therefore
             # we have to transpose it using the 't()' R function. This isn't
             # needed for reverse queries.
-            similarity = target_scores.to_numpy().tolist() # type: ignore # mypy cannot prove this won't still be None
+            similarity = target_scores.to_numpy() # type: ignore # mypy cannot prove this won't still be None
 
             column_names = list(target_scores.columns.values) # type: ignore # same as above
             row_names = list(target_scores.index.values) # type: ignore # same as above
@@ -1324,10 +1324,10 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                 row_first_scores = scores
                 row_names, column_names = scores.rownames, scores.colnames
 
-            similarity = numpy.asarray(row_first_scores).tolist()
+            similarity = numpy.asarray(row_first_scores, dtype=numpy.float32)
 
         # We expect a result at this point
-        if not similarity:
+        if similarity is None:
             raise ValueError("Could not compute similarity")
 
         # Collect IDs of query and target objects effectively in use.

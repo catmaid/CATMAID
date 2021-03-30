@@ -24,6 +24,7 @@
     // window).
     this.resultMode = 'window';
     this.displayTransformationCache = {};
+    this.storage = 'blob';
 
     // A currently displayed import job in the point cloud tab.
     this.importJob = null;
@@ -843,6 +844,18 @@
             widget.useCache = this.checked;
           },
         }, {
+          type: 'select',
+          label: 'Storage',
+          title: 'How the NBLAST result should be stored. A relational storage has advantages for clustering analysis.',
+          value: widget.storage,
+          entries: [
+            {title: 'BLOB', value: 'blob'},
+            {title: 'Relation', value: 'relation'},
+          ],
+          onchange: function() {
+            widget.storage = this.value;
+          },
+        }, {
           type: 'child',
           element: configSelectWrapper,
         }, {
@@ -1055,7 +1068,7 @@
                       queryIds, targetIds, effectiveQueryType, effectiveTargetType,
                       newQueryName, normalizedScores, reverse, useAlpha,
                       queryMeta, targetMeta, removeTargetDuplicates, simplify,
-                      widget.requiredBranches, widget.useCache, topN);
+                      widget.requiredBranches, widget.useCache, topN, widget.storage);
                 })
                 .then(function(response) {
                   widget.lastSimilarityQuery = response;
@@ -1289,7 +1302,7 @@
           }
           let simplify = $('#' + widget.idPrefix + 'simplify-skeletons').prop('checked');
           CATMAID.Similarity.recomputeSimilarity(project.id, data.id, simplify,
-              widget.requiredBranches, widget.useCache)
+              widget.requiredBranches, widget.useCache, widget.storage)
             .then(function() {
               CATMAID.msg('Success', 'NBLAST similarity recomputation queued');
               widget.refresh();

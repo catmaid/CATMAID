@@ -3,8 +3,10 @@
 from itertools import chain
 import json
 import logging
+import numpy as np
 from timeit import default_timer as timer
 from typing import Any, Dict, List
+import sys
 
 from celery import shared_task
 from celery.utils.log import get_task_logger
@@ -77,6 +79,17 @@ def serialize_config(config, simple=False) -> Dict[str, Any]:
         }
 
 
+def serialize_scoring(similarity:int):
+    cursor = connection.cursor()
+    pconn = cursor.cursor.connection
+    lobj = pconn.lobject(oid=similarity.scoring, mode='rb')
+
+    raw_data = np.frombuffer(lobj.read(), dtype=np.float32)
+    data = raw_data.reshape((len(similarity.query_objects), len(similarity.target_objects)))
+
+    return data.tolist()
+
+
 def serialize_similarity(similarity, with_scoring=False, with_objects=False) -> Dict[str, Any]:
     serialized_similarity = {
         'id': similarity.id,
@@ -87,7 +100,7 @@ def serialize_similarity(similarity, with_scoring=False, with_objects=False) -> 
         'config_id': similarity.config_id,
         'name': similarity.name,
         'status': similarity.status,
-        'scoring': similarity.scoring if with_scoring else [],
+        'scoring': serialize_scoring(similarity) if with_scoring else [],
         'query_type': similarity.query_type_id,
         'target_type': similarity.target_type_id,
         'use_alpha': similarity.use_alpha,
@@ -732,7 +745,30 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
                     ', '.join(str(i) for i in scoring_info['errors'])))
         else:
             similarity.status = 'complete'
-            similarity.scoring = scoring_info['similarity']
+
+            # Write the result as a Postgres large object, unless specifically
+            # asked to store relational results.
+            if relational_results:
+                pass
+            else:
+                # The large object handling needs to be explicitly in a
+                # transaction.
+                with transaction.atomic():
+                    cursor = connection.cursor()
+                    pconn = cursor.cursor.connection
+                    # Create a new large object (oid=0 in read-write mode)
+                    lobj = pconn.lobject(oid=0, mode='wb')
+
+                    # Store similarity matrix as raw data bytes in C order row
+                    # by row, little endian.
+                    arr = scoring_info['similarity']
+                    if sys.byteorder == 'big':
+                        print('swap')
+                        arr = arr.byteswap()
+                    bytes_written = lobj.write(arr.tobytes())
+
+                similarity.scoring = lobj.oid
+
             similarity.detailed_status = ("Computed scoring for {} query " +
                     "skeletons vs {} target skeletons.").format(
                             len(similarity.query_objects) if similarity.query_objects is not None else '?',
@@ -1187,3 +1223,109 @@ def recompute_similarity(request:HttpRequest, project_id, similarity_id) -> Json
         'status': 'queued',
         'task_id': task.task_id
     })
+
+
+class SimilarityStorageDetail(APIView):
+
+    @method_decorator(requires_user_role(UserRole.Browse))
+    def get(self, request:HttpRequest, project_id, similarity_id) -> JsonResponse:
+        """Get the current storage mode of a similarity query.
+        ---
+        parameters:
+          - name: project_id
+            description: Project of the similarity computation
+            type: integer
+            paramType: path
+            required: true
+          - name: similarity_id
+            description: The similarity to use.
+            type: integer
+            paramType: path
+            required: true
+        """
+        similarity = NblastSimilarity.objects.get(pk=similarity_id)
+
+        return JsonResponse({
+            'storage_type': 'blob' if similarity.scoring else 'relation',
+        })
+
+
+    @method_decorator(requires_user_role(UserRole.Annotate))
+    def post(self, request:HttpRequest, project_id, similarity_id) -> JsonResponse:
+        """Set the current storage mode of a similarity query.
+        ---
+        parameters:
+          - name: project_id
+            description: Project of the similarity computation
+            type: integer
+            paramType: path
+            required: true
+          - name: similarity_id
+            description: The similarity to use.
+            type: integer
+            paramType: path
+            required: true
+          - name: storage_mode
+            description: The storage mode to use: "blob" or "relation"
+            type: string
+            paramType: form
+            required: true
+          - name: keep_old_storage
+            description: If true, the new storage data will be generated, but the similarity object will keep the old reference.
+            type: bool
+            paramType: form
+            required: false
+            defaultValue: false
+        """
+        similarity = NblastSimilarity.objects.get(pk=similarity_id)
+        keep_old_storage = get_request_bool(request.data, 'keep_old_storage', False)
+
+        storage_mode = request.data.get('storage_mode')
+        if not storage_mode:
+            raise ValueError('Need storage mode')
+        if storage_mode not in ('blob', 'relation'):
+            raise ValueError('Storage mode needs to be "blob" or "relation"')
+
+        current_storage_mode = 'blob' if similarity.scoring else 'relation'
+        if storage_mode == current_storage_mode:
+            raise ValueError('Current storage mode doesn\'t differ from new mode')
+
+        updated = False
+        if current_storage_mode == 'blob':
+            if storage_mode == 'relation':
+                cursor = connection.cursor()
+                cursor.execute("""
+                    SELECT nblast_lo_score_to_rows(%(similarity_id)s)
+                """, {
+                    'similarity_id': similarity_id,
+                })
+                updated = True
+                if not keep_old_storage:
+                    similarity.scoring = None
+                    similarity.save()
+        else:
+            raise ValueError('Currently only blob to relation transformations are supported')
+
+        return JsonResponse({
+            'new_storage_mode': storage_mode,
+            'updated': updated,
+        })
+
+
+def get_lobject_similarity_score(similarity_id, query_object_id, target_object_id):
+    """Get a NBLAST score value for a similarity result of a query and a target
+    object. This function expects the similarity object to store the scores as
+    "largeobject" in Postgres.
+    """
+    similarity = NblastSimilarity.objects.get(pk=similarity_id)
+    if not similarity_id.scoring:
+        raise ValueError('Expected blob storage mode for similarity')
+
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT nblast_score(%(similarity_id)s, %(query_object_id)s, %(target_object_id)s)
+    """)
+    scores = cursor.fetchall()
+    if len(scores) > 1:
+        raise ValueError(f'Found {len(scores)} matching scores, expected one')
+    return scores[0][0]

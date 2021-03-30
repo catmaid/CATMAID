@@ -150,13 +150,15 @@
    *                              keep when simplifying neurons.
    * @param useCache {Boolean}    (optional) If the back-end is allowed to use
    *                              cached data for computing the similarity.
+   * @param storage {String}      (optional) Defines how to store similarity
+   *                              scores. Either 'blob' or 'relation'.
    *
    * @returns {Promise} Resolves once the similarity query is queued.
    */
   Similarity.computeSimilarity = function(projectId, configId, queryIds,
       targetIds, queryType, targetType, name, normalized, reverse, useAlpha,
       queryMeta, targetMeta, removeTargetDuplicates, simplify, requiredBranches,
-      useCache, topN = 0) {
+      useCache, topN = 0, storage = 'blob') {
     return CATMAID.fetch(projectId + '/similarity/queries/similarity', 'POST', {
       'query_ids': queryIds,
       'target_ids': targetIds,
@@ -174,17 +176,20 @@
       'required_branches': requiredBranches,
       'use_cache': useCache,
       'top_n': topN,
+      'storage_mode': storage,
     });
   };
 
   /**
    * Queue recomputation of a similarity configuration.
    */
-  Similarity.recomputeSimilarity = function(projectId, similarityId, simplify, requiredBranches, useCache) {
+  Similarity.recomputeSimilarity = function(projectId, similarityId, simplify,
+      requiredBranches, useCache, storage = 'blob') {
     return CATMAID.fetch(projectId + '/similarity/queries/' + similarityId + '/recompute', 'GET', {
       'simplify': simplify,
       'required_branches': requiredBranches,
       'use_cache': useCache,
+      'storage_mode': storage,
     });
   };
 

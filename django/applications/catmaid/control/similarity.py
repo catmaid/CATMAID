@@ -638,8 +638,8 @@ def compute_nblast_config(config_id, user_id, use_cache=True) -> str:
         return "Recomputing NBLAST Configuration failed"
 
 
-def get_all_object_ids(project_id, user_id, object_type, min_nodes=500,
-        min_soma_nodes=20, soma_tags=('soma'), limit=None, max_nodes=None) -> List:
+def get_all_object_ids(project_id, user_id, object_type, min_length=15000,
+        min_soma_length=1000, soma_tags=('soma'), limit=None, max_length=None) -> List:
     """Return all IDs of objects that fit the query parameters.
     """
     cursor = connection.cursor()
@@ -651,17 +651,17 @@ def get_all_object_ids(project_id, user_id, object_type, min_nodes=500,
             'limit': limit,
         }
 
-        if min_nodes:
+        if min_length:
             extra_where.append("""
-                css.num_nodes >= %(min_nodes)s
+                css.cable_length >= %(min_length)s
             """)
-            params['min_nodes'] = min_nodes
+            params['min_length'] = min_length
 
-        if max_nodes:
+        if max_length:
             extra_where.append("""
-                css.num_nodes <= %(max_nodes)s
+                css.cable_length <= %(max_length)s
             """)
-            params['max_nodes'] = max_nodes
+            params['max_length'] = max_length
 
         cursor.execute("""
             SELECT skeleton_id
@@ -684,14 +684,11 @@ def get_all_object_ids(project_id, user_id, object_type, min_nodes=500,
 
 @shared_task()
 def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
-        simplify=True, required_branches=10, use_cache=True, use_http=False) -> str:
+        simplify=True, required_branches=10, use_cache=True, use_http=False,
+        min_length=15000, min_soma_length=1000, soma_tags=('soma',),
+        relational_results=False) -> str:
     start_time = timer()
     try:
-        # TODO This should be configurable.
-        min_nodes = 500
-        min_soma_nodes = 20
-        soma_tags = ('soma',)
-
         # Store status update and make this change immediately available.
         with transaction.atomic():
             similarity = NblastSimilarity.objects.select_related('config').get(
@@ -706,11 +703,11 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
         updated = False
         if not query_object_ids:
             query_object_ids = get_all_object_ids(project_id, user_id,
-                    similarity.query_type_id, min_nodes, min_soma_nodes,
+                    similarity.query_type_id, min_length, min_soma_length,
                     soma_tags)
         if not target_object_ids:
             target_object_ids = get_all_object_ids(project_id, user_id,
-                    similarity.target_type_id, min_nodes, min_soma_nodes,
+                    similarity.target_type_id, min_length, min_soma_length,
                     soma_tags)
 
         similarity.target_objects = target_object_ids
@@ -990,6 +987,9 @@ def compare_skeletons(request:HttpRequest, project_id) -> JsonResponse:
     reverse = get_request_bool(request.POST, 'reverse', True)
     use_alpha = get_request_bool(request.POST, 'use_alpha', False)
     top_n = int(request.POST.get('top_n', 0))
+    min_length = int(request.POST.get('min_length', 15000))
+    min_soma_length = int(request.POST.get('min_soma_length', 1000))
+    soma_tags = get_request_list(request.POST, 'soma_tags', default=['soma'])
     remove_target_duplicates = get_request_bool(request.POST,
             'remove_target_duplicates', True)
 
@@ -1036,7 +1036,8 @@ def compare_skeletons(request:HttpRequest, project_id) -> JsonResponse:
 
     task = compute_nblast.delay(project_id, request.user.id, similarity.id,
             remove_target_duplicates, simplify, required_branches,
-            use_cache=use_cache)
+            use_cache=use_cache, min_length=min_length,
+            min_soma_length=min_soma_length, soma_tags=soma_tags)
 
     return JsonResponse({
         'task_id': task.task_id,

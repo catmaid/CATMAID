@@ -614,10 +614,13 @@ def compute_nblast_config(config_id, user_id, use_cache=True) -> str:
             config.match_sample.save()
             config.random_sample.save()
 
-        msg_user(user_id, 'similarity-config-update', {
-            'config_id': config.id,
-            'config_status': config.status,
-        })
+        try:
+            msg_user(user_id, 'similarity-config-update', {
+                'config_id': config.id,
+                'config_status': config.status,
+            })
+        except Exception as e:
+            logger.error(f'Could not message user on successful NBLAST config recomputation: {e}')
 
         return f"Recomputed NBLAST configuration {config.id}"
     except:
@@ -788,10 +791,13 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
             similarity.computation_time = duration
             similarity.save()
 
-        msg_user(user_id, 'similarity-update', {
-            'similarity_id': similarity.id,
-            'similarity_status': similarity.status,
-        })
+        try:
+            msg_user(user_id, 'similarity-update', {
+                'similarity_id': similarity.id,
+                'similarity_status': similarity.status,
+            })
+        except Exception as e:
+            logger.error(f'Could not message user on successful NBLAST run: {e}')
 
         return f"Computed new NBLAST similarity for config {config.id}"
     except Exception as ex:

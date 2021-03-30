@@ -76,6 +76,11 @@ Optional Query Parameters
     common CSS color representations like "red" or "rgb(0.2,1,0.5)". These
     skeletons are added to the newly created widgets, if possible.
 
+``token`` (string)
+    An optional project token to give access to a particular project. If this is
+    used, the link becomes essentially an invitation link. With admin
+    permissions, this tokens can be generated in the Project Management widget.
+
 Legacy Query Parameters
 -----------------------
 

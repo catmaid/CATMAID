@@ -175,6 +175,7 @@ class ProjectTokenApplicator(APIView):
 
         return Response({
             'project_id': token.project_id,
+            'project_name': token.project.title,
             'permissions': token.default_permissions,
             'needs_approval': token.needs_approval,
         })

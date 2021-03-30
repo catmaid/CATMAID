@@ -5,7 +5,7 @@
     /**
      * Creates a simple login dialog.
      */
-    var LoginDialog = function(text, callback, force) {
+    var LoginDialog = function(text, callback, force, title, showLocalLoginText = true) {
       // If there is already a login dialog, don't create a new one, return
       // existing one.
       if (singleton && !force) {
@@ -15,32 +15,52 @@
       // Update singleton
       singleton = this;
 
-      this.dialog = new CATMAID.OptionsDialog("Permission required");
+      let buttons = {
+        'Cancel': e => {
+          singleton = null;
+        }
+      };
+
+      if (CATMAID.Client.Settings.session.show_external_login_controls) {
+        Object.keys(CATMAID.extraAuthConfig).sort().forEach(cId => {
+          let c = CATMAID.extraAuthConfig[cId];
+          let url = c.login_url;
+          buttons[`Login with ${c.name}`] = e => {
+            singleton = null;
+            window.location.href = url;
+          };
+        });
+      }
+
+      if (CATMAID.Client.Settings.session.show_regular_login_controls) {
+        buttons['Login'] = function() {
+          CATMAID.client.login($(user_field).val(), $(pass_field).val())
+            .then(callback)
+            .catch(CATMAID.handleError);
+          singleton = null;
+        };
+      }
+
+      this.dialog = new CATMAID.OptionsDialog(title || "Permission required", buttons);
+
       if (text) {
         this.dialog.appendMessage(text);
       }
       // Add short login text
-      var login_text = "Please enter the credentials for a user with the " +
-          "necessary credentials to continue";
-      this.dialog.appendMessage(login_text);
-      // Add input fields
-      var user_field = this.dialog.appendField('Username', 'username', '', true);
-      var pass_field = this.dialog.appendField('Password', 'password', '', true);
-      pass_field.setAttribute('type', 'password');
-      // Align input fields better
-      $(this.dialog.dialog).find('label').css('width', '25%');
-      $(this.dialog.dialog).find('label').css('display', 'inline-block');
+      if (showLocalLoginText) {
+        var login_text = "Please sign in as user with the required permissions.";
+        this.dialog.appendMessage(login_text);
+      }
 
-      // If OK is pressed, the dialog should cause a (re-)login
-      this.dialog.onOK = function() {
-        CATMAID.client.login($(user_field).val(), $(pass_field).val())
-          .then(callback)
-          .catch(CATMAID.handleError);
-        singleton = null;
-      };
-      this.dialog.onCancel = function() {
-        singleton = null;
-      };
+      if (CATMAID.Client.Settings.session.show_regular_login_controls) {
+        // Add input fields
+        var user_field = this.dialog.appendField('Username', 'username', '', true);
+        var pass_field = this.dialog.appendField('Password', 'password', '', true);
+        pass_field.setAttribute('type', 'password');
+        // Align input fields better
+        $(this.dialog.dialog).find('label').css('width', '25%');
+        $(this.dialog.dialog).find('label').css('display', 'inline-block');
+      }
     };
 
     LoginDialog.prototype = {};

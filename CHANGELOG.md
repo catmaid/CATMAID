@@ -89,7 +89,10 @@ Project management widget:
   permissions (who is allowed to edit who's data).
 
 - The "Project token" tab allows project admins to view existing project tokens
-  ("invitation codes") available for a project.
+  ("invitation codes") available for a project. For each generated token, the
+  table allows to copy both the token itself as well as an invitation link using
+  this token to the clipboard. If a user opens an invitation link, they will
+  automatically apply the token. Anonymous users are asked to log in first.
 
 Link widget and deep links:
 

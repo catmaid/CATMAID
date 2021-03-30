@@ -909,13 +909,18 @@
             },
           }, {
             render: function(data, type, row, meta) {
-              return '<i class="fa fa-copy copy-button"></i>';
+              return '<ul class="resultTags"><li class="copy-button" data-role="copy-token" title="Copy token to clipboard">Copy token</li><li class="copy-button" data-role="copy-url" title="Copy invitation link">Copy invitation URL</li></ul>';
             }
           }],
-        }).on('click', 'i.copy-button', e => {
+        }).on('click', 'li[data-role=copy-token]', e => {
           let data = tokenDataTable.row($(e.target).parents('tr')).data();
           CATMAID.tools.copyToClipBoard(data.token);
           CATMAID.msg('Success', 'Copyied project token to clipboard. Use it with care!');
+        }).on('click', 'li[data-role=copy-url]', e => {
+          let data = tokenDataTable.row($(e.target).parents('tr')).data();
+          let url = CATMAID.tools.urlJoin(window.location.origin, `?token=${data.token}`);
+          CATMAID.tools.copyToClipBoard(url);
+          CATMAID.msg('Success', 'Copyied project token URL to clipboard. Share it with care!');
         });
       },
     },

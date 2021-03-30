@@ -494,7 +494,7 @@
                 let color = lut.getColor(i);
                 let entry = row[1][i];
                 let name =  getTargetName(entry[0]);
-                elements.push(`<span class="result-element"><span class="li">${i+1}.</span><span class="li-body"><span class="result-info"><a href="#" data-color="${color.getStyle()}"  data-pointcloud-id="${entry[0]}" data-role="select-pointcloud">${name}</a><span class="score">Score: ${entry[2]}</span><span class="color"><i class="fa fa-circle" style="color: ${color.getStyle()}"></i></span><span class="actions" data-pointcloud-id="${entry[0]}"><a href="#" data-role="show-single-3d" data-target-index="${i}">3D Viewer</a><a href="#" data-role="show-images">Images</a></span></span>`);
+                elements.push(`<span class="result-element"><span class="li">${i+1}.</span><span class="li-body"><span class="result-info"><a href="#" data-color="${color.getStyle()}"  data-pointcloud-id="${entry[0]}" data-role="select-pointcloud">${name}</a><span class="score">${Number(entry[2]).toFixed(4)}</span><span class="color"><i class="fa fa-circle" style="color: ${color.getStyle()}"></i></span><span class="actions" data-pointcloud-id="${entry[0]}"><a href="#" data-role="show-single-3d" data-target-index="${i}">3D Viewer</a><a href="#" data-role="show-images">Images</a></span></span>`);
                 elements.push('<span class="result-images">');
                 let pointcloud = pointClouds.get(entry[0]);
                 if (pointcloud && pointcloud.images) {
@@ -515,7 +515,7 @@
                 let color = lut.getColor(i);
                 let entry = row[1][i];
                 let name =  getTargetName(entry[0]);
-                elements.push(`<span class="result-element"><span class="li">${i+1}.</span><a href="#" data-skeleton-id="${entry[0]}" data-role="select-skeleton">${name}</a><span class="score">Score: ${entry[2]}</span><span class="color"><i class="fa fa-circle" style="color: ${color.getStyle()}"></i></span></span>`);
+                elements.push(`<span class="result-element"><span class="li">${i+1}.</span><span class="score">${Number(entry[2]).toFixed(4)}</span><span class="color"><i class="fa fa-circle" style="color: ${color.getStyle()}"></i></span><a href="#" data-skeleton-id="${entry[0]}" data-role="select-skeleton">${name}</a></span>`);
               }
               elements.push('</span>');
               return elements.join('');
@@ -525,7 +525,7 @@
                 let color = lut.getColor(i);
                 let entry = row[1][i];
                 let name =  getTargetName(entry[0]);
-                elements.push(`<span class="result-element"><span class="li">${i+1}.</span>${name}<span class="score">Score: ${entry[2]}</span><span class="color"><i class="fa fa-circle" style="color: ${color.getStyle()}"></i></span></span>`);
+                elements.push(`<span class="result-element"><span class="li">${i+1}.</span><span class="score">${Number(entry[2]).toFixed(4)}</span><span class="color"><i class="fa fa-circle" style="color: ${color.getStyle()}"></i></span>${name}</span>`);
               }
               elements.push('</span>');
               return elements.join('');

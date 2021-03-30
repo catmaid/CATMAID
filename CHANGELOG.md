@@ -909,6 +909,9 @@ Miscellaneous:
 - Connector selection: a search filter is now available for the table that allows
   filtering across all columns.
 
+- NBLAST computations and neuron similarity: result sets larger than 2 GB are
+  now supported. This is mainly useful for large all-by-all comparisons.
+
 - Settings widget: adding a remote CATMAID instance without supplying an API key
   will now make CATMAID try and get the API key of the remote anonymous user.
   This makes it easy to add publicly accessible CATMAID instances, because it is

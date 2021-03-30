@@ -92,11 +92,6 @@ django/applications/catmaid/static/js/widgets/neuron-history.js: line 241, col 1
 django/applications/catmaid/static/js/widgets/neuron-history.js: line 319, col 12, 'compareCompactTreenodes' is defined but never used.
 django/applications/catmaid/static/js/widgets/neuron-history.js: line 323, col 12, 'compareCompactConnectors' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/neuron-similarity-detail-widget.js: line 113, col 13, 'refreshSimilarityList' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-similarity-detail-widget.js: line 332, col 9, 'tbody' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-similarity-detail-widget.js: line 563, col 11, 'data' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-similarity-detail-widget.js: line 714, col 11, 'nAddedPointClouds' is defined but never used.
-
 django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 562, col 11, 'datatable' is defined but never used.
 django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 931, col 19, 'targetProjectId' is defined but never used.
 django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 936, col 19, 'toLandmarkApi' is defined but never used.
@@ -212,4 +207,4 @@ django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 1817, col
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 1850, col 1, 'async functions' is only available in ES8 (use 'esversion: 8').
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2009, col 29, The object literal notation {} is preferable.
 
-164 errors
+160 errors

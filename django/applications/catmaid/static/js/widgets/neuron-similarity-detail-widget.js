@@ -109,15 +109,6 @@
         var similaritySelectionWrapper = controls.appendChild(document.createElement('span'));
         similaritySelectionWrapper.appendChild(similaritySelection);
 
-        // Replace point cloud selection wrapper children with new select
-        var refreshSimilarityList = function() {
-          while (0 !== similaritySelectionWrapper.children.length) {
-            similaritySelectionWrapper.removeChild(similaritySelectionWrapper.children[0]);
-          }
-          var pointcloudSelection = CATMAID.DOM.createAsyncPlaceholder(initSimilarityList());
-          similaritySelectionWrapper.appendChild(pointcloudSelection);
-        };
-
         CATMAID.DOM.appendElement(controls, {
           type: 'checkbox',
           label: 'Only positive scores',
@@ -329,7 +320,7 @@
     theadTh2.appendChild(document.createTextNode(`Top ${this.showTopN} target ${this.similarity.target_type}s`));
     let theadTh3 = theadTr.appendChild(document.createElement('th'));
     theadTh3.appendChild(document.createTextNode('Action'));
-    let tbody = table.appendChild(document.createElement('tbody'));
+    table.appendChild(document.createElement('tbody'));
 
     let nTargetObjects = this.similarity.target_objects.length;
     let nTargetObjectsToAdd = this.showTopN ? Math.min(this.showTopN, nTargetObjects) : nTargetObjects;
@@ -558,9 +549,6 @@
       let color = this.dataset.color;
       NeuronSimilarityDetailWidget.showPointcloud3d(pointcloudId, color);
     }).on('click', 'a[data-role=show-all-3d]', function() {
-      var table = $(this).closest('table');
-      var tr = $(this).closest('tr');
-      var data = $(table).DataTable().row(tr).data();
       let sourceId = parseInt(this.dataset.sourceId, 10);
       NeuronSimilarityDetailWidget.showAllSimilarityResults(similarity,
           matchesOnly, showTopN, pointcloudSample, sourceId);
@@ -714,7 +702,6 @@
       }, {});
       skeletonTarget.append(models);
     } else if (similarity.target_type === 'pointcloud') {
-      let nAddedPointClouds = 0;
       for (let i=0; i<sortedTargetObjects.length; ++i) {
         let s = sortedTargetObjects[i];
         let matchOkay = !matchesOnly || s[1] > 0;

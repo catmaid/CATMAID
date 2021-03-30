@@ -763,7 +763,7 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
                     # by row, little endian.
                     arr = scoring_info['similarity']
                     if sys.byteorder == 'big':
-                        print('swap')
+                        logger.info('Swapped byteorder from big to little endian for NBLAST scoring storage ')
                         arr = arr.byteswap()
                     bytes_written = lobj.write(arr.tobytes())
 

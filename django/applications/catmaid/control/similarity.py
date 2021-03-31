@@ -765,7 +765,25 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
                     if sys.byteorder == 'big':
                         logger.info('Swapped byteorder from big to little endian for NBLAST scoring storage ')
                         arr = arr.byteswap()
-                    bytes_written = lobj.write(arr.tobytes())
+
+                    # We can't write more than 4GB at a time and the Postgres
+                    # manual advises to not send more than a few megabytes at a
+                    # time: https://www.postgresql.org/docs/12/lo-interfaces.html
+                    # Use therefore a chunk size of 32 MB = 33554432 Bytes
+                    chunk_size = 33554432
+                    bytes_written = 0
+                    raw_bytes = arr.tobytes()
+                    total_bytes = len(raw_bytes)
+
+                    logger.info(f'Writing {total_bytes} Bytes in chunks of 32 MB to the database')
+                    for i in range(0, total_bytes, chunk_size):
+                        eff_chunk_size = min(chunk_size, total_bytes - i)
+                        byte_chunk = raw_bytes[i:i+eff_chunk_size]
+                        # Write the chunk, we don't have to explicitely call
+                        # seek() to update the location of the lobj, write()
+                        # will do this for us.
+                        bytes_written += lobj.write(byte_chunk)
+                    logger.info(f'Store {bytes_written} Bytes as Postgres large object')
 
                 similarity.scoring = lobj.oid
 

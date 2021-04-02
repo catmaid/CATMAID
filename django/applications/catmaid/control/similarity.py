@@ -33,6 +33,8 @@ from catmaid.control.nat.r import (compute_scoring_matrix, nblast,
         test_environment, setup_environment)
 from catmaid.control.pointcloud import list_pointclouds
 
+from psycopg2.extras import execute_batch
+
 
 logger = get_task_logger(__name__)
 
@@ -746,10 +748,45 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
         else:
             similarity.status = 'complete'
 
+            if scoring_info['query_object_ids']:
+                invalid_query_objects = set(similarity.query_objects) - set(scoring_info['query_object_ids'])
+                similarity.invalid_query_objects = list(invalid_query_objects)
+                similarity.query_objects = scoring_info['query_object_ids']
+            else:
+                similarity.invalid_query_objects = None
+
+            if scoring_info['target_object_ids']:
+                invalid_target_objects = set(similarity.target_objects) - set(scoring_info['target_object_ids'])
+                similarity.invalid_target_objects = list(invalid_target_objects)
+                similarity.target_objects = scoring_info['target_object_ids']
+            else:
+                similarity.invalid_target_objects = None
+
             # Write the result as a Postgres large object, unless specifically
-            # asked to store relational results.
+            # asked to store relational results. To query many result scores at
+            # once, the large object facility can be quite slow.
             if relational_results:
-                pass
+                def to_row(x):
+                    return (similarity.query_objects[x[0]], similarity.target_objects[x[1]],
+                        float(scoring_info['similarity'][x[0], x[1]]))
+
+                cursor = connection.cursor()
+                logger.info('Deleting all existing results for this similarity query')
+                cursor.execute("""
+                    DELETE FROM nblast_similarity_score WHERE similarity_id = %(similarity_id)s
+                """, {
+                    'similarity_id': similarity.id
+                })
+                logger.info('Preparing to store positive NBLAST scores in result relation')
+                non_zero_idx = np.nonzero(scoring_info['similarity'])
+                # Find all non-zero matches that aren't self-matches
+                non_zero_results = tuple(filter(lambda x: x[0] != x[1], map(to_row, zip(non_zero_idx[0], non_zero_idx[1]))))
+                logger.info(f'Storing {len(non_zero_results)} non-zero and non-self scores (out of {len(similarity.query_objects) * len(similarity.target_objects)})')
+                execute_batch(cursor, f"""
+                    INSERT INTO nblast_similarity_score (similarity_id, query_object_id, target_object_id, score)
+                    VALUES ({similarity.id}, %s, %s, %s)
+                """, non_zero_results, page_size=100)
+                logger.info('Stored non-zero results')
             else:
                 # The large object handling needs to be explicitly in a
                 # transaction.
@@ -783,7 +820,7 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
                         # seek() to update the location of the lobj, write()
                         # will do this for us.
                         bytes_written += lobj.write(byte_chunk)
-                    logger.info(f'Store {bytes_written} Bytes as Postgres large object')
+                    logger.info(f'Stored {bytes_written} Bytes as Postgres large object')
 
                 similarity.scoring = lobj.oid
 
@@ -791,21 +828,6 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
                     "skeletons vs {} target skeletons.").format(
                             len(similarity.query_objects) if similarity.query_objects is not None else '?',
                             len(similarity.target_objects) if similarity.target_objects is not None else '?')
-
-            if scoring_info['query_object_ids']:
-                invalid_query_objects = set(similarity.query_objects) - set(scoring_info['query_object_ids'])
-                similarity.invalid_query_objects = list(invalid_query_objects)
-                similarity.query_objects = scoring_info['query_object_ids']
-            else:
-                similarity.invalid_query_objects = None
-
-            if scoring_info['target_object_ids']:
-                invalid_target_objects = set(similarity.target_objects) - set(scoring_info['target_object_ids'])
-                similarity.invalid_target_objects = list(invalid_target_objects)
-                similarity.target_objects = scoring_info['target_object_ids']
-            else:
-                similarity.invalid_target_objects = None
-
             similarity.computation_time = duration
             similarity.save()
 

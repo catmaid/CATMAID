@@ -1631,7 +1631,7 @@ def neuronlist_for_skeletons(project_id, skeleton_ids, omit_failures=False,
                 '.progress': 'text' if progress else 'none',
                 'OmitFailures': omit_failures
             })
-    print(f"Converted {len(objects)}/{len(skeleton_ids)} neurons")
+    logger.info(f"Converted {len(objects)}/{len(skeleton_ids)} neurons")
 
     del(cs_r)
     gc.collect()

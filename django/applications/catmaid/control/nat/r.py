@@ -607,7 +607,7 @@ def get_catmaid_connection(user_id):
 def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
         parallel=True, detail=10, omit_failures=True, min_length=15000,
         min_soma_length=1000, soma_tags=('soma'), resample_by=1e3,
-        use_http=False, progress=False, max_nodes=None) -> None:
+        use_http=False, progress=False, max_nodes=None, bb=None) -> None:
     """Create a new cache file for a particular project object type and
     detail level. All objects of a type in a project are prepared.
     """
@@ -640,7 +640,7 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
     if object_type == 'skeleton':
         logger.debug('Finding matching skeletons')
         object_ids = get_all_object_ids(project_id, user.id, object_type, min_length,
-                min_soma_length, soma_tags, max_nodes)
+                min_soma_length, soma_tags, max_nodes, bb=bb)
         if not object_ids:
             logger.info("No skeletons found to populate cache from")
             return
@@ -724,7 +724,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
         normalized='raw', use_alpha=False, remove_target_duplicates=True,
         min_length=15000, min_soma_length=1000, simplify=True, required_branches=10,
         soma_tags=('soma', ), use_cache=True, reverse=False, top_n=0,
-        resample_by=1e3, use_http=False) -> Dict[str, Any]:
+        resample_by=1e3, use_http=False, bb=None) -> Dict[str, Any]:
     """Create NBLAST score for forward similarity from query objects to target
     objects. Objects can either be pointclouds or skeletons, which has to be
     reflected in the respective type parameter. This is executing essentially
@@ -785,15 +785,15 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
         from catmaid.control.similarity import get_all_object_ids
         if all_by_all:
             query_object_ids = get_all_object_ids(project_id, user_id,
-                    query_type, min_length, min_soma_length, soma_tags)
+                    query_type, min_length, min_soma_length, soma_tags, bb=bb)
             target_object_ids = query_object_ids
         else:
             if not query_object_ids:
                 query_object_ids = get_all_object_ids(project_id, user_id,
-                        query_type, min_length, min_soma_length, soma_tags)
+                        query_type, min_length, min_soma_length, soma_tags, bb=bb)
             if not target_object_ids:
                 target_object_ids = get_all_object_ids(project_id, user_id,
-                        target_type, min_length, min_soma_length, soma_tags)
+                        target_type, min_length, min_soma_length, soma_tags, bb=bb)
 
         # If both query and target IDs are of the same type, the target list of
         # object IDs can't contain any of the query IDs.

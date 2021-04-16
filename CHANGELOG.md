@@ -153,7 +153,7 @@ Connectivity Matrix:
 
 - With the new "Link type" selector in the Main tab it is now possible to show
   the connectivity matrix for other link types (like desmosomes or gap
-  junctions).
+  junctions). The selected link type is also respected by the CSV export.
 
 Layouts:
 

@@ -2023,14 +2023,29 @@ def connectivity_matrix_csv(request:HttpRequest, project_id) -> StreamingHttpRes
         type: array
         items:
             type: string
+      - name: row_relation
+        description: The relation from a row skeleton to a connector
+        required: false
+        default: presynaptic_to
+        type: string
+        paramType: form
+      - name: col_relation
+        description: The relation from a column skeleton to a connector
+        required: false
+        default: postsynaptic_to
+        type: string
+        paramType: form
     """
     # sanitize arguments
     project_id = int(project_id)
     rows = tuple(get_request_list(request.POST, 'rows', [], map_fn=int))
     cols = tuple(get_request_list(request.POST, 'columns', [], map_fn=int))
     names:Dict = dict(map(lambda x: (int(x[0]), x[1]), get_request_list(request.POST, 'names', [])))
+    row_relation = request.POST.get('row_relation', 'presynaptic_to')
+    col_relation = request.POST.get('col_relation', 'postsynaptic_to')
 
-    matrix = get_connectivity_matrix(project_id, rows, cols)
+    matrix = get_connectivity_matrix(project_id, rows, cols,
+            row_relation=row_relation, col_relation=col_relation)
 
     csv_data = []
     header = [''] + list(map(lambda x: names.get(x, x), cols))

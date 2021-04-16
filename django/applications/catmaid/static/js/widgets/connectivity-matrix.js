@@ -1547,12 +1547,15 @@
   ConnectivityMatrixWidget.prototype.exportCsvNoDisplay = function(skeletonIds) {
     let nns = CATMAID.NeuronNameService.getInstance();
     nns.registerAllFromList(this, skeletonIds)
-      .then(function() {
+      .then(() => this.getActiveRelations())
+      .then(relations => {
         let names = skeletonIds.map((skid) => [skid, nns.getName(skid)]);
         return CATMAID.fetch(project.id + '/skeletons/connectivity_matrix/csv', 'POST', {
             rows: skeletonIds,
             columns: skeletonIds,
             names: names,
+            row_relation: relations[0],
+            col_relation: relations[1],
           }, true);
       })
       .then(function(response) {

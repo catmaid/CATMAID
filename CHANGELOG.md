@@ -149,7 +149,11 @@ Connectivity Matrix:
 - The new buttons "Save JSON" and "Open JSON" can be used to save the row and
   column skeletons, including groups and widget settings.
 
-- Connectivity matrix: the loading speed has been improved significantly.
+- The loading speed has been improved significantly.
+
+- With the new "Link type" selector in the Main tab it is now possible to show
+  the connectivity matrix for other link types (like desmosomes or gap
+  junctions).
 
 Layouts:
 

@@ -1960,15 +1960,30 @@ def connectivity_matrix(request:HttpRequest, project_id=None) -> JsonResponse:
         default: false
         type: boolean
         paramType: form
+      - name: row_relation
+        description: The relation from a row skeleton to a connector
+        required: false
+        default: presynaptic_to
+        type: string
+        paramType: form
+      - name: col_relation
+        description: The relation from a column skeleton to a connector
+        required: false
+        default: postsynaptic_to
+        type: string
+        paramType: form
     """
     # sanitize arguments
     project_id = int(project_id)
     rows = tuple(get_request_list(request.POST, 'rows', [], map_fn=int))
     cols = tuple(get_request_list(request.POST, 'columns', [], map_fn=int))
     with_locations = get_request_bool(request.POST, 'with_locations', False)
+    row_relation = request.POST.get('row_relation', 'presynaptic_to')
+    col_relation = request.POST.get('col_relation', 'postsynaptic_to')
 
     matrix = get_connectivity_matrix(project_id, rows, cols,
-        with_locations=with_locations)
+        with_locations=with_locations, row_relation=row_relation,
+        col_relation=col_relation)
     return JsonResponse(matrix)
 
 
@@ -2044,7 +2059,8 @@ def connectivity_matrix_csv(request:HttpRequest, project_id) -> StreamingHttpRes
 
 
 def get_connectivity_matrix(project_id, row_skeleton_ids, col_skeleton_ids,
-        with_locations=False) -> DefaultDict[Any, Dict]:
+        with_locations=False, row_relation='presynaptic_to',
+        col_relation='postsynaptic_to') -> DefaultDict[Any, Dict]:
     """
     Return a sparse connectivity matrix representation for the given skeleton
     IDS. The returned dictionary has a key for each row skeleton having
@@ -2054,8 +2070,8 @@ def get_connectivity_matrix(project_id, row_skeleton_ids, col_skeleton_ids,
     """
     cursor = connection.cursor()
     relation_map = get_relation_to_id_map(project_id)
-    post_rel_id = relation_map['postsynaptic_to']
-    pre_rel_id = relation_map['presynaptic_to']
+    pre_rel_id = relation_map[row_relation]
+    post_rel_id = relation_map[col_relation]
 
     if with_locations:
         extra_select = ', c.id, c.location_x, c.location_y, c.location_z'

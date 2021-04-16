@@ -249,6 +249,7 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/connector/info$', connector.connectors_info),
     url(r'^(?P<project_id>\d+)/connectors/$', connector.list_connectors),
     url(r'^(?P<project_id>\d+)/connectors/links/$', connector.list_connector_links),
+    url(r'^(?P<project_id>\d+)/connectors/link-pairs/$', connector.list_connector_link_pairs),
     url(r'^(?P<project_id>\d+)/connectors/(?P<connector_id>\d+)/$',
         connector.connector_detail),
     url(r'^(?P<project_id>\d+)/connectors/user-info$', connector.connector_user_info),

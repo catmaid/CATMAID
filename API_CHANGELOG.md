@@ -40,6 +40,11 @@ included in this changelog.
   format like before. The main difference is that start and target nodes of an
   edge are now defined explicitly by ID rather than an index.
 
+- `POST /{project_id}/skeleton/connectivity_matrix`:
+  The new parameters row_relations and col_relations allow callers now to
+  specify the relations used to connect two skeletons for each side. They
+  default to "presynaptic_to" and "postsynaptic_to".
+
 ### Deprecations
 
 None.

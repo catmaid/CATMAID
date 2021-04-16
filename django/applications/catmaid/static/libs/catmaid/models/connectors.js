@@ -325,6 +325,10 @@
         });
     },
 
+    linkPairs: function(projectId) {
+      return CATMAID.fetch(`${projectId}/connectors/link-pairs`);
+    },
+
     /**
      * Get a list of available connector types.
      */

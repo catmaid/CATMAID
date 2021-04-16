@@ -47,6 +47,8 @@
     this.connectivityData = null;
     // A map of relation names to IDs, used with relativeDisplay
     this.relationMap = null;
+    // The link type used, by default we look at synaptic connectors
+    this.activeLinkType = 'synaptic-connector';
 
     // A set of filter rules to apply to the handled connectors
     this.filterRules = [];
@@ -335,6 +337,26 @@
         applyFilters.appendChild(applyFiltersCb);
         applyFilters.appendChild(document.createTextNode('Apply connector filters'));
         tabs['Main'].appendChild(applyFilters);
+
+        var linkTypeSelection = CATMAID.DOM.createAsyncPlaceholder(
+            CATMAID.DOM.initLinkTypeList({
+              byPartnerReference: false,
+              radioControls: true,
+              context: this,
+              color: false,
+              getSelectedLinkTypes: () => {
+                return this.activeLinkType;
+              },
+              setLinkTypeVisibility: (linkId, visible) => {
+                if (visible) {
+                  this.activeLinkType = linkId;
+                }
+              },
+              update: () => this.update(),
+            }));
+        var linkTypeSelectionWrapper = document.createElement('span');
+        linkTypeSelectionWrapper.appendChild(linkTypeSelection);
+        tabs['Main'].appendChild(linkTypeSelectionWrapper);
 
         var exportCSV = document.createElement('input');
         exportCSV.setAttribute("type", "button");
@@ -702,7 +724,7 @@
     this.matrix.rowSkeletonIDs = this.rowDimension.getSelectedSkeletons();
     this.matrix.colSkeletonIDs = this.colDimension.getSelectedSkeletons();
     let prepare = refreshMatrix ?
-        this.matrix.refresh() : Promise.resolve().then(() => this.matrix.rebuild());
+        this.refreshMatrix() : Promise.resolve().then(() => this.matrix.rebuild());
 
     // Create table
     return prepare.then(() => this.addConnectivityMatrixTable(this.matrix,
@@ -782,6 +804,26 @@
       });
   };
 
+  ConnectivityMatrixWidget.prototype.refreshMatrix = function() {
+    return this.getActiveRelations()
+      .then(relations => {
+        this.matrix.rowRelation = relations[0];
+        this.matrix.colRelation = relations[1];
+        return this.matrix.refresh();
+      });
+  };
+
+  ConnectivityMatrixWidget.prototype.getActiveRelations = function() {
+    return CATMAID.Connectors.linkPairs(project.id)
+      .then(linkPairs => {
+        let pair = linkPairs[this.activeLinkType];
+        if (!pair) {
+          throw new CATMAID.ValueError(`Unknown link type: ${this.activeLinkType}`);
+        }
+        return [pair.source, pair.target];
+      });
+  };
+
   ConnectivityMatrixWidget.prototype.updateConnectivityCounts = function(skeletonIds) {
     if (!skeletonIds) {
       const rowSkeletonIDs = this.rowDimension.getSelectedSkeletons();
@@ -793,19 +835,21 @@
       skeletonIds = Array.from(skeletonIds);
     }
 
-    var self = this;
-    return CATMAID.fetch(project.id + '/skeletons/connectivity-counts', 'POST', {
-      skeleton_ids: skeletonIds,
-      source_relations: ['postsynaptic_to'],
-      target_relations: ['presynaptic_to']
-    })
-    .then(function(connCount) {
-      self.connectivityData = connCount.connectivity;
-      self.relationMap = Object.keys(connCount.relations).reduce(function(map, rId) {
-        map[connCount.relations[rId]] = rId;
-        return map;
-      }, {});
-    });
+    return this.getActiveRelations()
+      .then(relations => {
+        return CATMAID.fetch(project.id + '/skeletons/connectivity-counts', 'POST', {
+          skeleton_ids: skeletonIds,
+          source_relations: [relations[0]],
+          target_relations: [relations[1]]
+        });
+      })
+      .then(connCount => {
+        this.connectivityData = connCount.connectivity;
+        this.relationMap = Object.keys(connCount.relations).reduce(function(map, rId) {
+          map[connCount.relations[rId]] = rId;
+          return map;
+        }, {});
+      });
   };
 
   function sortDimension(map, a, b) {

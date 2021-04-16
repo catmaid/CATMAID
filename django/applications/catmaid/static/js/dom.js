@@ -1973,8 +1973,9 @@
 
         var selectedLinkTypes = target.getSelectedLinkTypes();
         // Create actual element based on the returned data
-        var node = CATMAID.DOM.createCheckboxSelect('Link types', linkTypes,
-            selectedLinkTypes, true);
+        var node = target.radioControls ?
+            CATMAID.DOM.createRadioSelect('Link type', linkTypes, selectedLinkTypes, true) :
+            CATMAID.DOM.createCheckboxSelect('Link types', linkTypes, selectedLinkTypes, true);
 
         // Add color buttons for already display options
         if (target.color) {
@@ -2029,7 +2030,7 @@
         };
         return node;
       });
-    };
+  };
 
   DOM.createMeasureElement = function() {
     let measureSpan = document.createElement('span');

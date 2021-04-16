@@ -22,7 +22,7 @@ from catmaid.models import Project, Stack, ProjectStack, Connector, \
         ConnectorClassInstance, Treenode, TreenodeConnector, UserRole
 from catmaid.control.authentication import requires_user_role, can_edit_or_fail
 from catmaid.control.link import (create_treenode_links, LINK_TYPES,
-        LINK_RELATION_NAMES, UNDIRECTED_LINK_TYPES)
+        LINK_RELATION_NAMES, UNDIRECTED_LINK_TYPES, KNOWN_LINK_PAIRS)
 from catmaid.control.common import (cursor_fetch_dictionary,
         get_relation_to_id_map, get_class_to_id_map, get_request_bool,
         get_request_list)
@@ -407,6 +407,15 @@ def list_connectors(request:HttpRequest, project_id=None) -> JsonResponse:
         "tags": tags,
         "partners": partners
     }, safe=False)
+
+
+@api_view(['GET'])
+@requires_user_role(UserRole.Browse)
+def list_connector_link_pairs(request:HttpRequest, project_id=None) -> JsonResponse:
+    """Get a mapping of known source/target pairs of connector links.
+    """
+    return JsonResponse(KNOWN_LINK_PAIRS)
+
 
 @api_view(['GET', 'POST'])
 @requires_user_role([UserRole.Annotate, UserRole.Browse])

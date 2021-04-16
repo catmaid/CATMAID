@@ -36,6 +36,11 @@
     this.filterRules = [];
     // Filter rules can optionally be disabled
     this.applyFilterRules = true;
+
+    // The relations to query, by default these are regular synaptic
+    // connections.
+    this.rowRelation = 'presynaptic_to';
+    this.colRelation = 'postsynaptic_to';
   };
 
   /**
@@ -50,13 +55,15 @@
     return CATMAID.fetch(project.id + '/skeleton/connectivity_matrix', 'POST', {
           'rows': self.rowSkeletonIDs,
           'columns': self.colSkeletonIDs,
-          'with_locations': with_locations
+          'with_locations': with_locations,
+          'row_relation': this.rowRelation,
+          'col_relation': this.colRelation,
         })
-      .then(function(json) {
-        return self.filterResults(json);
+      .then(json => {
+        return this.filterResults(json);
       })
-      .then(function(json) {
-        self.setConnectivityMatrixFromData(json);
+      .then(json => {
+        this.setConnectivityMatrixFromData(json);
       });
   };
 

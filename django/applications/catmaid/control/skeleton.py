@@ -2095,6 +2095,11 @@ def get_connectivity_matrix(project_id, row_skeleton_ids, col_skeleton_ids,
         extra_select = ''
         extra_join = ''
 
+    if row_relation == col_relation:
+        extra_where = 'AND t1.treenode_id <> t2.treenode_id'
+    else:
+        extra_where = ''
+
     # Obtain all synapses made between row skeletons and column skeletons.
     cursor.execute('''
         SELECT t1.skeleton_id, t2.skeleton_id
@@ -2107,7 +2112,8 @@ def get_connectivity_matrix(project_id, row_skeleton_ids, col_skeleton_ids,
           AND t1.connector_id = t2.connector_id
           AND t1.relation_id = %(pre_rel_id)s
           AND t2.relation_id = %(post_rel_id)s
-    '''.format(extra_select=extra_select, extra_join=extra_join), {
+          {extra_where}
+    '''.format(extra_select=extra_select, extra_join=extra_join, extra_where=extra_where), {
         'row_skeleton_ids': list(row_skeleton_ids),
         'col_skeleton_ids': list(col_skeleton_ids),
         'pre_rel_id': pre_rel_id,

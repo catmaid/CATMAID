@@ -81,15 +81,57 @@ def serialize_config(config, simple=False) -> Dict[str, Any]:
         }
 
 
-def serialize_scoring(similarity:int):
+def serialize_scoring(similarity):
+    """If the scoring stored directly in the similarity object is non-null, it
+    is returned and assumed to be a Postgres large object. If it is null/none,
+    results stored in the table nblast_similarity_score are returned.
+    """
     cursor = connection.cursor()
-    pconn = cursor.cursor.connection
-    lobj = pconn.lobject(oid=similarity.scoring, mode='rb')
+    if similarity.scoring:
+        pconn = cursor.cursor.connection
+        lobj = pconn.lobject(oid=similarity.scoring, mode='rb')
 
-    raw_data = np.frombuffer(lobj.read(), dtype=np.float32)
-    data = raw_data.reshape((len(similarity.query_objects), len(similarity.target_objects)))
+        raw_data = np.frombuffer(lobj.read(), dtype=np.float32)
+        data = raw_data.reshape((len(similarity.query_objects), len(similarity.target_objects)))
 
-    return data.tolist()
+        return data.tolist()
+    else:
+        cursor.execute("""
+            -- The UNNEST statements in the CTE qt below are hard to estimate
+            -- and often leads to bad plans. Therefore, we add this hack to
+            -- disable nested loop joins in this transaction, mitigating the bad
+            -- row estimates. The remaining access patterns should still work
+            -- well in all cases. See: https://dba.stackexchange.com/questions/306300
+            SET LOCAL enable_nestloop = off;
+
+            WITH qt AS (
+                SELECT query.id as query_id, query.o as query_o,
+                        target.id AS target_id, target.o AS target_o
+                FROM nblast_similarity s,
+                UNNEST(s.query_objects) WITH ORDINALITY AS query(id, o),
+                UNNEST(s.target_objects) WITH ORDINALITY AS target(id, o)
+                WHERE s.id = %(similarity_id)s
+            ),
+            scores AS (
+                SELECT qt.*, COALESCE(nss.score, 0) AS score
+                FROM qt
+                LEFT JOIN nblast_similarity_score nss
+                ON nss.query_object_id = qt.query_id
+                AND nss.target_object_id = qt.target_id
+                AND nss.similarity_id = %(similarity_id)s
+            ),
+            score_rows AS (
+                SELECT query_o, array_agg(score ORDER BY target_o) as scores
+                FROM scores
+                GROUP BY query_o
+            )
+            SELECT array_agg(scores ORDER BY query_o)
+            FROM score_rows;
+        """, {
+            'similarity_id': similarity.id
+        })
+
+        return cursor.fetchone()[0]
 
 
 def serialize_similarity(similarity, with_scoring=False, with_objects=False) -> Dict[str, Any]:

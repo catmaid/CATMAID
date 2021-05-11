@@ -464,7 +464,7 @@ TrakEM2 based node transformation management command:
 
 - The new catmaid_update_tracing_data_using_trakem2_xml management command can
   be used to transform all spatial data in a project based on the
-  transformations defined in a TrakEM2 XML file.
+  transformations defined in a TrakEM2 XML file. This includes
 
 - This command uses Java and Fiji directly using pyjnius, which needs to be set
   up separately. The management command will expect the PYJNIUS_JAR environment

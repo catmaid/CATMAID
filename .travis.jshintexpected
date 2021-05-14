@@ -153,9 +153,6 @@ django/applications/catmaid/static/js/widgets/rename-neurons-dialog.js: line 94,
 django/applications/catmaid/static/js/widgets/review.js: line 815, col 15, 'sortedSegments' is defined but never used.
 django/applications/catmaid/static/js/widgets/review.js: line 1335, col 13, 'self' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/search-widget.js: line 113, col 13, 'tbody' is defined but never used.
-django/applications/catmaid/static/js/widgets/search-widget.js: line 115, col 13, 'datatable' is defined but never used.
-
 django/applications/catmaid/static/js/widgets/stats_user_analytics.js: line 151, col 11, 'project_id' is defined but never used.
 
 django/applications/catmaid/static/js/widgets/synapse_fractions.js: line 1783, col 9, 'other' is defined but never used.
@@ -228,4 +225,4 @@ django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 1817, col
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 1850, col 1, 'async functions' is only available in ES8 (use 'esversion: 8').
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2009, col 29, The object literal notation {} is preferable.
 
-177 errors
+175 errors

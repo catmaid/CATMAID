@@ -133,6 +133,45 @@ def serialize_scoring(similarity):
 
         return cursor.fetchone()[0]
 
+def serialize_simple():
+    query = """
+    WITH query AS NOT MATERIALIZED (
+      SELECT DISTINCT query_object_id AS id,
+            rank() OVER (ORDER BY query_object_id) AS o
+      FROM nblast_similarity_score
+      WHERE similarity_id = 44
+      ORDER BY query_object_id
+    ), target AS NOT MATERIALIZED (
+      SELECT DISTINCT target_object_id AS id,
+            rank() OVER (ORDER BY target_object_id) AS o
+      FROM nblast_similarity_score
+      WHERE similarity_id = 44
+      ORDER BY target_object_id
+    ),
+    qt AS NOT MATERIALIZED (
+      SELECT query.id as query_id,
+            query.o AS query_o,
+            target.id AS target_id,
+            target.o AS target_o
+      FROM query, target
+    ),
+    scores AS NOT MATERIALIZED (
+      SELECT qt.*, COALESCE(nss.score, 0) AS score
+      FROM qt
+      LEFT JOIN nblast_similarity_score nss
+      ON nss.query_object_id = qt.query_id
+      AND nss.target_object_id = qt.target_id
+      AND nss.similarity_id = 44
+    ),
+    score_rows AS NOT MATERIALIZED (
+        SELECT query_o, array_agg(score ORDER BY target_o) as scores
+        FROM scores
+        GROUP BY query_o
+    )
+    SELECT array_agg(scores ORDER BY query_o)
+    FROM score_rows;
+    """
+
 
 def serialize_similarity(similarity, with_scoring=False, with_objects=False) -> Dict[str, Any]:
     serialized_similarity = {

@@ -151,9 +151,18 @@ Install all of the required Python packages with::
     cd /home/alice/catmaid/django
     pip install -r requirements.txt
 
-If that worked correctly, then the second-last line of output
-will begin ``Successfully installed``, and list the Python
-packages that have just been installed.
+If that worked correctly, then the second-last line of output will begin
+``Successfully installed``, and list the Python packages that have just been
+installed.
+
+If you set up a production environment, please also install the
+``requirements-production.txt`` file::
+
+    pip install -r requirements-production.txt
+
+This will rebuild some dependencies from source. If asked whether existing
+packages schould be replaced by the new version, anwer with yes.
+
 
 3. Install and configure PostgreSQL
 ###################################

@@ -30,6 +30,11 @@ and other administration related changes are listed in order.
 
 - A virtualenv update is required.
 
+- For production environments it is now recommended to also install the Python
+  depedencies listedn in the new requirements-production.txt file:
+
+  pip install -r requirements-production.txt
+
 ## 2020.02.15
 
 - Python 3.5 is not supported anymore. Use Python 3.6, 3.7 or 3.8.

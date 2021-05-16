@@ -59,8 +59,9 @@ CATMAID is based on the `Django web framework
 developing CATMAID, you can use Django's built-in lightweight
 development server.  However, for production you will need to
 configure your webserver to talk to the CATMAID web application
-using WSGI.  We have successfully tested using either Apache
-with mod_wsgi, or nginx with gevent, gunicorn or uswgi.  Setting
+using WSGI. We have successfully tested using either Apache
+with mod_wsgi, or Nginx with gevent, gunicorn or uSWGI.
+Particularly Nginx with uWSGI have been tested extensively. Setting
 up one of these web servers is described in later sections.
 
 1. Clone the repository
@@ -76,10 +77,9 @@ the source code is in ``/home/alice/catmaid``::
 2. Install required Python packages
 ###################################
 
-We recommend the use of Python 3.6 for production use at the moment, but Python
-3.5 should work equally well. With a few more limitations PyPy3 can be used as
-well (no cropping, no back-end plotting, no synapse clustering, no ontology
-clustering).
+We recommend the use of Python 3.6 or newer for production use. With a few
+limitations PyPy3 can be used as well (no cropping, no back-end plotting,
+no synapse clustering, no ontology clustering).
 
 We strongly recommend that you install all Python package dependencies into a
 virtualenv, so that they are isolated from the system-wide installed packages

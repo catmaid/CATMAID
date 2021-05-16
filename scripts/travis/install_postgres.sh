@@ -2,6 +2,15 @@
 
 set -ex
 
+echo "Adding official Postgres repository"
+PG_URL="http://apt.postgresql.org/pub/repos/apt/"
+APT_LINE="deb ${PG_URL} $(lsb_release -cs)-pgdg main"
+echo "${APT_LINE}" | sudo tee "/etc/apt/sources.list.d/pgdg.list"
+sudo apt-get install wget ca-certificates
+PG_KEY_URL="https://www.postgresql.org/media/keys/ACCC4CF8.asc"
+wget --quiet -O - ${PG_KEY_URL} | sudo apt-key add -
+sudo apt-get update
+
 echo "Removing existing Postgres installation"
 sudo systemctl stop postgresql
 sudo apt-get remove -q 'postgresql-*'

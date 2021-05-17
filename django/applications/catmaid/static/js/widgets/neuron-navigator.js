@@ -1356,7 +1356,7 @@
         "sSearch": "Search neuron names (regex):"
       },
       "jQueryUI": true,
-      "order": [[ 1, "asc" ]],
+      "order": this.lastNeuronListOrder || [[ 1, "asc" ]],
       "columns": [
         {
           "width": "5em",
@@ -1384,6 +1384,9 @@
       let info = datatable.page.info();
       this.lastNeuronListStart = info.start;
       this.lastNeuronListPageLength = info.length;
+    })
+    .on('order.dt', e => {
+      this.lastNeuronListOrder = datatable.order();
     });
 
     // Focus search input by default

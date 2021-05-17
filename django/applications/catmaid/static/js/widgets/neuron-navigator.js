@@ -1254,6 +1254,7 @@
     }
 
     let nns = CATMAID.NeuronNameService.getInstance();
+    let node = this;
 
     // Fill neuron table
     var datatable = $(table).dataTable({
@@ -1261,8 +1262,9 @@
       "dom": '<"H"lrf>t<"F"ip>',
       "processing": true,
       "autoWidth": false,
-      "pageLength": this.possibleLengths[0],
+      "pageLength": node.lastNeuronListPageLength || this.possibleLengths[0],
       "serverSide": true,
+      "displayStart": node.lastNeuronListStart || 0,
       "ajax": function(data, dtCallback, settings) {
         // Build own set of request parameters
         var params = {};
@@ -1400,6 +1402,11 @@
           }
         }
       ].concat(extraColumns)
+    })
+    .on('page.dt', e => {
+      let info = datatable.page.info();
+      this.lastNeuronListStart = info.start;
+      this.lastNeuronListPageLength = info.length;
     });
 
     // Focus search input by default

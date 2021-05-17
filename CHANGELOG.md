@@ -656,6 +656,10 @@ Miscellaneous:
 - Neuron navigator: the neuron list filter input now remains focused when typing.
   the neuron table should also update quicker initially.
 
+- Neuron navigator: the pagination in neuron lists is fixed and does work on the
+  first attempt now. Previously it took a second click to actually jump to a
+  page.
+
 - Tracing data importer: The catmaid_import_data management command was not
   update edge data for project-wide materialization updates if there were no
   connectors imported. This if fixed now.

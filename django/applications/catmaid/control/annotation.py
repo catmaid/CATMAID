@@ -1593,8 +1593,8 @@ def _fast_co_annotations(request:HttpRequest, project_id:Union[int,str], display
 
 @requires_user_role([UserRole.Browse])
 def list_annotations_datatable(request:HttpRequest, project_id=None) -> JsonResponse:
-    display_start = int(request.POST.get('iDisplayStart', 0))
-    display_length = int(request.POST.get('iDisplayLength', -1))
+    display_start = int(request.POST.get('start', 0))
+    display_length = int(request.POST.get('length', -1))
     if display_length < 0:
         display_length = 2000  # Default number of result rows
 
@@ -1606,8 +1606,9 @@ def list_annotations_datatable(request:HttpRequest, project_id=None) -> JsonResp
 
     annotation_query = create_annotation_query(project_id, request.POST)
 
-    should_sort = request.POST.get('iSortCol_0', False)
-    search_term = request.POST.get('sSearch', '')
+    order = get_request_list(request.POST, 'order', default=[])
+    should_sort = len(order) > 0
+    search_term = request.POST.get('search', '')
 
 
     # Additional information should also be constrained by neurons and user
@@ -1645,16 +1646,13 @@ def list_annotations_datatable(request:HttpRequest, project_id=None) -> JsonResp
         annotation_query = annotation_query.filter(name__iregex=search_term)
 
     if should_sort:
-        column_count = int(request.POST.get('iSortingCols', 0))
-        sorting_directions = [request.POST.get('sSortDir_%d' % d, 'DESC')
-                for d in range(column_count)]
+        column_count = len(order)
+        sorting_directions = [o[1] for o in order]
         sorting_directions = list(map(lambda d: '-' if d.upper() == 'DESC' else '',
                 sorting_directions))
 
         fields = ['name', 'id', 'annotated_on', 'num_usage', 'last_user']
-        sorting_index = [int(request.POST.get('iSortCol_%d' % d))
-                for d in range(column_count)]
-        sorting_cols = list(map(lambda i: fields[i], sorting_index))
+        sorting_cols = [fields[int(o[0])] for o in order]
 
         annotation_query = annotation_query.extra(order_by=[di + col for (di, col) in zip(
                 sorting_directions, sorting_cols)])
@@ -1671,9 +1669,9 @@ def list_annotations_datatable(request:HttpRequest, project_id=None) -> JsonResp
     num_records = len(annotation_query)
 
     response:Dict[str, Any] = {
-        'iTotalRecords': num_records,
-        'iTotalDisplayRecords': num_records,
-        'aaData': []
+        'totalRecords': num_records,
+        'totalDisplayRecords': num_records,
+        'data': []
     }
 
     for annotation in annotation_query[display_start:display_start + display_length]:
@@ -1683,7 +1681,7 @@ def list_annotations_datatable(request:HttpRequest, project_id=None) -> JsonResp
         else:
             annotated_on = 'never'
         # Build datatable data structure
-        response['aaData'].append([
+        response['data'].append([
             annotation[1], # Name
             annotated_on, # Annotated on
             annotation[3], # Usage

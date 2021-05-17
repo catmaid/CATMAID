@@ -678,19 +678,20 @@
     // and if the annotator should be displayed.
     var column_params = [
       { // Annotation name
-        "bSearchable": true,
-        "bSortable": true,
-        "mData": 0
+        "searchable": true,
+        "sortable": true,
+        "data": 0,
+        "width": "40%",
       },
       { // Annotation ID
-        "bSearchable": true,
-        "bSortable": true,
-        "mData": 4
+        "searchable": true,
+        "sortable": true,
+        "data": 4
       },
       { // Annotated on
-        "bSearchable": false,
-        "bSortable": true,
-        "mData": 1,
+        "searchable": false,
+        "sortable": true,
+        "data": 1,
         "class": "cm-center",
         render: function(data, type, row, meta) {
           var d = new Date(data);
@@ -705,20 +706,20 @@
     if (usage) {
         column_params.push(
           { // Usage
-            "bSearchable": false,
-            "bSortable": true,
-            "mData": 2,
-            "bVisible": !!usage
+            "searchable": false,
+            "sortable": true,
+            "data": 2,
+            "visible": !!usage
           });
     }
 
     if (annotator) {
         column_params.push(
           { // Annotator username
-            "bSearchable": true,
-            "bSortable": true,
-            "mRender": function(data, type, full) {
-              return full[3] in CATMAID.User.all() ? CATMAID.User.all()[full[3]].login : "unknown";
+            "searchable": true,
+            "sortable": true,
+            "render": function(data, type, row, meta) {
+              return row[3] in CATMAID.User.all() ? CATMAID.User.all()[row[3]].login : "unknown";
             }
           });
     }
@@ -726,28 +727,28 @@
     if (unlink) {
       column_params.unshift(
         {
-          "sWidth": '5em',
-          "sClass": 'selector_column center',
-          "bSearchable": false,
-          "bSortable": false,
-          "mData": null,
-          "mRender": function (data, type, full) {
+          "width": '5em',
+          "class": 'selector_column center',
+          "searchable": false,
+          "sortable": false,
+          "data": null,
+          "render": function(data, type, row, meta) {
             return '<input type="checkbox" class="annotation-selection" ' +
-              'data-annotation-id="' + full[4] + '"/>';
+              'data-annotation-id="' + row[4] + '"/>';
         }
       });
 
       // Add action column with unlink link
       column_params.push(
         {
-          "sWidth": '8em',
-          "sClass": 'selector_column center',
-          "bSearchable": false,
-          "bSortable": false,
-          "mData": null,
-          "mRender": function (data, type, full) {
+          "width": '8em',
+          "class": 'selector_column center',
+          "searchable": false,
+          "sortable": false,
+          "data": null,
+          "render": function(data, type, row, meta) {
             return '<a href="#" class="unlink-annotations" annotation-id="' +
-                full[4] + '">de-annotate</>';
+                row[4] + '">de-annotate</>';
         }
       });
     }
@@ -896,104 +897,86 @@
       });
     }
 
-    let widget = this;
+    let node = this;
 
     // Fill annotation table
-    var datatable = $(table).dataTable({
-      // http://www.datatables.net/usage/options
-      "bDestroy": true,
-      "sDom": '<"H"lrf>t<"F"ip>',
-      "bProcessing": true,
-      "bServerSide": true,
-      "bAutoWidth": false,
-      "oSearch": {
-        "sSearch": this.filterTerm,
+    var datatable = $(table).DataTable({
+      "destroy": true,
+      "dom": '<"H"lrf>t<"F"ip>',
+      "processing": true,
+      "serverSide": true,
+      "autoWidth": false,
+      "search": {
+        "search": this.filterTerm,
       },
-      "iDisplayLength": Number.isInteger(displayLength) ? displayLength : -1,
-      "sAjaxSource": CATMAID.makeURL(project.id + '/annotations/table-list'),
-      "fnServerData": function (sSource, aoData, fnCallback) {
+      "displayLength": Number.isInteger(displayLength) ? displayLength : -1,
+      "ajax": function(data, fnCallback, settings) {
           if (filters.is_meta) {
             if (filters.annotates) {
               // Annotates filter -- we are requesting annotations that are
               // annotating entities
-              filters.annotations.forEach(function(annotation_id, i) {
-                aoData.push({
-                    'name': 'annotates[' + i + ']',
-                    'value': annotation_id
-                });
-              });
+              data.annotates = filters.annotates;
             } else {
               // Annotated with filter -- we are requesting annotations that are
               // annotated with specific annotations
-              filters.annotations.forEach(function(annotation_id, i) {
-                aoData.push({
-                    'name': 'annotations[' + i + ']',
-                    'value': annotation_id
-                });
-              });
+              data.annotations = filters.annotations;
             }
           } else {
             // Multiple parallel co-annotations -- all listed annotations appear only
             // together with these annotations
-            filters.annotations.forEach(function(annotation_id, i) {
-              aoData.push({
-                  'name': 'parallel_annotations[' + i + ']',
-                  'value': annotation_id
-              });
-              // Additionally, increase the number of annotations page, because
-              // co-annotations will be filtered out in the response handler.
-              aoData.forEach(function(e) {
-                if (e.name == 'iDisplayLength') {
-                  e.value += filters.annotations.length;
-                }
-              });
-            });
+            data.parallel_annotations = filters.annotations;
+            // Additionally, increase the number of annotations page, because
+            // co-annotations will be filtered out in the response handler.
+            if (data.length !== undefined) {
+              data.length += filters.annotations.length;
+            }
+          }
+
+          if (data.order && data.order.length > 0) {
+            data.order = data.order.map(o => [o.column, o.dir]);
+          }
+
+          if (data.search && data.search.value.length > 0) {
+            data.search = data.search.value;
           }
 
           // User filter -- we are requesting annotations that are used by a
           // particular user.
           if (filters.user_id) {
-            aoData.push({
-                'name': 'user_id',
-                'value': filters.user_id
-            });
+            data.user_id = fitlers.user_id;
           }
           // Neuron filter -- we are requesting annotations that are used for
           // a particular neuron.
           if (filters.neuron_id) {
-            aoData.push({
-                'name': 'neuron_id',
-                'value': filters.neuron_id
-            });
+            data.neuron_id = filters.neuron_id;
           }
 
           // FIXME, terrible hack: The back-end doesn't know about the selection
           // column that is present if an unlink handler is provided.
           if (unlink_handler) {
-            aoData.forEach(function(e) {
-              if (e.name == 'iSortCol_0') {
-                e.value = Number(e.value) - 1;
+            if (data.order && data.order.length > 0) {
+              for (let orderEntry of data.order) {
+                  orderEntry[0] = orderEntry[0] - 1;
               }
-            });
+            }
           }
 
           // FIXME, terribale hack: The back-end expects an annotator at index
           // 4, rather than 3 (which is used in the UI.
           if (display_annotator && !display_usage) {
-            aoData.forEach(function(e) {
-              if (e.name == 'iSortCol_0') {
-                let val = Number(e.value);
-                if (val === 3) {
-                  e.value = 4;
+            if (data.order && data.order.length > 0) {
+              for (let orderEntry of data.order) {
+                if (orderEntry[0] === 3) {
+                  orderEntry[0] = 4;
                 }
               }
-            });
+            }
           }
 
           // Validate regular expression and only send if it is valid
           var searchInput = this.parent().find('div.dataTables_filter input[type=search]');
           try {
-            new RegExp(widget.filterTerm);
+            new RegExp(node.filterTerm);
             searchInput.css('background-color', '');
           } catch (e) {
             // If the search field does not contain a valid regular expression,
@@ -1002,54 +985,49 @@
             return;
           }
 
-          $.ajax({
-              "dataType": 'json',
-              "cache": false,
-              "type": "POST",
-              "url": sSource,
-              "data": aoData,
-              "success": function(result) {
-                  if (result.error) {
-                    if (-1 !== result.error.indexOf('invalid regular expression')) {
-                      searchInput.css('background-color', 'salmon');
-                      CATMAID.warn(result.error);
-                    } else {
-                      CATMAID.error(result.error, result.detail);
-                    }
-                    return;
-                  }
-                  // Filter all previously chosen co-annotations to not display
-                  // them in the list for new co-annotations.
-                  if (!filters.is_meta) {
-                    var new_aaData = result.aaData.filter(function(e) {
-                      return !filters.annotations.some(function(a_id) {
-                        return e[4] === a_id;
-                      });
-                    });
-                    var n_entries = result.iTotalRecords -
-                        filters.annotations.length;
-                    result.iTotalDisplayRecords = n_entries;
-                    result.iTotalRecords = n_entries;
-                    result.aaData = new_aaData;
-                  }
-                  // Regular datatable processing and callback
-                  fnCallback(result);
-                  if (callback) {
-                    callback(result);
-                  }
+          CATMAID.fetch(CATMAID.makeURL(project.id + '/annotations/table-list'), 'POST', data)
+            .then(result => {
+              if (result.error) {
+                if (-1 !== result.error.indexOf('invalid regular expression')) {
+                  searchInput.css('background-color', 'salmon');
+                  CATMAID.warn(result.error);
+                } else {
+                  CATMAID.error(result.error, result.detail);
+                }
+                return;
               }
-          });
+              // Filter all previously chosen co-annotations to not display
+              // them in the list for new co-annotations.
+              if (!filters.is_meta) {
+                var new_data = result.data.filter(function(e) {
+                  return !filters.annotations.some(function(a_id) {
+                    return e[4] === a_id;
+                  });
+                });
+                var n_entries = result.totalRecords -
+                    filters.annotations.length;
+                result.totalDisplayRecords = n_entries;
+                result.totalRecords = n_entries;
+                result.data = new_data;
+              }
+              // Regular datatable processing and callback
+              fnCallback(result);
+              if (callback) {
+                callback(result);
+              }
+          })
+          .catch(CATMAID.handleError);
       },
-      "aLengthMenu": [
+      "lengthMenu": [
           this.possibleLengths,
           this.possibleLengthsLabels
       ],
-      "oLanguage": {
+      "language": {
         "sSearch": "Search annotations (regex):"
       },
-      "bJQueryUI": true,
-      "aaSorting": [[ 1, "asc" ]],
-      "aoColumns": column_params
+      "jQueryUI": true,
+      "sorting": [[ 1, "asc" ]],
+      "columns": column_params
     });
 
     // Store the filter term for the current node
@@ -1088,20 +1066,19 @@
     $container.append(content);
 
     // Fill user table
-    var datatable = $(table).dataTable({
-      "bDestroy": true,
-      "sDom": '<"H"lr>t<"F"ip>',
-      "bProcessing": true,
-      "bServerSide": true,
-      "bAutoWidth": false,
-      "iDisplayLength": this.possibleLengths[0],
-      "sAjaxSource": CATMAID.makeURL('user-table-list'),
-      "fnServerData": function (sSource, aoData, fnCallback) {
+    var datatable = $(table).DataTable({
+      "destroy": true,
+      "dom": '<"H"lr>t<"F"ip>',
+      "processing": true,
+      "serverSide": true,
+      "autoWidth": false,
+      "displayLength": this.possibleLengths[0],
+      "ajax": function(data, callback, settings) {
           // Annotation filter -- we are requesting users that have
           // used a certain annotation
           if (filters.annotations) {
             filters.annotations.forEach(function(annotation, i) {
-              aoData.push({
+              data.push({
                   'name': 'annotations[' + i + ']',
                   'value': annotation
               });
@@ -1110,46 +1087,46 @@
           // Neuron filter -- only users who annotated this neuron
           // are shown.
           if (filters.neuron_id) {
-            aoData.push({
+            data.push({
                 'name': 'neuron_id',
                 'value': filters.neuron_id
             });
           }
-          $.ajax({
-              "dataType": 'json',
-              "cache": false,
-              "type": "POST",
-              "url": sSource,
-              "data": aoData,
-              "success": fnCallback
-          });
+          CATMAID.fetch({
+              url: CATMAID.makeURL('user-table-list'),
+              method: 'POST',
+              data: data,
+              parallel: true,
+            })
+            .then(callback)
+            .catch(CATMAID.handleError);
       },
-      "aLengthMenu": [
+      "lengthMenu": [
           this.possibleLengths,
           this.possibleLengthsLabels
       ],
-      "bJQueryUI": true,
-      "aaSorting": [[ 0, "asc" ]],
-      "aoColumns": [
+      "jQueryUI": true,
+      "sorting": [[ 0, "asc" ]],
+      "columns": [
         {
-          "sClass": "center",
-          "bSearchable": true,
-          "bSortable": true
+          "class": "center",
+          "searchable": true,
+          "Sortable": true
         },
         {
-          "sClass": "center",
-          "bSearchable": true,
-          "bSortable": true
+          "class": "center",
+          "searchable": true,
+          "sortable": true
         },
         {
-          "sClass": "center",
-          "bSearchable": true,
-          "bSortable": true
+          "class": "center",
+          "searchable": true,
+          "sortable": true
         },
         {
-          "sClass": "center",
-          "bSearchable": true,
-          "bSortable": true
+          "class": "center",
+          "searchable": true,
+          "sortable": true
         },
       ]
     });
@@ -1257,7 +1234,7 @@
     let node = this;
 
     // Fill neuron table
-    var datatable = $(table).dataTable({
+    var datatable = $(table).DataTable({
       "destroy": true,
       "dom": '<"H"lrf>t<"F"ip>',
       "processing": true,
@@ -1375,7 +1352,7 @@
           this.possibleLengths,
           this.possibleLengthsLabels
       ],
-      "oLanguage": {
+      "language": {
         "sSearch": "Search neuron names (regex):"
       },
       "jQueryUI": true,
@@ -1383,12 +1360,12 @@
       "columns": [
         {
           "width": "5em",
-          "className": "selector_column center",
+          "class": "selector_column center",
           "searchable": false,
           "orderable": false,
           "render": function(data, type, row, meta) {
             var cb_id = 'navigator_neuron_' + row.id + '_selection' +
-                self.navigator.widgetID;
+                node.navigator.widgetID;
             return '<input type="checkbox" id="' + cb_id +
                 '" name="someCheckbox" neuron_id="' + row.id + '" />';
           }
@@ -1410,7 +1387,7 @@
     });
 
     // Focus search input by default
-    let searchInput = datatable.parent().find('div.dataTables_filter input[type=search]');
+    let searchInput = $(table).parent().find('div.dataTables_filter input[type=search]');
     if (searchInput) searchInput.focus();
 
     // Make self accessible in callbacks more easily
@@ -1542,7 +1519,7 @@
 
     // If a neuron is selected a neuron filter node is created
     $('#' + table_id).on('dblclick', 'tbody tr', function () {
-      let neuronData = datatable.fnGetData(this);
+      let neuronData = datatable.this(this).data();
       CATMAID.Skeletons.getNeuronDetails(project.id, neuronData.skeleton_ids[0])
         .then(function(json) {
           var n = {
@@ -1785,7 +1762,7 @@
     // event is removed. If the annotation list node should create co-annotations,
     // a co-annotaion-filter is created.
     $('#' + table_id).on('dblclick', ' tbody tr', function () {
-        var aData = datatable.fnGetData(this);
+        var aData = datatable.row(this).data();
         var annotation = aData[0];
         var annotation_id = aData[4];
         var annotations_node = self.create_annotation_filter(annotation, annotation_id);
@@ -1845,12 +1822,12 @@
     // If a user is selected a user filter node is created and the event is
     // removed.
     $('#' + table_id).on('dblclick', ' tbody tr', function () {
-        var aData = datatable.fnGetData(this);
+        var data = datatable.row(this).data();
         var user = {
-          'login': aData[0],
-          'first_name': aData[1],
-          'last_name': aData[2],
-          'id': aData[3],
+          'login': data[0],
+          'first_name': data[1],
+          'last_name': data[2],
+          'id': data[3],
         };
         var filter_node = new NeuronNavigator.UserFilterNode(user);
         filter_node.link(self.navigator, self);
@@ -2021,9 +1998,9 @@
         metaAnnFilter, true, false, this.annotationListLength, deleteAnnotation,
         null);
     annDatatable.on('dblclick', ' tbody tr', function () {
-        var aData = annDatatable.fnGetData(this);
-        var annotation = aData[0];
-        var annotation_id = aData[4];
+        var data = annDatatable.row(this).data();
+        var annotation = data[0];
+        var annotation_id = data[4];
         var annotation_node =  new NeuronNavigator.AnnotationFilterNode(
             annotation, annotation_id, false, true);
         annotation_node.link(self.navigator, self);
@@ -2154,7 +2131,7 @@
     // annotation table.
     return function(result) {
         // Check if the neuron is locked and if so who did it
-        var locked = result.aaData.filter(function(e) {
+        var locked = result.data.filter(function(e) {
             // 0: name, 1: last used. 2: used, 3: annotator, 4: id
             return e[0] === 'locked';
         });
@@ -2405,7 +2382,7 @@
     var skeleton_table_id = 'navigator_skeletonlist_table' + this.navigator.widgetID;
     var table = document.createElement('table');
     table.setAttribute('id', skeleton_table_id);
-    table.setAttribute('class', 'display');
+    table.setAttribute('class', 'display cm-center');
     table.setAttribute('cellpadding', 0);
     table.setAttribute('cellspacing', 0);
     table.setAttribute('border', 0);
@@ -2424,15 +2401,15 @@
     // Add table to DOM
     container.append(content);
 
-    var skeleton_datatable = $(table).dataTable({
-      "bDestroy": true,
-      "sDom": '<"H"r>t<"F">',
+    var skeleton_datatable = $(table).DataTable({
+      "destroy": true,
+      "dom": '<"H"r>t<"F">',
       // default: <"H"lfr>t<"F"ip>
-      "bProcessing": true,
-      "bAutoWidth": false,
+      "processing": true,
+      "autoWidth": false,
       //"aLengthChange": false,
-      "bJQueryUI": true,
-      "bSort": false
+      "jQueryUI": true,
+      "sort": false
     });
 
     // Manually request compact-json object for skeleton
@@ -2457,13 +2434,13 @@
             // TODO measure smoothed skeleton length: sum of distances from end to branh, branch to branch, and branch to root, with a moving three-point average, in nm
 
             // Put data into table
-            skeleton_datatable.fnAddData([
+            skeleton_datatable.row.add([
               skeleton_id,
               nodes.length,
               eb.n_branches,
               eb.ends.length + 1, // count the soma
               eb.ends.length + 1 - n_tagged_ends,
-            ]);
+            ]).draw();
           })
         .catch(CATMAID.handleError);
     };
@@ -2472,8 +2449,8 @@
 
     // Add double click handler to skeleton to select it
     $('#' + skeleton_table_id).on('dblclick', ' tbody tr', function () {
-        var aData = skeleton_datatable.fnGetData(this);
-        var skeleton_id = aData[0];
+        var data = skeleton_datatable.row(this).data();
+        var skeleton_id = data[0];
         CATMAID.TracingTool.goToNearestInNeuronOrSkeleton( 'skeleton', skeleton_id );
     });
 
@@ -2507,9 +2484,9 @@
     // If a user is selected an annotation filter node is created and the event
     // is removed.
     $('#' + annotation_table_id).on('dblclick', ' tbody tr', function () {
-        var aData = annotation_datatable.fnGetData(this);
-        var a_name = aData[0];
-        var a_id = aData[4];
+        var data = annotation_datatable.row(this).data();
+        var a_name = data[0];
+        var a_id = data[4];
         var annotations_node = new NeuronNavigator.AnnotationFilterNode(
             a_name, a_id);
         annotations_node.link(self.navigator, self);

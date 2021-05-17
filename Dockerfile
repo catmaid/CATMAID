@@ -12,10 +12,10 @@ RUN apt-get update -y \
     && apt-get install -y apt-utils apt-transport-https ca-certificates gnupg \
     && apt-get install -y gawk wget software-properties-common \
     && apt-get update -y \
+    && wget --quiet -O - https://packages.erlang-solutions.com/ubuntu/erlang_solutions.asc | apt-key add - \
+    && add-apt-repository "deb https://packages.erlang-solutions.com/ubuntu focal contrib" \
     && wget --quiet -O - https://postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
     && add-apt-repository "deb https://apt.postgresql.org/pub/repos/apt/ focal-pgdg main" \
-    && wget --quiet -O - https://dl.bintray.com/rabbitmq/Keys/rabbitmq-release-signing-key.asc | apt-key add - \
-    && add-apt-repository "deb https://dl.bintray.com/rabbitmq-erlang/debian focal erlang" \
     && add-apt-repository ppa:deadsnakes/ppa \
     && add-apt-repository -y ppa:nginx/stable \
     && apt-get update -y \

@@ -273,6 +273,20 @@ Skeleton history widget:
 - By default skeleton refreshs keep all nodes in-place. To try a different
   version of the current layout, use the "Relayout" button.
 
+Neuron navigator:
+
+- Neuron widget nodes (like the active neuron display) show now also the initial
+  creator of the neuron and the initial creation time.
+
+- The textual representation of neurons now follows the global settings.
+
+- The neuron list filter input now remains focused when typing. The neuron
+  table should also update quicker initially.
+
+- The pagination in neuron lists is fixed and does work on the
+  first attempt now. Previously it took a second click to actually jump to a
+  page.
+
 Docker:
 
 - Asynchronous tasks can now also be run inside the Docker container. Celery and
@@ -532,9 +546,6 @@ Miscellaneous:
   not in view. This is mainly useful for deleting nodes in previously visible
   broken sections.
 
-- Neuron navigator: neuron widget nodes (like the active neuron display) show
-  now also the initial creator of the neuron and the initial creation time.
-
 - Auto-completion should now be faster by displaying only 15 filtering results.
 
 - Volume widget: box volumes can now be created also based on the active
@@ -643,9 +654,6 @@ Miscellaneous:
 - Skeleton bulk updates like splits or joins should now be faster on setups with
   spatial change events disabled (default).
 
-- Neuron navigator: the textual representation of neurons now follows the global
-  settings.
-
 - Connectivity widget: the rendering of large sets of input skeletons is now
   much faster.
 
@@ -655,13 +663,6 @@ Miscellaneous:
 - Neuron search: the active skeleton is now highlighted as soon as it part of
   the result shown in the table. Before, the row of the active skeleton wouldn't
   be highlighted after a search and only upon new selection of a skeleton.
-
-- Neuron navigator: the neuron list filter input now remains focused when typing.
-  the neuron table should also update quicker initially.
-
-- Neuron navigator: the pagination in neuron lists is fixed and does work on the
-  first attempt now. Previously it took a second click to actually jump to a
-  page.
 
 - Tracing data importer: The catmaid_import_data management command was not
   update edge data for project-wide materialization updates if there were no

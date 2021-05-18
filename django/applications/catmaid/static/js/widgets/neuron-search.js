@@ -1531,7 +1531,7 @@
     });
 
     // Add click handlers to remove tags from nodes
-    $table.on('click.cm', 'ul .remove_annotation', this,  function(event) {
+    $table.on('click.cm', 'ul .remove_annotation', this, function(event) {
       // Prevent the event from bubbling up the DOM tree
       event.stopPropagation();
       // Handle click

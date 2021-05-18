@@ -682,11 +682,8 @@
     }
 
     let allVolumes = this.datatable.rows({'search': 'applied' }).data().toArray();
-    let selectedVolumeIds = allVolumes.filter(function(v) {
-      return v.selected;
-    }).map(function(v) {
-      return v.id;
-    });
+    let selectedVolumes = allVolumes.filter(v => v.selected);
+    let selectedVolumeIds = selectedVolumes.map(v => v.id);
 
     if (selectedVolumeIds.length === 0) {
       CATMAID.warn("No volumes selected");
@@ -697,11 +694,10 @@
     CATMAID.fetch(project.id + '/volumes/entities/', 'POST', {
         volume_ids: selectedVolumeIds
       })
-      .then(function(ciMapping) {
-        return CATMAID.annotate(Object.values(ciMapping));
-      })
-      .then(function() {
+      .then(ciMredraw => CATMAID.annotate(Object.values(ciMapping)))
+      .then(() => {
         CATMAID.msg("Success", "Annotations added");
+        this.redraw();
       })
       .catch(CATMAID.handleError);
   };

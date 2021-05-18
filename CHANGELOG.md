@@ -195,6 +195,9 @@ Volume manager:
   filter. This makes it easier to try different filters without removing all
   other filters
 
+- Annotations can now also be removed from volumes if "Show removal tools" is
+  enabled.
+
 - For new node filters during volume creation, the merge mode can now be
   selected, i.e. whether additional filters will be combined using OR or AND.
 

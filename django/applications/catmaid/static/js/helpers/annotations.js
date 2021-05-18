@@ -263,5 +263,19 @@
     });
   };
 
+  /**
+   * Remove annotations.
+   */
+  CATMAID.removeAnnotations = function(projectId, entityIds, annotationIds) {
+
+    // Complain if the user has no annotation permissions for the current project
+    if (!CATMAID.mayEdit()) {
+      return Promise.reject(CATMAID.Warning("You don't have have permission to add annotations"));
+    }
+
+    return CATMAID.commands.execute(new CATMAID.RemoveAnnotationsCommand(project.id,
+                entityIds, annotationIds));
+  };
+
 })(CATMAID);
 

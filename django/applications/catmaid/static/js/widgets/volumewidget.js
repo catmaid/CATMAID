@@ -904,6 +904,10 @@
           hrow.insertCell().appendChild(document.createTextNode(c));
         });
 
+        let toAnnotationEntry = function(annotation) {
+          return `<li class="show_annotation" title="Show annotations in navigator" data-annotation="${annotation}">${annotation}${widget.showRemovalTools ? '<div class="remove_annotation" title="Remove annotation"></dev>' : ''}</li>`;
+        };
+
         var tableContainer = document.createElement('div');
         tableContainer.setAttribute('class', 'volume-list');
         tableContainer.appendChild(table);
@@ -947,7 +951,7 @@
               data: "annotations",
               render: function (data, type, row, meta) {
                 if (type === 'display') {
-                  return data.join(', ');
+                  return `<ul class="resultTags">${data.sort().map(toAnnotationEntry).join('')}</ul>`;
                 } else {
                   return data;
                 }
@@ -1018,6 +1022,62 @@
           var tr = $(this).closest('tr');
           var data =  $(table).DataTable().row(tr).data();
           data.selected = this.checked;
+        })
+        // Add click handlers to show an annotation in navigator
+        .on('click', 'ul .show_annotation', function() {
+          // Expect name to be the text content of the node
+          let annotationName = this.dataset.annotation;
+          let annotationId = CATMAID.annotations.getID(annotationName);
+          if (annotationId === undefined || annotationId === null) {
+            CATMAID.warn('Could not find annotation ID');
+            return;
+          }
+          // Create a new navigator and set it to an annotation filter node
+          let NN = new CATMAID.NeuronNavigator();
+          // Create a new window, based on the newly created navigator
+          WindowMaker.create('neuron-navigator', NN);
+          // Select the cloned node in the new navigator
+          NN.set_annotation_node(annotationName, annotationId);
+        })
+        // Add click handlers to remove tags from nodes
+        .on('click', 'ul .remove_annotation', widget, function(event) {
+          // Prevent the event from bubbling up the DOM tree
+          event.stopPropagation();
+
+          let annotationName = this.closest('li').dataset.annotation;
+          let annotationId = CATMAID.annotations.getID(annotationName);
+          if (annotationId === undefined || annotationId === null) {
+            CATMAID.warn('Could not find annotation ID');
+            return;
+          }
+
+          let widget = event.data;
+          let tr = $(this).closest("tr");
+          let volume = widget.datatable.row(tr).data();
+
+          if (!confirm(`Remove annotation "${annotationName}" from volume "${volume.title}"?`)) {
+            return;
+          }
+
+          // Retrieve class instance IDs for volumes
+          CATMAID.fetch(`${project.id}/volumes/entities/`, 'POST', {
+              volume_ids: [volume.id],
+            })
+            .then(function(ciMapping) {
+              return CATMAID.removeAnnotations(project.id, Object.values(ciMapping), [annotationId]);
+            })
+            .then(function() {
+              CATMAID.msg("Success", "Annotations removed");
+              // Update internal representation
+              let annotationIndex = volume.annotations.indexOf(annotationName);
+              if (annotationIndex > -1) {
+                volume.annotations.splice(annotationIndex, 1);
+              }
+              // Remove current annotation from displayed list
+              var result_tr = $(tr).find('.show_annotation[data-annotation=' + annotationName + ']');
+              result_tr.fadeOut(1000, function() { $(this).remove();  widget.datatable.row(tr).invalidate().draw(); });
+            })
+            .catch(CATMAID.handleError);
         });
 
         // Edit volume if 'edit' was clicked

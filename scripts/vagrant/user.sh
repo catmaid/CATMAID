@@ -13,6 +13,7 @@ echo "source ~/catmaid-env/bin/activate" >> ~/.bashrc
 # install python dependencies
 cd /CATMAID/django
 pip install -U pip
+pip install numpy
 pip install -r requirements-dev.txt -r requirements-optional.txt
 
 # install node dependencies

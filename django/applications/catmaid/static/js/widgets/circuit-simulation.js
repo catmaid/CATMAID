@@ -233,6 +233,7 @@
     this.redraw();
   };
 
+/* jshint ignore:start */
 /**
  * Duplication of the numeric.dopri function to introduce a non-negativity constraint.
  *
@@ -361,7 +362,8 @@ numeric.dopri_nonnegative = function dopri(x0,x1,y0,f,tol,maxit,event) {
     }
     ret.iterations = it;
     return ret;
-};
+  };
+/* jshint ignore:end */
 
 
   CircuitSimulation.prototype.resize = function() {

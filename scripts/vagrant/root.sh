@@ -46,7 +46,7 @@ add-apt-repository ppa:git-core/ppa
 curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
 
 # R PPA
-echo "deb https://cloud.r-project.org/bin/linux/ubuntu ${CODENAME}-cran35/" >> /etc/apt/sources.list
+echo "deb https://cloud.r-project.org/bin/linux/ubuntu ${CODENAME}-cran40/" >> /etc/apt/sources.list
 apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
 
 apt-key update
@@ -69,4 +69,3 @@ systemctl restart postgresql
 # increase number of file watchers (IDEs need this)
 echo "fs.inotify.max_user_watches=524288" | tee -a /etc/sysctl.conf
 sysctl -p
-

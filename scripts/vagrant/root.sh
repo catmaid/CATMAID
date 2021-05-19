@@ -55,7 +55,7 @@ apt-get upgrade -y
 
 cd /CATMAID
 sudo xargs apt-get install -y < packagelist-ubuntu-apt.txt
-apt-get install -y nodejs python3-pip python3.6-venv python3-wheel git r-base
+apt-get install -y nodejs python3-pip python3.8-venv python3-wheel git r-base
 
 POSTGRES_VERSION=$(psql --version | awk '{print $3}' | awk -F '.' '{print $1}')
 

@@ -6,15 +6,16 @@ set -x
 mkdir -p ~/.local/share
 
 # set up python environment
-python3.6 -m venv ~/catmaid-env
+python3.8 -m venv ~/catmaid-env
 source ~/catmaid-env/bin/activate
 echo "source ~/catmaid-env/bin/activate" >> ~/.bashrc
 
 # install python dependencies
 cd /CATMAID/django
-pip install -U pip
-pip install numpy
-pip install -r requirements-dev.txt -r requirements-optional.txt
+pip install -U pip setuptools wheel
+pip install -r requirements-dev.txt
+grep --invert-match "^cloud-volume" requirements-optional.txt > ~/requirements-nocloudvolume.txt
+pip install -r ~/requirements-nocloudvolume.txt
 
 # install node dependencies
 cd /CATMAID

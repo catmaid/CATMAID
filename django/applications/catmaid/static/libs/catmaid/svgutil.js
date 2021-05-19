@@ -753,7 +753,11 @@
       .attr("fill", "none")
       .attr("d", function(d) { return line(d.xy); })
       .style("stroke", function(d) { return d.color; })
-      .style("stroke-width", function(d) { return d.stroke_width; });
+      .style("stroke-width", function(d) { return d.stroke_width; })
+      .on("mouseover", function(d) {
+        d3.select(this).select("title").text(d.name);
+      })
+      .append("title");
 
     // Insert the graphics for the axes (after the data, so that they draw on top)
     var xg = svg.append("g")

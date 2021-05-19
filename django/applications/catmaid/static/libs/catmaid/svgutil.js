@@ -800,6 +800,27 @@
         .style("text-anchor", "end")
         .text(y_label);
 
+    var legend = svg.selectAll(".legend")
+      .data(lines)
+      .enter()
+        .append("g")
+        .attr("class", "legend")
+        .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+    legend.append("rect")
+      .attr("x", width - 18)
+      .attr("width", 18)
+      .attr("height", 18)
+      .style("fill", function(d) { return d.color; });
+
+    legend.append("text")
+      .attr("x", width - 20)
+      .attr("y", 9)
+      .attr("dy", ".35em")
+      .style("font-size", "11px")
+      .style("text-anchor", "end")
+      .text(function (d) { return d.name; });
+
     return svg;
   };
 

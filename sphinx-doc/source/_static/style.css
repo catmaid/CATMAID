@@ -2,6 +2,10 @@ img.logo {
   width: 120px;
 }
 
+div.sphinxsidebar h3.separate {
+  margin-top: 1em;
+}
+
 .lightimage img {
   opacity: 0.6;
   margin: 0.2em;

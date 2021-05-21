@@ -164,9 +164,19 @@
   };
 
   LinkWidget.prototype.setLinkEditParametersFromCurrentView = function() {
+    this.updateLocationFromCurrentView();
+    this.updateActiveNodeFromCurrentView();
+    this.updateLayoutParameters();
+    this.updateToolFromProject();
+  };
+
+  LinkWidget.prototype.updateLocationFromCurrentView = function() {
     this.linkEditX = project.coordinates.x;
     this.linkEditY = project.coordinates.y;
     this.linkEditZ = project.coordinates.z;
+  };
+
+  LinkWidget.prototype.updateActiveNodeFromCurrentView = function() {
     let activeNode = SkeletonAnnotations.getActiveNodeId();
     if (this.initLinkWithActiveSkeleton && activeNode) {
       if (!SkeletonAnnotations.isRealNode(activeNode)) {
@@ -187,6 +197,9 @@
       this.linkEditConnectorId = null;
       this.linkEditSkeletonId = null;
     }
+  };
+
+  LinkWidget.prototype.updateLayoutParameters = function() {
     if (this.initLinkWithLayout) {
       let ignoredWindowTitle = this.ignoreLinkWidget ? this.getName() : null;
       this.linkEditLayout = CATMAID.Layout.makeLayoutSpecForWindow(CATMAID.rootWindow,
@@ -194,6 +207,9 @@
     } else {
       this.linkEditLayout = null;
     }
+  };
+
+  LinkWidget.prototype.updateToolFromProject = function() {
     this.linkEditTool = project.getTool().toolname;
   };
 
@@ -459,12 +475,18 @@
       title: 'Add link',
       createControls: function(widget) {
         return [{
+          type: 'heading',
+          label: 'Link options',
+          title: 'Options that are taken into account when showing the link data for the current view',
+        }, {
           type: 'checkbox',
           label: 'Active node',
           value: widget.initLinkWithActiveSkeleton,
           title: 'Should the active node be respected for the new link?',
           onclick: e => {
             widget.initLinkWithActiveSkeleton = e.target.checked;
+            widget.updateActiveNodeFromCurrentView();
+            widget.update();
           }
         }, {
           type: 'checkbox',
@@ -473,6 +495,8 @@
           title: 'Should the current layout be respected for the new link?',
           onclick: e => {
             widget.initLinkWithLayout = e.target.checked;
+            widget.updateLayoutParameters();
+            widget.update();
           }
         }, {
           type: 'checkbox',
@@ -481,6 +505,8 @@
           title: 'If enabled, the link will include all skeletons for each widget.',
           onclick: e => {
             widget.initLinkWithWidgetSkeletons = e.target.checked;
+            widget.updateActiveNodeFromCurrentView();
+            widget.update();
           }
         }, {
           type: 'checkbox',
@@ -489,6 +515,8 @@
           title: 'Should the widget settings be included in the link?',
           onclick: e => {
             widget.initLinkWithWidgetSettings = e.target.checked;
+            widget.updateLayoutParameters();
+            widget.update();
           }
         }, {
           type: 'checkbox',
@@ -497,10 +525,12 @@
           title: 'If enabled, this link widget will be excluded from the link.',
           onclick: e => {
             widget.ignoreLinkWidget = e.target.checked;
+            widget.updateLayoutParameters();
+            widget.update();
           }
         }, {
           type: 'button',
-          label: 'Refresh using settings and view',
+          label: 'Show link data for options and cur. view',
           title: 'Populate properties for new link from current view and the the settings to the left of the button, won\'t save the link yet.',
           onclick: e => {
             widget.setLinkEditParametersFromCurrentView();

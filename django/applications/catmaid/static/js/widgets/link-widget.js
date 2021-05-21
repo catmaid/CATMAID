@@ -500,8 +500,8 @@
           }
         }, {
           type: 'button',
-          label: 'Init from current view',
-          title: 'Populate properties for new link from current view, won\'t save the link yet.',
+          label: 'Refresh using settings and view',
+          title: 'Populate properties for new link from current view and the the settings to the left of the button, won\'t save the link yet.',
           onclick: e => {
             widget.setLinkEditParametersFromCurrentView();
             widget.update();

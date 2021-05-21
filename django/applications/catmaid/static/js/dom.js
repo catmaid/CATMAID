@@ -1533,10 +1533,26 @@
     }, {});
   };
 
+  DOM.appendHeading = function(target, text, title) {
+        let newLandmarkGroupSection = document.createElement('span');
+        newLandmarkGroupSection.classList.add('section-header');
+        newLandmarkGroupSection.appendChild(document.createTextNode('New landmark group'));
+
+    let e = target.appendChild(document.createElement('span'));
+    e.classList.add('section-header');
+    e.appendChild(document.createTextNode(text));
+    if (title) {
+      e.setAttribute('title', title);
+    }
+    return e;
+  };
+
   DOM.appendElement = function(target, e) {
     switch (e.type) {
       case 'child':
         return target.appendChild(e.element);
+      case 'heading':
+        return CATMAID.DOM.appendHeading(target, e.label, e.title);
       case 'button':
         return CATMAID.DOM.appendButton(target, e.label, e.title, e.onclick, e.attr, e.disabled, e.id);
       case 'color-button':

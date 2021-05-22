@@ -3445,6 +3445,7 @@
     if (this.view.controls) {
       this.view.controls.handleResize();
     }
+    this.updateScaleBar();
     for (var skeletonId in this.content.skeletons) {
       var skeleton = this.content.skeletons[skeletonId];
       if (skeleton.line_material.resolution) {

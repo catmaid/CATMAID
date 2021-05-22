@@ -69,6 +69,9 @@
     this._layers = new Map();
     this._layerOrder = [];
 
+    // A list of default subscriptions for new layers.
+    this._defaultSubscruptions = [];
+
     /**
      * Whether redraws in this stack viewer should be blocking, that is,
      * whether layers that have asynchronous redraws must wait for redraw to
@@ -656,6 +659,21 @@
   };
 
   /**
+   * Set default layer subscriptions
+   */
+  StackViewer.prototype.addDefaultSubscription = function(sourceWidget, targetLayer, meta = {}) {
+    this._defaultSubscruptions.push({
+      source: sourceWidget,
+      target: targetLayer,
+      colors: meta.colors,
+      selectionBased: meta.selectionBased,
+      op: meta.op,
+      group: meta.group,
+      isLocal: meta.isLocal,
+    });
+  };
+
+  /**
    * Get offset translation.
    * @return {number[]} Offset translation as [x, y, z].
    */
@@ -999,6 +1017,37 @@
           }
         } catch (error) {
           CATMAID.handleError(error);
+        }
+      }
+
+      // If a set of default subscriptions is set for this viewer, try to apply
+      // them.
+      if (this._defaultSubscruptions) {
+        let existingLayersOfSameType = this.getLayersOfType(layer.constructor);
+        let newLayerKey = `${layer.constructor.name.toLowerCase()}-${existingLayersOfSameType.length}`;
+        for (let sub of this._defaultSubscruptions) {
+          // Simply check for name equality, which currently is order dependent.
+          // At the moment we also only allow subscriptions with the stack
+          // viewer as target (e.g. to color nodes). At the moment, only tracing
+          // layers are supported.
+          if (layer instanceof CATMAID.TracingLayer) {
+            if (sub.target === newLayerKey) {
+              // Subscribe the tracing layer's display source
+              let targetSkeletonSource = layer.tracingOverlay._skeletonDisplaySource;
+              let subscription = new CATMAID.SkeletonSourceSubscription(sub.source,
+                  CATMAID.tools.getDefined(sub.colors, true),
+                  CATMAID.tools.getDefined(sub.selectionBased, false),
+                  CATMAID.tools.getDefined(sub.op, CATMAID.SkeletonSource.UNION),
+                  CATMAID.tools.getDefined(sub.group, CATMAID.SkeletonSourceSubscription.ALL_EVENTS));
+
+              targetSkeletonSource.addSubscription(subscription, true);
+
+              // Override existing local models if subscriptions are updated
+              if (sub.ignoreLocal) {
+                targetSkeletonSource.ignoreLocal = true;
+              }
+            }
+          }
         }
       }
     }

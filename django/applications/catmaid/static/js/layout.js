@@ -398,6 +398,7 @@
         target.subscriptions.push({
           source: sub.source,
           target: this._a,
+          targetMeta: this.metaA,
         });
       }
     }
@@ -412,6 +413,7 @@
         target.subscriptions.push({
           source: sub.source,
           target: this._b,
+          targetMeta: this.metaB,
         });
       }
     }
@@ -470,7 +472,13 @@
 
   function assignNodeInfo(node, field, metaField, value) {
     if (typeof(value) === 'object' && !(value instanceof LayaoutNode)) {
-      node[field] = value.type;
+      // Special case: stack viewers that come with meta data (i.e. that are
+      // not only XY, YZ, XZ, will get their proper orientation used as value.
+      if (value.type === 'stackviewer') {
+        node[field] = value.orientation;
+      } else {
+        node[field] = value.type;
+      }
       node[metaField] = value;
     } else {
       node[field] = value;
@@ -740,6 +748,19 @@
         });
   };
 
+  function orientationToKeyword(orientation) {
+    if (orientation === CATMAID.Stack.ORIENTATION_XY) {
+      return 'XY';
+    } else if (orientation === CATMAID.Stack.ORIENTATION_ZY) {
+      return 'ZY';
+    } else if (orientation === CATMAID.Stack.ORIENTATION_XZ) {
+      return 'XZ';
+    } else {
+      throw new CATMAID.ValueError("Unknown orientation " + orientation +
+          " of node " + stackViewer);
+    }
+  }
+
   /**
    * Glue code for map().
    */
@@ -797,16 +818,47 @@
     } else if (node instanceof CMWWindow) {
       var stackViewer = stackViewerMapping.get(node);
       if (stackViewer) {
-        var orientation = stackViewer.primaryStack.orientation;
-        if (orientation === CATMAID.Stack.ORIENTATION_XY) {
-          return 'XY';
-        } else if (orientation === CATMAID.Stack.ORIENTATION_ZY) {
-          return 'ZY';
-        } else if (orientation === CATMAID.Stack.ORIENTATION_XZ) {
-          return 'XZ';
+        let orientation = orientationToKeyword(stackViewer.primaryStack.orientation);
+        // Check if there are subscriptions on any tracing layer shown in this
+        // viewer. If so, return an extended version of this stack reference to
+        // include this information.
+        let layers = stackViewer.getLayers();
+        let subscriptionComponents = [];
+        for (let [key, l] of layers) {
+          if (l instanceof CATMAID.TracingLayer) {
+            let skeletonSource = l.tracingOverlay._skeletonDisplaySource;
+            if (skeletonSource) {
+              let subs = skeletonSource.getSourceSubscriptions();
+              // If this widget contains any subscriptions, add them to the output.
+              var isSubscriptionTaget = subscriptionInfo.subscriptions.has(skeletonSource) &&
+                  subscriptionInfo.subscriptions.get(skeletonSource).length > 0;
+              if (isSubscriptionTaget) {
+                var subscriptions = subscriptionInfo.subscriptions.get(skeletonSource);
+                for (var i=0; i<subscriptions.length; ++i) {
+                  subscriptionComponents.push(subscriptions[i]);
+                }
+              }
+            }
+          }
+        }
+        if (subscriptionComponents.length > 0) {
+          var components = [`{ type: "stackviewer", orientation: ${orientation}`];
+          var isSubscriptionSource = subscriptionInfo.idIndex.has(stackViewer);
+           if (isSubscriptionSource) {
+            components.push(', id: "', subscriptionInfo.idIndex.get(skeletonSource), '"');
+          }
+          components.push(', subscriptions: [');
+          for (let s of subscriptionComponents) {
+            components.push('{ source: "',
+                subscriptionInfo.idIndex.get(s.source), '"');
+            components.push(', target: "',
+                subscriptionInfo.idIndex.get(s.target), '" }');
+          }
+          components.push(']');
+          components.push(' }');
+          return components.join('');
         } else {
-          throw new CATMAID.ValueError("Unknown orientation " + orientation +
-              " of node " + stackViewer);
+          return orientation;
         }
       }
       // Figure out what window the current display
@@ -892,20 +944,42 @@
     } else if (node instanceof CMWWindow) {
       // Figure out what window the current display is
       var widgetInfo = CATMAID.WindowMaker.getWidgetKeyForWindow(node);
-      if (!widgetInfo) {
-        return target;
-      }
+      if (widgetInfo) {
+        // Keep track of widgets per type
+        var typeCount = target.typeCount.get(widgetInfo.key);
+        if (!typeCount) {
+          typeCount = 0;
+        }
+        ++typeCount;
+        target.typeCount.set(widgetInfo.key, typeCount);
 
-      // Keep track of widgets per type
-      var typeCount = target.typeCount.get(widgetInfo.key);
-      if (!typeCount) {
-        typeCount = 0;
-      }
-      ++typeCount;
-      target.typeCount.set(widgetInfo.key, typeCount);
+        // Add widget to ID index
+        target.idIndex.set(widgetInfo.widget, widgetInfo.key + '-' + typeCount);
+      } else {
+        let stackViewerWindowMapping = new Map(project.getStackViewers().map(toWindowMapping));
+        let stackViewer = stackViewerWindowMapping.get(node);
+        if (stackViewer) {
+          for (let [key, l] of stackViewer.getLayers()) {
+            if (l instanceof CATMAID.TracingLayer) {
+              let source = l.tracingOverlay._skeletonDisplaySource;
+              const key = 'tracinglayer';
+              if (source) {
+                // Keep track of widgets per type
+                var typeCount = target.typeCount.get(key);
+                if (!typeCount) {
+                  typeCount = 0;
+                }
+                ++typeCount;
+                target.typeCount.set(key, typeCount);
 
-      // Add widget to ID index
-      target.idIndex.set(widgetInfo.widget, widgetInfo.key + '-' + typeCount);
+                // Add widget to ID index
+                target.idIndex.set(source, key + '-' + typeCount);
+              }
+            }
+          }
+        }
+      }
+      return target;
     } else {
       throw new CATMAID.ValueError('Unknown window type: ' + node);
     }
@@ -920,10 +994,20 @@
       'sources': new Set(),
     })  ;
 
+    let regularSources = Object.values(CATMAID.skeletonListSources.sources);
+    let sources = [
+        ...regularSources,
+        ...regularSources.reduce((o, s) => {
+          if (s instanceof CATMAID.TracingOverlay) {
+            o.push(s._skeletonDisplaySource);
+          }
+          return o;
+        }, [])
+    ];
+
     // Add actual subscriptions. Widgets can only have subscriptions if they
     // are registered skeleton sources.
-    for (var sourceName in CATMAID.skeletonListSources.sources) {
-      var source = CATMAID.skeletonListSources.getSource(sourceName);
+    for (var source of sources) {
       var subscriptions = source.getSourceSubscriptions();
       if (subscriptions && subscriptions.length > 0) {
         var subList = subscriptionInfo.subscriptions.get(source);
@@ -1043,15 +1127,38 @@
       }
 
       var sourceWidget = CATMAID.WindowMaker.getWidgetKeyForWindow(sourceWindow);
-      if (!sourceWidget) {
-        CATMAID.warn('Could not find subscription source: ' + subscription.source);
-        continue;
-      }
-
       var targetWidget = CATMAID.WindowMaker.getWidgetKeyForWindow(sub.target);
-      if (!targetWidget) {
-        CATMAID.warn('Could not find target widget');
-        continue;
+      if (!sourceWindow || !targetWidget) {
+        let stackViewerWindowMapping = new Map(project.getStackViewers().map(toWindowMapping));
+        if (!sourceWidget) {
+          CATMAID.warn('Could not find subscription source: ' + subscription.source);
+          continue;
+        }
+
+        if (!targetWidget) {
+          let stackViewer = stackViewerWindowMapping.get(sub.target);
+          if (!stackViewer) {
+            CATMAID.warn('Could not find target widget');
+            continue;
+          }
+          // In order to add subscriptions to e.g. tracing layers without
+          // knowing when they are ininitialized, we let the stack viewer
+          // know it should add a subscription when layers are added that
+          // match the target pattern.
+          if (sub.targetMeta.subscriptions) {
+            for (let layerSub of sub.targetMeta.subscriptions) {
+              var layerSubSourceWindow = subscriptionInfo.idIndex.get(layerSub.source);
+              var layerSubSourceWidget = CATMAID.WindowMaker.getWidgetKeyForWindow(layerSubSourceWindow);
+              if (!layerSubSourceWidget) {
+                CATMAID.warn('Could not find soure widget for layer subscripton');
+                continue;
+              }
+              stackViewer.addDefaultSubscription(layerSubSourceWidget.widget, layerSub.target, layerSub);
+              continue;
+            }
+            continue;
+          }
+        }
       }
 
       var subscription = new Subscription(sourceWidget.widget,

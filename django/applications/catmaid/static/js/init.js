@@ -424,9 +424,28 @@ var project;
       this.href = project.createURL(e.shiftKey);
       return true;
     };
-    a_url.onpointerup = function( e )
+    let urlToViewJustClicked = false;
+    a_url.onclick = function( e )
     {
-      this.href = project.createURL(e.shiftKey);
+      if (e.ctrlKey) {
+        Client.createDeepLink(e.shiftKey)
+          .then(link => {
+            this.href = link;
+            CATMAID.tools.copyToClipBoard(link);
+            e.target.href = link;
+            urlToViewJustClicked = true;
+            $(e.target)[0].click();
+
+          })
+          .catch(CATMAID.handleError);
+        return false;
+      }
+
+      if (urlToViewJustClicked) {
+        urlToViewJustClicked = false;
+      } else {
+        this.href = project.createURL(e.shiftKey);
+      }
       return true;
     };
 
@@ -483,7 +502,15 @@ var project;
 
     $(document.body).on('click', 'a[data-role=url-to-clipboard]', e => {
       e.preventDefault();
-      CATMAID.tools.copyToClipBoard(CATMAID.Client.getAndCheckUrl(e.shiftKey));
+      if (e.ctrlKey) {
+        Client.createDeepLink(e.shiftKey)
+          .then(link => {
+            CATMAID.tools.copyToClipBoard(link);
+          })
+          .catch(CATMAID.handleErrors);
+      } else {
+        CATMAID.tools.copyToClipBoard(CATMAID.Client.getAndCheckUrl(e.shiftKey));
+      }
     });
 
     // Assume an unauthenticated session by default

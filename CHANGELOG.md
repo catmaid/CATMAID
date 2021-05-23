@@ -702,6 +702,9 @@ Miscellaneous:
   a height of 50% in the dialog and don't cause enlarging the dialog with long
   lists.
 
+- Neuron navigator: require less neuron name updates when updating the active
+  skeleton display.
+
 ## Maintenance updates
 
 - Volume widget: don't show removal options by default. It happens generally

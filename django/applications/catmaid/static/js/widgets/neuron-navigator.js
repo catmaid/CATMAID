@@ -2628,15 +2628,17 @@
   {
     if (this.sync_active_neuron) {
       if (this.navigator) {
-        // Unregister current neuron
-        if (this.current_skid) {
-          this.navigator.unregister(this, this.current_skid);
-        }
-        // Update state
-        this.current_skid = skeleton_id;
-        // Register new neuron
-        if (this.current_skid) {
-          this.navigator.register(this, skeleton_id);
+        if (this.current_skid != skeleton_id) {
+          // Unregister current neuron
+          if (this.current_skid) {
+            this.navigator.unregister(this, this.current_skid);
+          }
+          // Update state
+          this.current_skid = skeleton_id;
+          // Register new neuron
+          if (this.current_skid) {
+            this.navigator.register(this, skeleton_id);
+          }
         }
       } else {
         // Update state only
@@ -2650,12 +2652,19 @@
 
   NeuronNavigator.ActiveNeuronMixin.prototype.refresh_activeneuron = function()
   {
+    let newSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
+
+    // No need ro re-register with the Neuron Name Service if the skeleton ID didn't change.
+    if (this.current_skid == newSkeletonId) {
+      return;
+    }
+
     if (this.navigator && this.current_skid) {
       this.navigator.unregister(this, this.current_skid);
     }
 
     if (!SkeletonAnnotations.atn.isRemote()) {
-      this.current_skid = SkeletonAnnotations.getActiveSkeletonId();
+      this.current_skid = newSkeletonId;
     }
 
     if (this.navigator && this.current_skid) {

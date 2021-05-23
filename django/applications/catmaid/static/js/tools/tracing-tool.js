@@ -283,10 +283,10 @@
       }
 
       // Insert a text div for the neuron name in the canvas window title bar
-      var activeElementId = "active-element" + stackViewer.getId();
-      var activeElement = document.getElementById(activeElementId);
+      let activeElementId = `active-element${stackViewer.getId()}`;
+      let stackFrame = stackViewer.getWindow().getFrame();
+      let activeElement = stackFrame.querySelector(`#${activeElementId}`);
       if (!activeElement) {
-        var stackFrame = stackViewer.getWindow().getFrame();
         activeElement = document.createElement("p");
         activeElement.id = activeElementId;
         activeElement.classList.add("active-element");
@@ -500,7 +500,9 @@
       let suffix = api ? ` | ${api.name}` : '';
 
       project.getStackViewers().forEach((stackViewer) => {
-        var label = $('#active-element' + stackViewer.getId());
+        let activeElementId = `active-element${stackViewer.getId()}`;
+        let stackFrame = stackViewer.getWindow().getFrame();
+        let label = $(`#${activeElementId}`, stackFrame);
         if (0 === label.length) return;
 
         var labelData = label.data();

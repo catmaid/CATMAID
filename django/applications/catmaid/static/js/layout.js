@@ -167,6 +167,7 @@
           target.subscriptions.push({
             source: sub.source,
             target: this._a,
+            targetMeta: this.meta,
           });
         }
       }
@@ -185,7 +186,7 @@
       if (isFn(c.missingViews)) {
           c.missingViews(views);
       } else {
-        views.delete(c.type);
+        views.delete(typeof(c) === 'number' ? c : c.type);
       }
     }
   };
@@ -195,7 +196,7 @@
     for (var i=0; i<this.children.length; ++i) {
       var c = this.children[i];
       result += isFn(c.minStackViewers) ?
-          c.minStackViewers() : (validOrientations.has(c.type) ? 1 : 0);
+          c.minStackViewers() : (validOrientations.has(typeof(c) === 'number' ? c : c.type) ? 1 : 0);
     }
     return result;
   };
@@ -205,7 +206,7 @@
     for (var i=0; i<this.children.length; ++i) {
       var c = this.children[i];
       result += isFn(c.maxStackViewers) ?
-          c.maxStackViewers() : (validOrientations.has(c.type) ? 1 : 0);
+          c.maxStackViewers() : (validOrientations.has(typeof(c) === 'number' ? c : c.type) ? 1 : 0);
     }
     return result;
   };
@@ -215,7 +216,7 @@
     for (var i=0; i<this.children.length; ++i) {
       var c = this.children[i];
       result += isFn(c.regularWindows) ?
-          c.regularWindows() : (validOrientations.has(c.type) ? 0 : 1);
+          c.regularWindows() : (validOrientations.has(typeof(c) === 'number' ? c : c.type) ? 0 : 1);
     }
     return result;
   };
@@ -225,7 +226,7 @@
     for (var i=0; i<this.children.length; ++i) {
       var c = this.children[i];
       var a = isFn(c.makeNode) ?
-          c.makeNode(windows) : windows.get(c.type).pop();
+          c.makeNode(windows) : windows.get(validOrientations.has(c) ? c : c.type).pop();
       childNodes.push(a);
     }
     this._nodes = Array.from(childNodes);
@@ -240,7 +241,7 @@
       var c = this.children[i];
       if (isFn(c.makeRegularWindows)) {
         n = n - c.makeRegularWindows(n, target);
-      } else if (!validOrientations.has(c.type)) {
+      } else if (!validOrientations.has(typeof(c) === 'number' ? c : c.type)) {
         var win = createWindow(c.type, c.meta.options, c.meta.skeletons, c.meta.state);
         var typedWindows = target.get(c.type);
         if (!typedWindows) {
@@ -277,6 +278,7 @@
             target.subscriptions.push({
               source: sub.source,
               target: this._nodes[j],
+              targetMeta: c.meta,
             });
           }
         }

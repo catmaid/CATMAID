@@ -174,13 +174,6 @@ django/applications/catmaid/static/js/widgets/treenode-table.js: line 171, col 4
 django/applications/catmaid/static/js/widgets/treenode-table.js: line 171, col 52, 'lastModified' is defined but never used.
 django/applications/catmaid/static/js/widgets/treenode-table.js: line 171, col 66, 'reviewer' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/window-manager.js: line 345, col 7, 'f1' is defined but never used.
-django/applications/catmaid/static/js/widgets/window-manager.js: line 346, col 7, 'f2' is defined but never used.
-django/applications/catmaid/static/js/widgets/window-manager.js: line 558, col 7, 'f1' is defined but never used.
-django/applications/catmaid/static/js/widgets/window-manager.js: line 559, col 7, 'f2' is defined but never used.
-django/applications/catmaid/static/js/widgets/window-manager.js: line 1037, col 7, 'frame' is defined but never used.
-django/applications/catmaid/static/js/widgets/window-manager.js: line 1313, col 7, 'self' is defined but never used.
-
 django/applications/catmaid/static/libs/catmaid/Arbor.js: line 1312, col 13, 'pivot' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/Arbor.js: line 1904, col 7, 'root' is defined but never used.
 
@@ -225,4 +218,4 @@ django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 1817, col
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 1850, col 1, 'async functions' is only available in ES8 (use 'esversion: 8').
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2009, col 29, The object literal notation {} is preferable.
 
-175 errors
+169 errors

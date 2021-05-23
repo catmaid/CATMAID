@@ -342,8 +342,6 @@ CMWHSplitNode.prototype.redraw = function () {
 };
 
 CMWHSplitNode.prototype.changeWidth = function (d) {
-  var f1 = this.child1.getFrame();
-  var f2 = this.child2.getFrame();
   var w = this.getWidth();
   var w1 = Math.max(20, Math.min(w - 20, this.child1.getWidth() + d));
   this.widthRatio = w1 / w;
@@ -555,8 +553,6 @@ CMWVSplitNode.prototype.redraw = function () {
 };
 
 CMWVSplitNode.prototype.changeHeight = function (d) {
-  var f1 = this.child1.getFrame();
-  var f2 = this.child2.getFrame();
   var h = this.getHeight();
   var h1 = Math.max(20, Math.min(h - 20, this.child1.getHeight() + d));
   this.heightRatio = h1 / h;
@@ -1034,7 +1030,6 @@ CMWWindow.prototype.constructor = CMWWindow;
  * @return height of the window minus titlebar in pixels
  */
 CMWWindow.prototype.getContentHeight = function () {
-  var frame = this.getFrame();
   var h = this.getAvailableHeight();
   if (this.frame.firstChild && this.frame.firstChild.offsetHeight)
     h -= this.frame.firstChild.offsetHeight;
@@ -1307,10 +1302,6 @@ function ResizeHandle(type, node) {
       return false;
     }
   };
-
-
-  // initialise
-  var self = this;
 
   if (type != "v") type = "h";
   var view = document.createElement("div");

@@ -1145,7 +1145,7 @@
           // knowing when they are ininitialized, we let the stack viewer
           // know it should add a subscription when layers are added that
           // match the target pattern.
-          if (sub.targetMeta.subscriptions) {
+          if (sub.targetMeta && sub.targetMeta.subscriptions) {
             for (let layerSub of sub.targetMeta.subscriptions) {
               var layerSubSourceWindow = subscriptionInfo.idIndex.get(layerSub.source);
               var layerSubSourceWidget = CATMAID.WindowMaker.getWidgetKeyForWindow(layerSubSourceWindow);

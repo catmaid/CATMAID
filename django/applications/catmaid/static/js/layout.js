@@ -269,12 +269,12 @@
         }
 
         if (c.meta.subscriptions) {
-          var sub = c.meta.subscriptions;
-          if (sub.length > 0 && !this._nodes[i]) {
+          var subs = c.meta.subscriptions;
+          if (subs.length > 0 && !this._nodes[i]) {
             throw new CATMAID.ValueError("Expected created node in multi node context");
           }
-          for (let j=0; j<sub.length; ++j) {
-            var sub = sub[j];
+          for (let j=0; j<subs.length; ++j) {
+            var sub = subs[j];
             target.subscriptions.push({
               source: sub.source,
               target: this._nodes[j],

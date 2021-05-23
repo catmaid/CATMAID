@@ -230,7 +230,7 @@
       childNodes.push(a);
     }
     this._nodes = Array.from(childNodes);
-    return new this.NodeType(childNodes);
+    return new this.NodeType(childNodes, this.activeIndex);
   };
 
   MultiNode.prototype.makeRegularWindows = function(n, target) {
@@ -540,7 +540,7 @@
   WNode.prototype.constructor = WNode;
 
 
-  var TNode = function(a) {
+  var TNode = function(a, activeIndex=0) {
     this.children = a.map(function(c) {
       if (typeof(c) === 'object' && !(c instanceof LayaoutNode)) {
         let child = {};
@@ -550,6 +550,7 @@
         return c;
       }
     });
+    this.activeIndex = activeIndex;
     this.NodeType = CMWTabbedNode;
   };
   TNode.prototype = Object.create(MultiNode.prototype);
@@ -574,8 +575,8 @@
     return new HNode(a, b, ratio);
   }
 
-  function t(children) {
-    return new TNode(children);
+  function t(children, activeIndex=0) {
+    return new TNode(children, activeIndex);
   }
 
   function o(a) {
@@ -816,7 +817,7 @@
           ignoredWindowTitle: ignoredWindowTitle,
         }).filter((c, i) => {
           return !ignoredWindowTitle || ignoredWindowTitle !== node.children[i].title;
-        }).join(', ') + '])';
+        }).join(', ') + `], ${node.children.indexOf(node.activeChild)})`;
     } else if (node instanceof CMWWindow) {
       var stackViewer = stackViewerMapping.get(node);
       if (stackViewer) {

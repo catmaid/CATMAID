@@ -649,13 +649,13 @@ CMWVSplitNode.prototype.toXML = function (tabs) {
 /**
  * Tabbed split node
  */
-function CMWTabbedNode(children) {
+function CMWTabbedNode(children, activeIndex=0) {
   this.id = this.uniqueId();
 
   this.parent = null;
 
   this.children = children;
-  this.activeChild = children[0];
+  this.activeChild = children[activeIndex];
 
   this.children.forEach(function (c) {
     c.setParent(this);

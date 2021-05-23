@@ -424,6 +424,12 @@ var project;
       this.href = project.createURL(e.shiftKey);
       return true;
     };
+    a_url.onpointerup = function( e )
+    {
+      this.href = project.createURL(e.shiftKey);
+      return true;
+    };
+
     let linkMenu = new Menu();
     linkMenu.update([{
       id: 'create-link',

@@ -28,6 +28,8 @@ and other administration related changes are listed in order.
   This also requires updating all installed R packages. In all likelihood this
   requires executing "manage.py catmaid_setup_nblast_environment".
 
+- The recommended python version is now 3.8, although support for 3.6 is maintained.
+
 - A virtualenv update is required.
 
 - For production environments it is now recommended to also install the Python

@@ -21,7 +21,7 @@ Introduction
 The most fundamental dependencies of CATMAID are:
 
 1. PostgreSQL 12 and PostGIS 2.5
-2. Python 3.6, 3.7, 3.8 or PyPy3.6
+2. CPython 3.6, 3.7, 3.8, 3.9 or PyPy3.7 (CPython 3.8 is recommended)
 
 To get the required PostgreSQL version for Debian-based systems, such as
 Ubuntu, you have to add the officical Postgres repository as an
@@ -36,9 +36,8 @@ done so already)::
     wget --quiet -O - ${PG_KEY_URL} | sudo apt-key add -
     sudo apt-get update
 
-While newer Python versions are supported, we recommend the use of Python 3.6,
-because that's what we have most experience with at the moment. To be able to
-install it on Ubuntu 16.04 and earlier, the following needs to be done::
+While other Python versions are supported, we recommend the use of Python 3.8.
+To be able to install it on Ubuntu 16.04 and earlier, the following needs to be done::
 
     sudo add-apt-repository ppa:deadsnakes/ppa
     sudo apt-get update
@@ -52,7 +51,7 @@ or newer not  be available on your system, use the following PPA::
 
 And then you can install these dependencies with::
 
-    sudo apt-get install python3.6 postgresql-12 postgresql-12-postgis-2.5 gdal-bin
+    sudo apt-get install python3.8 postgresql-12 postgresql-12-postgis-2.5 gdal-bin
 
 CATMAID is based on the `Django web framework
 <https://www.djangoproject.com/>`_.  If you just wish to work on
@@ -77,7 +76,7 @@ the source code is in ``/home/alice/catmaid``::
 2. Install required Python packages
 ###################################
 
-We recommend the use of Python 3.6 or newer for production use. With a few
+We recommend the use of Python 3.8 or newer for production use. With a few
 limitations PyPy3 can be used as well (no cropping, no back-end plotting,
 no synapse clustering, no ontology clustering).
 
@@ -113,7 +112,7 @@ and call ``source ~/.bashrc`` again::
 To create a new virtualenv for CATMAID's Python dependencies,
 you can do::
 
-    mkvirtualenv --no-site-packages -p /usr/bin/python3.6 catmaid
+    mkvirtualenv --no-site-packages -p /usr/bin/python3.8 catmaid
 
 That will create a virtualenv in ``~/.virtualenvs/catmaid/``, and
 while your virtualenv is activated, Python libraries will be
@@ -143,7 +142,7 @@ shells, for example, you will need to activate it by running::
 
 .. note::
 
-   If you are using Python 3.6 on Ubuntu 14.04 and 16.04, never uninstall Python
+   If you are using Python 3.6 or newer on Ubuntu 14.04 and 16.04, never uninstall Python
    3.5, because it might break some parts of the system.
 
 Install all of the required Python packages with::

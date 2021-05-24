@@ -13,7 +13,7 @@ from catmaid.control.annotation import (get_annotated_entities,
 from catmaid.control.tracing import check_tracing_setup, known_tags
 from catmaid.control.volume import find_volumes
 from catmaid.models import (Class, ClassInstance, ClassInstanceClassInstance,
-        ConnectorClassInstance, Relation, Connector, Project, Treenode,
+        ConnectorClassInstance, DeepLink, Relation, Connector, Project, Treenode,
         TreenodeClassInstance, TreenodeConnector, User, ReducedInfoUser,
         ExportUser, Volume)
 from catmaid.util import str2bool, str2list
@@ -121,6 +121,7 @@ class Exporter():
         self.export_treenodes = options['export_treenodes']
         self.connector_mode = options['connector_mode']
         self.export_annotations = options['export_annotations']
+        self.export_public_deep_links = options['export_public_deep_links']
         self.export_tags = options['export_tags']
         self.allowed_tags = options['allowed_tags']
 
@@ -983,6 +984,12 @@ class Exporter():
             else:
                 logger.info("No volumes found to export")
 
+        # Public deep links
+        if self.export_public_deep_links:
+            deep_links = DeepLink.objects.filter(project_id=self.project.id, is_public=True)
+            logger.info(f'Exporting {len(deep_links)} public deep links')
+            self.to_serialize.append(deep_links)
+
         # Export users, either completely or in a reduced form
         seen_user_ids = set()
         # Find users involved in exported data
@@ -1091,6 +1098,9 @@ class Command(BaseCommand):
                 type=str2bool, nargs='?', const=True, default=False,
                 help='Export volumes from source. More constraints can be ' +
                 'provided using the --volume-annotation argument.')
+        parser.add_argument('--public-deep-links', dest='export_public_deep_links',
+                type=str2bool, nargs='?', const=True, default=False,
+                help='Export all public deep links in the exported project')
         parser.add_argument('--required-annotation', dest='required_annotations',
             action='append', help='Name a required annotation for exported ' +
             'skeletons. Meta-annotations can be used as well.')

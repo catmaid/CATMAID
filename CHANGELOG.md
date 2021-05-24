@@ -607,6 +607,9 @@ Miscellaneous:
   constrain the users that are visible to non-superuser users. If enabled, only
   users that share knowledge about the same project tokens can be seen.
 
+- Export management command: the new option --public-deep-links allows to export
+  public deep links of the selected projects.
+
 ### Bug fixes
 
 - Cropping tool: if a single pixel past the start of a new image tile

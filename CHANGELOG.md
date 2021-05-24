@@ -44,6 +44,8 @@
   Instead of hard-coding the 1024px, the minimum tile size defined in the mirror
   set is used. Without any mirrors, no extra zoom levels will be assumed.
 
+- The recommended python version is now 3.8, although support for 3.6 is maintained.
+
 - A virtualenv update is required.
 
 ### Features and enhancements

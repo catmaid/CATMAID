@@ -29,7 +29,7 @@ interface and suite of analysis tools which interact with the backend's HTTP
 API. The frontend also has its own APIs which allow new tools to be quickly
 constructed or expert users to perform novel analysis using the browser console.
 
-The backend is written primarily in Python 3.6 using the Django web framework.
+The backend is written primarily in Python 3.8 using the Django web framework.
 Annotations and metadata about stacks are stored in a PostgreSQL database. Most
 endpoints in the backend API expect and return JSON.
 

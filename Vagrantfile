@@ -11,9 +11,8 @@ class VagrantPlugins::ProviderVirtualBox::Action::Network
 end
 
 Vagrant.configure("2") do |config|
-  # extremely slow web host
-  #config.vm.box = "ubuntu/bionic64"
-  config.vm.box = "bento/ubuntu-18.04"
+  # also consider bento/ubuntu-* boxes
+  config.vm.box = "ubuntu/focal64"
 
   if ENV["CATMAID_VM_DISK"]
     # https://askubuntu.com/a/1209925/439260
@@ -21,24 +20,26 @@ Vagrant.configure("2") do |config|
       raise Vagrant::Errors::VagrantError.new, "vagrant-disksize plugin is missing. Install it using 'vagrant plugin install vagrant-disksize' and rerun 'vagrant up'"
     end
 
-    # increase disk size
-    # https://github.com/sprotheroe/vagrant-disksize/issues/37#issuecomment-573349769
     config.disksize.size = ENV["CATMAID_VM_DISK"]
-    config.vm.provision "shell", inline: <<-SHELL
-      parted /dev/sda resizepart 1 100%
-      pvresize /dev/sda1
-      lvresize -rl +100%FREE /dev/mapper/vagrant--vg-root
-    SHELL
-  #puts "Disk size set to " + ENV["CATMAID_VM_DISK"]
+
+    # When using bento/ubuntu-18.04 box,
+    # needed to resize partitions, physical volumes, logical volumes.
+    # This breaks in ubuntu/bionic64 and more recent bento/ubuntu boxes.
+    # However, it also may not be necessary.
+    # See discussion and related PR:
+    # https://github.com/sprotheroe/vagrant-disksize/issues/37
+    # config.vm.provision "shell", inline: <<-SHELL
+    #   parted /dev/sda resizepart 1 100%
+    #   pvresize /dev/sda1
+    #   lvresize -rl +100%FREE /dev/mapper/vagrant--vg-root
+    # SHELL
   end
 
   config.vm.provider "virtualbox" do |v|
     memory = ENV["CATMAID_VM_RAM_MB"] ? ENV["CATMAID_VM_RAM_MB"].to_i : 2048
     v.memory = memory
-    #puts "RAM limit (MB) set to #{memory}"
     cpus = ENV["CATMAID_VM_CPUS"] ? ENV["CATMAID_VM_CPUS"].to_i : 2
     v.cpus = cpus
-    #puts "CPU limit set to #{cpus}"
   end
 
   # source directory

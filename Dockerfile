@@ -19,7 +19,7 @@ RUN apt-get update -y \
     && add-apt-repository ppa:deadsnakes/ppa \
     && add-apt-repository -y ppa:nginx/stable \
     && apt-get update -y \
-    && apt-get install -y python3.6 python3.6-dev git python3-pip \
+    && apt-get install -y python3.8 python3.8-dev git python3-pip \
     && apt-get install -y nginx supervisor \
     && apt-get install -y rabbitmq-server \
     && rm -rf /var/lib/apt/lists/*
@@ -27,15 +27,17 @@ COPY packagelist-ubuntu-apt.txt /home/
 RUN apt-get update -y  \
     && xargs apt-get install -y < /home/packagelist-ubuntu-apt.txt \
     && rm -rf /var/lib/apt/lists/*
-COPY django/requirements.txt django/requirements-async.txt /home/django/
+COPY django/requirements.txt django/requirements-async.txt django/requirements-production.txt /home/django/
 ENV WORKON_HOME /opt/virtualenvs
 RUN mkdir -p /opt/virtualenvs \
     && /bin/bash -c "source /usr/share/virtualenvwrapper/virtualenvwrapper.sh \
-    && mkvirtualenv catmaid -p /usr/bin/python3.6 \
+    && mkvirtualenv catmaid -p /usr/bin/python3.8 \
     && workon catmaid \
     && pip install -U pip setuptools \
     && pip install -r /home/django/requirements.txt \
-    && pip install -r /home/django/requirements-async.txt"
+    && pip install -r /home/django/requirements-async.txt \
+    && pip install -r /home/django/requirements-production.txt \
+    "
 
 COPY . /home/
 

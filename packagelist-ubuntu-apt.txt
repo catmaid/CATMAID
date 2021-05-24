@@ -3,7 +3,7 @@ postgresql-12-postgis-2.5
 gcc
 gfortran
 git
-python3.6-dev
+python3.8-dev
 postgresql-common
 libpq-dev
 libhdf5-serial-dev

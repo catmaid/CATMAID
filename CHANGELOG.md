@@ -550,6 +550,9 @@ Miscellaneous:
 
 - Auto-completion should now be faster by displaying only 15 filtering results.
 
+- Selection table: a minim review percentage can now be used as a filter using
+  the new numeric input in the name column header table cell.
+
 - Volume widget: box volumes can now be created also based on the active
   skeleton's bounding box.
 

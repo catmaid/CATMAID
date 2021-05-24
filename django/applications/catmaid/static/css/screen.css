@@ -1503,7 +1503,7 @@ table.skeleton-table .ui-icon-close {
 }
 
 table.skeleton-table th input.filter {
-  width: 33%;
+  width: 25%;
   max-width: 10em;
   border: 1px solid #ccc;
   margin: 0.1em;

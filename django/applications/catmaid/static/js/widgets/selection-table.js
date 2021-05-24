@@ -21,6 +21,7 @@
     this.skeleton_ids = {}; // skeleton_id vs index in skeleton array
     this.reviews = {};  // skeleton_id vs review percentage
     this.review_filter = 'Union'; // filter for review percentage: 'Union', 'Team' or 'Self'
+    this.min_review_percent = 0;
     this.all_visible = true;
     this.all_items_visible = {pre: true, post: true, text: false, meta: true};
     this.next_color_index = 0;
@@ -240,7 +241,8 @@
                 '<th><i class="fa fa-close" id="selection-table-remove-all' + this.widgetID + '" title="Remove all"></i></th>' +
                 '<th class="expanding"><input type="button" value="Filter" class="filter" />' +
                   '<input class="filter" type="text" title="Use / for regex" placeholder="name filter" id="selection-table-filter' + this.widgetID + '" />' +
-                  '<input class="filter" type="text" title="Use / for regex" placeholder="annotation filter" id="selection-table-ann-filter' + this.widgetID + '" /></th>' +
+                  '<input class="filter" type="text" title="Use / for regex" placeholder="annotation filter" id="selection-table-ann-filter' + this.widgetID + '" />' +
+                  '<input class="filter" type="number" min="0" max="100" step="10" title="The minimum review percentage for displayed neurons" placeholder="min review percent" id="selection-table-review-filter' + this.widgetID + '" /></th>' +
                 '<th><select class="review-filter">' +
                   '<option value="Union" selected>Union</option>' +
                   '<option value="Team">Team</option>' +
@@ -282,9 +284,13 @@
               }
             });
         $('th input[type=button].filter', tab).on("click", filterNeuronList);
-        $('th input[type=text].filter', tab).on("keyup", function(e) {
+        $('th input[type=number].filter', tab).on("click", filterNeuronList);
+
+        let filterOnEnter = function(e) {
           if ('Enter' === e.key) filterNeuronList();
-        });
+        };
+        $('th input[type=text].filter', tab).on("keyup", filterOnEnter);
+        $('th input[type=number].filter', tab).on("keyup", filterOnEnter);
         $('th', tab).on("click", this, function(e) {
           // Prevent sorting if order is locked
           var widget = e.data;
@@ -298,10 +304,11 @@
          * Trigger list filter.
          */
         function filterNeuronList() {
-          var filters = $('th input[type=text].filter', tab);
+          var filters = $('th input:not([type=button]).filter', tab);
           var nameFilter = filters[0].value;
           var annotationFilter = filters[1].value;
-          self.filterBy(nameFilter, annotationFilter);
+          var reviewFilter = filters[2].value.length > 0 ? parseInt(filters[2].value, 10) : 0;
+          self.filterBy(nameFilter, annotationFilter, reviewFilter);
         }
 
         $(tab)
@@ -1453,12 +1460,13 @@
   };
 
   /** Filtering by an empty text resets to no filtering. */
-  SelectionTable.prototype.filterBy = function(name, annotation) {
+  SelectionTable.prototype.filterBy = function(name, annotation, minReviewPercent=0) {
     if (!name || 0 === name.length) {
       delete this.nameMatch;
     } else {
       this.nameMatch = name;
     }
+    this.min_review_percent = minReviewPercent;
     if (!annotation || 0 === annotation.length) {
       this.annotationFilter = null;
       this.gui.update();
@@ -1548,6 +1556,13 @@
         CATMAID.error(e.message, e);
         return [];
       }
+    }
+
+    if (this.min_review_percent > 0) {
+      filteredSkeletons = filteredSkeletons.filter(skeleton => {
+        let reviewPercent = this.reviews[skeleton.id];
+        return reviewPercent && reviewPercent >= this.min_review_percent;
+      });
     }
 
     // Filter skeletons by annotation

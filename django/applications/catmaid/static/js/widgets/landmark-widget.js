@@ -3314,18 +3314,21 @@
               CATMAID.Relations.list(project.id)
                 .then(function(relationMap) {
                   let relationNames = Object.keys(relationMap);
-                  let relationOptions = relationNames
+                  let relationOptions = [
+                    { title: '(none)', value: 'none' },
+                    ...relationNames
                       .filter(name => widget.allowedRelationNames.has(name))
                       .map(function(name) {
                         return { title: name, value: relationMap[name] };
-                      });
+                      })
+                  ];
                   let targetRelationSelect = CATMAID.DOM.createRadioSelect(
-                      'Group link relation', relationOptions, undefined, true, 'selected');
+                      'Group link relation', relationOptions, 'none', true, 'selected');
                   let targetRelationGroup = CATMAID.DOM.createLabeledControl('Target relation',
                     targetRelationSelect, 'Select a relation that links valid target ' +
-                    'landmark groups. This rull will be applied recursively.');
+                    'landmark groups. This rule will be applied recursively.');
                   targetRelationSelect.onchange = function(e) {
-                    displayTargetRelation = e.srcElement.value;
+                    displayTargetRelation = e.srcElement.value === 'none' ? null : e.srcElement.value;
                   };
                   $(targetRelationWrapper).append(targetRelationGroup);
                 })

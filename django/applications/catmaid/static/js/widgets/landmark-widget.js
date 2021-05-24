@@ -3352,7 +3352,7 @@
               let transformationDisplay = widget.applyTransformation ? 'block' : 'none';
               sourceGroupWrapper.style.display = transformationDisplay;
               targetGroupWrapper.style.display = transformationDisplay;
-              targetRelationWrapper.style.display = transformationDisplay;
+              targetRelationWrapper.style.display = widget.showMultiMappingOptions ? 'none' : transformationDisplay;
               transformModelSelectLabel[0].style.display = transformationDisplay;
 
               // Add button

@@ -226,7 +226,7 @@
                 '<th>nr</th>' +
                 '<th title="Remove one or all neurons"></th>' +
                 '<th class="expanding" title="Neuron name">name</th>' +
-                '<th title="% reviewed">rev</th>' +
+                '<th title="% reviewed">review</th>' +
                 '<th title="Select a neuron and control its visibility (3D viewer)">selected</th>' +
                 '<th title="Control visibility of pre-synaptic connections (3D viewer)">pre</th>' +
                 '<th title="Control visibility of post-synaptic connections (3D viewer)">post</th>' +

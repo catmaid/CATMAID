@@ -27,7 +27,7 @@ COPY packagelist-ubuntu-apt.txt /home/
 RUN apt-get update -y  \
     && xargs apt-get install -y < /home/packagelist-ubuntu-apt.txt \
     && rm -rf /var/lib/apt/lists/*
-COPY django/requirements.txt django/requirements-async.txt /home/django/
+COPY django/requirements.txt django/requirements-async.txt django/requirements-production.txt /home/django/
 ENV WORKON_HOME /opt/virtualenvs
 RUN mkdir -p /opt/virtualenvs \
     && /bin/bash -c "source /usr/share/virtualenvwrapper/virtualenvwrapper.sh \
@@ -35,7 +35,9 @@ RUN mkdir -p /opt/virtualenvs \
     && workon catmaid \
     && pip install -U pip setuptools \
     && pip install -r /home/django/requirements.txt \
-    && pip install -r /home/django/requirements-async.txt"
+    && pip install -r /home/django/requirements-async.txt \
+    && pip install -r /home/django/requirements-production.txt \
+    "
 
 COPY . /home/
 

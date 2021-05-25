@@ -1216,7 +1216,8 @@
           return `<input type='checkbox' id='neuron-selector-${this.widgetID}-${row}' data-skeleton-id="${row}" ${row in this.skeletonSelection ? '' : 'checked '}></input>`;
         },
       }, {
-        orderable: false,
+        orderable: true,
+        searchable: true,
         render: (data, type, row, meta) => {
           return `<a href='#' id='a-connectivity-table-${this.widgetID}-${row}' data-role="name" data-skeleton-id='${row}'>${nns.getName(row)}</a>`;
         },
@@ -1258,10 +1259,7 @@
       var widget = e.data;
       var table = $(this).DataTable();
       // Get the current order of skeletons
-      var rows = table.rows({order: 'current'}).nodes().toArray();
-      var orderedSkids = rows.map(function(tr) {
-        return Number(tr.dataset.skeletonId);
-      });
+      var orderedSkids = table.rows({order: 'current'}).data().toArray();
       // Write out current ordering
       widget.currentOrder = table.order();
       widget.ordered_skeleton_ids = orderedSkids;

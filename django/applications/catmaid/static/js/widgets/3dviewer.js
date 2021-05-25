@@ -2181,7 +2181,7 @@
         var skeleton = availableSkletons[skeletonId];
         if (skeleton) {
           skeleton.skeletonmodel = model;
-          skeleton.setActorVisibility(model.selected);
+          skeleton.setActorVisibility(model.selected && model.opacity > 0);
           skeleton.setPreVisibility(model.pre_visible);
           skeleton.setPostVisibility(model.post_visible);
           skeleton.setTextVisibility(model.text_visible);

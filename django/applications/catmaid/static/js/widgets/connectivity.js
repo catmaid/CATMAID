@@ -92,6 +92,8 @@
       count: 1
     };
     this.allSelected = false;
+    // An optional filter search term
+    this.search = null;
   };
 
   PartnerSet.prototype.getSynCountSortedPartners = function() {
@@ -1575,6 +1577,28 @@
 
       // Initialize datatable
       let table = tableConfig.table;
+
+      var searchPartnerTable = function(search) {
+        if (!search) search = '';
+        if (search.length > 0 && search[0] === '/') {
+          // Treat the input as regex.
+          // Trim regex delimiters from search string.
+          search = search.slice(1, search[search.length - 1] === '/' ? search.length - 1 : undefined);
+          try {
+            new RegExp(search);
+            // Regex is valid
+            $(this).removeClass('ui-state-error');
+            table.DataTable().column(1).search(search, true, false).draw();
+          } catch (error) {
+            $(this).addClass('ui-state-error');
+          }
+        } else {
+          // Treat the search as plain text input. Use DataTables' smart search.
+          $(this).removeClass('ui-state-error');
+          table.DataTable().column(1).search(search, false, true).draw();
+        }
+      };
+
       var dataTable = table.DataTable({
         sorting: [[2, 'desc']],
         destroy: true,
@@ -1595,6 +1619,9 @@
         },
         initComplete: (settings, json) => {
           this.updateReviewColors($(table).DataTable());
+          if (partnerSet.search && partnerSet.search.length > 0) {
+            searchPartnerTable(partnerSet.search);
+          }
         },
       });
 
@@ -1607,25 +1634,10 @@
           )
           .append($('<span />')
             .attr('title', 'Starting with / enables regular expressions')
-            .append($('<input type="search" placeholder="Partner name" />').on('keyup', function () {
+            .append($(`<input type="search" placeholder="Partner name" value="${partnerSet.search || ''}" />`).on('keyup', function () {
               var search = this.value;
-              if (search.length > 0 && search[0] === '/') {
-                // Treat the input as regex.
-                // Trim regex delimiters from search string.
-                search = search.slice(1, search[search.length - 1] === '/' ? search.length - 1 : undefined);
-                try {
-                  new RegExp(search);
-                  // Regex is valid
-                  $(this).removeClass('ui-state-error');
-                  table.DataTable().column(1).search(search, true, false).draw();
-                } catch (error) {
-                  $(this).addClass('ui-state-error');
-                }
-              } else {
-                // Treat the search as plain text input. Use DataTables' smart search.
-                $(this).removeClass('ui-state-error');
-                table.DataTable().column(1).search(search, false, true).draw();
-              }
+              partnerSet.search = search;
+              searchPartnerTable(search);
             }).on('search', function() {
               // Update table after clearing
               var search = this.value;

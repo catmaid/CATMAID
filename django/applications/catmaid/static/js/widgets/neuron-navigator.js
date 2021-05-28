@@ -985,7 +985,7 @@
             return;
           }
 
-          CATMAID.fetch(CATMAID.makeURL(project.id + '/annotations/table-list'), 'POST', data)
+          CATMAID.fetch(`${project.id}/annotations/table-list`, 'POST', data)
             .then(result => {
               if (result.error) {
                 if (-1 !== result.error.indexOf('invalid regular expression')) {

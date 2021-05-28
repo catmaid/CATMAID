@@ -427,22 +427,30 @@ var project;
     let urlToViewJustClicked = false;
     a_url.onclick = function( e )
     {
-      if (e.ctrlKey) {
+      // In case a deep link is created, the click is canceled to asyncronously
+      // create the deep link and reissued afterwards. For this second click we
+      // want to avoid to update the URL or create a new deep link. This is why
+      // we use this toggle variable here.
+      if (urlToViewJustClicked) {
+        urlToViewJustClicked = false;
+      } else if (e.ctrlKey) {
         Client.createDeepLink(e.shiftKey)
           .then(link => {
+            // Update link and copy deep link to clipboard
             this.href = link;
             CATMAID.tools.copyToClipBoard(link);
             e.target.href = link;
             urlToViewJustClicked = true;
-            $(e.target)[0].click();
 
+            // Reissue click event with original properties
+            let oEvent = document.createEvent('MouseEvent');
+            oEvent.initMouseEvent('click', e.bubbles, e.cancelable, document.defaultView,
+              e.button, e.pointerX, e.pointerY, e.pointerX, e.pointerY,
+              e.ctrlKey, e.altKey, e.shiftKey, e.metaKey, e.button, e.srcElement);
+            e.srcElement.dispatchEvent(oEvent);
           })
           .catch(CATMAID.handleError);
         return false;
-      }
-
-      if (urlToViewJustClicked) {
-        urlToViewJustClicked = false;
       } else {
         this.href = project.createURL(e.shiftKey);
       }

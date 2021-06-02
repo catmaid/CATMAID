@@ -595,7 +595,11 @@
 
   function getViewIndex(stackViewers) {
     return stackViewers.reduce(function(o, s) {
-      o[s.primaryStack.orientation] = s;
+      let views = o[s.primaryStack.orientation];
+      if (!views) {
+        o[s.primaryStack.orientation] = views = [];
+      }
+      views.push(s);
       return o;
     }, {});
   }
@@ -1060,16 +1064,18 @@
     var windows = new Map();
     var seenWindows = new Set();
     validOrientations.forEach(function(o) {
-      var stackViewer = views[o];
-      if (stackViewer) {
-        var w = stackViewer.getWindow();
-        var typedWindows = windows.get(o);
+      var stackViewersWithO = views[o];
+      var typedWindows = windows.get(o);
+      if (stackViewersWithO) {
         if (!typedWindows) {
           typedWindows = [];
           windows.set(o, typedWindows);
         }
-        typedWindows.push(w);
-        seenWindows.add(w);
+        for (let stackViewer of stackViewersWithO) {
+          var w = stackViewer.getWindow();
+          typedWindows.push(w);
+          seenWindows.add(w);
+        }
       }
     });
 

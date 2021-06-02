@@ -840,6 +840,9 @@
               return activeTracingLayer.tracingOverlay.moveToAndSelectNode(
                   SkeletonAnnotations.getActiveNodeId());
             })
+            .then(() => {
+                self.prototype.centerPosStatusUpdate();
+            })
             .catch(CATMAID.handleError);
         }
         return true;

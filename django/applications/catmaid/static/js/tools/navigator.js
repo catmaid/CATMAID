@@ -214,6 +214,14 @@
       }
     };
 
+    this.centerPosStatusUpdate = function() {
+        let stackViewer = self.stackViewer;
+        if (!stackViewer) return;
+
+        let pCoords = project.coordinates;
+        CATMAID.statusBar.printCoords(`S: [${stackViewer.x.toFixed(1)}, ${stackViewer.y.toFixed(1)}, ${stackViewer.z.toFixed(1)}] px, P: [${pCoords.x.toFixed(1)}, ${pCoords.y.toFixed(1)}, ${pCoords.z.toFixed(1)}] nm`);
+    };
+
     //--------------------------------------------------------------------------
     /**
      * Slider commands for changing the slice come in too frequently, thus the

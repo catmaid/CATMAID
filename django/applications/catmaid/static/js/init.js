@@ -673,7 +673,7 @@ var project;
               return loadStacksFromURL(singleStackViewer);
             });
         } else {
-          load = loadStacksFromURL(singleStackViewer);
+          load = loadStacksFromURL(singleStackViewer, 0, !!initialLayout);
         }
 
         // After stacks or stack groups have been loaded, init selected tool.
@@ -731,12 +731,12 @@ var project;
 
         // Open stacks one after another and move to the requested location. Load
         // the requested tool after everything has been loaded.
-        function loadStacksFromURL(composite, loaded) {
+        function loadStacksFromURL(composite, loaded, noLayout) {
           loaded = loaded || 0;
           var useExistingStackViewer = composite && (loaded > 0);
           if (pid) {
             if (sids.length > 0) {
-              var noLayout = sids.length > 1;
+              var noLayout = noLayout || sids.length > 1;
               // Open stack and queue test/loading for next one
               var sid = sids.shift();
               var s = ss.shift();
@@ -749,7 +749,7 @@ var project;
                     return project.moveTo(zp, yp, xp, s)
                       .then(function() {
                         // Queue loading of next stack
-                        return loadStacksFromURL(composite, loaded + 1);
+                        return loadStacksFromURL(composite, loaded + 1, noLayout);
                       });
                   }
                 });

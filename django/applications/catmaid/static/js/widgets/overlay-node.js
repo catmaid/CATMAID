@@ -2029,7 +2029,24 @@
         event.stopPropagation();
 
         var e = event.data.originalEvent;
-        var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayBySkeletonElements(this.node.overlayGlobals.skeletonElements);
+
+        // Don't react to clicks outside of tracing overlays (e.g. tool bars).
+        // For some reason, this event is fired quite often, also when simply
+        // clicking on toolbar buttons. Therefore, we ignore it if not received
+        // on a tracing overlay.
+        if (!e.target.parentElement.classList.contains('sliceTracingOverlay')) {
+          return;
+        }
+        // Pixi.js seems to fire this event as well for targets that aren't
+        // in fact the actual target of the original event. We only want to
+        // handle events that have the DOM target element and Pixi's target
+        // in agreement.
+        var catmaidTracingOverlay = SkeletonAnnotations.getTracingOverlayBySkeletonElements(
+            this.node.overlayGlobals.skeletonElements);
+        if (catmaidTracingOverlay.stackViewer.getView() !== e.target.closest('div.stackViewer')) {
+          return;
+        }
+
         if (catmaidTracingOverlay.ensureFocused()) {
           return;
         }

@@ -56,6 +56,7 @@
   };
 
   NeuroglancerWidget.prototype.handlelLocationChange = function () {
+    if (!this.ngWindow) return;
     this.ngWindow.location.hash = this.getNeuroglancerHash();
   };
 

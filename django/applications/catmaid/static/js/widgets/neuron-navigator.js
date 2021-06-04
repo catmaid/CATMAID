@@ -1522,7 +1522,7 @@
 
     // If a neuron is selected a neuron filter node is created
     $('#' + table_id).on('dblclick', 'tbody tr', function () {
-      let neuronData = datatable.this(this).data();
+      let neuronData = datatable.row(this).data();
       CATMAID.Skeletons.getNeuronDetails(project.id, neuronData.skeleton_ids[0])
         .then(function(json) {
           var n = {

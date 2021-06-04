@@ -768,6 +768,15 @@ var WindowMaker = new function()
               }
             }
           },
+          {
+            type: 'checkbox',
+            label: 'Lock light to camera',
+            title: 'If enabled, the light location is is locked to the camera location.',
+            value: o.light_locked_to_cam,
+            onclick: e => {
+              WA.setLightLockedToCamera(e.target.checked);
+            },
+          }
         ]);
 
     var adjustFn = function(param_name) {

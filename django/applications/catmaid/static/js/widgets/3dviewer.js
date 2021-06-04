@@ -1257,6 +1257,7 @@
   WebGLApplication.prototype.Options = function() {
     this.debug = false;
     this.light_dir = null;
+    this.light_locked_to_cam = false;
     this.meshes_color = "#ffffff";
     this.meshes_opacity = 0.2;
     this.meshes_faces = false;
@@ -4951,6 +4952,11 @@
   WebGLApplication.prototype.Space.prototype.View.prototype.render = function(beforeRender) {
     if (this.controls) {
       this.controls.update();
+
+      if (this.space.options.light_locked_to_cam) {
+        this.space.lights[1].position.copy(this.camera.position);
+        this.space.lights[1].position.sub(this.controls.target);
+      }
 
       if (this.space.options.show_axes) {
         this.space.axesCamera.position.copy(this.camera.position);
@@ -9010,6 +9016,18 @@
     }
     this.space.lights[1].position.set(...coords);
     this.space.render();
+  };
+
+  /**
+   * Set whether the light direction should be locked to the camera position.
+   */
+  WebGLApplication.prototype.setLightLockedToCamera = function (isLocked) {
+    let changed = this.options.light_locked_to_cam !== isLocked;
+    if (changed) {
+      this.options.light_locked_to_cam = isLocked;
+      this.setLightPosition(this.options.light_dir);
+      this.space.render();
+    }
   };
 
   /**

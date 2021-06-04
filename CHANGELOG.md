@@ -258,7 +258,9 @@ Graph widget:
   button in the panel opened by the window icon in the widget title bar.
 
 - The "Shading" tab features now an input text field that allows to change the
-  location of the hemispheric light source.
+  location of the hemispheric light source. The checkbox "Lock light to camera"
+  next the location input allows to automatically set the light location to the
+  camera location, causing the light to come always from the viewing direction.
 
 Skeleton history widget:
 

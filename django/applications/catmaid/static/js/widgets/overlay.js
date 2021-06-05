@@ -70,6 +70,9 @@ var SkeletonAnnotations = {};
           personal_tag_set: {
             default: []
           },
+          add_personal_tag_set_to_new_nodes: {
+            default: false,
+          },
           // Don't show merging UI for single node skeletons
           quick_single_node_merge: {
             default: true
@@ -3623,10 +3626,29 @@ var SkeletonAnnotations = {};
 
     // If activated, edit the node radius right after it was created.
     var postCreateFn;
-    if (SkeletonAnnotations.Settings.session.set_radius_after_node_creation) {
-      // Edit radius without showing the dialog and without centering.
-      postCreateFn = function(overlay, node) { overlay.editRadius(node.id, false, true, true); };
+    if (SkeletonAnnotations.Settings.session.set_radius_after_node_creation ||
+        SkeletonAnnotations.Settings.session.add_personal_tag_set_to_new_nodes) {
+      postCreateFn = function(overlay, node) {
+        if (SkeletonAnnotations.Settings.session.add_personal_tag_set_to_new_nodes) {
+          let tool = project.getTool();
+          if (CATMAID.tools.isFn(tool.getActiveTracingLayer)) {
+            let personalTagSet = SkeletonAnnotations.Settings.session.personal_tag_set;
+            if (personalTagSet && personalTagSet.length > 0) {
+              let activeTracingLayer = tool.getActiveTracingLayer();
+              if (activeTracingLayer) {
+                SkeletonAnnotations.Tag.tagATNwithLabel(personalTagSet,
+                    activeTracingLayer.tracingOverlay, false);
+              }
+            }
+          }
+        }
+        if (SkeletonAnnotations.Settings.session.set_radius_after_node_creation) {
+          // Edit radius without showing the dialog and without centering.
+          overlay.editRadius(node.id, false, true, true);
+        }
+      };
     }
+
 
     var create = null;
     let mode = this.mode || SkeletonAnnotations.currentmode;

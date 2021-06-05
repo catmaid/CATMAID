@@ -550,6 +550,10 @@ Miscellaneous:
   not in view. This is mainly useful for deleting nodes in previously visible
   broken sections.
 
+- Tracing layer: it's now possible to add the personal tag set to newly created
+  nodes. Both the personal tag set and the new option can be configured in the
+  Tracing section of the Settings Widget.
+
 - Auto-completion should now be faster by displaying only 15 filtering results.
 
 - Selection table: a minim review percentage can now be used as a filter using

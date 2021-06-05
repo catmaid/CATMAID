@@ -2058,6 +2058,22 @@
           SkeletonAnnotations.Settings,
           'personal_tag_set',
           SETTINGS_SCOPE));
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
+              "Add personal tag set to newly created nodes",
+              SkeletonAnnotations.Settings[SETTINGS_SCOPE].add_personal_tag_set_to_new_nodes,
+              "If enabled, newly crated nodes are automatically tagged with the tags in the " +
+              "Personal Tag Set above (if any).",
+              function() {
+                SkeletonAnnotations.Settings
+                    .set(
+                      'add_personal_tag_set_to_new_nodes',
+                      this.checked,
+                      SETTINGS_SCOPE);
+              }),
+          SkeletonAnnotations.Settings,
+          'add_personal_tag_set_to_new_nodes',
+          SETTINGS_SCOPE));
 
       ds.append(wrapSettingsControl(
         CATMAID.DOM.createCheckboxSetting("Merge annotations of " +

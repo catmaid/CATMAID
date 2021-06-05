@@ -1096,7 +1096,10 @@ var WindowMaker = new function()
             placeholder: 'Name or regex',
             title: 'Display handle spheres for nodes with tags matching this regex (must refresh 3D viewer after changing).',
             value: o.custom_tag_spheres_regex,
-            onchange: function () { WA.options.custom_tag_spheres_regex = this.value; },
+            onchange: function () {
+              WA.options.custom_tag_spheres_regex = this.value;
+              WA.updateSkeletons();
+            },
             length: 10
           },
           {

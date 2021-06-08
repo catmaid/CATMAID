@@ -51,12 +51,6 @@ django/applications/catmaid/static/js/ui.js: line 19, col 9, 'altKeyDown' is def
 django/applications/catmaid/static/js/ui.js: line 24, col 9, 'x' is defined but never used.
 django/applications/catmaid/static/js/ui.js: line 25, col 9, 'y' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/analyze_arbor.js: line 586, col 9, 'pie_cable' is defined but never used.
-django/applications/catmaid/static/js/widgets/analyze_arbor.js: line 587, col 9, 'pie_inputs' is defined but never used.
-django/applications/catmaid/static/js/widgets/analyze_arbor.js: line 588, col 9, 'pie_outputs' is defined but never used.
-django/applications/catmaid/static/js/widgets/analyze_arbor.js: line 589, col 9, 'pie_mitochondria' is defined but never used.
-django/applications/catmaid/static/js/widgets/analyze_arbor.js: line 602, col 9, 'pie_n_subarbors' is defined but never used.
-
 django/applications/catmaid/static/js/widgets/annotation-graph.js: line 186, col 11, 'created' is defined but never used.
 django/applications/catmaid/static/js/widgets/annotation-graph.js: line 249, col 9, 'self' is defined but never used.
 
@@ -218,4 +212,4 @@ django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 1817, col
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 1850, col 1, 'async functions' is only available in ES8 (use 'esversion: 8').
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2009, col 29, The object literal notation {} is preferable.
 
-169 errors
+164 errors

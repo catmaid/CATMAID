@@ -584,10 +584,10 @@
       }
     }).bind(this);
 
-    var pie_cable = makePie(0, "Cable (nm)"),
-        pie_inputs = makePie(1, "# Inputs"),
-        pie_outputs = makePie(2, "# Outputs"),
-        pie_mitochondria = makePie(4, "# mitochondria");
+    makePie(0, "Cable (nm)");
+    makePie(1, "# Inputs");
+    makePie(2, "# Outputs");
+    makePie(4, "# mitochondria");
 
     // Create histograms of terminal subarbors:
     var skids = Object.keys(this.arbor_stats);
@@ -600,7 +600,7 @@
       }).bind(this), 0);
     }, this);
 
-    var pie_n_subarbors = CATMAID.svgutil.insertPieChart(
+    CATMAID.svgutil.insertPieChart(
         divID,
         this.pie_radius,
         [{name: titles[1] + "(" + n_subs[0] + ")", value: n_subs[0], color: colors[1]}].concat(0 === n_subs[1] ? [] : [{name: titles[2] + "(" + n_subs[1] + ")", value: n_subs[1], color: colors[2]}]), // there could be no axonal terminals

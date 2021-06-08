@@ -118,7 +118,8 @@
       },
       init: function() {
         this.init();
-      }
+      },
+      helpPath: 'analyse-arbor.html',
     };
   };
 

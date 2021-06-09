@@ -45,7 +45,7 @@
   };
 
   SearchWidget.prototype.destroy = function() {
-    CATMAID.NeuronNameService.unregister(this);
+    CATMAID.NeuronNameService.getInstance().unregister(this);
     this.unregisterInstance();
   };
 

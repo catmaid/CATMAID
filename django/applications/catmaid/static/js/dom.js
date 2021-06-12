@@ -439,7 +439,7 @@
 
 
   // A toggle function that also allows to recreate the UI.
-  function toggleWindowConfigurationPanel(win, originalTitle, recreate, widget, stateSaving) {
+  function toggleWindowConfigurationPanel(win, originalTitle, recreate, widget, stateManager) {
     // Create controls for the window settings if not present, otherwise remove
     // them.
     var frame = win.getFrame();
@@ -474,7 +474,7 @@
       panel.appendChild(aliasSetting);
 
       // Save settings button
-      if (widget && stateSaving) {
+      if (widget && stateManager) {
         var saveStateLabel = document.createElement('span');
         saveStateLabel.appendChild(document.createTextNode('Widget state: '));
         panel.appendChild(saveStateLabel);
@@ -486,6 +486,18 @@
           }
         };
         panel.appendChild(saveStateButton);
+
+        if (stateManager.uiState) {
+          var saveStateAndUIButton = document.createElement('button');
+          saveStateAndUIButton.appendChild(document.createTextNode('Save settings & UI state'));
+          saveStateAndUIButton.title = 'Saves the widget configuration, including UI/interaction information.';
+          saveStateAndUIButton.onclick = function() {
+            if (CATMAID.saveWidgetState(widget, true)) {
+              CATMAID.msg('Success', 'Widget settings stored');
+            }
+          };
+          panel.appendChild(saveStateAndUIButton);
+        }
 
         var resetStateButton = document.createElement('button');
         resetStateButton.appendChild(document.createTextNode('Clear saved settings'));
@@ -512,14 +524,15 @@
   /**
    * Inject a caption button that toggles window related settings.
    *
-   * @param {CMWWindow} win          Window to which the button with be added.
-   * @param {Widget}    instance     The widget instance in this window.
-   * @param {boolean}   stateSaving  If state saving related UI should be shown
+   * @param {CMWWindow}    win          Window to which the button with be added.
+   * @param {Widget}       instance     The widget instance in this window.
+   * @param {StateManager} stateManager (Optional) A UI element to save the widget state
+   *                                    is shown if a state manager is passed in.
    */
-  DOM.addWindowConfigButton = function(win, widget, stateSaving) {
+  DOM.addWindowConfigButton = function(win, widget, stateManager) {
     DOM.addCaptionButton(win, 'fa fa-window-maximize',
         'Show window settings for this widget',
-        toggleWindowConfigurationPanel.bind(window, win, win.getTitle(), false, widget, stateSaving));
+        toggleWindowConfigurationPanel.bind(window, win, win.getTitle(), false, widget, stateManager));
   };
 
 

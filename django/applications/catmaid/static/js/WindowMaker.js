@@ -27,11 +27,14 @@ var WindowMaker = new function()
 
   /**
    * Store the state of a widget in a cookie using the passed in state provider.
+   * @param {Boolean} withInteractionState  Whether or not interaction state
+   *                         should be included as well (e.g. camera position in
+   *                         3D, initial layout in Graph).
    */
-  var storeWidgetState = function(widget, stateManager) {
+  var storeWidgetState = function(widget, stateManager, withInteractionState=false) {
     key = windowManagerStoragePrefix + stateManager.key;
     var serializedState = stateSerializer.serialize({
-      'state': stateManager.getState(widget)
+      'state': stateManager.getState(widget, withInteractionState)
     });
     localStorage.setItem(key, serializedState);
     return true;
@@ -46,12 +49,17 @@ var WindowMaker = new function()
 
   /**
    * Store the state of a widget if there is a state manager available for it.
+   *
+   * @param {Widget}  widget  The widget to save the state of.
+   * @param {Boolean} withInteractionState  Whether or not interaction state
+   *                         should be included as well (e.g. camera position in
+   *                         3D, initial layout in Graph).
    */
-  CATMAID.saveWidgetState = function(widget) {
+  CATMAID.saveWidgetState = function(widget, withInteractionState=false) {
     var widgetStateManager = stateManagers.get(widget.constructor);
     if (widgetStateManager) {
       try {
-        return storeWidgetState(widget, widgetStateManager);
+        return storeWidgetState(widget, widgetStateManager, withInteractionState);
       } catch (e) {
         CATMAID.warn("Couldn't save widget state");
         return false;
@@ -82,14 +90,19 @@ var WindowMaker = new function()
 
   /**
    * Get a JSON representation of the widget state.
+   *
+   * @param {Widget}  widget The widget to get the state of.
+   * @param {Boolean} withInteractionState  Whether or not interaction state
+   *                         should be included as well (e.g. camera position in
+   *                         3D, initial layout in Graph).
    */
-  CATMAID.getWidgetState = function(widget) {
+  CATMAID.getWidgetState = function(widget, withInteractionState=false) {
     var widgetStateManager = stateManagers.get(widget.constructor);
     if (widgetStateManager) {
       try {
         key = windowManagerStoragePrefix + widgetStateManager.key;
         return stateSerializer.serialize({
-          'state': widgetStateManager.getState(widget),
+          'state': widgetStateManager.getState(widget, withInteractionState),
           'widget': widget.constructor.name,
           'env': {
             'ignoreLocal': widget.ignoreLocal,
@@ -310,8 +323,9 @@ var WindowMaker = new function()
   };
 
   var addWindowConfigButton = function(win, instance) {
-    var supportsStateSaving = instance && stateManagers.has(instance.constructor);
-    DOM.addWindowConfigButton(win, instance, supportsStateSaving);
+    var stateManager = instance && stateManagers.has(instance.constructor) ?
+        stateManagers.get(instance.constructor) : null;
+    DOM.addWindowConfigButton(win, instance, stateManager);
   };
 
   /**
@@ -2610,7 +2624,8 @@ var WindowMaker = new function()
       type: type,
       key: options.key || key,
       getState: options.getState,
-      setState: options.setState
+      setState: options.setState,
+      uiState: options.uiState,
     });
   };
 

@@ -10060,10 +10060,11 @@
 
   CATMAID.registerState(WebGLApplication, {
     key: "3d-viewer",
-    getState: function(widget) {
+    uiState: true,
+    getState: function(widget, withInteractionState=false) {
       // Remove font, because it is too big for cookie storage
-      var state = widget.options.clone();
-      delete state['font'];
+      var options = widget.options.clone();
+      delete options['font'];
       // Add volume information
       let volumes = JSON.stringify(
           Array.from(widget.loadedVolumes.keys()).map(v => {
@@ -10079,20 +10080,24 @@
             };
           }));
 
-      // Fetch current view
-      let camera = widget.space.view.camera;
-      let cameraTarget = widget.space.view.controls.target;
-
-      return {
-        options: state,
+      let state = {
+        options: options,
         volumes: volumes,
-        camera: {
+      };
+
+      if (withInteractionState) {
+        // Fetch current view
+        let camera = widget.space.view.camera;
+        let cameraTarget = widget.space.view.controls.target;
+        state['camera'] = {
           target: [cameraTarget.x, cameraTarget.y, cameraTarget.z],
           pos: [camera.position.x, camera.position.y, camera.position.z],
           up: [camera.up.x, camera.up.y, camera.up.z],
           zoom: camera.zoom,
-        },
-      };
+        };
+      }
+
+      return state;
     },
     setState: function(widget, state) {
       if (state.options) {

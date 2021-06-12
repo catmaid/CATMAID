@@ -546,6 +546,12 @@ Miscellaneous:
   using the "Store settings" button in the widget settings panel, available by
   clicking the window icon right next to the widget title.
 
+- Client-side widget state can now optionally store UI interaction information
+  like the camera location / details in the 3D Viewer. In the widget settings
+  panel (window icon in widget title bar), this can be done through the "Save
+  settings & UI state" if a widget supports this. Deep links will include the UI
+  state by default.
+
 - Tracing layer: Shift + Delete will now attempt to delete a node even if it is
   not in view. This is mainly useful for deleting nodes in previously visible
   broken sections.

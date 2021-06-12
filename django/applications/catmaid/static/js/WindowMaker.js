@@ -172,6 +172,26 @@ var WindowMaker = new function()
   };
 
   /**
+   * If enabled by the client settings (or force is truthy), this loads the last
+   * saved state for a widget.
+   */
+  var checkAndLoadWidgetUIState = function(widget, force, state) {
+    if (!(CATMAID.Client.Settings.session.auto_widget_state_load || force) && !state) {
+      return;
+    }
+    var stateManager = stateManagers.get(widget.constructor);
+    if (stateManager) {
+      try {
+        if (state && CATMAID.tools.isFn(stateManager.setPostLoadState)) {
+          stateManager.setPostLoadState(widget, state);
+        }
+      } catch (e) {
+        CATMAID.warn("Couldn't load widget UI state");
+      }
+    }
+  };
+
+  /**
    * Attempte to load the provided state for the passed in widget.
    */
   CATMAID.loadStateIntoWidget = function(widget, state) {
@@ -414,6 +434,10 @@ var WindowMaker = new function()
     if (CATMAID.tools.isFn(config.init)) {
       config.init.call(instance, win, options);
     }
+
+    // If there is a state manager for this widget and this widget can handle UI
+    // settings, give the widget a chance to apply passed in UI settings.
+    checkAndLoadWidgetUIState(instance, undefined, state);
 
     return {window: win, widget: instance};
   };
@@ -2626,6 +2650,7 @@ var WindowMaker = new function()
       getState: options.getState,
       setState: options.setState,
       uiState: options.uiState,
+      setPostLoadState: options.setPostLoadState,
     });
   };
 

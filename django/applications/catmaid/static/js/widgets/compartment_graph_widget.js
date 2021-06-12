@@ -4870,8 +4870,10 @@
     key: "graph-widget",
     creator: GroupGraph,
     state: {
-      getState: function(widget) {
-        return {
+      // The Graph Widget can store UI state: node location, groups, view, etc.
+      uiState: true,
+      getState: function(widget, withInteractionState=false) {
+        let state = {
           label_valign: widget.label_valign,
           label_halign: widget.label_halign,
           show_node_labels: widget.show_node_labels,
@@ -4890,6 +4892,12 @@
           linkTypeColors: Array.from(widget.linkTypeColors),
           selectedLinkTypes: Array.from(widget.selectedLinkTypes),
         };
+
+        if (withInteractionState) {
+          state['nodes'] = JSON.stringify(widget.copyContent());
+        }
+
+        return state;
       },
       setState: function(widget, state) {
         CATMAID.tools.copyIfDefined(state, widget, 'label_valign');
@@ -4919,7 +4927,12 @@
           widget.selectedLinkTypes.clear();
           widget.selectedLinkTypes.addAll(state.selectedLinkTypes);
         }
-      }
+      },
+      setPostLoadState: function(widget, state) {
+        if (state.nodes) {
+          widget.loadFromJSON(state.nodes.replace(/'/g, '"'));
+        }
+      },
     },
   });
 

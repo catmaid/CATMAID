@@ -1874,6 +1874,10 @@
       }, o);
     }).bind(this), {});
 
+    // Appending nodes can lead to property updates, which should be performed
+    // in batches to not show intermediate results.
+    this.cy.startBatch();
+
     // Determine which nodes to update, which to remove, and which to add anew
     this.cy.nodes().each(function(i, node) {
       var skeletons = node.data('skeletons');
@@ -1946,6 +1950,8 @@
         }).bind(this));
       }
     }
+
+    this.cy.endBatch();
 
     var additions = 0;
 

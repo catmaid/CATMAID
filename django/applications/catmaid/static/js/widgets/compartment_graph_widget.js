@@ -4041,22 +4041,26 @@
     });
     this.clear();
     this.setContent(json);
-    // Find out which ones exist
-    requestQueue.register(CATMAID.makeURL(project.id + '/skeleton/neuronnames'), "POST",
-        {skids: Object.keys(skids)},
-        (function(status, text) {
-          if (200 !== status) return;
-          var json = JSON.parse(text);
-          if (json.error) return alert(json.error);
-          var missing = Object.keys(skids).filter(function(skid) {
-            return undefined === json[skid];
-          });
-          if (missing.length > 0) {
-            this.removeSkeletons(missing);
-            CATMAID.warn("Did NOT load " + missing.length + " missing skeleton" + (1 === missing.length ? "" : "s"));
-          }
-          this.update(); // removes missing ones (but doesn't) and regenerate the data for subgraph nodes
-        }).bind(this));
+    // Find out which ones exist (no real need for globally synced update), but
+    // do this asynchronously to make the widget usable already (we expect this
+    // to be the case usually).
+    CATMAID.fetch({
+        url: `${project.id}/skeletons/validity`,
+        method: "POST",
+        parallel: true,
+        data: {
+          skeleton_ids: Object.keys(skids),
+          return_invalid: true,
+        },
+      })
+      .then(missing => {
+        if (missing.length > 0) {
+          this.removeSkeletons(missing);
+          CATMAID.warn("Removed " + missing.length + " missing skeleton" + (1 === missing.length ? "" : "s"));
+        }
+        this.update(); // removes missing ones (but doesn't) and regenerate the data for subgraph nodes
+      })
+      .catch(CATMAID.handleError);
   };
 
   GroupGraph.prototype.loadFromGraphML = function(xmlData) {

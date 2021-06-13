@@ -1594,8 +1594,6 @@
           nodes.push(node);
         }).bind(this);
 
-    Object.keys(models).forEach(appendNode);
-
     elements.nodes = nodes;
     elements.edges = [];
 
@@ -1626,6 +1624,9 @@
       var s = edge.data('arrow');
       if (s) arrow_shapes[id] = s;
     });
+
+    // With information on existing graph in place, create new nodes.
+    Object.keys(models).forEach(appendNode);
 
     // Recreate subgraphs
     if (subgraph_skids.length > 0) {

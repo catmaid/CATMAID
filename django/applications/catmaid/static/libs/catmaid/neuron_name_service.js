@@ -451,14 +451,17 @@
          *
          * @returns a promise that is resolved once the refresh is complete
          */
-        refresh: function(callback)
+        refresh: function(callback, force=false)
         {
-          return this.updateNames(null, (function() {
-            this.notifyClients();
+          return this.updateNames(null, nChanged  => {
+            // Only notify clients if there were actual changes or it is enforced.
+            if (nChanged > 0 || force) {
+              this.notifyClients();
+            }
             if (callback) {
               callback();
             }
-          }).bind(this));
+          });
         },
 
         /**
@@ -654,13 +657,19 @@
               return components.join('');
             };
 
+            let nChanged = 0;
+
             if (skidsToUpdate) {
               skidsToUpdate.forEach(function(skid) {
                 // Ignore unknown skeletons
                 if (!managedSkeletons[skid]) {
                   return;
                 }
-                managedSkeletons[skid].name = name(skid);
+                const skeletonName = name(skid);
+                if (managedSkeletons[skid].name !== skeletonName) {
+                  nChanged++;
+                  managedSkeletons[skid].name = skeletonName;
+                }
               });
             } else if (skids) {
               skids.forEach(function(skid) {
@@ -668,17 +677,25 @@
                 if (!managedSkeletons[skid]) {
                   return;
                 }
-                managedSkeletons[skid].name = name(skid);
+                const skeletonName = name(skid);
+                if (managedSkeletons[skid].name !== skeletonName) {
+                  nChanged++;
+                  managedSkeletons[skid].name = skeletonName;
+                }
               });
             } else {
               for (var skid in managedSkeletons) {
-                managedSkeletons[skid].name = name(skid);
+                const skeletonName = name(skid);
+                if (managedSkeletons[skid].name !== skeletonName) {
+                  nChanged++;
+                  managedSkeletons[skid].name = skeletonName;
+                }
               }
             }
 
             // Resolve the promise and execute callback, if any
-            if (resolve) resolve();
-            if (callback) callback();
+            if (resolve) resolve(nChanged);
+            if (callback) callback(nChanged);
           };
 
           // Request information only, if needed

@@ -1691,7 +1691,8 @@
       // Lock old nodes into place and restore their position
       var id = node.id();
       if (id in sizes) {
-        node.size(sizes[id]);
+        node.width(sizes[id].width);
+        node.height(sizes[id].height);
       }
       if (id in positions) {
         node.position(positions[id]);

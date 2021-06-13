@@ -1111,6 +1111,8 @@
   };
 
   GroupGraph.prototype.updateNeuronNames = function() {
+    // Batch node property changes
+    this.cy.startBatch();
     this.cy.nodes().each((function(i, node) {
       var models = node.data('skeletons');
       // skip groups
@@ -1124,6 +1126,7 @@
         node.data('label', name);
       }
     }).bind(this));
+    this.cy.endBatch();
   };
 
   GroupGraph.prototype.makeEdgeLabelOptions = function(rawData) {

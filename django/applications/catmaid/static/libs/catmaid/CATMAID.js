@@ -446,7 +446,7 @@ var requestQueue = new CATMAID.RequestQueue();
    *                          of the current environment.
    *
    * @param {int[]}   supportedStatus (optional) A list of HTTP status code,
-   *                                  that are allowed besied the default.
+   *                                  that are allowed besides the default.
    * @param {String}  decoder (Optional) The default decoder to use when non-raw
    *                          content is returned. By default that's "json", but
    *                          "msgpack" is supported as well.

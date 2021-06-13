@@ -3898,9 +3898,12 @@
     $.extend(this, p.properties);
     this.groups = p.groups;
     this.subgraphs = p.subgraphs;
-    this.cy.ready(function() {
-      this.add(p.elements);
-      this.layout(p.layout);
+    this.cy.ready(() => {
+      this.cy.add(p.elements);
+      if (!this.show_node_labels) {
+        this.cy.nodes().css('text-opacity', 0);
+      }
+      this.cy.layout(p.layout);
     });
   };
 

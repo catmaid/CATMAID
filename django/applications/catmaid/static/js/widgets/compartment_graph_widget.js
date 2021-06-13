@@ -3910,10 +3910,13 @@
     this.groups = p.groups;
     this.subgraphs = p.subgraphs;
     this.cy.ready(() => {
+      // Update all properties at once, without intermediate rendering updates
+      this.cy.startBatch();
       this.cy.add(p.elements);
       if (!this.show_node_labels) {
         this.cy.nodes().css('text-opacity', 0);
       }
+      this.cy.endBatch();
       this.cy.layout(p.layout);
     });
   };

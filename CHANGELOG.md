@@ -630,6 +630,8 @@ Miscellaneous:
 
 - Graph widget: fraction edge labels work again. They produced an error before.
 
+- Graph widget: edge color updates of non-synaptic links works now properly.
+
 - 3D viewer: PNG exports can now be transparent again.
 
 - 3D viewer: the default settings for orthographic mode and control lock are no

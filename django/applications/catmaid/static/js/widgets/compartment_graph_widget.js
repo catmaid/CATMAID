@@ -2198,7 +2198,8 @@
 
     for (let linkTypeId of this.selectedLinkTypes) {
       let linkTypeEdges = this.cy.edges().filter(function(i, edge) {
-        return edge.data('link_type') == linkTypeId && edge.data('directed');
+        return edge.data('link_type') == linkTypeId &&
+            (edge.data('directed') || linkTypeId !== 'synaptic-connector');
       });
       let linkTypeColor = this.getLinkTypeColor(linkTypeId);
       linkTypeEdges.css('line-color', linkTypeColor);

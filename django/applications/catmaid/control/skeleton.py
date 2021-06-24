@@ -3545,18 +3545,18 @@ def annotation_list(request:HttpRequest, project_id=None) -> JsonResponse:
     """
     skeleton_ids = tuple(int(v) for k,v in request.POST.items()
             if k.startswith('skeleton_ids['))
-    annotations = bool(int(request.POST.get("annotations", 0)))
+    with_annotation_names = bool(int(request.POST.get("annotations", 0)))
     metaannotations = bool(int(request.POST.get("metaannotations", 0)))
     neuronnames = bool(int(request.POST.get("neuronnames", 0)))
     ignore_invalid = get_request_bool(request.POST, "ignore_invalid", False)
 
-    response = get_annotation_info(project_id, skeleton_ids, annotations,
-                                   metaannotations, neuronnames, ignore_invalid)
+    response = get_annotation_info(project_id, skeleton_ids, with_annotation_names,
+            metaannotations, neuronnames, ignore_invalid)
 
     return JsonResponse(response)
 
 
-def get_annotation_info(project_id, skeleton_ids, annotations, metaannotations,
+def get_annotation_info(project_id, skeleton_ids, with_annotation_names, metaannotations,
                         neuronnames, ignore_invalid=False) -> Dict[str, Any]:
     if not skeleton_ids:
         raise ValueError("No skeleton IDs provided")
@@ -3586,9 +3586,10 @@ def get_annotation_info(project_id, skeleton_ids, annotations, metaannotations,
 
     # Query for annotations of the given skeletons, specifically
     # neuron_id, auid, aid and aname.
-    cursor.execute("""
+    cursor.execute(f"""
         SELECT cici.class_instance_a AS neuron_id, cici.user_id AS auid,
-               cici.class_instance_b AS aid, ci.name AS aname
+               cici.class_instance_b AS aid
+               {', ci.name AS aname' if with_annotation_names else ''}
         FROM class_instance_class_instance cici INNER JOIN
              class_instance ci ON cici.class_instance_b = ci.id
         WHERE cici.relation_id = %(annotated_with)s
@@ -3604,11 +3605,16 @@ def get_annotation_info(project_id, skeleton_ids, annotations, metaannotations,
     # names and another one that lists annotation IDs and annotator IDs for
     # each skeleton ID.
     annotations = {}
+    annotation_ids = set()
     skeletons:Dict = {}
     for row in cursor.fetchall():
-        skid, auid, aid, aname = n_to_sk_ids[row[0]], row[1], row[2], row[3]
-        if aid not in annotations:
-            annotations[aid] = aname
+        skid, auid, aid, = n_to_sk_ids[row[0]], row[1], row[2]
+        if with_annotation_names:
+            aname = row[3]
+            if aid not in annotations:
+                annotations[aid] = aname
+        else:
+            annotation_ids.add(aid)
         skeleton = skeletons.get(skid)
         if not skeleton:
             skeleton = {'annotations': []}
@@ -3618,11 +3624,16 @@ def get_annotation_info(project_id, skeleton_ids, annotations, metaannotations,
             'id': aid,
         })
 
+    if with_annotation_names:
+        annotation_ids = list(annotations.keys())
+
     # Assemble response
     response = {
-        'annotations': annotations,
         'skeletons': skeletons,
     }
+
+    if with_annotation_names:
+        response['annotations'] = annotations
 
     # If wanted, get the neuron name of each skeleton
     if neuronnames:
@@ -3639,9 +3650,10 @@ def get_annotation_info(project_id, skeleton_ids, annotations, metaannotations,
     if metaannotations and len(annotations):
         # Request only ID of annotated annotations, annotator ID, meta
         # annotation ID, meta annotation Name
-        cursor.execute("""
+        cursor.execute(f"""
             SELECT cici.class_instance_a AS aid, cici.user_id AS auid,
-                   cici.class_instance_b AS maid, ci.name AS maname
+                   cici.class_instance_b AS maid
+                   {', ci.name AS maname' if with_annotation_names else ''}
             FROM class_instance_class_instance cici
             INNER JOIN class_instance ci
                 ON cici.class_instance_b = ci.id
@@ -3652,16 +3664,19 @@ def get_annotation_info(project_id, skeleton_ids, annotations, metaannotations,
         """, {
             'project_id': project_id,
             'annotated_with': relations['annotated_with'],
-            'annotation_ids': list(annotations.keys()),
+            'annotation_ids': annotation_ids,
             'annotation': classes['annotation'],
         })
 
         # Add this to the response
         metaannotations = {}
         for row in cursor.fetchall():
-            aaid, auid, maid, maname = row[0], row[1], row[2], row[3]
-            if maid not in annotations:
-                annotations[maid] = maname
+            aaid, auid, maid = row[0], row[1], row[2]
+            if with_annotation_names:
+                maname = row[3]
+                if maid not in annotations:
+                    annotations[maid] = maname
+
             annotation = metaannotations.get(aaid)
             if not annotation:
                 annotation = {'annotations': []}

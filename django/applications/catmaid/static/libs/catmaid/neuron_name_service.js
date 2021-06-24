@@ -67,7 +67,7 @@
       /**
        * The actual update function---see below for call.
        */
-      let updateNeuronNames = function(skidsToUpdate, data, callback, resolve, reject) {
+      let updateNeuronNames = function(skidsToUpdate, data, skids, callback, resolve, reject) {
         var name = function(skid) {
           /**
            * Support function to creat a label, based on meta annotations. Id a
@@ -110,7 +110,7 @@
             } else if ('all' === l.id) {
               if (skid in data.skeletons) {
                 return data.skeletons[skid].annotations.map(function(a) {
-                  return data.annotations[a.id];
+                  return CATMAID.annotations.getName(a.id);
                 }).sort(compareAnnotations);
               }
             } else if ('all-meta' === l.id) {
@@ -127,7 +127,7 @@
                 // Collect own annotations
                 var oa = data.skeletons[skid].annotations.reduce(function(o, a) {
                   if (a.uid === CATMAID.session.userid) {
-                    o.push(data.annotations[a.id]);
+                    o.push(CATMAID.annotations.getName(a.id));
                   }
                   return o;
                 }, []);
@@ -713,7 +713,7 @@
             if (needsNoBackend || 0 === querySkids.length) {
               // If no back-end is needed, call the update method right away, without
               // any data.
-              updateNeuronNames(null, null, callback, resolve, reject);
+              updateNeuronNames(null, null, skids, callback, resolve, reject);
             } else {
               // Check if we need meta annotations
               var needsMetaAnnotations = componentList.some(function(l) {
@@ -755,11 +755,13 @@
                       method: 'POST',
                       data: {
                         skeleton_ids: apiSkids,
+                        // We read annotation names through the annotation cache to save bandwidth
+                        annotations: 0,
                         metaannotations: needsMetaAnnotations ? 1 : 0,
                         neuronnames: needsNeueonNames ? 1 : 0,
                       },
                       api: api,
-                    }).then(result => updateNeuronNames(apiSkids, result, callback)));
+                    }).then(result => updateNeuronNames(apiSkids, result, skids, callback)));
               }
 
               return Promise.all(promiseAnnotations)

@@ -3944,6 +3944,12 @@
       properties[key] = this[key];
     }, this);
 
+    if (!Number.isNaN(this.edge_opacity) && this.edge_opacity >= 0 && this.edge_opacity <= 1) {
+      this.linkTypeColors.forEach(linkType => {
+        linkType.opacity = edge_opacity;
+      });
+    }
+
     var layout = {
       name: 'preset',
       positions: this.cy.nodes().toArray().reduce(function(p, node) { p[node.id()] = node.position(); return p; }, {}),

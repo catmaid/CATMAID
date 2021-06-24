@@ -64,6 +64,232 @@
       // A list of all clients
       var clients = [];
 
+      /**
+       * The actual update function---see below for call.
+       */
+      let updateNeuronNames = function(skidsToUpdate, data, callback, resolve, reject) {
+        var name = function(skid) {
+          /**
+           * Support function to creat a label, based on meta annotations. Id a
+           * user ID is provided, it is also checked for the user ID. If a label
+           * can't be created, null is returned.
+           */
+          var metaLabel = function(maID, userID) {
+              var ma = data.skeletons[skid].annotations.reduce(function(o, a) {
+                // Test if current annotation has meta annotations
+                if (data.metaannotations && a.id in data.metaannotations) {
+                  var hasID = function(ma) {
+                    return ma.id === maID;
+                  };
+                  // Remember this annotation for display if is annotated with
+                  // the requested meta annotation.
+                  if (data.metaannotations[a.id].annotations.some(hasID)) {
+                    // Also test against user ID, if provided
+                    if (undefined === userID) {
+                      o.push(data.annotations[a.id]);
+                    } else if (a.uid === userID) {
+                      o.push(data.annotations[a.id]);
+                    }
+                  }
+                }
+                return o;
+              }, []);
+              // Return only if there are own annotations
+              if (ma.length > 0) {
+                return ma.sort(compareAnnotations).join(listDelimiter);
+              }
+
+              return null;
+          };
+
+          // Find values for component in the list, each component is a list
+          // of strings, or null if no value is available.
+          var componentValues = componentList.map(function (l) {
+            if ('neuronname' === l.id) {
+              return [data.neuronnames[skid]];
+            } else if ('skeletonid' === l.id) {
+              return ['' + skid];
+            } else if ('all' === l.id) {
+              if (skid in data.skeletons) {
+                return data.skeletons[skid].annotations.map(function(a) {
+                  return data.annotations[a.id];
+                }).sort(compareAnnotations);
+              }
+            } else if ('all-meta' === l.id) {
+              if (skid in data.skeletons) {
+                // Collect all annotations annotated with the requested meta
+                // annotation.
+                var label = metaLabel(CATMAID.annotations.getID(l.option));
+                if (null !== label) {
+                  return [label];
+                }
+              }
+            } else if ('own' === l.id) {
+              if (skid in data.skeletons) {
+                // Collect own annotations
+                var oa = data.skeletons[skid].annotations.reduce(function(o, a) {
+                  if (a.uid === CATMAID.session.userid) {
+                    o.push(data.annotations[a.id]);
+                  }
+                  return o;
+                }, []);
+                // Return only if there are own annotations
+                if (oa.length > 0) {
+                  return oa.sort(compareAnnotations);
+                }
+              }
+            } else if ('own-meta' === l.id) {
+              if (skid in data.skeletons) {
+                // Collect all annotations that are annotated with requested meta
+                // annotation.
+                var label = metaLabel(CATMAID.annotations.getID(l.option),
+                    CATMAID.session.userid);
+                if (null !== label) {
+                  return [label];
+                }
+              }
+            }
+
+            return null;
+          });
+
+          var fallbackValue = null;
+          for (var i = 0; i < componentList.length; ++i) {
+            if (componentValues[i] !== null && componentValues[i].length > 0)
+              fallbackValue = componentValues[i];
+          }
+
+          var componentsRegEx = /%(f|\d+)(?:\{(.*)\})?/g;
+          var replace = function (match, component, delimiter) {
+            delimiter = delimiter === undefined ? ", " : delimiter;
+
+            if (component === 'f') {
+              return fallbackValue ? fallbackValue.join(delimiter) : fallbackValue;
+            }
+
+            var index = parseInt(component, 10);
+            if (index >= 0 && index < componentValues.length) {
+              var cv = componentValues[index];
+              return cv ? cv.join(delimiter) : '';
+            } else return match;
+          };
+
+          var removeDuplicates = CATMAID.NeuronNameService.Settings.session.remove_neighboring_duplicates;
+          var autoTrim = CATMAID.NeuronNameService.Settings.session.auto_trim_empty;
+
+          // Split format string in format components and regular
+          // components.
+          var components = formatString.split(/((?:%f|%\d+)(?:\{.*\})?)/g);
+          var leftTrimmed = false;
+          var rightTrimmed = false;
+          var lastMappedElement = null;
+          components = components.map(function(c) {
+            return c.replace(componentsRegEx, replace);
+          }).filter(function(c, i, mappedComponents) {
+            if (removeDuplicates) {
+              if (c.trim().length !== 0) {
+                if (lastMappedElement === c) {
+                  return false;
+                }
+                lastMappedElement = c;
+              }
+            }
+            return true;
+          }).map(function(c, i, mappedComponents) {
+            // Left trim current component if last component is empty. If
+            // the the name is not empty and if a right-trim operation
+            // happend for the last non-empty element or a left trim
+            // operation happend on the current element, retain one space.
+            if (autoTrim) {
+              // Empty elements don't need any trimming.
+              if (c.length === 0) {
+                return c;
+              }
+
+              if (i > 0) {
+                var l = c.length;
+                var lastComponent = mappedComponents[i - 1];
+                if (lastComponent.length === 0) {
+                  c = c.trimLeft();
+                  leftTrimmed = c.length !== l;
+                } else {
+                  leftTrimmed = false;
+                }
+                if (c.length > 0 && (rightTrimmed || leftTrimmed)) {
+                  c = " " + c;
+                }
+              }
+
+              // Add a single space if there just happened a trim to the
+              // right just before a new left trim action. This indicates an
+              // enclosed missing mapped component. Not doing this results
+              // in the neighboring elements being squashed together. Since
+              // we need to access the past right trimming information, this
+              // is done before this information is updated.
+              if (leftTrimmed && rightTrimmed) {
+                 c = c + ' ';
+              }
+
+              // Right-trim current component, if next components is empty
+              if (i < (mappedComponents.length - 1)) {
+                var l = c.length;
+                var nextComponent = mappedComponents[i + 1];
+                if (nextComponent.length === 0) {
+                  c = c.trimRight();
+                  rightTrimmed = c.length !== l;
+                } else {
+                  rightTrimmed = false;
+                }
+              }
+            }
+
+            return c;
+          });
+          return components.join('');
+        };
+
+        let nChanged = 0;
+
+        if (skidsToUpdate) {
+          skidsToUpdate.forEach(function(skid) {
+            // Ignore unknown skeletons
+            if (!managedSkeletons[skid]) {
+              return;
+            }
+            const skeletonName = name(skid);
+            if (managedSkeletons[skid].name !== skeletonName) {
+              nChanged++;
+              managedSkeletons[skid].name = skeletonName;
+            }
+          });
+        } else if (skids) {
+          skids.forEach(function(skid) {
+            // Ignore unknown skeletons
+            if (!managedSkeletons[skid]) {
+              return;
+            }
+            const skeletonName = name(skid);
+            if (managedSkeletons[skid].name !== skeletonName) {
+              nChanged++;
+              managedSkeletons[skid].name = skeletonName;
+            }
+          });
+        } else {
+          for (var skid in managedSkeletons) {
+            const skeletonName = name(skid);
+            if (managedSkeletons[skid].name !== skeletonName) {
+              nChanged++;
+              managedSkeletons[skid].name = skeletonName;
+            }
+          }
+        }
+
+        // Resolve the promise and execute callback, if any
+        if (resolve) resolve(nChanged);
+        if (callback) callback(nChanged);
+      };
+
+
       return {
 
         /**
@@ -473,231 +699,6 @@
          */
         updateNames: function(skids, callback)
         {
-          /**
-           * The actual update function---see below for call.
-           */
-          var update = function(skidsToUpdate, data, resolve, reject) {
-            var name = function(skid) {
-              /**
-               * Support function to creat a label, based on meta annotations. Id a
-               * user ID is provided, it is also checked for the user ID. If a label
-               * can't be created, null is returned.
-               */
-              var metaLabel = function(maID, userID) {
-                  var ma = data.skeletons[skid].annotations.reduce(function(o, a) {
-                    // Test if current annotation has meta annotations
-                    if (data.metaannotations && a.id in data.metaannotations) {
-                      var hasID = function(ma) {
-                        return ma.id === maID;
-                      };
-                      // Remember this annotation for display if is annotated with
-                      // the requested meta annotation.
-                      if (data.metaannotations[a.id].annotations.some(hasID)) {
-                        // Also test against user ID, if provided
-                        if (undefined === userID) {
-                          o.push(data.annotations[a.id]);
-                        } else if (a.uid === userID) {
-                          o.push(data.annotations[a.id]);
-                        }
-                      }
-                    }
-                    return o;
-                  }, []);
-                  // Return only if there are own annotations
-                  if (ma.length > 0) {
-                    return ma.sort(compareAnnotations).join(listDelimiter);
-                  }
-
-                  return null;
-              };
-
-              // Find values for component in the list, each component is a list
-              // of strings, or null if no value is available.
-              var componentValues = componentList.map(function (l) {
-                if ('neuronname' === l.id) {
-                  return [data.neuronnames[skid]];
-                } else if ('skeletonid' === l.id) {
-                  return ['' + skid];
-                } else if ('all' === l.id) {
-                  if (skid in data.skeletons) {
-                    return data.skeletons[skid].annotations.map(function(a) {
-                      return data.annotations[a.id];
-                    }).sort(compareAnnotations);
-                  }
-                } else if ('all-meta' === l.id) {
-                  if (skid in data.skeletons) {
-                    // Collect all annotations annotated with the requested meta
-                    // annotation.
-                    var label = metaLabel(CATMAID.annotations.getID(l.option));
-                    if (null !== label) {
-                      return [label];
-                    }
-                  }
-                } else if ('own' === l.id) {
-                  if (skid in data.skeletons) {
-                    // Collect own annotations
-                    var oa = data.skeletons[skid].annotations.reduce(function(o, a) {
-                      if (a.uid === CATMAID.session.userid) {
-                        o.push(data.annotations[a.id]);
-                      }
-                      return o;
-                    }, []);
-                    // Return only if there are own annotations
-                    if (oa.length > 0) {
-                      return oa.sort(compareAnnotations);
-                    }
-                  }
-                } else if ('own-meta' === l.id) {
-                  if (skid in data.skeletons) {
-                    // Collect all annotations that are annotated with requested meta
-                    // annotation.
-                    var label = metaLabel(CATMAID.annotations.getID(l.option),
-                        CATMAID.session.userid);
-                    if (null !== label) {
-                      return [label];
-                    }
-                  }
-                }
-
-                return null;
-              });
-
-              var fallbackValue = null;
-              for (var i = 0; i < componentList.length; ++i) {
-                if (componentValues[i] !== null && componentValues[i].length > 0)
-                  fallbackValue = componentValues[i];
-              }
-
-              var componentsRegEx = /%(f|\d+)(?:\{(.*)\})?/g;
-              var replace = function (match, component, delimiter) {
-                delimiter = delimiter === undefined ? ", " : delimiter;
-
-                if (component === 'f') {
-                  return fallbackValue ? fallbackValue.join(delimiter) : fallbackValue;
-                }
-
-                var index = parseInt(component, 10);
-                if (index >= 0 && index < componentValues.length) {
-                  var cv = componentValues[index];
-                  return cv ? cv.join(delimiter) : '';
-                } else return match;
-              };
-
-              var removeDuplicates = CATMAID.NeuronNameService.Settings.session.remove_neighboring_duplicates;
-              var autoTrim = CATMAID.NeuronNameService.Settings.session.auto_trim_empty;
-
-              // Split format string in format components and regular
-              // components.
-              var components = formatString.split(/((?:%f|%\d+)(?:\{.*\})?)/g);
-              var leftTrimmed = false;
-              var rightTrimmed = false;
-              var lastMappedElement = null;
-              components = components.map(function(c) {
-                return c.replace(componentsRegEx, replace);
-              }).filter(function(c, i, mappedComponents) {
-                if (removeDuplicates) {
-                  if (c.trim().length !== 0) {
-                    if (lastMappedElement === c) {
-                      return false;
-                    }
-                    lastMappedElement = c;
-                  }
-                }
-                return true;
-              }).map(function(c, i, mappedComponents) {
-                // Left trim current component if last component is empty. If
-                // the the name is not empty and if a right-trim operation
-                // happend for the last non-empty element or a left trim
-                // operation happend on the current element, retain one space.
-                if (autoTrim) {
-                  // Empty elements don't need any trimming.
-                  if (c.length === 0) {
-                    return c;
-                  }
-
-                  if (i > 0) {
-                    var l = c.length;
-                    var lastComponent = mappedComponents[i - 1];
-                    if (lastComponent.length === 0) {
-                      c = c.trimLeft();
-                      leftTrimmed = c.length !== l;
-                    } else {
-                      leftTrimmed = false;
-                    }
-                    if (c.length > 0 && (rightTrimmed || leftTrimmed)) {
-                      c = " " + c;
-                    }
-                  }
-
-                  // Add a single space if there just happened a trim to the
-                  // right just before a new left trim action. This indicates an
-                  // enclosed missing mapped component. Not doing this results
-                  // in the neighboring elements being squashed together. Since
-                  // we need to access the past right trimming information, this
-                  // is done before this information is updated.
-                  if (leftTrimmed && rightTrimmed) {
-                     c = c + ' ';
-                  }
-
-                  // Right-trim current component, if next components is empty
-                  if (i < (mappedComponents.length - 1)) {
-                    var l = c.length;
-                    var nextComponent = mappedComponents[i + 1];
-                    if (nextComponent.length === 0) {
-                      c = c.trimRight();
-                      rightTrimmed = c.length !== l;
-                    } else {
-                      rightTrimmed = false;
-                    }
-                  }
-                }
-
-                return c;
-              });
-              return components.join('');
-            };
-
-            let nChanged = 0;
-
-            if (skidsToUpdate) {
-              skidsToUpdate.forEach(function(skid) {
-                // Ignore unknown skeletons
-                if (!managedSkeletons[skid]) {
-                  return;
-                }
-                const skeletonName = name(skid);
-                if (managedSkeletons[skid].name !== skeletonName) {
-                  nChanged++;
-                  managedSkeletons[skid].name = skeletonName;
-                }
-              });
-            } else if (skids) {
-              skids.forEach(function(skid) {
-                // Ignore unknown skeletons
-                if (!managedSkeletons[skid]) {
-                  return;
-                }
-                const skeletonName = name(skid);
-                if (managedSkeletons[skid].name !== skeletonName) {
-                  nChanged++;
-                  managedSkeletons[skid].name = skeletonName;
-                }
-              });
-            } else {
-              for (var skid in managedSkeletons) {
-                const skeletonName = name(skid);
-                if (managedSkeletons[skid].name !== skeletonName) {
-                  nChanged++;
-                  managedSkeletons[skid].name = skeletonName;
-                }
-              }
-            }
-
-            // Resolve the promise and execute callback, if any
-            if (resolve) resolve(nChanged);
-            if (callback) callback(nChanged);
-          };
-
           // Request information only, if needed
           var needsNoBackend = 0 === componentList.filter(function(l) {
               return 'skeletonid' !== l.id;
@@ -714,7 +715,7 @@
             if (needsNoBackend || 0 === querySkids.length) {
               // If no back-end is needed, call the update method right away, without
               // any data.
-              update(null, null, resolve, reject);
+              updateNeuronNames(null, null, callback, resolve, reject);
             } else {
               // Check if we need meta annotations
               var needsMetaAnnotations = componentList.some(function(l) {
@@ -760,7 +761,7 @@
                         neuronnames: needsNeueonNames ? 1 : 0,
                       },
                       api: api,
-                    }).then(result => update(apiSkids, result)));
+                    }).then(result => updateNeuronNames(apiSkids, result, callback)));
               }
 
               return Promise.all(promiseAnnotations)

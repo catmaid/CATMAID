@@ -85,10 +85,8 @@
                   // the requested meta annotation.
                   if (data.metaannotations[a.id].annotations.some(hasID)) {
                     // Also test against user ID, if provided
-                    if (undefined === userID) {
-                      o.push(data.annotations[a.id]);
-                    } else if (a.uid === userID) {
-                      o.push(data.annotations[a.id]);
+                    if (undefined === userID || a.uid === userID) {
+                      o.push(CATMAID.annotations.getName(a.id));
                     }
                   }
                 }

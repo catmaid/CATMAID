@@ -4941,7 +4941,7 @@
         if (state.linkTypeColors) {
           for (var i=0; i<state.linkTypeColors.length; ++i) {
             var ltc = state.linkTypeColors[i];
-            widget.linkTypeColors[ltc[0]] = CATMAID.tools.deepCopy(ltc[1]);
+            widget.linkTypeColors.set(ltc[0], CATMAID.tools.deepCopy(ltc[1]));
           }
         }
 

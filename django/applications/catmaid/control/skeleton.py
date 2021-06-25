@@ -3545,7 +3545,7 @@ def annotation_list(request:HttpRequest, project_id=None) -> JsonResponse:
     """
     skeleton_ids = tuple(int(v) for k,v in request.POST.items()
             if k.startswith('skeleton_ids['))
-    with_annotation_names = bool(int(request.POST.get("annotations", 0)))
+    with_annotation_names = bool(int(request.POST.get("annotations", 1)))
     metaannotations = bool(int(request.POST.get("metaannotations", 0)))
     neuronnames = bool(int(request.POST.get("neuronnames", 0)))
     ignore_invalid = get_request_bool(request.POST, "ignore_invalid", False)

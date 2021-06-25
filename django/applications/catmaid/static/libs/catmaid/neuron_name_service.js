@@ -73,7 +73,7 @@
       // Returns null if at least one skeleton has never been refreshed before. Otherwise,
       // the oldest update time is returned.
       function getOldestUpdateTime(skeletonIds, ignoreUncached=false) {
-        let oldest = undefined;
+        let oldest;
         for (let skeletonId of skeletonIds) {
           // If we find the first skeleton that was not updated before,
           // stop search and update all.
@@ -97,91 +97,94 @@
       }
 
       /**
-       * The actual update function---see below for call.
+       * Support function to create a label, based on meta annotations. Id a
+       * user ID is provided, it is also checked for the user ID. If a label
+       * can't be created, null is returned.
        */
-      let updateNeuronNames = function(skidsToUpdate, data, skids, callback, resolve, reject) {
-        var name = function(skid, skeleton) {
-          /**
-           * Support function to creat a label, based on meta annotations. Id a
-           * user ID is provided, it is also checked for the user ID. If a label
-           * can't be created, null is returned.
-           */
-          var metaLabel = function(maID, userID) {
-              var ma = skeleton.annotations.reduce(function(o, a) {
-                // Test if current annotation has meta annotations
-                if (skeleton.metaannotations && a.id in skeleton.metaannotations) {
-                  var hasID = function(ma) {
-                    return ma.id === maID;
-                  };
-                  // Remember this annotation for display if is annotated with
-                  // the requested meta annotation.
-                  if (skeleton.metaannotations[a.id].annotations.some(hasID)) {
-                    // Also test against user ID, if provided
-                    if (undefined === userID || a.uid === userID) {
-                      o.push(CATMAID.annotations.getName(a.id));
-                    }
-                  }
-                }
-                return o;
-              }, []);
-              // Return only if there are own annotations
-              if (ma.length > 0) {
-                return ma.sort(compareAnnotations).join(listDelimiter);
-              }
-
-              return null;
-          };
-
-          // Find values for component in the list, each component is a list
-          // of strings, or null if no value is available.
-          var componentValues = componentList.map(function (l) {
-            if ('neuronname' === l.id) {
-              return [skeleton.neuronname];
-            } else if ('skeletonid' === l.id) {
-              return ['' + skid];
-            } else if ('all' === l.id) {
-              if (skeleton.annotations) {
-                return skeleton.annotations.map(function(a) {
-                  return CATMAID.annotations.getName(a.id);
-                }).sort(compareAnnotations);
-              }
-            } else if ('all-meta' === l.id) {
-              if (skeleton.annotations) {
-                // Collect all annotations annotated with the requested meta
-                // annotation.
-                var label = metaLabel(CATMAID.annotations.getID(l.option));
-                if (null !== label) {
-                  return [label];
-                }
-              }
-            } else if ('own' === l.id) {
-              if (skeleton.annotations) {
-                // Collect own annotations
-                var oa = skeleton.annotations.reduce(function(o, a) {
-                  if (a.uid === CATMAID.session.userid) {
-                    o.push(CATMAID.annotations.getName(a.id));
-                  }
-                  return o;
-                }, []);
-                // Return only if there are own annotations
-                if (oa.length > 0) {
-                  return oa.sort(compareAnnotations);
-                }
-              }
-            } else if ('own-meta' === l.id) {
-              if (skeleton.annotations) {
-                // Collect all annotations that are annotated with requested meta
-                // annotation.
-                var label = metaLabel(CATMAID.annotations.getID(l.option),
-                    CATMAID.session.userid);
-                if (null !== label) {
-                  return [label];
+      var metaLabel = function(skeleton, maID, userID) {
+          var ma = skeleton.annotations.reduce(function(o, a) {
+            // Test if current annotation has meta annotations
+            if (skeleton.metaannotations && a.id in skeleton.metaannotations) {
+              var hasID = function(ma) {
+                return ma.id === maID;
+              };
+              // Remember this annotation for display if is annotated with
+              // the requested meta annotation.
+              if (skeleton.metaannotations[a.id].annotations.some(hasID)) {
+                // Also test against user ID, if provided
+                if (undefined === userID || a.uid === userID) {
+                  o.push(CATMAID.annotations.getName(a.id));
                 }
               }
             }
+            return o;
+          }, []);
+          // Return only if there are own annotations
+          if (ma.length > 0) {
+            return ma.sort(compareAnnotations).join(listDelimiter);
+          }
 
-            return null;
-          });
+          return null;
+      };
+
+      let extractComponentValue = function(skeleton, entry) {
+        if ('neuronname' === entry.id) {
+          return [skeleton.neuronname];
+        } else if ('skeletonid' === entry.id) {
+          return ['' + skeleton.id];
+        } else if ('all' === entry.id) {
+          if (skeleton.annotations) {
+            return skeleton.annotations.map(function(a) {
+              return CATMAID.annotations.getName(a.id);
+            }).sort(compareAnnotations);
+          }
+        } else if ('all-meta' === entry.id) {
+          if (skeleton.annotations) {
+            // Collect all annotations annotated with the requested meta
+            // annotation.
+            var label = metaLabel(skeleton, CATMAID.annotations.getID(entry.option));
+            if (null !== label) {
+              return [label];
+            }
+          }
+        } else if ('own' === entry.id) {
+          if (skeleton.annotations) {
+            // Collect own annotations
+            var oa = skeleton.annotations.reduce(function(o, a) {
+              if (a.uid === CATMAID.session.userid) {
+                o.push(CATMAID.annotations.getName(a.id));
+              }
+              return o;
+            }, []);
+            // Return only if there are own annotations
+            if (oa.length > 0) {
+              return oa.sort(compareAnnotations);
+            }
+          }
+        } else if ('own-meta' === entry.id) {
+          if (skeleton.annotations) {
+            // Collect all annotations that are annotated with requested meta
+            // annotation.
+            var label = metaLabel(skeleton, CATMAID.annotations.getID(entry.option),
+                CATMAID.session.userid);
+            if (null !== label) {
+              return [label];
+            }
+          }
+        }
+
+        return null;
+      };
+
+      /**
+       * The actual update function---see below for call.
+       */
+      let updateNeuronNames = function(skidsToUpdate, data, skids, callback, resolve, reject) {
+        var name = function(skeleton) {
+
+          // Find values for component in the list, each component is a list
+          // of strings, or null if no value is available.
+          var componentValues = componentList.map(l => extractComponentValue(skeleton, l));
 
           var fallbackValue = null;
           for (var i = 0; i < componentList.length; ++i) {
@@ -226,10 +229,10 @@
             }
             return true;
           }).map(function(c, i, mappedComponents) {
-            // Left trim current component if last component is empty. If
-            // the the name is not empty and if a right-trim operation
-            // happend for the last non-empty element or a left trim
-            // operation happend on the current element, retain one space.
+            // Left trim current component if last component is empty. If the
+            // name is not empty and if a right-trim operation happened for the
+            // last non-empty element or a left trim operation happened on the
+            // current element, retain one space.
             if (autoTrim) {
               // Empty elements don't need any trimming.
               if (c.length === 0) {
@@ -286,7 +289,7 @@
             if (!managedSkeletons[skid]) {
               return;
             }
-            const skeletonName = name(skid, managedSkeletons[skid]);
+            const skeletonName = name(managedSkeletons[skid]);
             if (managedSkeletons[skid].name !== skeletonName) {
               nChanged++;
               managedSkeletons[skid].name = skeletonName;
@@ -298,7 +301,7 @@
             if (!managedSkeletons[skid]) {
               return;
             }
-            const skeletonName = name(skid, managedSkeletons[skid]);
+            const skeletonName = name(managedSkeletons[skid]);
             if (managedSkeletons[skid].name !== skeletonName) {
               nChanged++;
               managedSkeletons[skid].name = skeletonName;
@@ -306,7 +309,7 @@
           });
         } else {
           for (var skid in managedSkeletons) {
-            const skeletonName = name(skid, managedSkeletons[skid]);
+            const skeletonName = name(managedSkeletons[skid]);
             if (managedSkeletons[skid].name !== skeletonName) {
               nChanged++;
               managedSkeletons[skid].name = skeletonName;
@@ -558,6 +561,7 @@
               }
             } else {
               managedSkeletons[skid] = {
+                id: skid,
                 clients: [client],
                 name: null,
                 model: models[skid],

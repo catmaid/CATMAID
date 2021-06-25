@@ -104,13 +104,13 @@
       var metaLabel = function(skeleton, maID, userID) {
           var ma = skeleton.annotations.reduce(function(o, a) {
             // Test if current annotation has meta annotations
-            if (skeleton.metaannotations && a.id in skeleton.metaannotations) {
+            if (skeleton.metaAnnotations && a.id in skeleton.metaAnnotations) {
               var hasID = function(ma) {
                 return ma.id === maID;
               };
               // Remember this annotation for display if is annotated with
               // the requested meta annotation.
-              if (skeleton.metaannotations[a.id].annotations.some(hasID)) {
+              if (skeleton.metaAnnotations[a.id].annotations.some(hasID)) {
                 // Also test against user ID, if provided
                 if (undefined === userID || a.uid === userID) {
                   o.push(CATMAID.annotations.getName(a.id));
@@ -129,7 +129,7 @@
 
       let extractComponentValue = function(skeleton, entry) {
         if ('neuronname' === entry.id) {
-          return [skeleton.neuronname];
+          return [skeleton.neuronName];
         } else if ('skeletonid' === entry.id) {
           return ['' + skeleton.id];
         } else if ('all' === entry.id) {
@@ -567,10 +567,13 @@
                 model: models[skid],
                 annotations: null,
                 metaAnnotations: null,
+                neuronName: null,
                 // A timestamp that is set once the name is set
                 updateTime: null,
                 // Whether the last update included meta annotations
                 metaUpdated: false,
+                // Whether the name was updated during the last update
+                nameUpdated: false,
               };
               unknownSkids.push(skid);
             }
@@ -801,7 +804,7 @@
                   let def_skeleton_ids = [];
                   for (let skid of apiSkids) {
                     let sk = managedSkeletons[skid];
-                    if (!sk.updateTime || (needsMetaAnnotations && !sk.metaUpdated)) {
+                    if (!sk.updateTime || (needsMetaAnnotations && !sk.metaUpdated) || (needsNeueonNames && !sk.neuronName)) {
                       def_skeleton_ids.push(skid);
                     } else {
                       cond_skeleton_ids.push(skid);
@@ -839,13 +842,13 @@
                         // Assign annotation info to each skeleton
                         for (let skeletonId in result.skeletons) {
                           if (result.neuronnames && result.neuronnames[skeletonId]) {
-                            managedSkeletons[skeletonId].neuronname = result.neuronnames[skeletonId];
+                            managedSkeletons[skeletonId].neuronName = result.neuronnames[skeletonId];
                           }
                           managedSkeletons[skeletonId].annotations = result.skeletons[skeletonId].annotations;
                           managedSkeletons[skeletonId].updateTime = updateTime;
                           if (result.metaannotations) {
                             managedSkeletons[skeletonId].metaUpdated = true;
-                            managedSkeletons[skeletonId].metaannotations = result.skeletons[skeletonId].metaannotations;
+                            managedSkeletons[skeletonId].metaAnnotations = result.metaannotations;
                           } else {
                             managedSkeletons[skeletonId].metaUpdated = false;
                           }

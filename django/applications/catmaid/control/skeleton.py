@@ -3549,39 +3549,91 @@ def annotation_list(request:HttpRequest, project_id=None) -> JsonResponse:
     metaannotations = bool(int(request.POST.get("metaannotations", 0)))
     neuronnames = bool(int(request.POST.get("neuronnames", 0)))
     ignore_invalid = get_request_bool(request.POST, "ignore_invalid", False)
+    cond_skeleton_ids = get_request_list(request.POST, "conditional_skeleton_ids", map_fn=int)
+    cond_skeleton_modified_since = request.POST.get("if_modified_since")
 
-    response = get_annotation_info(project_id, skeleton_ids, with_annotation_names,
-            metaannotations, neuronnames, ignore_invalid)
+    response = get_annotation_info(project_id, skeleton_ids,
+            with_annotation_names, metaannotations, neuronnames, ignore_invalid,
+            cond_skeleton_ids, cond_skeleton_modified_since)
 
     return JsonResponse(response)
 
 
 def get_annotation_info(project_id, skeleton_ids, with_annotation_names, metaannotations,
-                        neuronnames, ignore_invalid=False) -> Dict[str, Any]:
-    if not skeleton_ids:
+                        neuronnames, ignore_invalid=False, cond_skeleton_ids=[],
+                        cond_skeleton_modified_since=None) -> Dict[str, Any]:
+    if not skeleton_ids and not cond_skeleton_ids:
         raise ValueError("No skeleton IDs provided")
+
+    if cond_skeleton_ids and not cond_skeleton_modified_since:
+        raise ValueError("Conditional skeletons provided without condition")
 
     classes = dict(Class.objects.filter(project_id=project_id).values_list('class_name', 'id'))
     relations = dict(Relation.objects.filter(project_id=project_id).values_list('relation_name', 'id'))
 
     cursor = connection.cursor()
 
+    if cond_skeleton_ids:
+        if metaannotations:
+            meta_join = """
+            JOIN class_instance_class_instance cici_meta_ann
+                ON cici_meta_ann.class_instance_a = cici_ann.class_instance_b
+            """
+            meta_where = """
+                  AND cici_meta_ann.relation_id = %(annotated_with)s
+                  AND cici_meta_ann.edition_time > %(cond_skeleton_modified_since)s
+            """
+        else:
+            meta_join = ''
+            meta_where =  ''
+
+        extra_skeletons = f"""
+            UNION ALL
+            SELECT cici.class_instance_a, cici.class_instance_b
+            FROM class_instance_class_instance cici
+
+            JOIN class_instance_class_instance cici_ann
+                ON cici_ann.class_instance_a = cici.class_instance_b
+
+            {meta_join}
+
+            WHERE cici.project_id = %(project_id)s AND
+                  cici.relation_id = %(model_of)s AND
+                  cici.class_instance_a = ANY(%(cond_skeleton_ids)s::bigint[]) AND
+                  cici_ann.relation_id = %(annotated_with)s AND
+                  cici_ann.edition_time > %(cond_skeleton_modified_since)s
+
+            {meta_where}
+        """
+    else:
+        extra_skeletons = ''
+
     # Create a map of skeleton IDs to neuron IDs
-    cursor.execute("""
+    cursor.execute(f"""
         SELECT cici.class_instance_a, cici.class_instance_b
         FROM class_instance_class_instance cici
         WHERE cici.project_id = %(project_id)s AND
               cici.relation_id = %(model_of)s AND
               cici.class_instance_a = ANY(%(skeleton_ids)s::bigint[])
+        {extra_skeletons}
     """, {
         'project_id': project_id,
         'model_of': relations['model_of'],
         'skeleton_ids': list(skeleton_ids),
+        'cond_skeleton_ids': cond_skeleton_ids,
+        'cond_skeleton_modified_since': cond_skeleton_modified_since,
+        'annotated_with': relations['annotated_with'],
     })
     n_to_sk_ids = {n:s for s,n in cursor.fetchall()}
     neuron_ids = list(n_to_sk_ids.keys())
 
     if not neuron_ids:
+        if cond_skeleton_ids:
+            # In case of conditional skeleton IDs, an empty result is valid as
+            # well.
+            return {
+                'skeletons': {},
+            }
         raise Http404('No skeleton or neuron found')
 
     # Query for annotations of the given skeletons, specifically

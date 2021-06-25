@@ -64,26 +64,58 @@
       // A list of all clients
       var clients = [];
 
+      // A promise that keeps track of an active update, should there be any.
+      // This allows subsequent refresh calls (e.g. when loading a large list
+      // of skeletons through a deep link and the NNS needs to load its
+      // settings) to not query for the same skeletons in parallel.
+      let activeUpdate = Promise.resolve();
+
+      // Returns null if at least one skeleton has never been refreshed before. Otherwise,
+      // the oldest update time is returned.
+      function getOldestUpdateTime(skeletonIds, ignoreUncached=false) {
+        let oldest = undefined;
+        for (let skeletonId of skeletonIds) {
+          // If we find the first skeleton that was not updated before,
+          // stop search and update all.
+          let updateTime = managedSkeletons[skeletonId].updateTime;
+          if (!updateTime) {
+            if (ignoreUncached) {
+              continue;
+            }
+            oldest = null;
+            break;
+          }
+          if (oldest === undefined) {
+            oldest = updateTime;
+            continue;
+          }
+          if (oldest > updateTime) {
+            oldest = updateTime;
+          }
+        }
+        return oldest;
+      }
+
       /**
        * The actual update function---see below for call.
        */
       let updateNeuronNames = function(skidsToUpdate, data, skids, callback, resolve, reject) {
-        var name = function(skid) {
+        var name = function(skid, skeleton) {
           /**
            * Support function to creat a label, based on meta annotations. Id a
            * user ID is provided, it is also checked for the user ID. If a label
            * can't be created, null is returned.
            */
           var metaLabel = function(maID, userID) {
-              var ma = data.skeletons[skid].annotations.reduce(function(o, a) {
+              var ma = skeleton.annotations.reduce(function(o, a) {
                 // Test if current annotation has meta annotations
-                if (data.metaannotations && a.id in data.metaannotations) {
+                if (skeleton.metaannotations && a.id in skeleton.metaannotations) {
                   var hasID = function(ma) {
                     return ma.id === maID;
                   };
                   // Remember this annotation for display if is annotated with
                   // the requested meta annotation.
-                  if (data.metaannotations[a.id].annotations.some(hasID)) {
+                  if (skeleton.metaannotations[a.id].annotations.some(hasID)) {
                     // Also test against user ID, if provided
                     if (undefined === userID || a.uid === userID) {
                       o.push(CATMAID.annotations.getName(a.id));
@@ -104,17 +136,17 @@
           // of strings, or null if no value is available.
           var componentValues = componentList.map(function (l) {
             if ('neuronname' === l.id) {
-              return [data.neuronnames[skid]];
+              return [skeleton.neuronname];
             } else if ('skeletonid' === l.id) {
               return ['' + skid];
             } else if ('all' === l.id) {
-              if (skid in data.skeletons) {
-                return data.skeletons[skid].annotations.map(function(a) {
+              if (skeleton.annotations) {
+                return skeleton.annotations.map(function(a) {
                   return CATMAID.annotations.getName(a.id);
                 }).sort(compareAnnotations);
               }
             } else if ('all-meta' === l.id) {
-              if (skid in data.skeletons) {
+              if (skeleton.annotations) {
                 // Collect all annotations annotated with the requested meta
                 // annotation.
                 var label = metaLabel(CATMAID.annotations.getID(l.option));
@@ -123,9 +155,9 @@
                 }
               }
             } else if ('own' === l.id) {
-              if (skid in data.skeletons) {
+              if (skeleton.annotations) {
                 // Collect own annotations
-                var oa = data.skeletons[skid].annotations.reduce(function(o, a) {
+                var oa = skeleton.annotations.reduce(function(o, a) {
                   if (a.uid === CATMAID.session.userid) {
                     o.push(CATMAID.annotations.getName(a.id));
                   }
@@ -137,7 +169,7 @@
                 }
               }
             } else if ('own-meta' === l.id) {
-              if (skid in data.skeletons) {
+              if (skeleton.annotations) {
                 // Collect all annotations that are annotated with requested meta
                 // annotation.
                 var label = metaLabel(CATMAID.annotations.getID(l.option),
@@ -254,7 +286,7 @@
             if (!managedSkeletons[skid]) {
               return;
             }
-            const skeletonName = name(skid);
+            const skeletonName = name(skid, managedSkeletons[skid]);
             if (managedSkeletons[skid].name !== skeletonName) {
               nChanged++;
               managedSkeletons[skid].name = skeletonName;
@@ -266,7 +298,7 @@
             if (!managedSkeletons[skid]) {
               return;
             }
-            const skeletonName = name(skid);
+            const skeletonName = name(skid, managedSkeletons[skid]);
             if (managedSkeletons[skid].name !== skeletonName) {
               nChanged++;
               managedSkeletons[skid].name = skeletonName;
@@ -274,7 +306,7 @@
           });
         } else {
           for (var skid in managedSkeletons) {
-            const skeletonName = name(skid);
+            const skeletonName = name(skid, managedSkeletons[skid]);
             if (managedSkeletons[skid].name !== skeletonName) {
               nChanged++;
               managedSkeletons[skid].name = skeletonName;
@@ -286,7 +318,6 @@
         if (resolve) resolve(nChanged);
         if (callback) callback(nChanged);
       };
-
 
       return {
 
@@ -530,6 +561,12 @@
                 clients: [client],
                 name: null,
                 model: models[skid],
+                annotations: null,
+                metaAnnotations: null,
+                // A timestamp that is set once the name is set
+                updateTime: null,
+                // Whether the last update included meta annotations
+                metaUpdated: false,
               };
               unknownSkids.push(skid);
             }
@@ -702,73 +739,124 @@
               return 'skeletonid' !== l.id;
           }).length;
 
-          return new Promise(function(resolve, reject) {
-            // Get all skeletons to query, either all known ones or all known ones
-            // of the given list.
-            var querySkids = !skids ? Object.keys(managedSkeletons) :
-              skids.filter(function(skid) {
-                return skid in managedSkeletons;
-              });
+          return activeUpdate
+            .then(() => new Promise(function(resolve, reject) {
+              // Get all skeletons to query, either all known ones or all known ones
+              // of the given list.
+              var querySkids = !skids ? Object.keys(managedSkeletons) :
+                skids.filter(function(skid) {
+                  return skid in managedSkeletons;
+                });
 
-            if (needsNoBackend || 0 === querySkids.length) {
-              // If no back-end is needed, call the update method right away, without
-              // any data.
-              updateNeuronNames(null, null, skids, callback, resolve, reject);
-            } else {
-              // Check if we need meta annotations
-              var needsMetaAnnotations = componentList.some(function(l) {
-                  return 'all-meta' ===  l.id || 'own-meta' === l.id;
-              });
-              // Check if we need neuron names
-              var needsNeueonNames = componentList.some(function(l) {
-                  return 'neuronname' === l.id;
-              });
+              if (needsNoBackend || 0 === querySkids.length) {
+                // If no back-end is needed, call the update method right away, without
+                // any data.
+                updateNeuronNames(null, null, skids, callback, resolve, reject);
+              } else {
+                // Check if we need meta annotations
+                var needsMetaAnnotations = componentList.some(function(l) {
+                    return 'all-meta' ===  l.id || 'own-meta' === l.id;
+                });
+                // Check if we need neuron names
+                var needsNeueonNames = componentList.some(function(l) {
+                    return 'neuronname' === l.id;
+                });
 
-              // Sort queries by API
-              let querySkidsByAPI = querySkids.reduce((o, s) => {
-                let entry = managedSkeletons[s];
-                // If either the model has an API defined or the neuron name
-                // server instance has an API defined, use it.
-                let key = entry && entry.model ? (entry.model.api || api || undefined) : undefined;
-                let apiModels = o.get(key);
-                if (!apiModels) {
-                  apiModels = [];
-                  o.set(key, apiModels);
+                // Sort queries by API
+                let querySkidsByAPI = querySkids.reduce((o, s) => {
+                  let entry = managedSkeletons[s];
+                  // If either the model has an API defined or the neuron name
+                  // server instance has an API defined, use it.
+                  let key = entry && entry.model ? (entry.model.api || api || undefined) : undefined;
+                  let apiModels = o.get(key);
+                  if (!apiModels) {
+                    apiModels = [];
+                    o.set(key, apiModels);
+                  }
+                  apiModels.push(s);
+                  return o;
+                }, new Map());
+
+                let promiseAnnotations = [];
+                for (let [api, apiSkids] of querySkidsByAPI) {
+                  // Try to find the first attached project ID for this API.  We
+                  // assue it is the same for all skeletons from this API.  TODO:
+                  // There has to be a better way to do this.
+                  let managedSkeleton = managedSkeletons[apiSkids[0]];
+                  let projectId = project.id;
+                  if (managedSkeleton && managedSkeleton.model && managedSkeleton.model.projectId !== undefined) {
+                    projectId = managedSkeleton.model.projectId;
+                  }
+
+                  // We pass two lists of skeletons to the server: a list of
+                  // skeletons to get the annotations for without further checks
+                  // and a second list to *maybe* get annotations for, depending
+                  // on whether there were annotation changes since the last
+                  // update timestamp.
+                  let cond_skeleton_ids = [];
+                  let def_skeleton_ids = [];
+                  for (let skid of apiSkids) {
+                    let sk = managedSkeletons[skid];
+                    if (!sk.updateTime || (needsMetaAnnotations && !sk.metaUpdated)) {
+                      def_skeleton_ids.push(skid);
+                    } else {
+                      cond_skeleton_ids.push(skid);
+                    }
+                  }
+
+                  // For conditional skeleton IDs, we ask the back-end to only
+                  // return data for them if there have been updates since the
+                  // oldest date we find in the set. This is a compromise to not
+                  // send a date for every skeleton ID, but still allow cache hits
+                  // in many cases.
+                  let skipDate = getOldestUpdateTime(apiSkids, true);
+                  if (skipDate) {
+                    skipDate = new Date(skipDate).toISOString();
+                  }
+
+                  promiseAnnotations.push(
+                      CATMAID.fetch({
+                        url: `${projectId}/skeleton/annotationlist`,
+                        method: 'POST',
+                        data: {
+                          skeleton_ids: def_skeleton_ids,
+                          annotations: 0,
+                          metaannotations: needsMetaAnnotations ? 1 : 0,
+                          neuronnames: needsNeueonNames ? 1 : 0,
+                          // Conditional query skeletons with condition
+                          conditional_skeleton_ids: cond_skeleton_ids,
+                          if_modified_since: skipDate,
+                        },
+                        api: api,
+                      })
+                      .then(result => {
+                        const updateTime = Date.now();
+
+                        // Assign annotation info to each skeleton
+                        for (let skeletonId in result.skeletons) {
+                          if (result.neuronnames && result.neuronnames[skeletonId]) {
+                            managedSkeletons[skeletonId].neuronname = result.neuronnames[skeletonId];
+                          }
+                          managedSkeletons[skeletonId].annotations = result.skeletons[skeletonId].annotations;
+                          managedSkeletons[skeletonId].updateTime = updateTime;
+                          if (result.metaannotations) {
+                            managedSkeletons[skeletonId].metaUpdated = true;
+                            managedSkeletons[skeletonId].metaannotations = result.skeletons[skeletonId].metaannotations;
+                          } else {
+                            managedSkeletons[skeletonId].metaUpdated = false;
+                          }
+                        }
+
+                        updateNeuronNames(apiSkids, result, skids, callback);
+                      }));
                 }
-                apiModels.push(s);
-                return o;
-              }, new Map());
 
-              let promiseAnnotations = [];
-              for (let [api, apiSkids] of querySkidsByAPI) {
-                // Try to find the first attached project ID for the this API.
-                // We assue it is the same for all skeletons from this API.
-                // TODO: There has to be a better way to do this.
-                let managedSkeleton = managedSkeletons[apiSkids[0]];
-                let projectId = project.id;
-                if (managedSkeleton && managedSkeleton.model && managedSkeleton.model.projectId !== undefined) {
-                  projectId = managedSkeleton.model.projectId;
-                }
-                promiseAnnotations.push(
-                    CATMAID.fetch({
-                      url: projectId + '/skeleton/annotationlist',
-                      method: 'POST',
-                      data: {
-                        skeleton_ids: apiSkids,
-                        // We read annotation names through the annotation cache to save bandwidth
-                        annotations: 0,
-                        metaannotations: needsMetaAnnotations ? 1 : 0,
-                        neuronnames: needsNeueonNames ? 1 : 0,
-                      },
-                      api: api,
-                    }).then(result => updateNeuronNames(apiSkids, result, skids, callback)));
+                activeUpdate = Promise.all(promiseAnnotations)
+                  .then(resolve)
+                  .catch(reject);
+                return activeUpdate;
               }
-
-              return Promise.all(promiseAnnotations)
-                .then(resolve)
-                .catch(reject);
-            }
-          });
+            }));
         },
 
         /**

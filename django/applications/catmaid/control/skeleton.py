@@ -3585,7 +3585,7 @@ def get_annotation_info(project_id, skeleton_ids, with_annotation_names, metaann
             """
         else:
             meta_join = ''
-            meta_where =  ''
+            meta_where = ''
 
         extra_skeletons = f"""
             UNION ALL

@@ -4010,7 +4010,7 @@
     }
   };
 
-  GroupGraph.prototype.loadFromJSON = function(jsonData) {
+  GroupGraph.prototype.loadFromJSON = function(jsonData, update=true) {
     var json = JSON.parse(jsonData);
     var skids = {};
     var asModel = function(ob) {
@@ -4058,8 +4058,12 @@
         if (missing.length > 0) {
           this.removeSkeletons(missing);
           CATMAID.warn("Removed " + missing.length + " missing skeleton" + (1 === missing.length ? "" : "s"));
+          this.update(); // removes missing ones and regenerate the data for subgraph nodes
+        } else {
+        if (update) {
+          this.update(); // removes missing ones only if updates are wanted
         }
-        this.update(); // removes missing ones (but doesn't) and regenerate the data for subgraph nodes
+        }
       })
       .catch(CATMAID.handleError);
   };
@@ -4952,7 +4956,7 @@
       },
       setPostLoadState: function(widget, state) {
         if (state.nodes) {
-          widget.loadFromJSON(state.nodes.replace(/'/g, '"'));
+          widget.loadFromJSON(state.nodes.replace(/'/g, '"'), false);
         }
       },
     },

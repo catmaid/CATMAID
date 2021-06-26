@@ -3656,8 +3656,8 @@ def get_annotation_info(project_id, skeleton_ids, with_annotation_names, metaann
     # Build result dictionaries: one that maps annotation IDs to annotation
     # names and another one that lists annotation IDs and annotator IDs for
     # each skeleton ID.
-    annotations = {}
-    annotation_ids = set()
+    annotations:Dict = {}
+    collected_annotation_ids:Set = set()
     skeletons:Dict = {}
     for row in cursor.fetchall():
         skid, auid, aid, = n_to_sk_ids[row[0]], row[1], row[2]
@@ -3666,7 +3666,7 @@ def get_annotation_info(project_id, skeleton_ids, with_annotation_names, metaann
             if aid not in annotations:
                 annotations[aid] = aname
         else:
-            annotation_ids.add(aid)
+            collected_annotation_ids.add(aid)
         skeleton = skeletons.get(skid)
         if not skeleton:
             skeleton = {'annotations': []}
@@ -3678,6 +3678,8 @@ def get_annotation_info(project_id, skeleton_ids, with_annotation_names, metaann
 
     if with_annotation_names:
         annotation_ids = list(annotations.keys())
+    else:
+        annotation_ids = list(collected_annotation_ids)
 
     # Assemble response
     response = {

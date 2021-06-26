@@ -3908,6 +3908,22 @@
 
   GroupGraph.prototype.setContent = function(p) {
     $.extend(this, p.properties);
+
+    // Some properties need custom loading
+    if (p.options) {
+      if (p.options.linkTypeColors) {
+        for (var i=0; i<p.options.linkTypeColors.length; ++i) {
+          var ltc = p.options.linkTypeColors[i];
+          this.linkTypeColors.set(ltc[0], CATMAID.tools.deepCopy(ltc[1]));
+        }
+      }
+
+      if (p.options.selectedLinkTypes) {
+        this.selectedLinkTypes.clear();
+        this.selectedLinkTypes.addAll(p.options.selectedLinkTypes);
+      }
+    }
+
     this.groups = p.groups;
     this.subgraphs = p.subgraphs;
     this.cy.ready(() => {
@@ -3961,11 +3977,15 @@
 
     return {
       properties: properties,
+      options: {
+        linkTypeColors: Array.from(this.linkTypeColors),
+        selectedLinkTypes: Array.from(this.selectedLinkTypes),
+      },
       elements: {nodes: this.cy.nodes().toArray().map(copier),
                  edges: this.cy.edges().toArray().map(copier)},
       groups: this.groups,
       subgraphs: this.subgraphs,
-      layout: layout
+      layout: layout,
     };
   };
 

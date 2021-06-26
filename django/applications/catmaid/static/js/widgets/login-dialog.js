@@ -5,7 +5,8 @@
     /**
      * Creates a simple login dialog.
      */
-    var LoginDialog = function(text, callback, force, title, showLocalLoginText = true) {
+    var LoginDialog = function(text, callback, force, title, showLocalLoginText = true,
+        loginErrorCallback = undefined, cancelCallback = undefined) {
       // If there is already a login dialog, don't create a new one, return
       // existing one.
       if (singleton && !force) {
@@ -18,8 +19,11 @@
       let buttons = {
         'Cancel': e => {
           singleton = null;
+          CATMAID.tools.callIfFn(cancelCallback);
         }
       };
+
+      loginErrorCallback = loginErrorCallback || CATMAID.handleError;
 
       if (CATMAID.Client.Settings.session.show_external_login_controls) {
         Object.keys(CATMAID.extraAuthConfig).sort().forEach(cId => {
@@ -36,7 +40,7 @@
         buttons['Login'] = function() {
           CATMAID.client.login($(user_field).val(), $(pass_field).val())
             .then(callback)
-            .catch(CATMAID.handleError);
+            .catch(loginErrorCallback);
           singleton = null;
         };
       }

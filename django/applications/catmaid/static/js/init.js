@@ -613,34 +613,53 @@ var project;
       .then(() => {
         // If a link ID is provided, try to get link info
         if ((pid || pid === 0) && link) {
-          return CATMAID.fetch(`${pid}/links/${link}/details`)
-            .then(linkInfo => {
-              if (!xp && xp !== 0) xp = linkInfo.location_x;
-              if (!yp && yp !== 0) yp = linkInfo.location_y;
-              if (!zp && zp !== 0) zp = linkInfo.location_z;
-              if (!inittool && linkInfo.tool) inittool = linkInfo.tool;
-              if (!init_active_node_id) {
-                if (linkInfo.active_connector) init_active_node_id = linkInfo.active_connector;
-                else if (linkInfo.active_treenode) init_active_node_id = linkInfo.active_treenode;
-                else if (!init_active_skeleton_id && linkInfo.active_skeleton) init_active_skeleton_id = linkInfo.active_skeleton;
-              }
-              if (ss.length === 0 && sids.length === 0 && linkInfo.stacks.length > 0) {
-                for (let i=0; i<linkInfo.stacks.length; ++i) {
-                  sids.push(linkInfo.stacks[i].stack_id);
-                  ss.push(linkInfo.stacks[i].zoom_level);
+
+          let getLinkDetails = function() {
+            return CATMAID.fetch(`${pid}/links/${link}/details`)
+              .then(linkInfo => {
+                if (!xp && xp !== 0) xp = linkInfo.location_x;
+                if (!yp && yp !== 0) yp = linkInfo.location_y;
+                if (!zp && zp !== 0) zp = linkInfo.location_z;
+                if (!inittool && linkInfo.tool) inittool = linkInfo.tool;
+                if (!init_active_node_id) {
+                  if (linkInfo.active_connector) init_active_node_id = linkInfo.active_connector;
+                  else if (linkInfo.active_treenode) init_active_node_id = linkInfo.active_treenode;
+                  else if (!init_active_skeleton_id && linkInfo.active_skeleton) init_active_skeleton_id = linkInfo.active_skeleton;
                 }
-              }
-              if (help === undefined && linkInfo.show_help) {
-                help = true;
-                this.setContextHelpVisibility(help);
-                this.contextHelpVisibilityEnforced = true;
-              }
-              if (!initialLayout && linkInfo.layout) initialLayout = linkInfo.layout;
-              if (!message && linkInfo.message) message = linkInfo.message;
-            })
-            .catch(e => {
-              throw new CATMAID.Warning('Could not load provided link');
-            });
+                if (ss.length === 0 && sids.length === 0 && linkInfo.stacks.length > 0) {
+                  for (let i=0; i<linkInfo.stacks.length; ++i) {
+                    sids.push(linkInfo.stacks[i].stack_id);
+                    ss.push(linkInfo.stacks[i].zoom_level);
+                  }
+                }
+                if (help === undefined && linkInfo.show_help) {
+                  help = true;
+                  this.setContextHelpVisibility(help);
+                  this.contextHelpVisibilityEnforced = true;
+                }
+                if (!initialLayout && linkInfo.layout) initialLayout = linkInfo.layout;
+                if (!message && linkInfo.message) message = linkInfo.message;
+              })
+              .catch(e => {
+                // If getting link details fails due to permissions, show a
+                // login dialog and attempt to fetch the data again after the
+                // login attempt (if any).
+                if (e instanceof CATMAID.PermissionError) {
+                  return new Promise((resolve, reject) => {
+                    new CATMAID.LoginDialog(
+                      "You need to log-in to access data in this project",
+                      () => resolve(getLinkDetails()),
+                      false, undefined, true,
+                      loginError => resolve(getLinkDetails()),
+                      () => reject(new CATMAID.Warning('Login cancelled'))
+                    ).show();
+                  });
+                } else {
+                  throw new CATMAID.Warning('Could not load provided link');
+                }
+              });
+          };
+          return getLinkDetails();
         }
       })
       .then(function() {

@@ -2577,9 +2577,9 @@ def _join_skeleton(user, from_treenode_id, to_treenode_id, project_id,
             # Get all current annotations of both skeletons and merge them for
             # a complete result set.
             from_annotation_info = get_annotation_info(project_id, (from_skid,),
-                    annotations=True, metaannotations=False, neuronnames=False)
+                    with_annotation_names=True, metaannotations=False, neuronnames=False)
             to_annotation_info = get_annotation_info(project_id, (to_skid,),
-                    annotations=True, metaannotations=False, neuronnames=False)
+                    with_annotation_names=True, metaannotations=False, neuronnames=False)
 
             # Create a new annotation map with the expected structure of
             # 'annotationname' vs. 'annotator id'.

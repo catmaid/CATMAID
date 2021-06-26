@@ -2231,8 +2231,8 @@
           edge.style({'line-color': labelColor,
                       'target-arrow-color': labelColor,
                       'target-arrow-shape': arrowShapeFn(edge.source())});
+          edge.data('color', labelColor);
         }
-        edge.data('color', labelColor);
         edge.data('label_color', labelColor);
         edge.data('width', min + edgeWidth(edge.data('weight')));
       }

@@ -222,10 +222,13 @@ class DeepLinkList(APIView):
 
 class DeepLinkSelector(APIView):
 
-    @method_decorator(requires_user_role_for_any_project([UserRole.Browse]))
     @never_cache
     def get(self, request:Request, project_id, alias) -> Response:
         """Get a deep-links available to the client.
+
+        No specific permissions are needed here, because this just rewrites a
+        URL and the client can handle the potential permission error in a more
+        user-friendly manner.
         ---
         serializer: DeepLinkSerializer
         """

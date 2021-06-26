@@ -1879,6 +1879,7 @@
     this.cy.startBatch();
 
     // Determine which nodes to update, which to remove, and which to add anew
+    let groupMemberUpdates = [];
     this.cy.nodes().each(function(i, node) {
       var skeletons = node.data('skeletons');
 
@@ -1899,10 +1900,7 @@
         // Update node name and color if the node is not part of a group
         if (gid) {
           if (gid === node.id()) {
-            // The new skeleton model is part of a group (this node), and needs
-            // no further updates.
-            CATMAID.msg("Skeleton updated", "Skeleton #" + skeleton.id +
-                " in group \"" + node.data('label') + "\" was updated");
+            groupMemberUpdates.push([skeleton, node.data('label')]);
           } else {
             CATMAID.msg("Group updated", "Skeleton #" + skeleton.id +
                 " in now part of group \"" + node.data('label'));
@@ -1928,6 +1926,17 @@
         set[skeleton.id] = new_model;
       }, this);
     });
+
+    if (groupMemberUpdates.length === 1) {
+      let [skeleton, label] = groupMemberUpdates[0];
+      // The new skeleton model is part of a group (this node), and needs
+      // no further updates. Show this message only if there is a single
+      CATMAID.msg("Skeleton updated", "Skeleton #" + skeleton.id +
+          " in group \"" + label + "\" was updated");
+    } else if (groupMemberUpdates.length > 1) {
+      // Show a single message if multiple skeletons where updated in groups
+      CATMAID.msg("Skeletons updated", `Updated ${groupMemberUpdates.length} grouped skeletons`);
+    }
 
     // Update colors of undirected edges, if any
     var subs = Object.keys(this.subgraphs);

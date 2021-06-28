@@ -18,6 +18,7 @@
       this.selected = true;
       this.pre_visible = true;
       this.post_visible = true;
+      this.desmosome_visible = true;
       this.text_visible = false;
       this.meta_visible = true;
       this.color = color || new THREE.Color(defaultColor);
@@ -40,6 +41,7 @@
       this.selected = v;
       this.pre_visible = v;
       this.post_visible = v;
+      this.desmosome_visible = v;
       if (!v) this.text_visible = v;
       this.meta_visible = v;
   };
@@ -49,6 +51,7 @@
     m.selected = this.selected;
     m.pre_visible = this.pre_visible;
     m.post_visible = this.post_visible;
+    m.desmosome_visible = this.desmosome_visible;
     m.text_visible = this.text_visible;
     m.meta_visible = this.meta_visible;
     m.opacity = this.opacity;
@@ -71,6 +74,7 @@
     this.selected = other.selected;
     this.pre_visible = other.pre_visible;
     this.post_visible = other.post_visible;
+    this.desmosome_visible = other.desmosome_visible;
     this.text_visible = other.text_visible;
     this.meta_visible = other.meta_visible;
     this.opacity = other.opacity;

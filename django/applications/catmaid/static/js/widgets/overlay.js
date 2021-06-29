@@ -3887,9 +3887,13 @@ var SkeletonAnnotations = {};
     // and if so, then activate it
     var atn = SkeletonAnnotations.atn;
     if (this.coords.lastX !== null && this.coords.lastY !== null) {
-      // Choose a search radius that is the scaled selection radius for nodes
-      var searchRadius = this.graphics.Node.prototype.CATCH_RADIUS *
-         this.graphics.Node.prototype.stackScaling;
+      // Choose a search radius that is the scaled selection radius for nodes.
+      // This radius needs to be in stack space and in addition, this method
+      // relies on UI generated coordinates (lastX and lastY below), which
+      // forces us to take a potential UI zoom and DPI difference into account
+      // (using devicePixelRatio).
+      var searchRadius = this.graphics.Node.prototype.CATCH_RADIUS
+          * this.graphics.Node.prototype.scaling * window.devicePixelRatio;
       var respectVirtualNodes = true;
       var nearestnode = this.getClosestNode(this.coords.lastX,
                                             this.coords.lastY,

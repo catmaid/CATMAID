@@ -1667,6 +1667,7 @@
 
   WebGLApplication.prototype.setSkeletonPreVisibility = WebGLApplication.prototype._skeletonVizFn('Pre');
   WebGLApplication.prototype.setSkeletonPostVisibility = WebGLApplication.prototype._skeletonVizFn('Post');
+  WebGLApplication.prototype.setSkeletonDesmosomeVisibility = WebGLApplication.prototype._skeletonVizFn('Desmosome');
   WebGLApplication.prototype.setSkeletonTextVisibility = WebGLApplication.prototype._skeletonVizFn('Text');
   WebGLApplication.prototype.setSkeletonMetaVisibility = WebGLApplication.prototype._skeletonVizFn('Meta');
 
@@ -1854,6 +1855,7 @@
         var skeleton = skeletons[skid];
         skeleton.setPreVisibility(false, true);
         skeleton.setPostVisibility(false, true);
+        skeleton.setDesmosomeVisibility(false, true);
       });
 
       var restriction = this.options.connector_filter;
@@ -1922,6 +1924,7 @@
         var skeleton = skeletons[skid];
         skeleton.setPreVisibility(skeleton.skeletonmodel.pre_visible);
         skeleton.setPostVisibility(skeleton.skeletonmodel.post_visible);
+        skeleton.setDesmosomeVisibility(skeleton.skeletonmodel.desmosome_visible);
       });
     }
 
@@ -2185,6 +2188,7 @@
           skeleton.setActorVisibility(model.selected && model.opacity > 0);
           skeleton.setPreVisibility(model.pre_visible);
           skeleton.setPostVisibility(model.post_visible);
+          skeleton.setDesmosomeVisibility(model.desmosome_visible);
           skeleton.setTextVisibility(model.text_visible);
           skeleton.setMetaVisibility(model.meta_visible);
           skeleton.actorColor = model.color.clone();
@@ -3615,6 +3619,7 @@
       s.setActorVisibility(visMap[skid].actor ? visible : false);
       s.setPreVisibility(visMap[skid].pre ? visible : false);
       s.setPostVisibility(visMap[skid].post ? visible : false);
+      s.setDesmosomeVisibility(visMap[skid].desmosome ? visible : false);
       s.setTextVisibility(visMap[skid].text ? visible : false);
       s.setMetaVisibility(visMap[skid].meta ? visible : false);
     }
@@ -5887,6 +5892,8 @@
       this.staticContent.connectorLineColors.presynaptic_to.visible;
     var originalConnectorPostVisibility =
       this.staticContent.connectorLineColors.postsynaptic_to.visible;
+    var originalConnectorDesmosomeVisibility =
+      this.staticContent.connectorLineColors.desmosome_with.visible;
 
     // Hide everthing unpickable
     var o = CATMAID.tools.deepCopy(this.options);
@@ -5900,6 +5907,7 @@
     // Hide pre and post synaptic flags
     this.staticContent.connectorLineColors.presynaptic_to.visible = false;
     this.staticContent.connectorLineColors.postsynaptic_to.visible = false;
+    this.staticContent.connectorLineColors.desmosome_with.visible = false;
 
     // Disable lighting and add plain ambient light
     var lightVisMap = this.lights.map(function(l) {
@@ -6194,6 +6202,8 @@
       originalConnectorPreVisibility;
     this.staticContent.connectorLineColors.postsynaptic_to.visible =
       originalConnectorPostVisibility;
+    this.staticContent.connectorLineColors.desmosome_with.visible =
+      originalConnectorDesmosomeVisibility;
 
     // If no color ID was found, no element was hit.
     if (colorId === 0) {
@@ -6461,11 +6471,13 @@
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.synapticTypes = ['presynaptic_to', 'postsynaptic_to', 'gapjunction_with', 'desmosome_with'];
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.synapticTypesToModelVisibility = {
     'presynaptic_to': 'pre_visible',
-    'postsynaptic_to': 'post_visible'
+    'postsynaptic_to': 'post_visible',
+    'desmosome_with': 'desmosome_visible'
   };
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.modelVisibilityToSynapticType = {
     'presynaptic_to': 'pre_visible',
-    'postsynaptic_to': 'post_visible'
+    'postsynaptic_to': 'post_visible',
+    'desmosome_with': 'desmosome_visible'
   };
 
 
@@ -6723,6 +6735,8 @@
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.setPreVisibility = WebGLApplication.prototype.Space.prototype.Skeleton.prototype.setSynapticVisibilityFn('presynaptic_to');
 
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.setPostVisibility = WebGLApplication.prototype.Space.prototype.Skeleton.prototype.setSynapticVisibilityFn('postsynaptic_to');
+
+  WebGLApplication.prototype.Space.prototype.Skeleton.prototype.setDesmosomeVisibility = WebGLApplication.prototype.Space.prototype.Skeleton.prototype.setSynapticVisibilityFn('desmosome_with');
 
   WebGLApplication.prototype.Space.prototype.Skeleton.prototype.setMetaVisibility = function(vis) {
     for (var idx in this.specialTagSpheres) {
@@ -8674,9 +8688,11 @@
     if (options.connector_filter) {
       this.setPreVisibility( false ); // the presynaptic edges and spheres
       this.setPostVisibility( false ); // the postsynaptic edges and spheres
+      this.setDesmosomeVisibility( false ); // the desmosome edges and spheres
     } else {
       this.setPreVisibility( this.skeletonmodel.pre_visible ); // the presynaptic edges and spheres
       this.setPostVisibility( this.skeletonmodel.post_visible ); // the postsynaptic edges and spheres
+      this.setDesmosomeVisibility( this.skeletonmodel.desmosome_visible ); // the desmosome edges and spheres
     }
 
     this.setTextVisibility( this.skeletonmodel.text_visible ); // the text labels

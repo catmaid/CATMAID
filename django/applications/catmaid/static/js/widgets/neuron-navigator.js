@@ -184,8 +184,7 @@
     var duplicate_button = document.createElement('div');
     duplicate_button.setAttribute('class', 'navigator_button');
     var duplicate_image = document.createElement('img');
-    duplicate_image.setAttribute('src', STATIC_URL_JS +
-        'images/duplicate_navigator.png');
+    duplicate_image.setAttribute('src', CATMAID.makeStaticURL('images/duplicate_navigator.png'));
     duplicate_button.setAttribute('title', 'Duplicate navigator window');
     duplicate_button.appendChild(duplicate_image);
     $navi_bar.append(duplicate_button);

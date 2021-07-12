@@ -1984,6 +1984,7 @@
 
     var annotation_title = document.createElement('h4');
     annotation_title.appendChild(document.createTextNode('Meta-annotations'));
+    annotation_title.classList.add('clear');
     container.append(annotation_title);
 
     // If this node should display co-annotations, it needs to remove the last

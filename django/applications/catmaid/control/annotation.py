@@ -1669,8 +1669,8 @@ def list_annotations_datatable(request:HttpRequest, project_id=None) -> JsonResp
     num_records = len(annotation_query)
 
     response:Dict[str, Any] = {
-        'totalRecords': num_records,
-        'totalDisplayRecords': num_records,
+        'recordsTotal': num_records,
+        'recordsFiltered': num_records,
         'data': []
     }
 

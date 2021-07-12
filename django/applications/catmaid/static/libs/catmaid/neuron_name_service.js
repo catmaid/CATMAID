@@ -752,7 +752,7 @@
               return 'skeletonid' !== l.id;
           }).length;
 
-          return activeUpdate
+          activeUpdate = activeUpdate
             .then(() => new Promise(function(resolve, reject) {
               // Get all skeletons to query, either all known ones or all known ones
               // of the given list.
@@ -867,12 +867,12 @@
                       }));
                 }
 
-                activeUpdate = Promise.all(promiseAnnotations)
+                return Promise.all(promiseAnnotations)
                   .then(resolve)
                   .catch(reject);
-                return activeUpdate;
               }
             }));
+          return activeUpdate;
         },
 
         /**

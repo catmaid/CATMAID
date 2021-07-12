@@ -847,9 +847,6 @@
 
                         // Assign annotation info to each skeleton
                         for (let skeletonId in result.skeletons) {
-                          if (result.neuronnames && result.neuronnames[skeletonId]) {
-                            managedSkeletons[skeletonId].neuronName = result.neuronnames[skeletonId];
-                          }
                           managedSkeletons[skeletonId].annotations = result.skeletons[skeletonId].annotations;
                           managedSkeletons[skeletonId].updateTime = updateTime;
                           if (result.metaannotations) {
@@ -860,7 +857,13 @@
                           }
                         }
 
-                        updateNeuronNames(apiSkids, result, skids, callback);
+                        if (needsNeueonNames && result.neuronnames) {
+                          for (let skeletonId in result.neuronnames) {
+                            managedSkeletons[skeletonId].neuronName = result.neuronnames[skeletonId];
+                          }
+                        }
+
+                        return updateNeuronNames(apiSkids, result, skids, callback);
                       }));
                 }
 

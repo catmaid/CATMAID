@@ -1557,8 +1557,8 @@ def _fast_co_annotations(request:HttpRequest, project_id:Union[int,str], display
     num_records = cursor.fetchone()[0]
 
     response = {
-        'iTotalRecords': num_records,
-        'iTotalDisplayRecords': num_records,
+        'recordsTotal': num_records,
+        'recordsFiltered': num_records,
     }
 
     rest += sorter
@@ -1573,20 +1573,20 @@ def _fast_co_annotations(request:HttpRequest, project_id:Union[int,str], display
     # 2: last_user
     # 3: last_used
     # 4: num_usage
-    aaData = []
+    data = []
     for row in cursor.fetchall():
         last_used = row[3]
         if last_used:
             last_used = last_used.strftime("%Y-%m-%d %H:%M:%S")
         else:
             last_used = 'never'
-        aaData.append([row[1], # Annotation name
+        data.append([row[1], # Annotation name
                        last_used,
                        row[4], # Last use
                        row[2], # Last annotator
                        row[0]])
 
-    response['aaData'] = aaData
+    response['data'] = data
 
     return JsonResponse(response)
 

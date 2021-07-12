@@ -938,6 +938,10 @@
 
           if (data.search && data.search.value.length > 0) {
             data.search = data.search.value;
+          } else {
+            // By default, this is set by DataTables. Therefore we explicitly
+            // unset this.
+            data.search = undefined;
           }
 
           // User filter -- we are requesting annotations that are used by a

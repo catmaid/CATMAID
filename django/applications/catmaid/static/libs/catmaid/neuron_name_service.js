@@ -589,13 +589,10 @@
               clients.push(client);
             }
 
-            // Execute callback and return if there aren't any unknown skeleton ID
-            return new Promise(function(resolve, reject) {
-              resolve();
-              if (callback) {
-                  callback();
-              }
-            });
+            // Execute callback and return if there aren't any unknown
+            // skeleton IDs, once the active update is done.
+            return activeUpdate
+              .then(() => CATMAID.tools.callIfFn(callback));
           } else {
             return this.updateNames(unknownSkids, callback)
               .then(() => {

@@ -915,7 +915,7 @@
             if (filters.annotates) {
               // Annotates filter -- we are requesting annotations that are
               // annotating entities
-              data.annotates = filters.annotates;
+              data.annotates = filters.annotations;
             } else {
               // Annotated with filter -- we are requesting annotations that are
               // annotated with specific annotations

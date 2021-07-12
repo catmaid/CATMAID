@@ -534,9 +534,13 @@
          * Makes all given skeletons known to the naming service and registers the
          * given client as linked to these skeletons.
          *
+         * @param notifyClients {Boolean} (Optional) Notify all clients and trigger
+         *                                a neuron name update after successful
+         *                                registration. False by default.
+         *
          * @returns a promise that will be resolved once registering is finished.
          */
-        registerAll: function(client, models, callback)
+        registerAll: function(client, models, callback, notifyClients=false)
         {
           if (!client) {
             throw new CATMAID.ValueError("Please provide a valid client");
@@ -596,7 +600,9 @@
             return this.updateNames(unknownSkids, callback)
               .then(() => {
                 try {
-                  this.notifyClients();
+                  if (notifyClients) {
+                    this.notifyClients();
+                  }
                 } catch (e) {
                   CATMAID.handleError(e);
                 }

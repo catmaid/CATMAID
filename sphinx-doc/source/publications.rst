@@ -6,6 +6,16 @@ Publications
 
 * Stephan Saalfeld, Albert Cardona, Volker Hartenstein, Pavel Tomančák. `CATMAID: collaborative annotation toolkit for massive amounts of image data <http://bioinformatics.oxfordjournals.org/content/25/15/1984.abstract>`_, Bioinformatics, 2009.
 
+A working CATMAID instance often contains a mixture of published and unpublished data.
+We recommend that you index published data using annotations:
+
+* Annotate neurons and other objects with the citation or DOI (e.g. ``Ohyama, Schneider-Mizell et al. 2016`` or ``doi:10.1038/nature14297``)
+* Annotate all publication-related annotations in your instance with the same meta-annotation, e.g. ``publications`` (or ``papers``)
+
+This will make data retrieval much easier for the next person who needs it (who may be you!).
+
+If your group uses CATMAID regularly, please get in touch so that you can be added to the :ref:`Who uses it` page.
+
 Publications using CATMAID
 `````````````````````````````````````
 *The following publications used CATMAID for neural circuit reconstruction or other tasks. Please get in touch with us if your publication is missing.*

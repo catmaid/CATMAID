@@ -9,6 +9,7 @@ import re
 import struct
 import sys
 import trimesh
+import numpy as np
 from typing import Any, Callable, Dict, List, Sequence, Tuple, Union
 from xml.etree import ElementTree as ET
 
@@ -1384,18 +1385,10 @@ def get_volume_data(project_id, volume_ids):
 
         # For some reason, in this format vertices occur multiple times - we
         # have to collapse that to get a clean mesh
-        final_faces = []
-        final_vertices: List[Sequence[int]] = []
-
-        for t in faces:
-            this_faces = []
-            for v in t:
-                if vertices[v] not in final_vertices:
-                    final_vertices.append(vertices[v])
-
-                this_faces.append(final_vertices.index(vertices[v]))
-
-            final_faces.append(this_faces)
+        dedup_vertices, idx_map = np.unique(np.asarray(vertices), return_inverse=True, axis=0)
+        final_vertices: List[Sequence[int]] = list(dedup_vertices)
+        vert_idx_map = list(idx_map)
+        final_faces = [[vert_idx_map[v] for v in t] for t in faces]
 
         volumes[mesh_id] = {
             'name': mesh_name,

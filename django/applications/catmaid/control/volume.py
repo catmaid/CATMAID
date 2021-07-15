@@ -766,8 +766,8 @@ def import_volumes(request, project_id) -> Union[HttpResponse, JsonResponse]:
     if request.FILES:
         for uploadedfile in request.FILES.values():
             if uploadedfile.size > settings.IMPORTED_SKELETON_FILE_MAXIMUM_SIZE:  # todo: use different setting
-                return HttpResponse(
-                    f'File too large. Maximum file size is {settings.IMPORTED_SKELETON_FILE_MAXIMUM_SIZE} bytes.',
+                return JsonResponse(
+                    {"error": f'File too large. Maximum file size is {settings.IMPORTED_SKELETON_FILE_MAXIMUM_SIZE} bytes.'},
                     status=413)
 
             filename = uploadedfile.name
@@ -786,7 +786,9 @@ def import_volumes(request, project_id) -> Union[HttpResponse, JsonResponse]:
                 )
                 fnames_to_id[filename] = mesh_id = mesh.save()
             else:
-                return HttpResponse(f'File type "{extension}" not understood. Known file types: stl', status=415)
+                return JsonResponse(
+                    {"error": f'File type "{extension}" not understood. Known file types: stl'},
+                    status=415)
     elif 'format' in request.POST:
         fmt = request.POST.get('format')
         if fmt == 'stl':

@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
 
 from itertools import chain
+import io
 import logging
 import json
 import os
 import re
+import struct
+import sys
 import trimesh
+import numpy as np
 from typing import Any, Callable, Dict, List, Sequence, Tuple, Union
 from xml.etree import ElementTree as ET
 
@@ -181,33 +185,42 @@ class TriangleMeshVolume(PostGISVolume):
             self.mesh = None
 
     def get_params(self):
-        return None
+        if self.mesh is None:
+            return None
 
-    def get_geometry(self):
-        return TriangleMeshVolume.fromLists(self.mesh) if self.mesh else None
+        # Expect mesh to be a list of two lists: [[points], [triangles]]. The
+        # list of points contains lists of three numbers, each one representing a
+        # vertex in the mesh. The array of triangles also contains three element
+        # lists as items. Each one represents a triangle based on the points in
+        # the other array, that are referenced by the triangle index values.
+        points, faces = self.mesh
+        BYTEORD = b"\0" if sys.byteorder == "big" else b"\1"
+        WKB_TIN_Z = 1016
+        WKB_TRIANGLE_Z = 1017
+        TIN_HEAD = struct.pack("=cII", BYTEORD, WKB_TIN_Z, len(faces))
+        TRI_HEAD = struct.pack("=cIII", BYTEORD, WKB_TRIANGLE_Z, 1, 4)
 
-    @classmethod
-    def fromLists(cls, mesh) -> str:
-        """Expect mesh to be a list of two lists: [[points], [triangles]]. The
-        list of points contains lists of three numbers, each one representing a
-        vertex in the mesh. The array of triangles also contains three element
-        lists as items. Each one represents a triangle based on the points in
-        the other array, that are referenced by the triangle index values.
-        """
-        def pg_point(p):
+        def pg_point_into(p, b):
             if not p or len(p) != 3:
                 raise ValueError(f'Point "{p}" does not have three elements')
-            return f'{p[0]} {p[1]} {p[2]}'
+            b.extend(struct.pack("=3d", *p))
 
-        def pg_face(points, f):
+        def pg_face_into(points, f, b):
             if not f or len(f) != 3:
                 raise ValueError(f'Face "{f}" does not have three elements')
-            p0 = pg_point(points[f[0]])
-            return f'(({p0}, {pg_point(points[f[1]])}, {pg_point(points[f[2]])}, {p0}))'
+            b.extend(TRI_HEAD)
+            for i in (0, 1, 2, 0):
+                pg_point_into(points[f[i]], b)
 
-        points, faces = mesh
-        triangles = [pg_face(points, f) for f in faces]
-        return "ST_GeomFromEWKT('TIN (%s)')" % ','.join(triangles)
+        ewkb = bytearray(TIN_HEAD)
+
+        for f in faces:
+            pg_face_into(points, f, ewkb)
+
+        return {"ewkb": ewkb}
+
+    def get_geometry(self):
+        return "ST_GeomFromEWKB(%(ewkb)s)" if self.mesh else None
 
 class BoxVolume(PostGISVolume):
 
@@ -766,27 +779,30 @@ def import_volumes(request, project_id) -> Union[HttpResponse, JsonResponse]:
     if request.FILES:
         for uploadedfile in request.FILES.values():
             if uploadedfile.size > settings.IMPORTED_SKELETON_FILE_MAXIMUM_SIZE:  # todo: use different setting
-                return HttpResponse(
-                    f'File too large. Maximum file size is {settings.IMPORTED_SKELETON_FILE_MAXIMUM_SIZE} bytes.',
+                return JsonResponse(
+                    {"error": f'File too large. Maximum file size is {settings.IMPORTED_SKELETON_FILE_MAXIMUM_SIZE} bytes.'},
                     status=413)
 
             filename = uploadedfile.name
             name, extension = os.path.splitext(filename)
             if extension.lower() == ".stl":
-                stl_str = uploadedfile.read().decode('utf-8')
-
+                stl = io.BytesIO(uploadedfile.read())
                 try:
-                    vertices, triangles = _stl_ascii_to_indexed_triangles(stl_str)
-                except InvalidSTLError as e:
+                    tmesh = trimesh.exchange.stl.load_stl(stl)
+                except Exception as e:
                     raise ValueError(f"Invalid STL file ({e})")
 
+                vertices = tmesh["vertices"].tolist()
+                faces = tmesh["faces"].tolist()
                 mesh = TriangleMeshVolume(
                     project_id, request.user.id,
-                    {"type": "trimesh", "title": name, "mesh": [vertices, triangles]}
+                    {"type": "trimesh", "title": name, "mesh": [vertices, faces]}
                 )
                 fnames_to_id[filename] = mesh_id = mesh.save()
             else:
-                return HttpResponse(f'File type "{extension}" not understood. Known file types: stl', status=415)
+                return JsonResponse(
+                    {"error": f'File type "{extension}" not understood. Known file types: stl'},
+                    status=415)
     elif 'format' in request.POST:
         fmt = request.POST.get('format')
         if fmt == 'stl':
@@ -1369,18 +1385,10 @@ def get_volume_data(project_id, volume_ids):
 
         # For some reason, in this format vertices occur multiple times - we
         # have to collapse that to get a clean mesh
-        final_faces = []
-        final_vertices: List[Sequence[int]] = []
-
-        for t in faces:
-            this_faces = []
-            for v in t:
-                if vertices[v] not in final_vertices:
-                    final_vertices.append(vertices[v])
-
-                this_faces.append(final_vertices.index(vertices[v]))
-
-            final_faces.append(this_faces)
+        dedup_vertices, idx_map = np.unique(np.asarray(vertices), return_inverse=True, axis=0)
+        final_vertices: List[Sequence[int]] = list(dedup_vertices)
+        vert_idx_map = list(idx_map)
+        final_faces = [[vert_idx_map[v] for v in t] for t in faces]
 
         volumes[mesh_id] = {
             'name': mesh_name,

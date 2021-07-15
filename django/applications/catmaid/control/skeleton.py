@@ -4146,8 +4146,8 @@ def get_skeletons_in_bb(params) -> List:
 @api_view(['GET', 'POST'])
 @requires_user_role(UserRole.Browse)
 def skeletons_in_bounding_box(request:HttpRequest, project_id) -> JsonResponse:
-    """Get a list of all skeletons that intersect with the passed in bounding
-    box. Optionally, only a subsed of passed in skeletons can be tested against.
+    """Get a list of all skeletons that intersect with the query bounding
+    box. Optionally, only a subset of passed in skeletons can be tested against.
     ---
     parameters:
     - name: limit

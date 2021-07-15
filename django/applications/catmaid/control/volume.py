@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from itertools import chain
+import io
 import logging
 import json
 import os
@@ -773,16 +774,17 @@ def import_volumes(request, project_id) -> Union[HttpResponse, JsonResponse]:
             filename = uploadedfile.name
             name, extension = os.path.splitext(filename)
             if extension.lower() == ".stl":
-                stl_str = uploadedfile.read().decode('utf-8')
-
+                stl = io.BytesIO(uploadedfile.read())
                 try:
-                    vertices, triangles = _stl_ascii_to_indexed_triangles(stl_str)
-                except InvalidSTLError as e:
+                    tmesh = trimesh.exchange.stl.load_stl(stl)
+                except Exception as e:
                     raise ValueError(f"Invalid STL file ({e})")
 
+                vertices = tmesh["vertices"].tolist()
+                faces = tmesh["faces"].tolist()
                 mesh = TriangleMeshVolume(
                     project_id, request.user.id,
-                    {"type": "trimesh", "title": name, "mesh": [vertices, triangles]}
+                    {"type": "trimesh", "title": name, "mesh": [vertices, faces]}
                 )
                 fnames_to_id[filename] = mesh_id = mesh.save()
             else:

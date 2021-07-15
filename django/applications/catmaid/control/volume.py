@@ -6,6 +6,8 @@ import logging
 import json
 import os
 import re
+import struct
+import sys
 import trimesh
 from typing import Any, Callable, Dict, List, Sequence, Tuple, Union
 from xml.etree import ElementTree as ET
@@ -182,33 +184,42 @@ class TriangleMeshVolume(PostGISVolume):
             self.mesh = None
 
     def get_params(self):
-        return None
+        if self.mesh is None:
+            return None
 
-    def get_geometry(self):
-        return TriangleMeshVolume.fromLists(self.mesh) if self.mesh else None
+        # Expect mesh to be a list of two lists: [[points], [triangles]]. The
+        # list of points contains lists of three numbers, each one representing a
+        # vertex in the mesh. The array of triangles also contains three element
+        # lists as items. Each one represents a triangle based on the points in
+        # the other array, that are referenced by the triangle index values.
+        points, faces = self.mesh
+        BYTEORD = b"\0" if sys.byteorder == "big" else b"\1"
+        WKB_TIN_Z = 1016
+        WKB_TRIANGLE_Z = 1017
+        TIN_HEAD = struct.pack("=cII", BYTEORD, WKB_TIN_Z, len(faces))
+        TRI_HEAD = struct.pack("=cIII", BYTEORD, WKB_TRIANGLE_Z, 1, 4)
 
-    @classmethod
-    def fromLists(cls, mesh) -> str:
-        """Expect mesh to be a list of two lists: [[points], [triangles]]. The
-        list of points contains lists of three numbers, each one representing a
-        vertex in the mesh. The array of triangles also contains three element
-        lists as items. Each one represents a triangle based on the points in
-        the other array, that are referenced by the triangle index values.
-        """
-        def pg_point(p):
+        def pg_point_into(p, b):
             if not p or len(p) != 3:
                 raise ValueError(f'Point "{p}" does not have three elements')
-            return f'{p[0]} {p[1]} {p[2]}'
+            b.extend(struct.pack("=3d", *p))
 
-        def pg_face(points, f):
+        def pg_face_into(points, f, b):
             if not f or len(f) != 3:
                 raise ValueError(f'Face "{f}" does not have three elements')
-            p0 = pg_point(points[f[0]])
-            return f'(({p0}, {pg_point(points[f[1]])}, {pg_point(points[f[2]])}, {p0}))'
+            b.extend(TRI_HEAD)
+            for i in (0, 1, 2, 0):
+                pg_point_into(points[f[i]], b)
 
-        points, faces = mesh
-        triangles = [pg_face(points, f) for f in faces]
-        return "ST_GeomFromEWKT('TIN (%s)')" % ','.join(triangles)
+        ewkb = bytearray(TIN_HEAD)
+
+        for f in faces:
+            pg_face_into(points, f, ewkb)
+
+        return {"ewkb": ewkb}
+
+    def get_geometry(self):
+        return "ST_GeomFromEWKB(%(ewkb)s)" if self.mesh else None
 
 class BoxVolume(PostGISVolume):
 

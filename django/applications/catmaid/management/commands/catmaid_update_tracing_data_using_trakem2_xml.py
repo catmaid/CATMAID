@@ -84,19 +84,13 @@ def parse_transform(xform):
 
 class TrakEM2Layer(object):
 
-    def __init__(self, xml_data, res_x, res_y, res_z, offset_x=0, offset_y=0,
-            offset_min_z=None, offset_max_z=None):
+    def __init__(self, xml_data, res_x, res_y, res_z, offset_x=0, offset_y=0):
         self.z_start = float(xml_data.attrib['z']) * res_z - 0.00001
         self.z_end = self.z_start + res_z - 0.00001
 
         self.res_x = res_x
         self.res_y = res_y
         self.res_z = res_z
-
-        if (offset_min_z and (self.z_start - offset_min_z) < -0.00001) \
-                or (offset_max_z and (self.z_start - offset_max_z) > 0.00001):
-            offset_x = 0.0
-            offset_y = 0.0
 
         self.offset_x = offset_x
         self.offset_y = offset_y
@@ -280,8 +274,17 @@ class CoordTransformer(object):
             for n, layer_data in enumerate(progressbar(target_data_layerset.findall('t2_layer'))):
                 if self.layers_to_transform and n not in self.layers_to_transform:
                     continue
-                layer = TrakEM2Layer(layer_data, res_x, res_y, res_z, offset_x,
-                        offset_y, offset_min_z, offset_max_z)
+
+                layer_z = float(layer_data.attrib['z'])
+                offset_disabled = (offset_min_z and (layer_z - offset_min_z) < -0.00001) \
+                    or (offset_max_z and (layer_z - offset_max_z) > 0.00001)
+
+                if offset_disabled:
+                    offset_x, offset_y = 0.0, 0.0
+                else:
+                    offset_x, offset_y = self.offset_x, self.offset_y
+
+                layer = TrakEM2Layer(layer_data, res_x, res_y, res_z, offset_x, offset_y)
                 self.layers.append(layer)
 
         # Sort layers by Z
@@ -355,7 +358,7 @@ class CoordTransformer(object):
                 if self.review_reset_distance and dist > self.review_reset_distance:
                     reset_reviews_for.append(loc[3])
 
-            log(f'  Found and transformed {len(locations)} locations, considering {len(reset_reviews_for)} locations for review reset')
+            log(f'  Found and transformed {len(locations)} locations, considering {len(reset_reviews_for)} locations for review reset, offset: {l.offset_x}, {l.offset_y}')
 
             # Write points back into database
             execute_batch(cursor, """

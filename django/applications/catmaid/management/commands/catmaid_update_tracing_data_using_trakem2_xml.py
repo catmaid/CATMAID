@@ -110,14 +110,14 @@ class TrakEM2Layer(object):
         self.id = int(self.patch_data.attrib['oid'])
 
         # To get the TrakEM2 patch (not needed here):
-        #layer_set = project.getRootLayerSet()
-        #layer = layer_set.getLayer(int(xml_data.attrib['oid']))
-        #log(f'Found layer for id {xml_data.attrib["oid"]}: {layer.getId()}')
+        # layer_set = project.getRootLayerSet()
+        # layer = layer_set.getLayer(int(xml_data.attrib['oid']))
+        # log(f'Found layer for id {xml_data.attrib["oid"]}: {layer.getId()}')
 
-        #patches = layer.getPatches(True)
-        #if patches.size() != 1:
-        #    raise ValueError(f'Need exactly one patch, got {len(patches)}')
-        #self.patch = patches.get(0)
+        # patches = layer.getPatches(True)
+        # if patches.size() != 1:
+        #     raise ValueError(f'Need exactly one patch, got {len(patches)}')
+        # self.patch = patches.get(0)
 
         # The text representation of a matrix is expected to look like this:
         # matrix(a, b, c, d, e, f), which represents the matrix columns [a,b],
@@ -157,7 +157,7 @@ class TrakEM2Layer(object):
             aff.translate(-box.x, -box.y)
             affm = MPICBG.AffineModel2D()
             affm.set(aff)
-            coord_list.add(affm);
+            coord_list.add(affm)
 
             # With both the non-linear transform and the affine plus the
             # bounding box shift, <coord_list> is now exactly the same as
@@ -179,7 +179,7 @@ class TrakEM2Layer(object):
             aff.translate(transform_mesh_bb.x, transform_mesh_bb.y)
             affm = MPICBG.AffineModel2D()
             affm.set(aff)
-            self.transform_list.add(affm);
+            self.transform_list.add(affm)
         else:
             self.transform_list = None
 
@@ -326,6 +326,7 @@ class CoordTransformer(object):
         hit = 0
 
         def take_if_not_seen(entry):
+            nonlocal hit
             if entry[3] in seen:
                 hit += 1
                 return False
@@ -491,7 +492,7 @@ class Command(BaseCommand):
         post_mapping = []
         if options['post_mapping']:
             for mapping in options['post_mapping'].replace(' ','').split('),('):
-                point_tokens =  mapping.split(')=(')
+                point_tokens = mapping.split(')=(')
                 if len(point_tokens) != 2:
                     raise CommandError(f'Need exactly two points to a point match: {point_tokens}')
                 point_a = tuple(map(float, point_tokens[0].replace('(', '').replace(')', '').split(',')))

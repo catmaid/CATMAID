@@ -15,6 +15,7 @@ from catmaid.models import Project
 
 from psycopg2.extras import execute_batch
 from progressbar import progressbar
+from typing import Set
 
 try:
     from molesq import Transformer
@@ -64,7 +65,7 @@ def parse_transform(xform):
     if xform.tag in ('iict_transform', 'ict_transform'):
         Transform = autoclass(xform.attrib['class'])
         t = Transform()
-        t.init(Java.String(xform.attrib['data']))
+        t.init(Java.String(xform.attrib['data'])) # type: ignore
         return t
     elif xform.tag == 'ict_transform_list':
         coord_list = MPICBG.CoordinateTransformList() # type: ignore
@@ -148,14 +149,14 @@ class TrakEM2Layer(object):
             # necessary, because nodes come from the pre-transformation space
             # and the removal of the translation here is re-added by the patch
             # affine, added after this (in transform_point_entry).
-            mesh = MPICBG.TransformMesh(transform_list, self.mesh_resolution, self.o_width, self.o_height)
+            mesh = MPICBG.TransformMesh(transform_list, self.mesh_resolution, self.o_width, self.o_height) # type: ignore
             box = mesh.getBoundingBox()
 
             # Affine and non-linear transformation offset (baked into the
             # stored affine).
-            aff = Java.AffineTransform(*self.affine_transform)
+            aff = Java.AffineTransform(*self.affine_transform) # type: ignore
             aff.translate(-box.x, -box.y)
-            affm = MPICBG.AffineModel2D()
+            affm = MPICBG.AffineModel2D() # type: ignore
             affm.set(aff)
             coord_list.add(affm)
 
@@ -170,14 +171,14 @@ class TrakEM2Layer(object):
             # data. Directly applying the transformations can otherwise be "too
             # precise".
             self.transform_list = MPICBG.CoordinateTransformList() # type: ignore
-            transform_mesh = MPICBG.TransformMesh(coord_list, self.mesh_resolution, self.o_width, self.o_height)
+            transform_mesh = MPICBG.TransformMesh(coord_list, self.mesh_resolution, self.o_width, self.o_height) # type: ignore
             self.transform_list.add(transform_mesh)
 
             # Re-add the non-linear transformation offset.
             transform_mesh_bb = transform_mesh.getBoundingBox()
-            aff = Java.AffineTransform()
+            aff = Java.AffineTransform() # type: ignore
             aff.translate(transform_mesh_bb.x, transform_mesh_bb.y)
-            affm = MPICBG.AffineModel2D()
+            affm = MPICBG.AffineModel2D() # type: ignore
             affm.set(aff)
             self.transform_list.add(affm)
         else:
@@ -322,7 +323,7 @@ class CoordTransformer(object):
             join = ''
 
         # Remove if not needed
-        seen = set()
+        seen:Set[int] = set()
         hit = 0
 
         def take_if_not_seen(entry):
@@ -482,12 +483,12 @@ class Command(BaseCommand):
         if options['skeleton_ids']:
             skeleton_ids = list(map(lambda x: int(x.strip()), options['skeleton_ids'].split(',')))
         else:
-            skeleton_ids = None
+            skeleton_ids = []
 
         if options['layers']:
             layers = list(map(lambda x: int(x.strip()), options['layers'].split(',')))
         else:
-            layers = None
+            layers = []
 
         post_mapping = []
         if options['post_mapping']:

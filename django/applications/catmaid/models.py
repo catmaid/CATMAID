@@ -1953,6 +1953,7 @@ class DeepLink(NonCascadingUserFocusedModel):
     """
     alias = models.TextField(blank=True, null=True)
     is_public = models.BooleanField(default=False)
+    is_exportable = models.BooleanField(default=False)
     password = models.CharField(max_length=255)
 
     location_x = models.FloatField(blank=True, null=True)

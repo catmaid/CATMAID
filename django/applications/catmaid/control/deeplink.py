@@ -62,6 +62,7 @@ class DeepLinkSerializer(ModelSerializer):
             'id',
             'alias',
             'is_public',
+            'is_exportable',
             'location_x',
             'location_y',
             'location_z',
@@ -140,6 +141,9 @@ class DeepLinkList(APIView):
 
         if 'is_public' in request.POST:
             params['is_public'] = get_request_bool(request.POST, 'is_public')
+
+        if 'is_exportable' in request.POST:
+            params['is_exportable'] = get_request_bool(request.POST, 'is_exportable')
 
         if 'location_x' in request.POST:
             params['location_x'] = float(request.POST['location_x'])

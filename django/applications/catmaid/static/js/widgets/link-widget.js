@@ -39,6 +39,7 @@
   LinkWidget.prototype._initLinkEditParameters = function() {
     this.linkEditAlias = CATMAID.DeepLink.makeUniqueId();
     this.linkEditIsPublic = true;
+    this.linkEditIsExportable = false;
     this.linkEditX = null;
     this.linkEditY = null;
     this.linkEditZ = null;
@@ -124,6 +125,7 @@
     let params = {
       alias: this.linkEditAlias,
       is_public: this.linkEditIsPublic,
+      is_exportable: this.linkEditIsExportable,
       location_x: this.linkEditX,
       location_y: this.linkEditY,
       location_z: this.linkEditZ,
@@ -324,6 +326,13 @@
               class: "cm-center",
               render: function(data, type, row, meta) {
                 return data ? 'No' : 'Yes';
+              }
+            }, {
+              title: 'Exportable',
+              data: 'is_exportable',
+              class: "cm-center",
+              render: function(data, type, row, meta) {
+                return data ? 'Yes' : 'No';
               }
             }, {
               title: 'Location',
@@ -590,6 +599,15 @@
               "If enabled, this link is visible to everyone with access to this project.",
               function() {
                 widget.linkEditIsPublic = this.checked;
+              }));
+
+        // Exportable
+        $(propertiesPanel).append(CATMAID.DOM.createCheckboxSetting(
+              "Can be exported (e.g. when publishing data)",
+              widget.linkEditIsExportable,
+              "If enabled, this link will be part of a data export that includes deep links.",
+              function() {
+                widget.linkEditIsExportable = this.checked;
               }));
 
         // Location

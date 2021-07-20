@@ -2024,11 +2024,12 @@ var project;
    * Store a deep link and return the new link
    */
   Client.createDeepLink = function(withLayout = false, withSkeletons = true, withWidgetSettings = true,
-      alias = null, isPrivate = false) {
+      alias = null, isPrivate = false, isExportable = false) {
     let stackConfig = project.getStackAndStackGroupConfiguration();
     let params = {
       alias: alias || CATMAID.DeepLink.makeUniqueId(),
       is_public: !isPrivate,
+      is_exportable: isExportable,
       location_x: project.coordinates.x,
       location_y: project.coordinates.y,
       location_z: project.coordinates.z,
@@ -2135,7 +2136,7 @@ var project;
 
     let optionContainer2 = document.createElement('span');
     optionContainer2.style.display = 'grid';
-    optionContainer2.style.gridTemplate = '3em / 20em 15em';
+    optionContainer2.style.gridTemplate = '3em / 21em 10em 10em';
     let persistent = CATMAID.DOM.appendCheckbox(optionContainer2, 'Shorten link and add to Link Widget',
         'This alias needs to be unique per project and is stored on the server', true, e => {
           let presentUrl = makeLongLinkAddress();
@@ -2146,6 +2147,7 @@ var project;
           }
           aliasField.disabled = !e.target.checked;
           isPrivate.disabled = !e.target.checked;
+          isExportable.disabled = !e.target.checked;
           lastMessage.innerHTML = e.target.checked ? persistMsg : regularMsg;
           linkLink.style.display = e.target.checked ? 'none' : 'block';
           linkLinkText.style.display = e.target.checked ? 'block' : 'none';
@@ -2154,6 +2156,9 @@ var project;
     let isPrivate = CATMAID.DOM.appendCheckbox(optionContainer2, 'Private',
         'Private links can only be opened by you and will only be visible to you in the Link Widget.',
         false, updateLink, false, 'deep-link-private').querySelector('input');
+    let isExportable = CATMAID.DOM.appendCheckbox(optionContainer2, 'Exportable',
+        'Exportable links can be recognized by later data exports (e.g. for publication figures).',
+        false, updateLink, false, 'deep-link-exportable').querySelector('input');
 
     dialog.appendChild(optionContainer2);
 
@@ -2232,6 +2237,7 @@ var project;
         let params = {
           alias: alias,
           is_public: !isPrivate.checked,
+          is_exportable: isExportable .checked,
           location_x: project.coordinates.x,
           location_y: project.coordinates.y,
           location_z: project.coordinates.z,

@@ -122,6 +122,7 @@ class Exporter():
         self.connector_mode = options['connector_mode']
         self.export_annotations = options['export_annotations']
         self.export_public_deep_links = options['export_public_deep_links']
+        self.export_exportable_deep_links = options['export_exportable_deep_links']
         self.export_tags = options['export_tags']
         self.allowed_tags = options['allowed_tags']
 
@@ -985,9 +986,20 @@ class Exporter():
                 logger.info("No volumes found to export")
 
         # Public deep links
+        seen_deep_links = set()
         if self.export_public_deep_links:
             deep_links = DeepLink.objects.filter(project_id=self.project.id, is_public=True)
+            seen_deep_links.update([l.id for l in deep_links])
             logger.info(f'Exporting {len(deep_links)} public deep links')
+            self.to_serialize.append(deep_links)
+
+        # Exportable deep links
+        if self.export_exportable_deep_links:
+            deep_links = DeepLink.objects.filter(project_id=self.project.id, is_exportable=True)
+            n_exportable_deep_links = len(deep_links)
+            deep_links = list(filter(lambda x: x.id not in seen_deep_links, deep_links))
+            seen_deep_links.update([l.id for l in deep_links])
+            logger.info(f'Exporting {n_exportable_deep_links} exportable deep links ({len(deep_links)} are not already prev. included)')
             self.to_serialize.append(deep_links)
 
         # Export users, either completely or in a reduced form
@@ -1101,6 +1113,9 @@ class Command(BaseCommand):
         parser.add_argument('--public-deep-links', dest='export_public_deep_links',
                 type=str2bool, nargs='?', const=True, default=False,
                 help='Export all public deep links in the exported project')
+        parser.add_argument('--exportable-deep-links', dest='export_exportable_deep_links',
+                type=str2bool, nargs='?', const=True, default=False,
+                help='Export all deep links in the exported project that are marked as exportable')
         parser.add_argument('--required-annotation', dest='required_annotations',
             action='append', help='Name a required annotation for exported ' +
             'skeletons. Meta-annotations can be used as well.')

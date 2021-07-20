@@ -3,7 +3,7 @@ from django.db import migrations, models
 forward = """
     SELECT disable_history_tracking_for_table('catmaid_deep_link'::regclass,
             get_history_table_name('catmaid_deep_link'::regclass));
-    SELECT drop_history_view_for_table('catmaid_userprofile'::regclass);
+    SELECT drop_history_view_for_table('catmaid_deep_link'::regclass);
 
     ALTER TABLE catmaid_deep_link
     ADD COLUMN is_exportable boolean

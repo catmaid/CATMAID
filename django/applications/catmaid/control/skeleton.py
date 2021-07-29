@@ -19,9 +19,14 @@ from django.shortcuts import get_object_or_404
 from django.db import connection
 from django.db.models import Q
 from django.views.decorators.cache import never_cache
+from django.utils.decorators import method_decorator
 
 from rest_framework.decorators import api_view
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
+from catmaid.history import add_log_entry
 from catmaid.control import tracing
 from catmaid.models import (Project, UserRole, Class, ClassInstance, Review,
         ClassInstanceClassInstance, Relation, Sampler, Treenode,
@@ -30,11 +35,13 @@ from catmaid.models import (Project, UserRole, Class, ClassInstance, Review,
 from catmaid.objects import Skeleton, SkeletonGroup, \
         compartmentalize_skeletongroup_by_edgecount, \
         compartmentalize_skeletongroup_by_confidence
-from catmaid.control.authentication import requires_user_role, \
-        can_edit_class_instance_or_fail, can_edit_or_fail, can_edit_all_or_fail
+from catmaid.control.authentication import check_user_role, requires_user_role, \
+        can_edit_class_instance_or_fail, can_edit_or_fail, can_edit_all_or_fail, \
+        PermissionError
 from catmaid.control.common import (insert_into_log, get_class_to_id_map,
         get_relation_to_id_map, _create_relation, get_request_bool,
-        get_request_list, Echo)
+        get_request_list, Echo, get_last_concept_id)
+from catmaid.history import record_request_action as record_view
 from catmaid.control.link import LINK_TYPES
 from catmaid.control.neuron import _delete_if_empty
 from catmaid.control.annotation import (annotations_for_skeleton,
@@ -4821,3 +4828,263 @@ def edge_list_to_swc(edge_lines):
         swc_data.append([node, 0, pos[0], pos[1], pos[2], radius, parent_id])
 
     return swc_data
+
+
+def update_skeleton_id(project_id, skeleton_id, new_skeleton_id,
+        new_neuron_id=None, add_history_log_entry=False):
+    """Update a skeleton ID and all references to it. Optionally, the neuron ID
+    of the skeleton can be updated as well.
+    """
+    if not (new_skeleton_id or new_neuron_id):
+        raise ValueError("Need at least a new skeleton ID or new neuron ID")
+
+    project = Project.objects.get(pk=project_id)
+    relation_map = get_relation_to_id_map(project_id)
+    class_map = get_class_to_id_map(project_id)
+
+    # Make sure the past in ID belongs to a skeleton
+    try:
+        ci = ClassInstance.objects.get(id=skeleton_id, class_column_id=class_map['skeleton'])
+    except ClassInstance.DoesNotExist:
+        raise ValueError(f"Provided skeleton ID ({skeleton_id}) doesn't belong to a skeleton")
+
+    cici = ClassInstanceClassInstance.objects.filter(
+            class_instance_a=skeleton_id,
+            relation_id=relation_map['model_of'],
+            class_instance_b__class_column_id=class_map['neuron'])
+    if len(cici) > 1:
+        raise ValueError(f"Found more than one neuron link for skeleton {skeleton_id}")
+    elif len(cici) == 0:
+        raise ValueError(f"Found no neuron link for skeleton {skeleton_id}")
+    existing_neuron_id = cici[0].class_instance_b_id
+
+    max_concept_id = get_last_concept_id()
+    update_concept_seq = False
+
+    cursor = connection.cursor()
+
+    update_skeleton = new_skeleton_id and new_skeleton_id != skeleton_id
+    if update_skeleton:
+        # If the new skeleton ID exists already, cancel.
+        try:
+            existing_skeleton = ClassInstance.objects.get(pk=new_skeleton_id)
+            raise ValueError(f'An object with the specified new skeleton ID ({new_skeleton_id}) exists already.')
+        except ClassInstance.DoesNotExist:
+            pass
+
+        if new_skeleton_id > max_concept_id:
+            max_concept_id = new_skeleton_id
+            update_concept_seq = True
+
+        # To update a skeleton ID, we need to update all referecnes to it.
+        cursor.execute("""
+            WITH update_catmaid_deep_link AS (
+                UPDATE catmaid_deep_link
+                SET active_skeleton_id = %(new_skeleton_id)s
+                WHERE active_skeleton_id = %(skeleton_id)s
+            ), update_class_instance_class_instance AS (
+                UPDATE class_instance_class_instance
+                SET class_instance_a = CASE WHEN class_instance_a = %(skeleton_id)s THEN %(new_skeleton_id)s ELSE class_instance_a END,
+                    class_instance_b = CASE WHEN class_instance_b = %(skeleton_id)s THEN %(new_skeleton_id)s ELSE class_instance_b END
+                WHERE class_instance_a = %(skeleton_id)s OR class_instance_b = %(skeleton_id)s
+            ), update_treenode_connector AS (
+                UPDATE treenode_connector
+                SET skeleton_id = %(new_skeleton_id)s
+                WHERE skeleton_id = %(skeleton_id)s
+            ), update_treenode AS (
+                UPDATE treenode
+                SET skeleton_id = %(new_skeleton_id)s
+                WHERE skeleton_id = %(skeleton_id)s
+            ), update_catmaid_sampler AS (
+                UPDATE catmaid_sampler
+                SET skeleton_id = %(new_skeleton_id)s
+                WHERE skeleton_id = %(skeleton_id)s
+            ), update_review AS (
+                UPDATE review
+                SET skeleton_id = %(new_skeleton_id)s
+                WHERE skeleton_id = %(skeleton_id)s
+            ), update_skeleton_origin AS (
+                UPDATE skeleton_origin
+                SET skeleton_id = %(new_skeleton_id)s
+                WHERE skeleton_id = %(skeleton_id)s
+            ), update_connector_class_instance AS (
+                UPDATE connector_class_instance
+                SET class_instance_id = %(new_skeleton_id)s
+                WHERE class_instance_id = %(skeleton_id)s
+            ), update_point_class_instance AS (
+                UPDATE point_class_instance
+                SET class_instance_id = %(new_skeleton_id)s
+                WHERE class_instance_id = %(skeleton_id)s
+            ), update_region_of_interest_class_instance AS (
+                UPDATE region_of_interest_class_instance
+                SET class_instance_id = %(new_skeleton_id)s
+                WHERE class_instance_id = %(skeleton_id)s
+            ), update_stack_class_instance AS (
+                UPDATE stack_class_instance
+                SET class_instance_id = %(new_skeleton_id)s
+                WHERE class_instance_id = %(skeleton_id)s
+            ), update_stack_group_class_instance AS (
+                UPDATE stack_group_class_instance
+                SET class_instance_id = %(new_skeleton_id)s
+                WHERE class_instance_id = %(skeleton_id)s
+            ), update_treenode_class_instance AS (
+                UPDATE treenode_class_instance
+                SET class_instance_id = %(new_skeleton_id)s
+                WHERE class_instance_id = %(skeleton_id)s
+            ), update_volume_class_instance AS (
+                UPDATE volume_class_instance
+                SET class_instance_id = %(new_skeleton_id)s
+                WHERE class_instance_id = %(skeleton_id)s
+            ), update_skeleton_summary AS (
+                UPDATE catmaid_skeleton_summary
+                SET skeleton_id = %(new_skeleton_id)s
+                WHERE skeleton_id = %(skeleton_id)s
+                AND project_id = %(project_id)s
+            )
+            UPDATE class_instance
+            SET id = %(new_skeleton_id)s
+            WHERE id = %(skeleton_id)s
+            AND project_id = %(project_id)s;
+
+            -- The summary trigger handler seems to accidentally create a
+            -- summary entry for the old skeleton. While the trigger should
+            -- be fixed, we will for now manually clean this up. Changing
+            -- primary key is a rare situation (or should at least be),
+            -- therefore this seems okay for now.
+            DELETE FROM catmaid_skeleton_summary WHERE skeleton_id = %(skeleton_id)s;
+
+            -- TODO: Cache tables
+        """, {
+            'project_id': project.id,
+            'skeleton_id': skeleton_id,
+            'new_skeleton_id': new_skeleton_id,
+        })
+
+    if new_neuron_id:
+        # If the new skeleton ID exists already, cancel.
+        try:
+            existing_skeleton = ClassInstance.objects.get(pk=new_neuron_id)
+            raise ValueError(f'An object with the specified new neuron ID ({new_skeleton_id}) exists already.')
+        except ClassInstance.DoesNotExist:
+            pass
+
+        if new_neuron_id > max_concept_id:
+            max_concept_id = new_neuron_id
+            update_concept_seq = True
+
+        # To update a skeleton ID, we need to update all referecnes to it.
+        cursor.execute("""
+            WITH update_class_instance_class_instance AS (
+                UPDATE class_instance_class_instance
+                SET class_instance_a = CASE WHEN class_instance_a = %(neuron_id)s THEN %(new_neuron_id)s ELSE class_instance_a END,
+                    class_instance_b = CASE WHEN class_instance_b = %(neuron_id)s THEN %(new_neuron_id)s ELSE class_instance_b END
+                WHERE class_instance_a = %(neuron_id)s OR class_instance_b = %(neuron_id)s
+            ), update_connector_class_instance AS (
+                UPDATE connector_class_instance
+                SET class_instance_id = %(new_neuron_id)s
+                WHERE class_instance_id = %(neuron_id)s
+            ), update_point_class_instance AS (
+                UPDATE point_class_instance
+                SET class_instance_id = %(new_neuron_id)s
+                WHERE class_instance_id = %(neuron_id)s
+            ), update_region_of_interest_class_instance AS (
+                UPDATE region_of_interest_class_instance
+                SET class_instance_id = %(new_neuron_id)s
+                WHERE class_instance_id = %(neuron_id)s
+            ), update_stack_class_instance AS (
+                UPDATE stack_class_instance
+                SET class_instance_id = %(new_neuron_id)s
+                WHERE class_instance_id = %(neuron_id)s
+            ), update_stack_group_class_instance AS (
+                UPDATE stack_group_class_instance
+                SET class_instance_id = %(new_neuron_id)s
+                WHERE class_instance_id = %(neuron_id)s
+            ), update_treenode_class_instance AS (
+                UPDATE treenode_class_instance
+                SET class_instance_id = %(new_neuron_id)s
+                WHERE class_instance_id = %(neuron_id)s
+            ), update_volume_class_instance AS (
+                UPDATE volume_class_instance
+                SET class_instance_id = %(new_neuron_id)s
+                WHERE class_instance_id = %(neuron_id)s
+            )
+            UPDATE class_instance
+            SET id = %(new_neuron_id)s
+            WHERE id = %(neuron_id)s
+            AND project_id = %(project_id)s;
+
+            -- TODO: Cache tables
+        """, {
+            'project_id': project.id,
+            'neuron_id': existing_neuron_id,
+            'new_neuron_id': new_neuron_id,
+        })
+
+    if add_history_log_entry:
+        from catmaid.apps import get_system_user
+        add_log_entry(get_system_user().id, "skeletons.update_id", project_id)
+
+    if update_concept_seq:
+        cursor.execute("""
+            SELECT setval('concept_id_seq', %(new_seq_value)s, true)
+        """, {
+            'new_seq_value': max_concept_id,
+        })
+
+    return update_skeleton, bool(new_neuron_id)
+
+
+class SkeletonIdDetails(APIView):
+
+    @method_decorator(requires_user_role(UserRole.Annotate))
+    def post(self, request:Request, project_id, skeleton_id) -> JsonResponse:
+        """Update the skeleton ID and optionally the neuron ID.
+
+        Can only be called by superusers or users with can_administer
+        permissions in the project.
+        ---
+        parameters:
+          - name: project_id
+            description: Project the skeleton is part of
+            type: integer
+            paramType: path
+            required: true
+          - name: skeleton_id
+            required: true
+            description: The skeleton to update
+            type: integer
+            paramType: path
+          - name: new_skeleton_id
+            required: false
+            description: The new skeleton ID
+            type: integer
+            paramType: form
+          - name: new_neuron_id
+            required: false
+            description: The new skeleton ID
+            type: integer
+            paramType: form
+        """
+        project = Project.objects.get(pk=project_id)
+        has_admin_role = check_user_role(request.user, project, ['can_administer'])
+        if not (request.user.is_superuser or has_admin_role):
+            raise PermissionError("You don't have permission to update the ID of this skeleton")
+
+        skeleton_id = int(skeleton_id)
+
+        new_skeleton_id = request.data.get('new_skeleton_id')
+        if new_skeleton_id:
+            new_skeleton_id = int(new_skeleton_id)
+
+        new_neuron_id = request.data.get('new_neuron_id')
+        if new_neuron_id:
+            new_neuron_id = int(new_neuron_id)
+
+        updated_skeleton, updated_neuron = update_skeleton_id(project.id, skeleton_id, new_skeleton_id, new_neuron_id)
+
+        return JsonResponse({
+            'old_skeleton_id': skeleton_id,
+            'new_skeleton_id': new_skeleton_id,
+            'skeleton_updated': updated_skeleton,
+            'neuron_updated': updated_neuron,
+        })

@@ -96,6 +96,18 @@ Project management widget:
   this token to the clipboard. If a user opens an invitation link, they will
   automatically apply the token. Anonymous users are asked to log in first.
 
+- As admin user in a project, it is also possible from to manually change
+  skeleton IDs from the "ID updates" tab. This is only allowed if the new ID
+  isn't used already. Also, if the new ID is a new maximum ID number, all new
+  IDs will be automatically be larger than this ID. This functionality is also
+  available as the back-end managment command catmaid_change_skeleton_id.
+
+Skeleton ID change management command:
+
+- Just like the Project Management functionality explained in the last
+  paragraph, the management command catmaid_change_skeleton_id can be used to
+  change skeleton IDs (and optionally neuron IDs) from the command line.
+
 Link widget and deep links:
 
 - This new widget allows users to create persistent deep links into the

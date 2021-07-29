@@ -12,7 +12,7 @@
 
     // The current edit mode
     this.mode = 'project-access';
-    this.modes = ['project-access', 'user-permissions', 'properties', 'tokens', 'delete'];
+    this.modes = ['project-access', 'user-permissions', 'properties', 'data', 'tokens', 'delete'];
 
     this.neuronNameService = CATMAID.NeuronNameService.getInstance();
   };
@@ -702,6 +702,118 @@
               CATMAID.msg('Success', `Properties of project "${project.title}" (ID: ${project.id}) updated`);
             })
             .catch(CATMAID.handleError);
+        });
+      },
+    },
+    'data': {
+      title: 'ID updates',
+      createControls: function(target) {
+        let infoPanel = document.createElement('p');
+        infoPanel.appendChild(document.createTextNode('Administrator users can update IDs of data objects.'));
+        return [{
+          type: 'child',
+          element: infoPanel,
+        }];
+      },
+      createContent: function(content, widget) {
+        if (!CATMAID.hasPermission(project.id, 'can_administer')) {
+          content.appendChild(document.createTextNode('Administration permissions for this project are required'));
+          return;
+        }
+
+        let infoParagraph1 = content.appendChild(document.createElement('p'));
+        infoParagraph1.appendChild(document.createTextNode('This view allows to manually change the ID of skeletons (data objects in the tracing environment). This is only allowed if the particular ID is not already in use. Also, if the new ID represents a new maximum ID value, all new IDs will start from there.'));
+
+        let skeletonId = null;
+        let newSkeletonId = null;
+        let newNeuronId = null;
+
+        let propertiesPanel = content.appendChild(document.createElement('p'));
+        let currentSkeletonIDInput = CATMAID.DOM.createInputSetting(
+            'Current Skeleton ID',
+            skeletonId || '',
+            'The skeleton ID to change',
+            function() {
+              skeletonId = parseInt(this.value, 10);
+            });
+        $(propertiesPanel).append(currentSkeletonIDInput);
+
+        let newSkeletonIdInput = CATMAID.DOM.createInputSetting(
+            'New Skeleton ID',
+            newSkeletonId || '',
+            'This will become the new skeleton ID',
+            function() {
+              newSkeletonId = parseInt(this.value, 10);
+            });
+        $(propertiesPanel).append(newSkeletonIdInput);
+
+        let newNeuronIdInput = CATMAID.DOM.createInputSetting(
+            'New Neuron ID',
+            newNeuronId || '',
+            'Optionally, a new neuron ID can be provided as well.',
+            function() {
+              newNeuronId = parseInt(this.value, 10);
+            },
+            '(optional)');
+        $(propertiesPanel).append(newNeuronIdInput);
+
+        let savePanel = content.appendChild(document.createElement('p'));
+        savePanel.classList.add('clear', 'buttonpanel');
+        let clearB = savePanel.appendChild(document.createElement('button'));
+        clearB.appendChild(document.createTextNode('Clear fields'));
+        let activeSkeletonB = savePanel.appendChild(document.createElement('button'));
+        activeSkeletonB.appendChild(document.createTextNode('Get active skeleton ID'));
+        let updateB = savePanel.appendChild(document.createElement('button'));
+        updateB.appendChild(document.createTextNode('Update skeleton ID (!)'));
+
+        updateB.addEventListener('click', function() {
+          if (!skeletonId) {
+            CATMAID.warn('Need a skeleton ID to change');
+            return;
+          }
+          if (!newSkeletonId) {
+            CATMAID.warn('Need a new skeleton ID');
+            return;
+          }
+          if (!confirm('Are you sure you want to update the ID of this skeleton?')) {
+            CATMAID.warn('Cancelled by user');
+            return;
+          }
+          CATMAID.fetch(`${project.id}/skeletons/${skeletonId}/id`, 'POST', {
+              new_skeleton_id: newSkeletonId,
+              new_neuron_id: newNeuronId,
+            })
+            .then(response => {
+              CATMAID.msg('Success', `Changed skeleton ID from ${response.old_skeleton_id} to ${response.new_skeleton_id}. Please reload project!`);
+            })
+            .catch(CATMAID.handleError);
+        });
+
+        function clear() {
+          skeletonId = null;
+          newSkeletonId = null;
+          newNeuronId = null;
+          currentSkeletonIDInput.find('input').val('');
+          newSkeletonIdInput.find('input').val('');
+          newNeuronIdInput.find('input').val('');
+        }
+
+        clearB.addEventListener('click', function() {
+          clear();
+        });
+
+        activeSkeletonB.addEventListener('click', function() {
+          clear();
+          let activeSkeletonAPI = SkeletonAnnotations.getActiveSkeletonAPI();
+          if (activeSkeletonAPI) {
+            CATMAID.warn('Active skeleton is a remote skeleton, ID can\'t be updated');
+            return;
+          }
+          let activeSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
+          if (activeSkeletonId) {
+            skeletonId = activeSkeletonId;
+            currentSkeletonIDInput.find('input').val(skeletonId);
+          }
         });
       },
     },

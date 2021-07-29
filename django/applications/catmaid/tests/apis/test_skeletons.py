@@ -6,6 +6,7 @@ import platform
 import re
 from typing import Any, Dict
 from unittest import skipIf
+from urllib.parse import urlencode
 
 from django.db import connection, transaction
 from django.shortcuts import get_object_or_404
@@ -24,6 +25,12 @@ from .common import CatmaidApiTestCase, CatmaidApiTransactionTestCase
 # variable is used to skip the respective tests (which otherwise would fail).
 run_with_pypy = platform.python_implementation() == 'PyPy'
 
+def get_last_concept_id():
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT last_value FROM concept_id_seq;
+    """)
+    return cursor.fetchone()[0]
 
 class SkeletonsApiTests(CatmaidApiTestCase):
     def compare_swc_data(self, s1, s2):
@@ -1335,6 +1342,68 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         self.assertEqual(expected_result, frozenset(parsed_response))
         # Also check response length to be sure there were no duplicates.
         self.assertEqual(len(expected_result), len(parsed_response))
+
+
+    def test_skeleton_id_change(self):
+        self.fake_authentication()
+
+        orig_skeleton_id = 361
+        orig_neuron_id = _get_neuronname_from_skeletonid(self.test_project_id,
+                orig_skeleton_id)['neuronid']
+        new_skeleton_id = 7789110
+        new_neuron_id = 7789111
+
+        current_max_concept_id = get_last_concept_id()
+
+        existing_objects = ClassInstance.objects.filter(id=new_skeleton_id).exists()
+        self.assertFalse(existing_objects)
+        neuron_id = _get_neuronname_from_skeletonid(self.test_project_id,
+                orig_skeleton_id)['neuronid']
+
+        # Assume failure without admin permissions in project
+        response = self.client.post(f'/{self.test_project_id}/skeletons/{orig_skeleton_id}/id',
+                {'new_skeleton_id': new_skeleton_id})
+        parsed_response = response.content.decode('utf-8')
+
+        self.assertStatus(response, code=403)
+        self.assertTrue("PermissionError" in parsed_response)
+
+        existing_objects = ClassInstance.objects.filter(id=new_skeleton_id).exists()
+        self.assertFalse(existing_objects)
+
+        new_current_max_concept_id = get_last_concept_id()
+        self.assertEqual(current_max_concept_id, new_current_max_concept_id)
+
+        # Assign admin permission and try again
+        assign_perm('can_administer', self.test_user, self.test_project)
+
+        response = self.client.post(f'/{self.test_project_id}/skeletons/{orig_skeleton_id}/id',
+                {'new_skeleton_id': new_skeleton_id})
+        parsed_response = response.content.decode('utf-8')
+        self.assertStatus(response)
+
+        self.assertFalse(ClassInstance.objects.filter(id=orig_skeleton_id).exists())
+        self.assertTrue(ClassInstance.objects.filter(id=new_skeleton_id).exists())
+
+        new_current_max_concept_id = get_last_concept_id()
+        self.assertNotEqual(current_max_concept_id, new_current_max_concept_id)
+        self.assertEqual(new_current_max_concept_id, new_skeleton_id)
+
+        # Update also neuron ID
+        response = self.client.post(f'/{self.test_project_id}/skeletons/{new_skeleton_id}/id',
+                {'new_skeleton_id': new_skeleton_id, 'new_neuron_id': new_neuron_id})
+        parsed_response = response.content.decode('utf-8')
+        self.assertStatus(response)
+
+        self.assertFalse(ClassInstance.objects.filter(id=orig_skeleton_id).exists())
+        self.assertTrue(ClassInstance.objects.filter(id=new_skeleton_id).exists())
+
+        new_current_max_concept_id = get_last_concept_id()
+        self.assertNotEqual(current_max_concept_id, new_current_max_concept_id)
+        self.assertEqual(new_current_max_concept_id, new_neuron_id)
+
+        self.assertFalse(ClassInstance.objects.filter(id=neuron_id).exists())
+        self.assertTrue(ClassInstance.objects.filter(id=new_neuron_id).exists())
 
 
 class SkeletonsApiTransactionTests(CatmaidApiTransactionTestCase):

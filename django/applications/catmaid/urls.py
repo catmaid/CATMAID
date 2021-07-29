@@ -333,6 +333,7 @@ urlpatterns += [
     url(r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/statistics$', skeleton.skeleton_statistics),
     url(r'^(?P<project_id>\d+)/skeleton/(?P<skeleton_id>\d+)/contributor_statistics$', skeleton.contributor_statistics),
     url(r'^(?P<project_id>\d+)/skeleton/contributor_statistics_multiple$', skeleton.contributor_statistics_multiple),
+    url(r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/id$', record_view('skeletons.update_id')(skeleton.SkeletonIdDetails.as_view())),
     url(r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/find-labels$', skeleton.find_labels),
     url(r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/open-leaves$', skeleton.open_leaves),
     url(r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/root$', skeleton.root_for_skeleton),

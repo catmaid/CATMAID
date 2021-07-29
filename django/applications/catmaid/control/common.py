@@ -9,6 +9,7 @@ from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
 
 from collections import defaultdict
 
+from django.db import connection
 from django.conf import settings
 from django.http import HttpRequest, JsonResponse
 
@@ -404,3 +405,11 @@ def batches(iterable, size):
         if not chunk:
             raise StopIteration
         yield chunk
+
+
+def get_last_concept_id():
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT last_value FROM concept_id_seq;
+    """)
+    return cursor.fetchone()[0]

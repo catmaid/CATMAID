@@ -844,7 +844,7 @@
      */
     var create_table = function(skids, skeletons, partnerSet,
         hidePartnerThreshold, reviewFilter, nameInHeader, rotateHeader,
-        annotationMapping) {
+        annotationMapping, nFilteredLinksPerSkeletonBuffer = new Map()) {
 
       var thresholds = partnerSet.thresholds;
       var partners = partnerSet.getSynCountSortedPartners();
@@ -958,7 +958,7 @@
         o.set(skid, 0);
         return o;
       }, new Map());
-      var nFilteredLinksPerSkeletonBuffer = new Map();
+
       var splitPartners = partners.reduce((function(o, partner) {
         // Reset per partner per skeleton link counter
         for (var i=0; i<skids.length; ++i) {
@@ -1466,10 +1466,13 @@
     var widget = this;
     var tableContainers = this.partnerSets.map(function(partnerSet) {
       var tableContainer = $('<div />');
+      // Will be filled during table construction and is used to not
+      // require recomputation for the use of filtered data below.
+      let nFilteredLinksPerSkeletonBuffer = new Map();
       var tableConfig = create_table.call(this, this.ordered_skeleton_ids,
         this.skeletons, partnerSet, this.hidePartnerThreshold,
         this.reviewFilter, this.showNeuronNameInHeader,
-        this.rotateColumnHeaders, this.annotationMapping);
+        this.rotateColumnHeaders, this.annotationMapping, nFilteredLinksPerSkeletonBuffer);
 
       tableContainer.append(tableConfig.table);
 

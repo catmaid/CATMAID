@@ -813,14 +813,14 @@
       });
   };
 
-  ConnectivityMatrixWidget.prototype.getActiveRelations = function() {
+  ConnectivityMatrixWidget.prototype.getActiveRelations = function(reverse = false) {
     return CATMAID.Connectors.linkPairs(project.id)
       .then(linkPairs => {
         let pair = linkPairs[this.activeLinkType];
         if (!pair) {
           throw new CATMAID.ValueError(`Unknown link type: ${this.activeLinkType}`);
         }
-        return [pair.source, pair.target];
+        return reverse ? [pair.target, pair.source] : [pair.source, pair.target];
       });
   };
 
@@ -835,7 +835,9 @@
       skeletonIds = Array.from(skeletonIds);
     }
 
-    return this.getActiveRelations()
+    // Obtain active relations in reverse order, because we need to get the
+    // number od target site counts.
+    return this.getActiveRelations(true)
       .then(relations => {
         return CATMAID.fetch(project.id + '/skeletons/connectivity-counts', 'POST', {
           skeleton_ids: skeletonIds,
@@ -912,7 +914,7 @@
     var maxConnections = matrix.getMaxConnections();
     var maxPercent = 0;
     if (this.relativeDisplay) {
-      var postToId = this.relationMap['postsynaptic_to'];
+      var postToId = this.relationMap[this.matrix.colRelation];
       for (var i=0; i<this.matrix.rowSkeletonIDs.length; ++i) {
         for (var j=0; j<this.matrix.colSkeletonIDs.length; ++j) {
           var c = this.matrix.connectivityMatrix[i][j];
@@ -1443,8 +1445,9 @@
       var skeletonIDs = colGroup ? colGroup : [id];
       let totalConnections = options.relative ?
           getTotalConections(options.totalConnectivity,
-              options.relationMap, skeletonIDs) :
-           null;
+              options.relationMap[this.matrix.colRelation],
+              skeletonIDs) :
+          null;
       colTotals.push(totalConnections);
       handleCol(id, colGroup, name, skeletonIDs);
     }
@@ -1505,10 +1508,10 @@
     return context;
   }
 
-  function getTotalConections(data, relationMap, colSkeletonIds) {
+  function getTotalConections(data, colRelationId, colSkeletonIds) {
     return colSkeletonIds.reduce(sumPost, {
       sum: 0,
-      relationId: relationMap['postsynaptic_to'],
+      relationId: colRelationId,
       data: data,
     }).sum;
   }

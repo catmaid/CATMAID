@@ -1350,10 +1350,11 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         orig_skeleton_id = 361
         orig_neuron_id = _get_neuronname_from_skeletonid(self.test_project_id,
                 orig_skeleton_id)['neuronid']
-        new_skeleton_id = 7789110
-        new_neuron_id = 7789111
 
+        # Choose IDs that are larger than the current counter value
         current_max_concept_id = get_last_concept_id()
+        new_skeleton_id = current_max_concept_id + 7789110
+        new_neuron_id = current_max_concept_id + 7789111
 
         existing_objects = ClassInstance.objects.filter(id=new_skeleton_id).exists()
         self.assertFalse(existing_objects)

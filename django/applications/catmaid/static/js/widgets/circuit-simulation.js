@@ -181,7 +181,13 @@
     //  k: slope
     //  th: threshold
     // Returns a scalar
-    var logistic = function(x, k, th) {
+    var logistic = function (x, k, th) {
+      if (x == 0) {
+        // Logistic functions are asymptotic, and so will always produce
+        // (very small) outputs even with no inputs when translated up.
+        // This ensures that no input -> no output.
+        return 0;
+      }
       return 1.0 / (1.0 + Math.exp(-k * (x - th)));
     };
 

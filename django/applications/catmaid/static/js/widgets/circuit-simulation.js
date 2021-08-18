@@ -11,7 +11,7 @@
 
     this.show_parameter_ui = true;
 
-    // A map of Unit ID vs an object containing:
+    // An array of objects containing:
     //  1. "name": The name of the unit.
     //  2. "skeletons": The map of skeleton IDs vs SkeletonModel
     //  3. "color": The color of the unit.
@@ -67,7 +67,7 @@
   };
 
   CircuitSimulation.prototype.clear = function() {
-    this.units = {};
+    this.units = [];
     this.redraw();
   };
 

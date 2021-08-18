@@ -38,6 +38,13 @@
         var CS = this;
         var tabs = CATMAID.DOM.addTabGroup(controls, CS.widgetID, ['Main', 'Export']);
 
+        const fileButton = controls.appendChild(CATMAID.DOM.createFileButton(
+          'load-json-dialog-' + this.widgetID, false, (event) => CS.loadJson(event.target.files)
+        ));
+        const openButton = document.createElement('input');
+        openButton.setAttribute('type', 'button');
+        openButton.setAttribute('value', 'Load JSON');
+        openButton.onclick = () => fileButton.click();
         CATMAID.DOM.appendToTab(tabs['Main'],
             [[document.createTextNode('From')],
              [CATMAID.skeletonListSources.createSelect(CS)],
@@ -45,6 +52,7 @@
              ['Clear', CS.clear.bind(CS)],
              ['Show/Hide parameters', CS.toggleParametersUI.bind(CS)],
              ['Run', CS.run.bind(CS)],
+             [openButton],
              [CATMAID.DOM.createNumericField('cs_time' + CS.widgetID, 'Time:', 'Amount of simulated time, in arbitrary units', '10000', '(a.u.)', CS.run.bind(CS), 6)],
             ]);
 
@@ -64,6 +72,16 @@
       helpText: [],
       init: function() {},
     };
+  };
+
+  CircuitSimulation.prototype.loadJson = function (files) {
+    if (!CATMAID.containsSingleValidFile(files, 'json')) {
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => { this.units = JSON.parse(event.target.result); };
+    reader.readAsText(files[0]);
   };
 
   CircuitSimulation.prototype.clear = function() {

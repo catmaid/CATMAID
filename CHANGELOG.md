@@ -572,7 +572,9 @@ Miscellaneous:
   nodes. Both the personal tag set and the new option can be configured in the
   Tracing section of the Settings Widget.
 
-- Auto-completion should now be faster by displaying only 15 filtering results.
+- Auto-completion should now be faster by displaying only 15 filtering results
+  by default. Clicking on the "..." entry will expand the auto-completion list
+  to its full length.
 
 - Selection table: a minim review percentage can now be used as a filter using
   the new numeric input in the name column header table cell.

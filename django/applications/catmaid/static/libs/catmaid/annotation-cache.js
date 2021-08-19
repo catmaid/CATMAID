@@ -137,8 +137,21 @@
   {
     // Expects the annotation cache to be up-to-date
     $(input).autocomplete({
-      maxResults: 15,
+      maxResults: 30,
       source: CATMAID.makeMaxResultsAutoCompleteSourceFn(this.getAllNames()),
+      select: (event, ui) => {
+        // If the expansion entry is clicked, recreate the autocomplete box
+        // without size limit.
+        if (ui.item.value === '…') {
+          $(event.target).autocomplete('destroy');
+          $(event.target).autocomplete({
+            source: CATMAID.makeSimpleAutoCompleteSourceFn(this.getAllNames()),
+          });
+          $(event.target).autocomplete('search', event.target.value);
+          // Cancel event
+          return false;
+        }
+      }
     });
   };
 

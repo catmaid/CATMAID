@@ -25,6 +25,8 @@
     // - tau: time constant; divides dy/dt to represent how quickly unit responds
     this.units = [];
 
+    this.sol = null;
+
   };
 
   CircuitSimulation.prototype = Object.create(CATMAID.SkeletonSource.prototype);
@@ -51,6 +53,7 @@
         openButton.setAttribute('type', 'button');
         openButton.setAttribute('value', 'Load JSON');
         openButton.onclick = () => fileButton.click();
+
         CATMAID.DOM.appendToTab(tabs['Main'],
             [[document.createTextNode('From')],
              [CATMAID.skeletonListSources.createSelect(CS)],
@@ -59,7 +62,8 @@
              ['Show/Hide parameters', CS.toggleParametersUI.bind(CS)],
              ['Run', CS.run.bind(CS)],
              [openButton],
-             [CATMAID.DOM.createNumericField('cs_time' + CS.widgetID, 'Time:', 'Amount of simulated time, in arbitrary units', '10000', '(a.u.)', CS.run.bind(CS), 6)],
+             ['Save results', CS.saveResults.bind(CS)],
+             [CATMAID.DOM.createNumericField('cs_time' + CS.widgetID, 'Time:', 'Amount of simulated time, in arbitrary units', '1000', '(a.u.)', CS.run.bind(CS), 6)],
             ]);
 
         CATMAID.DOM.appendToTab(tabs['Export'],
@@ -80,6 +84,27 @@
     };
   };
 
+  CircuitSimulation.prototype.saveResults = function () {
+    if (!this.sol) {
+      CATMAID.warn("No results to save");
+      return;
+    }
+
+    const out = {
+      time: this.sol.x,
+      units: this.units,
+      rates: zip(this.sol.y),
+    };
+
+    const defaultFilename = `circuit-simulation_${timeString()}.json`;
+    saveAs(new Blob([JSON.stringify(out, null, ' ')], { type: 'application/json' }), defaultFilename);
+  };
+
+  function timeString() {
+    const now = new Date();
+    return `${now.getFullYear()}-${now.getMonth()}-${now.getDay()}T${now.getHours()}${now.getMinutes()}`;
+  }
+
   CircuitSimulation.prototype.loadJson = function (files) {
     if (!CATMAID.containsSingleValidFile(files, 'json')) {
       CATMAID.warn('Select a single valid JSON file');
@@ -88,10 +113,19 @@
 
     const reader = new FileReader();
     reader.onload = (event) => {
+      let parsed;
       try {
-        this.units = JSON.parse(event.target.result);
+        parsed = JSON.parse(event.target.result);
       } catch (err) {
         CATMAID.handleError(err);
+        return;
+      }
+
+      // allow results JSON or just units member to be used
+      if (Array.isArray(parsed)) {
+        this.units = parsed;
+      } else {
+        this.units = parsed.units;
       }
     };
     reader.readAsText(files[0]);
@@ -99,6 +133,8 @@
 
   CircuitSimulation.prototype.clear = function() {
     this.units = [];
+    this.sol = null;
+    this.lines = [];
     this.redraw();
   };
 
@@ -272,9 +308,9 @@
   };
 
   function zip(arrays) {
-    const len = Math.min(...arrays.map((a) => a.length));
+    const minLen = arrays.reduce((accum, curr) => Math.min(accum, curr.length), Infinity);
     const out = [];
-    for (let i = 0; i < len; ++i) {
+    for (let i = 0; i < minLen; ++i) {
       out.push(arrays.map((a) => a[i]));
     }
     return out;

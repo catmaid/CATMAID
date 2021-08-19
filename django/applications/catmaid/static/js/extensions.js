@@ -220,7 +220,7 @@ jQuery.expr[":"].icontainsnot = jQuery.expr.createPseudo(function(arg) {
   CATMAID.makeMaxResultsAutoCompleteSourceFn = function(items) {
     return function(request, response) {
       let results = $.ui.autocomplete.filter(items, request.term);
-      let limitedResults = results.slice(0, CATMAID.tools.getDefined((this.options.maxResults, 20)));
+      let limitedResults = results.slice(0, CATMAID.tools.getDefined(this.options.maxResults, 20));
       if (limitedResults.length !== results.length) {
         limitedResults.push('…');
       }

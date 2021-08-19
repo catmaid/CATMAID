@@ -247,28 +247,38 @@
 
     var sol = numeric.dopri_nonnegative(x0, x1, y0, dydt, 1e-6, 1000, null);
 
-    this.sol = sol;
-
     // Extract one line per unit, for plotting
-    this.lines = this.units.map(function(p) {
+    const lines = this.units.map(function(p) {
       return {name: p.name,
               color: p.color,
               stroke_width: "3",
               xy: []};
     });
 
-    // In sol, the x is time, and the y is the values.
-    sol.y.map(function(vy, t) {
-      for (var i=0; i<vy.length; ++i) {
-        this.lines[i].xy.push({x: t, y: vy[i]});
+    zip([sol.x, sol.y]).forEach((ty) => {
+      let t = ty[0];
+      let y = ty[1];
+      for (let i = 0; i < y.length; ++i) {
+        lines[i].xy.push({ x: t, y: y[i] });
       }
-    }, this);
+    });
+
+    this.lines = lines;
 
     // Store the result for analysis from the command line
     this.sol = sol;
 
     this.redraw();
   };
+
+  function zip(arrays) {
+    const len = Math.min(...arrays.map((a) => a.length));
+    const out = [];
+    for (let i = 0; i < len; ++i) {
+      out.push(arrays.map((a) => a[i]));
+    }
+    return out;
+  }
 
 /* jshint ignore:start */
 /**

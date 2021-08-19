@@ -76,11 +76,18 @@
 
   CircuitSimulation.prototype.loadJson = function (files) {
     if (!CATMAID.containsSingleValidFile(files, 'json')) {
+      CATMAID.warn('Select a single valid JSON file');
       return;
     }
 
     const reader = new FileReader();
-    reader.onload = (event) => { this.units = JSON.parse(event.target.result); };
+    reader.onload = (event) => {
+      try {
+        this.units = JSON.parse(event.target.result);
+      } catch (err) {
+        CATMAID.handleError(err);
+      }
+    };
     reader.readAsText(files[0]);
   };
 

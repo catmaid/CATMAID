@@ -11,12 +11,18 @@
 
     this.show_parameter_ui = true;
 
-    // An array of objects containing:
-    //  1. "name": The name of the unit.
-    //  2. "skeletons": The map of skeleton IDs vs SkeletonModel
-    //  3. "color": The color of the unit.
-    //  4. all the parameters of the unit for simulation
-
+    // An array of objects with members:
+    // - name: of the unit
+    // - color: string, #-prefixed hex color for the plot
+    // - w: array of connection weights with the other units (in order)
+    // - k: slope of logistic function
+    // - th: threshold of logistic function
+    // - I_tonic: bias/ tonic stimulation
+    // - I_stim: current while stimulus is active
+    // - I_stim_start: first time point of stimulus
+    // - I_stim_end: last time point of stimulus
+    // - scaling: multiplies the logistic activation function
+    // - tau: time constant; divides dy/dt to represent how quickly unit responds
     this.units = [];
 
   };

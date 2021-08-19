@@ -100,9 +100,13 @@
     saveAs(new Blob([JSON.stringify(out, null, ' ')], { type: 'application/json' }), defaultFilename);
   };
 
+  function padNum(n, len) {
+    return n.toString().padStart(len, '0');
+  }
+
   function timeString() {
     const now = new Date();
-    return `${now.getFullYear()}-${now.getMonth()}-${now.getDay()}T${now.getHours()}${now.getMinutes()}`;
+    return `${padNum(now.getFullYear(), 4)}-${padNum(now.getMonth() + 1, 2)}-${padNum(now.getDate(), 2)}T${padNum(now.getHours(), 2)}${padNum(now.getMinutes(), 2)}`;
   }
 
   CircuitSimulation.prototype.loadJson = function (files) {
@@ -116,17 +120,17 @@
       let parsed;
       try {
         parsed = JSON.parse(event.target.result);
+        // allow results JSON or just units member to be used
+        if (Array.isArray(parsed)) {
+          this.units = parsed;
+        } else {
+          this.units = parsed.units;
+        }
       } catch (err) {
         CATMAID.handleError(err);
         return;
       }
 
-      // allow results JSON or just units member to be used
-      if (Array.isArray(parsed)) {
-        this.units = parsed;
-      } else {
-        this.units = parsed.units;
-      }
     };
     reader.readAsText(files[0]);
   };

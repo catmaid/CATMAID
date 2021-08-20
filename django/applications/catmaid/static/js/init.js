@@ -316,7 +316,9 @@ var project;
       if ( options[ "s" ] ) s = parseFloat( options[ "s" ] );
       if ( isNaN( s ) ) s = undefined;
       if ( options[ "active_skeleton_id" ] ) init_active_skeleton_id = parseInt( options[ "active_skeleton_id" ] );
-      if ( options[ "active_node_id" ] ) init_active_node_id = parseInt( options[ "active_node_id" ] );
+      // The active node ID isn't necessazrily a number, since it can also
+      // reference virtual nodes.
+      if ( options[ "active_node_id" ] ) init_active_node_id = options[ "active_node_id" ];
 
       if ( options.hasOwnProperty("help") ) help = options["help"] !== "false";
       if (help !== undefined) {

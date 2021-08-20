@@ -522,6 +522,11 @@ Cropping tool:
 
 Miscellaneous:
 
+- Regular view links (URL to this view): virtual nodes can now be referenced.
+  Only the parent and child ID are looked at when selecting a virtual node,
+  which means URLs keep working if parent or child location of a virtual node
+  change.
+
 - The initial loading of client settings is now faster, because it performs
   fewer requests.
 
@@ -637,8 +642,6 @@ Miscellaneous:
   public deep links of the selected projects.
 
 ### Bug fixes
-
-- Regular view links (URL to this view): virtual nodes can now be referenced.
 
 - Cropping tool: if a single pixel past the start of a new image tile
   represented part of the outer boundary of a cropping area, this part was

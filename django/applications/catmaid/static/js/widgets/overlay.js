@@ -285,9 +285,12 @@ var SkeletonAnnotations = {};
    *
    * @param {API} api (Optional) Only select the node if the layer works with
    *                  the passed in API.
+   * @param {Bool} strictVirtualNodes (Optional) Only allow virtual nodes to be selected,
+   *                                  if their location information matches a loaded node.
+   *                                  Default: false
    */
   SkeletonAnnotations.staticSelectNode = function(nodeId, singleMatchValid,
-      strict, api) {
+      strict, api, strictVirtualNodes = false) {
     var nFound = 0;
     var incFound = function() { ++nFound; };
     var selections = [];
@@ -300,7 +303,7 @@ var SkeletonAnnotations = {};
           // can handle node selection requests.
           if (!CATMAID.API.equals(o.api, api)) continue;
 
-          var select = o.selectNode(nodeId, strict);
+          var select = o.selectNode(nodeId, strict, strictVirtualNodes);
           selections.push(select.then(incFound));
         }
       }
@@ -1724,9 +1727,10 @@ var SkeletonAnnotations = {};
    * Tries to activates the given node id if it exists in the current retrieved
    * set of nodes. If the passed in node is not found, it is loaded into the
    * overlay. If the returned promise should instead become rejected, the <strict>
-   * argument can be set to true.
+   * argument can be set to true. Virtual nodes are selected if their child and parent
+   * match, regardless of the location. Unless <strictVirtualNodes> is set to true.
    */
-  CATMAID.TracingOverlay.prototype.selectNode = function(id, strict) {
+  CATMAID.TracingOverlay.prototype.selectNode = function(id, strict, strictVirtualNodes = false) {
     // For the sake of robustness, try parsing the passed in ID as Number. If this
     // yields a valid number, it is used to find the nodes. This is done because
     // the nodes map is typed.
@@ -1736,6 +1740,21 @@ var SkeletonAnnotations = {};
     }
 
     var node = this.nodes.get(id);
+
+    if (!node && !SkeletonAnnotations.isRealNode(id) && !strictVirtualNodes) {
+      let [vnChild, vnParent] = [SkeletonAnnotations.getChildOfVirtualNode(id),
+          SkeletonAnnotations.getParentOfVirtualNode(id)];
+      for (let candidate of this.nodes.values()) {
+        // If a virtual node matches child and parent, return it. This keeps links working where child or parent have moved.
+        if (!SkeletonAnnotations.isRealNode(candidate.id) &&
+            candidate.children.has(vnChild) && candidate.parent_id == vnParent) {
+          node = candidate;
+          break;
+        }
+      }
+    }
+
+
     if (node) {
       this.activateNode(node);
       return Promise.resolve(node);

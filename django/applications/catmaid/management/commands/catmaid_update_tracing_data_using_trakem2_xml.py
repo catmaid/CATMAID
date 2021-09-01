@@ -398,11 +398,22 @@ class CoordTransformer(object):
 
 
 class Command(BaseCommand):
-    help = ("This script will create SQL commands to transform existing tracing data "
-            "into a new space. This transformation is built from one or two TrakEM2 "
-            "XML files. A typical call could look like this: manage.py "
-            "catmaid_update_tracing_data_using_trakem2_xml --imagej \"/path/to/Fiji.app\" "
-            "--xml /path/to/trakem2.xml --project-id <project-id> --res-x <nm> --res-z <nm>")
+    help = ("This script will update the location of CATMAID tracing data in a
+            project and transform them into a new space. This transformation is
+            built from a TrakEM2 XML file. Some of the functionality is built on
+            the original Java classes, and therefore this management command
+            needs both Java and Pyjnius to be installed:
+
+            Java: apt install default-jdk
+
+            Pyjnius: Either find an already compiled pynius.jar file or compile
+            it yourself:
+            1. pip install pyjnius into virtualenv
+            2. jar -c /path/to/.virtualenvs/catmaid/lib/python3.6/site-packages/jnius/src/org/jnius/NativeInvocationHandler.class > pyjnius.jar
+
+            A typical command invocation could look like this:
+
+            time python -u manage.py catmaid_update_tracing_data_using_trakem2_xml --xml /path/to/trakem2-project.xml --project-id <project-id> --res-x <nm> --res-y <nm> --res-z <nm> --user <user> --pyjnius /path/to/pyjnius.jar --java-home /usr/lib/jvm/default-java --java-heap 70G | tee new-alignment.log")
 
     def add_arguments(self, parser):
         parser.add_argument('--xml', dest='xml', required=True,

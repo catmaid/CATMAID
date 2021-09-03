@@ -990,6 +990,17 @@
     return l.length === 4;
   }
 
+  function csv2str(rows, colSep, rowSep) {
+    colSep = colSep || ", ";
+    rowSep = rowSep || "\n";
+    return rows.map((row) => row.join(colSep)).join(rowSep);
+  }
+
+  function makeLandmarkGroupActionLink(dataGroupId, dataAction, text, title) {
+    const titleText = !!title ? ` title="${title}"` : "";
+    return `<a href="#" data-group-id="${dataGroupId}" data-action="${dataAction}"${titleText}>${text}</a>`;
+  }
+
   LandmarkWidget.MODES = {
     landmarks: {
       title: 'Landmarks',
@@ -1124,8 +1135,7 @@
               orderable: true,
               render: function(data, type, row, meta) {
                 if ("display") {
-                  return '<a href="#" data-action="edit-group-members" data-group-id="' +
-                      row.id + '" >' + row.name + '</a>';
+                  return makeLandmarkGroupActionLink(row.id, "edit-group-members", row.name);
                 } else {
                   return row.name;
                 }
@@ -1199,11 +1209,16 @@
               title: "Action",
               orderable: false,
               class: "cm-center",
-              render: function(data, type, row, meta) {
-                return '<a href="#" data-action="edit-group" data-group-id="' +
-                    row.id + '" >Edit</a> <a href="#" data-group-id="' +
-                    row.id + '" data-action="delete" title="Ask for ' +
-                    'confirmation and delete landmark group.">Delete</a>';
+              render: function (data, type, row, meta) {
+                return [
+                  makeLandmarkGroupActionLink(row.id, "edit-group", "Edit"),
+                  makeLandmarkGroupActionLink(row.id, "delete", "Delete", "Ask for confirmation and delete landmark group"),
+                  makeLandmarkGroupActionLink(row.id, "export-group", "Export", "Export all landmarks in group"),
+                  makeLandmarkGroupActionLink(
+                    row.id, "toggle-select-members", "(Un)Select members",
+                    "Select all members of group in the landmark table below; deselect if all are already selected"
+                  ),
+                ].join("<br>");
               }
             }
           ],
@@ -1273,6 +1288,22 @@
               }
             })
             .catch(CATMAID.handleError);
+        }).on('click', 'a[data-action=toggle-select-members]', function () {
+          const groupTable = $(this).closest('table');
+          const groupRow = $(this).closest('tr');
+          const groupData = $(groupTable).DataTable().row(groupRow).data();
+
+          const tbl = widget.landmarkDataTable;
+
+          // find landmark IDs in groupData
+          // filter landmark rows
+
+          // todo
+        }).on('click', 'a[data-action=export-group]', function () {
+          var table = $(this).closest('table');
+          var tr = $(this).closest('tr');
+          var rowData =  $(table).DataTable().row(tr).data();
+          // todo
         }).on('mousedown', 'a[data-action=select-location]', function(e) {
           var index = parseInt(this.dataset.index, 10);
           var landmarkId = parseInt(this.dataset.id, 10);
@@ -1685,6 +1716,8 @@
           return false;
         });
 
+        const tableContainer = $('div.dataTables_length', landmarkDataTable.table().container());
+
         // Add custom buttons into table header
         var deleteSelected = document.createElement('button');
         deleteSelected.appendChild(document.createTextNode('Delete selected'));
@@ -1707,8 +1740,33 @@
             });
         };
 
-        $('div.dataTables_length', landmarkDataTable.table().container())
-            .append(deleteSelected);
+        tableContainer.append(deleteSelected);
+
+        const exportSelected = document.createElement('button');
+        exportSelected.appendChild(document.createTextNode('Export selected as CSV'));
+        exportSelected.onclick = function () {
+          const selected = Array.from(widget.selectedLandmarks.keys());
+          if (selected.length === 0) {
+            CATMAID.warn('No landmarks selected');
+            return;
+          }
+          const selectedRows = landmarkDataTable.rows().data()
+            .filter((row) => selected.has(row.id));
+          const nSelected = selectedRows.length;
+          const csvRows = selectedRows.reduce(
+            (outRows, tableRow) => outRows.concat(
+              tableRow.locations.map((loc) => [tableRow.name, loc.x, loc.y, loc.z])
+            ),
+            [["name", "x", "y", "z"]]
+          );
+          const nLocs = csvRows.length - 1;
+          const csvStr = csv2str(csvRows);
+
+          saveAs(new Blob([csvStr], { type: 'text/csv' }), 'landmarks.csv');
+          CATMAID.msg('Success', `Exported ${nLocs} locations for ${nSelected} selected landmarks`);
+        };
+
+        tableContainer.append(exportSelected);
       }
     },
     edit: {

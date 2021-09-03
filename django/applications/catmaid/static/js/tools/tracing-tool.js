@@ -618,7 +618,7 @@
                 setActiveElemenTopBarText(projectId, presynaptic_to, 'Connector ' +
                     node.id + ', presynaptic partner: ', api);
               } else {
-                clearTopbars('Connector ' + node.id + ' (no presynatpic partner)');
+                clearTopbars('Connector ' + node.id + ' (no presynaptic partner)');
               }
             })
             .catch(CATMAID.handleError);

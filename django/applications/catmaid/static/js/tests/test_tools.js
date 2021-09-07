@@ -181,9 +181,10 @@ QUnit.test('Utilities test', function( assert ) {
   (function () {
     assert.ok(CATMAID.tools.nullish(undefined, null, 1) === 1);
     assert.ok(CATMAID.tools.nullish() === undefined);
-    for (let falsy of [0, false, "", NaN]) {
-      assert.ok(CATMAID.tools.nullish(falsy) === falsy);
-    }
+    assert.ok(CATMAID.tools.nullish(0) === 0);
+    assert.ok(CATMAID.tools.nullish(false) === false);
+    assert.ok(CATMAID.tools.nullish("") === "");
+    assert.ok(isNaN(CATMAID.tools.nullish(NaN)));
   })();
 
   // Test Color construction util

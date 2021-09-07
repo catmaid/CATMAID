@@ -431,22 +431,47 @@ CATMAID.tools = CATMAID.tools || {};
   })();
 
   /**
-   * Return a string representation of a Date instance with the format
-   * YYYY-MM-DD hh:mm:ss.
+   * Something like nullish coalescing with an arbitrary number of options.
+   *
+   * True nullish coalescing is better because it short-circuits.
+   * This should be deprecated when browser support for nullish coalescing improves:
+   * https://caniuse.com/mdn-javascript_operators_nullish_coalescing
+   * (90% as of 2021-09-07).
    */
-  tools.dateToString = function(d) {
-    var day = d.getDate();
-    if (day < 10) day = '0' + day;
-    var month = d.getUTCMonth() + 1; // 0-based
-    if (month < 10) month = '0' + month;
-    var hour = d.getHours();
-    if (hour < 10) hour = '0' + hour;
-    var min = d.getMinutes();
-    if (min < 10) min = '0' + min;
-    var sec = d.getSeconds();
-    if (sec < 10) sec = '0' + sec;
-    return d.getUTCFullYear() + '-' + month + '-' + day + ' ' +
-        hour + ":" + min + ":" + sec;
+  tools.nullish = function (...args) {
+    for (let arg of args) {
+      if (arg !== undefined && arg !== null) {
+        return arg;
+      }
+    }
+  };
+
+  function padNum(n, len) {
+    return n.toString().padStart(len, "0");
+  }
+
+  /**
+   * Return a string representation of a Date instance with an ISO-8601-like
+   * format; by default YYYY-MM-DD hh:mm:ss.
+   * Uses local time.
+   *
+   * @param {Date} [date=now] - defaults to right now
+   * @param {string} [dateTimeSep=" "] - separator between date and time parts
+   * @param {string} [timeSep="-"] - separator between hour/min/sec
+   * @returns {string}
+   */
+  tools.dateToString = function (date, dateTimeSep, timeSep) {
+    date = tools.nullish(date, new Date());
+    dateTimeSep = tools.nullish(dateTimeSep, " ");
+    timeSep = tools.nullish(timeSep, ":");
+
+    const year = padNum(date.getFullYear(), 4);
+    const mon = padNum(date.getMonth() + 1, 2);
+    const day = padNum(date.getDate(), 2);
+    const hour = padNum(date.getHours(), 2);
+    const min = padNum(date.getMinutes(), 2);
+    const sec = padNum(date.getSeconds(), 2);
+    return `${year}-${mon}-${day}${dateTimeSep}${hour}${timeSep}${min}${timeSep}${sec}`;
   };
 
   /**

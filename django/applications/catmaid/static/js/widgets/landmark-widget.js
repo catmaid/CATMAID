@@ -1523,7 +1523,7 @@
               class: "cm-center",
               orderable: false,
               render: function(data, type, row, meta) {
-                return '<a href="#" data-action="select">Select</a> <a href="#" data-id="' +
+                return '<a href="#" data-id="' +
                     row.id + '" data-action="delete">Delete</a>';
               }
             }

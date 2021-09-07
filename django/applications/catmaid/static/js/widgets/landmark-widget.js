@@ -1015,7 +1015,7 @@
       CATMAID.warn('No landmarks selected');
       return false;
     }
-    const selectedRows = landmarkDataTable.rows().data()
+    const selectedRows = this.landmarkDataTable.rows().data()
       .filter((row) => idSet.has(row.id));
     const nSelected = selectedRows.length;
     const csvRows = selectedRows.reduce(
@@ -1027,7 +1027,7 @@
     const nLocs = csvRows.length - 1;
     const csvStr = csv2str(csvRows);
 
-    saveAs(new Blob([csvStr], { type: 'text/csv' }), 'landmarks.csv');
+    saveAs(new Blob([csvStr], { type: 'text/csv' }), filename);
     CATMAID.msg('Success', `Exported ${nLocs} locations for ${nSelected} selected landmarks`);
     return true;
   };

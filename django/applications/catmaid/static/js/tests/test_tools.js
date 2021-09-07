@@ -170,6 +170,23 @@ QUnit.test('Utilities test', function( assert ) {
         new Date(Date.UTC(2017, 10, 6, 3, 58, 32)), 'Test date is parsed correctly');
   })();
 
+  // Test dateToString
+  (function () {
+    const d = new Date('January 1, 2020 00:00:01Z');
+    assert.ok(CATMAID.tools.dateToString(d) === '2020-01-01 00:00:01');
+    assert.ok(CATMAID.tools.dateToString(d, "T", "") === '2020-01-01T000001');
+  })();
+
+  // Test nullish
+  (function () {
+    assert.ok(CATMAID.tools.nullish(undefined, null, 1) === 1);
+    assert.ok(CATMAID.tools.nullish() === undefined);
+    assert.ok(CATMAID.tools.nullish(0) === 0);
+    assert.ok(CATMAID.tools.nullish(false) === false);
+    assert.ok(CATMAID.tools.nullish("") === "");
+    assert.ok(isNaN(CATMAID.tools.nullish(NaN)));
+  })();
+
   // Test Color construction util
   (function() {
     assert.deepEqual(CATMAID.tools.getColor(0), new THREE.Color(0, 0, 0),

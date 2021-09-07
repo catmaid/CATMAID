@@ -173,8 +173,8 @@ QUnit.test('Utilities test', function( assert ) {
   // Test dateToString
   (function () {
     const d = new Date('January 1, 2020 00:00:01Z');
-    assert.ok(CATMAID.tools.dateToString(d) === '2021-01-01 00:00:01');
-    assert.ok(CATMAID.tools.dateToString(d, "T", "") === '2021-01-01T000001');
+    assert.ok(CATMAID.tools.dateToString(d) === '2020-01-01 00:00:01');
+    assert.ok(CATMAID.tools.dateToString(d, "T", "") === '2020-01-01T000001');
   })();
 
   // Test nullish

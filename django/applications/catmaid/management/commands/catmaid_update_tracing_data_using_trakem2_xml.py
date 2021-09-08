@@ -414,7 +414,7 @@ class CoordTransformer(object):
 
 
 class Command(BaseCommand):
-    help = ("This script will update the location of CATMAID tracing data in a
+    help = ("""This script will update the location of CATMAID tracing data in a
             project and transform them into a new space. This transformation is
             built from a TrakEM2 XML file. Some of the functionality is built on
             the original Java classes, and therefore this management command
@@ -429,7 +429,7 @@ class Command(BaseCommand):
 
             A typical command invocation could look like this:
 
-            time python -u manage.py catmaid_update_tracing_data_using_trakem2_xml --xml /path/to/trakem2-project.xml --project-id <project-id> --res-x <nm> --res-y <nm> --res-z <nm> --user <user> --pyjnius /path/to/pyjnius.jar --java-home /usr/lib/jvm/default-java --java-heap 70G | tee new-alignment.log")
+            time python -u manage.py catmaid_update_tracing_data_using_trakem2_xml --xml /path/to/trakem2-project.xml --project-id <project-id> --res-x <nm> --res-y <nm> --res-z <nm> --user <user> --pyjnius /path/to/pyjnius.jar --java-home /usr/lib/jvm/default-java --java-heap 70G | tee new-alignment.log""")
 
     def add_arguments(self, parser):
         parser.add_argument('--xml', dest='xml', required=True,

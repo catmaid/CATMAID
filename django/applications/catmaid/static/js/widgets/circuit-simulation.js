@@ -5,20 +5,6 @@
 (function (CATMAID) {
   "use strict";
 
-  function padNum(n, len) {
-    return n.toString().padStart(len, "0");
-  }
-
-  function timeString() {
-    const now = new Date();
-    const year = padNum(now.getFullYear(), 4);
-    const mon = padNum(now.getMonth() + 1, 2);
-    const day = padNum(now.getDate(), 2);
-    const hour = padNum(now.getHours(), 2);
-    const min = padNum(now.getMinutes(), 2);
-    return `${year}-${mon}-${day}T${hour}${min}`;
-  }
-
   function zip(arrays) {
     const minLen = arrays.reduce(
       (accum, curr) => Math.min(accum, curr.length),
@@ -137,7 +123,8 @@
         rates: zip(this.sol.y),
       };
 
-      const defaultFilename = `circuit-simulation_${timeString()}.json`;
+      const timestamp = CATMAID.tools.dateToString(null, "T", "");
+      const defaultFilename = `circuit-simulation_${timestamp}.json`;
       saveAs(
         new Blob([JSON.stringify(out, null, " ")], {
           type: "application/json",

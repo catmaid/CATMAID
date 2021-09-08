@@ -335,6 +335,16 @@ class CoordTransformer(object):
                 seen.add(entry[3])
             return True
 
+        # Temporary disable row-level review update trigger. This is needed,
+        # because even though we are modifying a parent table, row-level
+        # trigger on child tables like the review check are executed. Therefore,
+        # we need to prevent the review check and only remove manually, if
+        # requested.
+        cursor.execute("""
+            ALTER TABLE treenode
+            DISABLE TRIGGER on_edit_treenode_check_review;
+        """)
+
         for n, l in enumerate(self.layers):
             log(f'Transforming layer {n+1}/{len(self.layers)}: [{l.z_start}, {l.z_end})')
             cursor.execute("""
@@ -395,6 +405,12 @@ class CoordTransformer(object):
 
         end_time = time.time()
         log(f'Transformation complete (took {end_time - start_time:.2f} sec), reset {n_total_reviews_reset} reviews, {hit} re-checked nodes')
+
+        # Re-enable review update trigger.
+        cursor.execute("""
+            ALTER TABLE treenode
+            ENABLE TRIGGER on_edit_treenode_check_review;
+        """)
 
 
 class Command(BaseCommand):

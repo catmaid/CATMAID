@@ -339,8 +339,13 @@ class CoordTransformer(object):
         # because even though we are modifying a parent table, row-level
         # trigger on child tables like the review check are executed. Therefore,
         # we need to prevent the review check and only remove manually, if
-        # requested.
+        # requested. In order to revert this DDL operation after we transformed
+        # the locations, we also need to make sure no trigger operations are
+        # pending when we attempt to do this. A simple way of doing is to
+        # enforce immediate trigger execution in this transaction.
         cursor.execute("""
+            SET CONSTRAINTS ALL IMMEDIATE;
+
             ALTER TABLE treenode
             DISABLE TRIGGER on_edit_treenode_check_review;
         """)
@@ -410,6 +415,8 @@ class CoordTransformer(object):
         cursor.execute("""
             ALTER TABLE treenode
             ENABLE TRIGGER on_edit_treenode_check_review;
+
+            SET CONSTRAINTS ALL DEFERRED;
         """)
 
 

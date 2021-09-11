@@ -348,6 +348,9 @@ class CoordTransformer(object):
 
             ALTER TABLE treenode
             DISABLE TRIGGER on_edit_treenode_check_review;
+
+            ALTER TABLE connector
+            DISABLE TRIGGER on_edit_connector_check_review;
         """)
 
         for n, l in enumerate(self.layers):
@@ -415,6 +418,9 @@ class CoordTransformer(object):
         cursor.execute("""
             ALTER TABLE treenode
             ENABLE TRIGGER on_edit_treenode_check_review;
+
+            ALTER TABLE connector
+            ENABLE TRIGGER on_edit_connector_check_review;
 
             SET CONSTRAINTS ALL DEFERRED;
         """)

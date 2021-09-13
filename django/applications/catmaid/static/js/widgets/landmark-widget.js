@@ -1020,6 +1020,9 @@
     const nSelected = selectedRows.length;
     const csvRows = selectedRows.reduce(
       (outRows, tableRow) => outRows.concat(
+        // id last allows the first 4 cols to be used by the CSV import
+        // but ID should be included to distinguish between locations
+        // belonging to the same landmark (e.g. bilateral pair)
         tableRow.locations.map((loc) => [tableRow.name, loc.x, loc.y, loc.z, loc.id])
       ),
       [["landmark_name", "x", "y", "z", "location_id"]]
@@ -1246,10 +1249,10 @@
                   makeLandmarkGroupActionLink(row.id, "delete", "Delete", "Ask for confirmation and delete landmark group"),
                   makeLandmarkGroupActionLink(row.id, "export-group", "Export", "Export all landmarks in group"),
                   makeLandmarkGroupActionLink(
-                    row.id, "toggle-select-members", "(Un)Select members",
+                    row.id, "toggle-select-members", "(Un)Select",
                     "Select all members of group in the landmark table below; deselect if all are already selected"
                   ),
-                ].join("<br>");
+                ].join(" ");
               }
             }
           ],
@@ -2599,14 +2602,13 @@
           let parsePromises = [];
           for (let file of widget.filesToImport) {
             let promise = CATMAID.parseCSVFile(
-              file, ',', widget.importCSVLineSkip
+              // skip short rows
+              file, ',', widget.importCSVLineSkip, (row) => row.length >= 4
             ).then(
-              (rows) => rows.reduce((out, row) => {
-                if (row.length >= 4) {
-                  out.push(row.slice(0, 4));
-                }
-                return out;
-              }, [])
+              (rows) => rows.map(
+                // coerce to str, float, float, float
+                (row) => [row[0]].concat(row.slice(1, 4).map(parseFloat))
+              )
             );
             parsePromises.push(promise);
           }

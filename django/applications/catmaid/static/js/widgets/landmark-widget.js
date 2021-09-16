@@ -2576,10 +2576,10 @@
           var tbody = table.appendChild(document.createElement('tbody'));
           var groupFields = [];
           var contentElements = [];
-          for (let i=0; i<widget.filesToImport.length; ++i) {
+          for (let file of widget.filesToImport) {
             let groupSelector = document.createElement('input');
             groupFields.push(groupSelector);
-            let filePath = widget.filesToImport[i].name;
+            let filePath = file.name;
             let tr = tbody.appendChild(document.createElement('tr'));
             let filePathElement = document.createElement('span');
             filePathElement.classList.add('file-path');
@@ -2599,19 +2599,17 @@
 
           // Load selected CSV files and enable import button if this worked
           // without problems.
-          let parsePromises = [];
-          for (let file of widget.filesToImport) {
-            let promise = CATMAID.parseCSVFile(
+          let parsePromises = widget.filesToImport.map(
+            (file) => CATMAID.parseCSVFile(
               // skip short rows
               file, ',', widget.importCSVLineSkip, (row) => row.length >= 4
             ).then(
               (rows) => rows.map(
-                // coerce to str, float, float, float
+                // trim rows and coerce to str, float, float, float
                 (row) => [row[0]].concat(row.slice(1, 4).map(parseFloat))
               )
-            );
-            parsePromises.push(promise);
-          }
+            )
+          );
 
           // The actual import button, disabled initially
           let p = document.createElement('p');

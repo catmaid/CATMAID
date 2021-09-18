@@ -20,6 +20,11 @@ Publications using CATMAID
 `````````````````````````````````````
 *The following publications used CATMAID for neural circuit reconstruction or other tasks. Please get in touch with us if your publication is missing.*
 
+2021
+~~~~
+
+* Marcel Ethan Sayre, Rachel Templin, Johanna Chavez, Julian Kempenaers, Stanley Heinze. `A projectome of the bumblebee central complex <https://elifesciences.org/articles/68911>`_, eLife, 2021
+
 2020
 ~~~~
 

@@ -547,7 +547,7 @@
         orderable: false,
         class: "cm-center cm-top",
         render: function(data, type, row, meta) {
-          return '<a href="#" data-role="show-all-3d">Show 3D</a>';
+          return `<a href="#" data-source-id="${row[0]}" data-role="show-all-3d">Show 3D</a>`;
         }
       }]
     }).on('click', 'a[data-role=select-skeleton]', function() {
@@ -561,8 +561,9 @@
       var table = $(this).closest('table');
       var tr = $(this).closest('tr');
       var data = $(table).DataTable().row(tr).data();
+      let sourceId = parseInt(this.dataset.sourceId, 10);
       NeuronSimilarityDetailWidget.showAllSimilarityResults(similarity,
-          matchesOnly, showTopN, pointcloudSample);
+          matchesOnly, showTopN, pointcloudSample, sourceId);
     }).on('click', 'a[data-role=show-single-3d]', function() {
       var pointcloudId = parseInt(this.parentNode.dataset.pointcloudId, 10);
       if (!CATMAID.tools.isNumber(pointcloudId)) {
@@ -635,7 +636,7 @@
   };
 
   NeuronSimilarityDetailWidget.showAllSimilarityResults = function(similarity,
-      matchesOnly, showTopN, pointcloudSample) {
+      matchesOnly, showTopN, pointcloudSample, sourceId) {
     let widget3dInfo = WindowMaker.create('3d-viewer');
     let widget3d = widget3dInfo.widget;
     // Try to find the Selection Table that has been opened along with the 3D
@@ -702,7 +703,9 @@
         let matchOkay = !matchesOnly || s[1] > 0;
         let topNOkay = !showTopN || i < showTopN;
         if (matchOkay && topNOkay) {
-          if (!(sourceObjectIds.has(s[0]) && sourceTargetTypesMatch)) {
+          let isSourceModel = sourceId === undefined ?
+              sourceObjectIds.has(s[0]) : s[0] == sourceId;
+          if (!(isSourceModel && sourceTargetTypesMatch)) {
             o[s[0]] = new CATMAID.SkeletonModel(s[0], undefined, lut.getColor(i));
             ++nAddedModels;
           }

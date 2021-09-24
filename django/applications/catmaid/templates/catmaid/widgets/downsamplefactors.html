@@ -6,6 +6,11 @@
 			{% for option in options %}
 				{% include option.template_name with widget=option %}
 			{% endfor %}
+			{% if index == 0 %}
+				<label for="widget.subwidgets.0.attrs.id" class="help">A factor-2
+				X/Y scale pyramid with with as many levels as needed to fit the whole dataset
+				into a single tile.</label>
+			{% endif %}
 			{% if index == 1 %}
 				{% include widget.subwidgets.2.template_name with widget=widget.subwidgets.2 %}
 				<label for="widget.subwidgets.1.attrs.id">Number of scale levels</label>

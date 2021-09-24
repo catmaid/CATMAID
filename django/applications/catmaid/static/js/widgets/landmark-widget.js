@@ -986,9 +986,54 @@
       });
   };
 
-  function hasFourElements(l) {
-    return l.length === 4;
+  function csv2str(rows, colSep, rowSep) {
+    colSep = colSep || ", ";
+    rowSep = rowSep || "\n";
+    return rows.map((row) => row.join(colSep)).join(rowSep);
   }
+
+  function makeLandmarkGroupActionLink(dataGroupId, dataAction, text, title) {
+    const titleText = !!title ? ` title="${title}"` : "";
+    return `<a href="#" data-group-id="${dataGroupId}" data-action="${dataAction}"${titleText}>${text}</a>`;
+  }
+
+  /**
+   * Export landmarks as a CSV.
+   *
+   * @param {Set} [idSet=this.selectedLandmarks] - set of landmark IDs to export (must be present in landmark table).
+   *   Defaults to checked landmarks.
+   * @param {string} [filename="landmarks_{now}.csv"] - name of output file. Default has a timestamp.
+   * @returns {bool}
+   */
+  LandmarkWidget.prototype.exportLandmarks = function (idSet, filename) {
+    idSet = CATMAID.tools.nullish(idSet, this.selectedLandmarks);
+    filename = CATMAID.tools.nullish(
+      filename, `landmarks_${CATMAID.tools.dateToString(null, "T", "")}.csv`
+    );
+
+    if (idSet.size === 0) {
+      CATMAID.warn('No landmarks selected');
+      return false;
+    }
+    const selectedRows = this.landmarkDataTable.rows().data()
+      .filter((row) => idSet.has(row.id));
+    const nSelected = selectedRows.length;
+    const csvRows = selectedRows.reduce(
+      (outRows, tableRow) => outRows.concat(
+        // id last allows the first 4 cols to be used by the CSV import
+        // but ID should be included to distinguish between locations
+        // belonging to the same landmark (e.g. bilateral pair)
+        tableRow.locations.map((loc) => [tableRow.name, loc.x, loc.y, loc.z, loc.id])
+      ),
+      [["landmark_name", "x", "y", "z", "location_id"]]
+    );
+    const nLocs = csvRows.length - 1;
+    const csvStr = csv2str(csvRows);
+
+    saveAs(new Blob([csvStr], { type: 'text/csv' }), filename);
+    CATMAID.msg('Success', `Exported ${nLocs} locations for ${nSelected} selected landmarks`);
+    return true;
+  };
 
   LandmarkWidget.MODES = {
     landmarks: {
@@ -1124,8 +1169,7 @@
               orderable: true,
               render: function(data, type, row, meta) {
                 if ("display") {
-                  return '<a href="#" data-action="edit-group-members" data-group-id="' +
-                      row.id + '" >' + row.name + '</a>';
+                  return makeLandmarkGroupActionLink(row.id, "edit-group-members", row.name);
                 } else {
                   return row.name;
                 }
@@ -1199,11 +1243,16 @@
               title: "Action",
               orderable: false,
               class: "cm-center",
-              render: function(data, type, row, meta) {
-                return '<a href="#" data-action="edit-group" data-group-id="' +
-                    row.id + '" >Edit</a> <a href="#" data-group-id="' +
-                    row.id + '" data-action="delete" title="Ask for ' +
-                    'confirmation and delete landmark group.">Delete</a>';
+              render: function (data, type, row, meta) {
+                return [
+                  makeLandmarkGroupActionLink(row.id, "edit-group", "Edit"),
+                  makeLandmarkGroupActionLink(row.id, "delete", "Delete", "Ask for confirmation and delete landmark group"),
+                  makeLandmarkGroupActionLink(row.id, "export-group", "Export", "Export all landmarks in group"),
+                  makeLandmarkGroupActionLink(
+                    row.id, "toggle-select-members", "(Un)Select",
+                    "Select all members of group in the landmark table below; deselect if all are already selected"
+                  ),
+                ].join(" ");
               }
             }
           ],
@@ -1273,6 +1322,31 @@
               }
             })
             .catch(CATMAID.handleError);
+        }).on('click', 'a[data-action=toggle-select-members]', function () {
+          // select all group members; if all were already selected, deselect all.
+          const groupTable = $(this).closest('table');
+          const groupRow = $(this).closest('tr');
+          const groupData = $(groupTable).DataTable().row(groupRow).data();
+
+          let shouldDeselect = true;
+          for (let id of groupData.members) {
+            if (!widget.selectedLandmarks.has(id)) {
+              shouldDeselect = false;
+            }
+            widget.selectedLandmarks.add(id);
+          }
+          if (shouldDeselect) {
+            for (let id of groupData.members) {
+              widget.selectedLandmarks.delete(id);
+            }
+          }
+
+          widget.refresh();
+        }).on('click', 'a[data-action=export-group]', function () {
+          const groupTable = $(this).closest('table');
+          const groupRow = $(this).closest('tr');
+          const groupData = $(groupTable).DataTable().row(groupRow).data();
+          widget.exportLandmarks(new Set(groupData.members), `${groupData.name}.csv`);
         }).on('mousedown', 'a[data-action=select-location]', function(e) {
           var index = parseInt(this.dataset.index, 10);
           var landmarkId = parseInt(this.dataset.id, 10);
@@ -1452,7 +1526,7 @@
               class: "cm-center",
               orderable: false,
               render: function(data, type, row, meta) {
-                return '<a href="#" data-action="select">Select</a> <a href="#" data-id="' +
+                return '<a href="#" data-id="' +
                     row.id + '" data-action="delete">Delete</a>';
               }
             }
@@ -1685,6 +1759,8 @@
           return false;
         });
 
+        const tableContainer = $('div.dataTables_length', landmarkDataTable.table().container());
+
         // Add custom buttons into table header
         var deleteSelected = document.createElement('button');
         deleteSelected.appendChild(document.createTextNode('Delete selected'));
@@ -1707,8 +1783,12 @@
             });
         };
 
-        $('div.dataTables_length', landmarkDataTable.table().container())
-            .append(deleteSelected);
+        tableContainer.append(deleteSelected);
+
+        const exportSelected = document.createElement('button');
+        exportSelected.appendChild(document.createTextNode('Export selected as CSV'));
+        exportSelected.onclick = function () { widget.exportLandmarks(); };
+        tableContainer.append(exportSelected);
       }
     },
     edit: {
@@ -2496,10 +2576,10 @@
           var tbody = table.appendChild(document.createElement('tbody'));
           var groupFields = [];
           var contentElements = [];
-          for (let i=0; i<widget.filesToImport.length; ++i) {
+          for (let file of widget.filesToImport) {
             let groupSelector = document.createElement('input');
             groupFields.push(groupSelector);
-            let filePath = widget.filesToImport[i].name;
+            let filePath = file.name;
             let tr = tbody.appendChild(document.createElement('tr'));
             let filePathElement = document.createElement('span');
             filePathElement.classList.add('file-path');
@@ -2519,13 +2599,17 @@
 
           // Load selected CSV files and enable import button if this worked
           // without problems.
-          let parsePromises = [];
-          for (let i=0; i<widget.filesToImport.length; ++i) {
-            let file = widget.filesToImport[i];
-            let promise = CATMAID.parseCSVFile(file, ',',
-                widget.importCSVLineSkip, hasFourElements);
-            parsePromises.push(promise);
-          }
+          let parsePromises = widget.filesToImport.map(
+            (file) => CATMAID.parseCSVFile(
+              // skip short rows
+              file, ',', widget.importCSVLineSkip, (row) => row.length >= 4
+            ).then(
+              (rows) => rows.map(
+                // trim rows and coerce to str, float, float, float
+                (row) => [row[0]].concat(row.slice(1, 4).map(parseFloat))
+              )
+            )
+          );
 
           // The actual import button, disabled initially
           let p = document.createElement('p');
@@ -2581,8 +2665,8 @@
           content.appendChild(document.createElement('p'))
             .appendChild(document.createTextNode('Import landmarks, landmark ' +
               'groups and locations from CSV files. Add files by clicking the ' +
-              '"Open Files" button. Files are expected to have four columns: ' +
-              'landmark name, x, y, z. The coordinate is expected to be in ' +
+              '"Open Files" button. Files are expected to have at least four columns: ' +
+              'landmark name, x, y, z (subsequent columns are ignored). The coordinate is expected to be in ' +
               'project/world space.'));
         }
       }

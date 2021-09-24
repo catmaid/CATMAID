@@ -57,11 +57,11 @@ Notes widget:
   The last option is only available to admin users for writing. Use the "Open
   Widget" dialog to open it using the "Notes" keyword.
 
-Publication widget
+Publication widget:
 
 - This new widget makes management of publication related annotations easier. It
   lists all annotations that annotated with one of the publication annotations
-  defined in the Settings Widget in the Publication setction. Each of them
+  defined in the Settings Widget in the Publication section. Each of them
   represents a publication for the widget. The export options for each one of
   them can now be configured through the table.
 
@@ -519,6 +519,10 @@ Cropping tool:
   allows users now to choose whether the link the displayed Z slice to either
   the top or the bottom of the copping box. This makes it easier to visually
   confirm top and bottom of the bounding box.
+
+Landmark widget:
+
+- Landmarks can now be exported from the widget as CSVs
 
 Miscellaneous:
 

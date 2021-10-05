@@ -6,7 +6,7 @@ defaults:
 
 jobs:
   lint-python:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
@@ -20,7 +20,7 @@ jobs:
       - run: mypy django/
 
   lint-javascript:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-node@v2-beta
@@ -33,7 +33,7 @@ jobs:
         name: Ensure that docs are valid
 
   test-backend:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
@@ -70,7 +70,7 @@ jobs:
         name: Run tests
 
   test-frontend:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:

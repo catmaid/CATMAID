@@ -27,6 +27,6 @@ python-dateutil==2.8.1
 pytz==2019.3
 PyYAML==5.4.1
 requests==2.22.0
-scipy==1.5.4
+scipy==1.6.1
 trimesh==3.9.10
 ujson==1.35

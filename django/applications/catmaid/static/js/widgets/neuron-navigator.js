@@ -1096,7 +1096,7 @@
             });
           }
           CATMAID.fetch({
-              url: CATMAID.makeURL('user-table-list'),
+              url: 'user-table-list',
               method: 'POST',
               data: data,
               parallel: true,

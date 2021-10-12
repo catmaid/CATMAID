@@ -274,6 +274,10 @@ Graph widget:
   next the location input allows to automatically set the light location to the
   camera location, causing the light to come always from the viewing direction.
 
+- The export "Connectors as CSV" 3D Viewer button now also exports the spatial
+  coordinates of each connector. The coordinates are represented with three
+  additional columns.
+
 Skeleton history widget:
 
 - Skeletons to query can now also be appened through the common skeleton source

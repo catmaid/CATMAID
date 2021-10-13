@@ -44,4 +44,40 @@
     });
   };
 
+  /**
+   * Create a TSV string from an array of arrays.
+   * Will fail (loudly) if unit/ record separators are found in a unit,
+   * unless checks are explicitly skipped,
+   * but does not check for record length consistency.
+   *
+   * @param {*[][]} data - array of arrays, where the outer array contains records and the inner array contains units.
+   * @param {*} [transformer=no-op] - optional function which takes the unit, the record index, and the unit index, and returns a new unit to use in place.
+   * @param {String} [unitSep="\t"] - unit (column) separator, default TAB.
+   * @param {String} [recordSep="\n"] - record (row) separator, default NEWLINE.
+   * @param {boolean} [skipChecks=false] - if true, do not check for separators within units. For use where the transformer function handles escaping etc.
+   * @returns {String}
+   */
+  CATMAID.createTSVString = function (data, transformer, unitSep, recordSep, skipChecks) {
+    transformer = CATMAID.tools.nullish(transformer, (x) => x);
+    unitSep = CATMAID.tools.nullish(unitSep, "\t");
+    recordSep = CATMAID.tools.nullish(recordSep, "\n");
+    const check = !skipChecks;
+    return data.map(
+      (inRow, recIdx) => {
+        return inRow.map(
+          (item, unitIdx) => {
+            const outItem = String(transformer(item, recIdx, unitIdx));
+            if (check && outItem.includes(unitSep)) {
+              CATMAID.error(`Data item '${outItem}' at row ${recIdx} col ${unitIdx} includes unit (column) separator '${unitSep}'`);
+            }
+            if (check && outItem.includes(recordSep)) {
+              CATMAID.error(`Data item '${outItem}' at row ${recIdx} col ${unitIdx} includes record (row) separator '${recordSep}'`);
+            }
+            return outItem;
+          }
+        ).join(unitSep);
+      }
+    ).join(recordSep);
+  };
+
 })(CATMAID);

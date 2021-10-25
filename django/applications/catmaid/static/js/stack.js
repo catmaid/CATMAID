@@ -89,10 +89,7 @@
     self.orientation = orientation;
     self.canaryLocation = canaryLocation;
     self.placeholderColor = placeholderColor;
-    self.mirrors = mirrors;
-    self.mirrors.sort(function (a, b) {
-      return a.position - b.position;
-    });
+    self.mirrors = mirrors.reduce((mirrors, m) => {mirrors[m.id] = m; return mirrors;}, {});
 
     // Allow metadata field to override default voxel offset of (0,0,0). This
     // can be used to offset stack coordinates by a constant factor, defined for
@@ -572,10 +569,10 @@
       });
     };
 
-    self.createTileSourceForMirror = function (mirrorIdx) {
-      var mirror = self.mirrors[mirrorIdx];
+    self.createTileSourceForMirror = function (mirrorId) {
+      var mirror = self.mirrors[mirrorId];
       if (!mirror) {
-        throw new CATMAID.ValueError("No mirror with index " + mirrorIdx + " available");
+        throw new CATMAID.ValueError(`No mirror with ID ${mirrorId} available`);
       }
       var selectedMirror = mirror;
 
@@ -589,7 +586,7 @@
     };
 
     self.addMirror = function(mirrorData) {
-      self.mirrors.push({
+      self.mirrors[mirrorData.id] = {
           id: mirrorData.id,
           image_base: mirrorData.image_base,
           file_extension: mirrorData.file_extension,
@@ -597,12 +594,18 @@
           tile_width: mirrorData.tile_width,
           tile_height: mirrorData.tile_height,
           title: mirrorData.title
-      });
-      return self.mirrors.length - 1;
+      };
+      return mirrorData.id;
     };
 
-    self.removeMirror = function(mirrorIndex) {
-      self.mirrors.splice(mirrorIndex, 1);
+    self.removeMirror = function(mirrorId) {
+      delete self.mirrors[mirrorId];
+    };
+
+    self.mirrorsByPriority = function() {
+      return Object.values(self.mirrors).sort(function (a, b) {
+        return a.position - b.position;
+      });
     };
 
     self.labelMetadata = function () {
@@ -612,7 +615,7 @@
     };
 
     self.imageBlockMirrors = function () {
-      return self.mirrors
+      return Object.values(self.mirrors)
           .filter(m => CATMAID.TileSources.typeIsImageBlockSource(m.tile_source_type));
     };
 

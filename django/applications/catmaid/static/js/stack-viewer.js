@@ -322,7 +322,7 @@
     var title = this.primaryStack.title;
     var stackLayer = this._layers.get('StackLayer');
     if (stackLayer) {
-      var mirror = this.primaryStack.mirrors[stackLayer.mirrorIndex];
+      var mirror = this.primaryStack.mirrors[stackLayer.mirrorId];
       title = title + " | " + mirror.title;
     }
 

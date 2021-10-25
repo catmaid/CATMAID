@@ -4321,7 +4321,7 @@
       let stack = stackLayer.getStack();
       // Estimate number of data to be transferred.
       let zoomLevel = "max" === textureZoomLevel ? stack.MAX_S : Math.min(stack.MAX_S, textureZoomLevel);
-      let tileSource = stack.createTileSourceForMirror(stackLayer.mirrorIndex);
+      let tileSource = stack.createTileSourceForMirror(stackLayer.mirrorId);
       let nHTiles = getNZoomedParts(stack.dimension.x, zoomLevel, tileSource.tileWidth);
       let nVTiles = getNZoomedParts(stack.dimension.y, zoomLevel, tileSource.tileHeight);
 
@@ -4371,7 +4371,7 @@
 
         var zoomLevel = "max" === textureZoomLevel ? tileLayer.stack.MAX_S :
             Math.min(tileLayer.stack.MAX_S, textureZoomLevel);
-        var tileSource = tileLayer.stack.createTileSourceForMirror(tileLayer.mirrorIndex);
+        var tileSource = tileLayer.stack.createTileSourceForMirror(tileLayer.mirrorId);
         var geometry = this.createPlaneGeometry(tileLayer.stack, tileSource, zoomLevel);
 
         // Every tile in the z plane is made out of two triangles.

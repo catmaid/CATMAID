@@ -8,7 +8,7 @@
    * @param {StackViewer} stackViewer Stack viewer to which this layer belongs.
    * @param {string}  displayName  Name displayed in window controls.
    * @param {Stack}   stack        Image stack to display.
-   * @param {number}  mirrorIndex  Stack mirror index to use as source. If
+   * @param {number}  mirrorId     Stack mirror ID to use as source. If
    *                               undefined, the fist available mirror is used.
    * @param {boolean} visibility   Whether the stack layer is initially visible.
    * @param {number}  opacity      Opacity to draw the layer.
@@ -25,7 +25,7 @@
       stackViewer,
       displayName,
       stack,
-      mirrorIndex,
+      mirrorId,
       visibility,
       opacity,
       showOverview,
@@ -55,22 +55,22 @@
 
       // If no mirror index is given, try to read the last used value from a
       // cookie. If this is unavailable, use the first mirror as default.
-      if (undefined === mirrorIndex) {
+      if (undefined === mirrorId) {
         var lastUsedMirror = readStateItem(this.lastMirrorStorageName);
         if (lastUsedMirror) {
-          mirrorIndex = parseInt(lastUsedMirror, 10);
+          mirrorId = parseInt(lastUsedMirror, 10);
 
-          if (mirrorIndex >= this.stack.mirrors.length) {
+          if (!(mirrorId in this.stack.mirrors)) {
             CATMAID.removeLocalStorageItem(this.lastMirrorStorageName);
-            mirrorIndex = undefined;
+            mirrorId = undefined;
           }
         }
       }
     }
     this._readState = readState;
 
-    this.mirrorIndex = mirrorIndex || 0;
-    this.tileSource = stack.createTileSourceForMirror(this.mirrorIndex);
+    this.mirrorId = mirrorId || this.stack.mirrorsByPriority()[0].id;
+    this.tileSource = stack.createTileSourceForMirror(this.mirrorId);
 
     /* Whether mirros should be changed automatically if image data is
      * unavailable.
@@ -175,22 +175,24 @@
   StackLayer.prototype._handleCanaryCheck = function (accessible) {
     if (!accessible.normal && this.changeMirrorIfNoData) {
       Promise
-          .all(this.stack.mirrors.map(function (mirror, index) {
-            return this.stack.createTileSourceForMirror(index).checkCanary(
+          .all(Object.values(this.stack.mirrors).map(function (mirror) {
+            return this.stack.createTileSourceForMirror(mirror.id).checkCanary(
                 project,
-                this.stack);
+                this.stack)
+              .then(access => [mirror.id, access]);
           }, this))
           .then((function (mirrorAccessible) {
-            var mirrorIndex = mirrorAccessible.findIndex(function (accessible) {
+            var accessibility = Object.fromEntries(mirrorAccessible);
+            var mirror = Object.entries(accessibility).find(function (_mirror, accessible) {
               return accessible.normal;
             });
 
-            if (mirrorIndex !== -1) {
-              var oldMirrorTitle = this.stack.mirrors[this.mirrorIndex].title;
-              var newMirrorTitle = this.stack.mirrors[mirrorIndex].title;
+            if (mirror) {
+              var oldMirrorTitle = this.stack.mirrors[this.mirrorId].title;
+              var newMirrorTitle = mirror[0].title;
               CATMAID.warn('Stack mirror "' + oldMirrorTitle + '" is inaccessible. ' +
                            'Switching to mirror "' + newMirrorTitle + '".');
-              this.switchToMirror(mirrorIndex);
+              this.switchToMirror(mirror[0].id);
             } else {
               CATMAID.warn('No mirrors for this stack are accessible. Image data may not load.');
             }
@@ -274,7 +276,7 @@
    */
   StackLayer.prototype.addCustomMirror = function () {
     // Get some default values from the current tile source
-    var mirror = this.stack.mirrors[this.mirrorIndex];
+    var mirror = this.stack.mirrors[this.mirrorId];
     var dialog = new CATMAID.OptionsDialog('Add custom mirror');
     dialog.appendMessage("Please specify at least a URL for the custom mirror");
     var url = dialog.appendField("URL", "customMirrorURL", "", false);
@@ -305,7 +307,7 @@
         imageBase = imageBase + '/';
       }
       return {
-        id: "custom",
+        id: "custom-" + CATMAID.tools.uniqueId(),
         title: title.value,
         position: -1,
         image_base: imageBase,
@@ -336,8 +338,8 @@
     dialog.onOK = function() {
       self.changeMirrorIfNoData = changeMirrorIfNoDataCb.checked;
       var customMirrorData = getMirrorData();
-      var newMirrorIndex = self.stack.addMirror(customMirrorData);
-      self.switchToMirror(newMirrorIndex);
+      self.stack.addMirror(customMirrorData);
+      self.switchToMirror(customMirrorData.id);
       CATMAID.setLocalStorageItem(self.customMirrorStorageName,
           JSON.stringify(customMirrorData));
 
@@ -351,22 +353,18 @@
   };
 
   StackLayer.prototype.clearCustomMirrors = function () {
-    var customMirrorIndices = this.stack.mirrors.reduce(function(o, m, i, mirrors) {
-      if (mirrors[i].id === 'custom') {
-        o.push(i);
-      }
-      return o;
-    }, []);
-    var customMirrorUsed = customMirrorIndices.indexOf(this.mirrorIndex) != -1;
+    var customMirrorIds = Object.keys(this.stack.mirrors)
+      .filter(mid => mid.startsWith('custom'));
+    var customMirrorUsed = customMirrorIds.indexOf(this.mirrorId) != -1;
     if (customMirrorUsed) {
       CATMAID.warn("Please select another mirror first");
       return;
     }
-    customMirrorIndices.sort().reverse().forEach(function(ci) {
+    customMirrorIds.sort().reverse().forEach(function(ci) {
       this.stack.removeMirror(ci);
     }, this);
     CATMAID.removeLocalStorageItem(this.customMirrorStorageName);
-    this.switchToMirror(this.mirrorIndex, true);
+    this.switchToMirror(this.mirrorId, true);
 
     CATMAID.msg("Done", "Custom mirrors cleared");
   };
@@ -415,9 +413,9 @@
       name: 'mirrorSelection',
       displayName: 'Stack mirror',
       type: 'select',
-      value: this.mirrorIndex,
-      options: this.stack.mirrors.map(function (mirror, idx) {
-        return [idx, mirror.title];
+      value: this.mirrorId,
+      options: Object.values(this.stack.mirrors).map(function (mirror) {
+        return [mirror.id, mirror.title];
       }),
       help: 'Select from which image host to request image data for this stack.'
     },{
@@ -449,7 +447,7 @@
                 project.id,
                 CATMAID.Stack.encodeReorientedID(this.stack.id, o),
                 false,
-                this.mirrorIndex);
+                this.mirrorId);
               }
             }))
           });
@@ -532,7 +530,7 @@
       stackViewer: this.stackViewer,
       displayName: this.displayName,
       stack: this.stack,
-      mirrorIndex: this.mirrorIndex,
+      mirrorId: this.mirrorId,
       visibility: this.visibility,
       opacity: this.opacity,
       showOverview: !!this.overviewLayer,
@@ -545,7 +543,7 @@
         args.stackViewer,
         args.displayName,
         args.stack,
-        args.mirrorIndex,
+        args.mirrorId,
         args.visibility,
         args.opacity,
         args.showOverview,
@@ -558,18 +556,18 @@
    * Switch to a mirror by replacing this tile layer in the stack viewer
    * with a new one for the specified mirror index.
    *
-   * @param  {number}  mirrorIdx Index of a mirror in the stack's mirror array.
+   * @param  {number}  mirrorId  ID of a mirror in the stack's mirror array.
    * @param  {boolean} force     If true, the layer will also be refreshed if
    *                             the mirror didn't change.
    */
-  StackLayer.prototype.switchToMirror = function (mirrorIndex, force) {
-    if (mirrorIndex === this.mirrorIndex && !force) return;
-    var newStackLayer = this.constructCopy({mirrorIndex: mirrorIndex});
+  StackLayer.prototype.switchToMirror = function (mirrorId, force) {
+    if (mirrorId === this.mirrorId && !force) return;
+    var newStackLayer = this.constructCopy({mirrorId: mirrorId});
     var layerKey = this.stackViewer.getLayerKey(this);
     this.stackViewer.replaceStackLayer(layerKey, newStackLayer);
 
     // Store last used mirror information in cookie
-    CATMAID.setLocalStorageItem(this.lastMirrorStorageName, mirrorIndex);
+    CATMAID.setLocalStorageItem(this.lastMirrorStorageName, mirrorId);
   };
 
   /**

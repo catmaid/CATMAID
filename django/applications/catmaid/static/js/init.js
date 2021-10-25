@@ -2464,7 +2464,7 @@ var project;
    * @param  {number|string} reorientedStackID ID of the stack to open.
    * @param  {boolean} useExistingViewer True to add the stack to the existing,
    *                                     focused stack viewer.
-   * @param  {number}  mirrorIndex       An optional mirror index, defaults to
+   * @param  {number}  mirrorId          An optional mirror ID, defaults to
    *                                     the first available.
    * @param  {boolean} noLayout          Falsy to layout all available stack
    *                                     viewers (default).
@@ -2474,7 +2474,7 @@ var project;
    * @return {Promise}                   A promise yielding the stack viewer.
    */
   CATMAID.openProjectStack = function(projectID, reorientedStackID, useExistingViewer,
-      mirrorIndex, noLayout, handleErrors) {
+      mirrorId, noLayout, handleErrors) {
     if (project && project.id != projectID) {
       project.destroy();
     }
@@ -2486,7 +2486,7 @@ var project;
       .then(function(json) {
         return handle_openProjectStack(json,
             useExistingViewer ? project.focusedStackViewer : undefined,
-            mirrorIndex,
+            mirrorId,
             undefined,
             reorient)
           .then(function(stackViewer) {
@@ -2593,14 +2593,14 @@ var project;
    *
    * @param  {Object} e                JSON response from the stack info API.
    * @param  {StackViewer} stackViewer Viewer to which to add the stack.
-   * @param  {number}      mirrorIndex Optional mirror index, defaults to
+   * @param  {number}      mirrorId    Optional mirror ID, defaults to
    *                                   the first available.
    * @param  {Boolean} hide            The stack's layer will initially be
    *                                   hidden.
    * @return {Promise}                 A promise yielding the stack viewer
    *                                   containing the new stack.
    */
-  function handle_openProjectStack( e, stackViewer, mirrorIndex, hide, reorient )
+  function handle_openProjectStack( e, stackViewer, mirrorId, hide, reorient )
   {
     if (!stackViewer) {
       CATMAID.throwOnInsufficientWebGlContexts(1);
@@ -2691,7 +2691,7 @@ var project;
           stackViewer,
           "Image data (" + stack.title + ")",
           stack,
-          mirrorIndex,
+          mirrorId,
           !hideStackLayer,
           hideStackLayer ? 0 : 1,
           !useExistingViewer,

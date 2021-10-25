@@ -403,7 +403,7 @@
         let imgSpan = rowSpan.appendChild(document.createElement('span'));
         if (p.stacks && p.stacks.length > 0) {
           let stack = p.stacks[0];
-          let mirror = stack.mirrors[this.sample_mirror_index];
+          let mirror = stack.mirrorsByPriority()[this.sample_mirror_index];
           if (mirror) {
             let tileSource = CATMAID.TileSources.get(mirror.id,
               mirror.tile_source_type, mirror.image_base, mirror.file_extension,

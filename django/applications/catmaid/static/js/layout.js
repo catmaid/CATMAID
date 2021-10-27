@@ -879,10 +879,12 @@
       let widgetSkeletons;
       if (withSkeletons) {
         let models;
-        if (CATMAID.tools.isFn(widgetInfo.widget.getInputModels)) {
-          models = widgetInfo.widget.getInputModels();
-        } else if (CATMAID.tools.isFn(widgetInfo.widget.getSkeletonModels)) {
-          models = widgetInfo.widget.getSkeletonModels();
+        if (widgetInfo.widget) {
+          if (CATMAID.tools.isFn(widgetInfo.widget.getInputModels)) {
+            models = widgetInfo.widget.getInputModels();
+          } else if (CATMAID.tools.isFn(widgetInfo.widget.getSkeletonModels)) {
+            models = widgetInfo.widget.getSkeletonModels();
+          }
         }
         if (models) {
           let skeletons = Object.values(models).map(m => m.serialize());

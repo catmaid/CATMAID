@@ -21,6 +21,15 @@ and other administration related changes are listed in order.
   versions might show a DatabaseError about threads. To fix this, add the
   ``numprocs = 1`` option to you supervisor config for Celery.
 
+- Some optional analysis features are implemented as Python functions inside the
+  database (at the moment only "clustering of NBLAST similarity scores"). Python
+  code can't be run by default inside a CATMAID database and if this feature
+  should be used, Python needs to be enabled as an extension first. This
+  requires Python 3 to be installed system-wide, along with the modules
+  numpy and sklearn. It also requires admins to login to the database, e.g.
+  through ``manage.py dbshell`` and run ``CREATE EXTENSION plpython3u`` in the
+  CATMAID database.
+
 ## 2021.12.21
 
 - The version requires PostgreSQL 12. If you also want to upgrade PostGIS,

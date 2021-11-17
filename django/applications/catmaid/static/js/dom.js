@@ -649,7 +649,7 @@
         var tabPanel = panel.appendChild(document.createElement('div'));
         var tabs = CATMAID.DOM.addTabGroup(tabPanel,
             'filter-controls', ['Filters', 'Add filter']);
-         
+
         var filterListContent = tabs['Filters'];
         var newFilterContent = tabs['Add filter'];
         filterListContent.style.overflow = "auto";

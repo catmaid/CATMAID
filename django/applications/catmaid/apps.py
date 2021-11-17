@@ -131,6 +131,25 @@ def check_history_setup(app_configs, **kwargs) -> List[str]:
             hint="Migrate CATMAID"))
     return messages
 
+
+def check_similarity_clustering(app_configs, **kwargs) -> List[str]:
+    """Attempt to enable similarity score clustering and issue a warning if it
+    can't.
+    """
+    from catmaid.control import similarity
+    messages = []
+    enabled = similarity.enable_similarity_clustering()
+    if enabled:
+        logger.info('Similarity clustering enabled')
+    else:
+        messages.append(Warning(
+            "Could not enable similarity clustering: the database function "
+            "couldn't be initialized. This feature won't be available.", hint="Make sure the plpython3u "
+            "extension is installed in the CATMAID database. See Tractometry Widget help."))
+
+    return messages
+
+
 def check_spatial_update_setup(app_configs, **kwargs) -> List[str]:
     messages = []
 
@@ -287,6 +306,9 @@ class CATMAIDConfig(AppConfig):
 
         # Register history checks
         register(check_history_setup)
+
+        # Register similarity clustering
+        register(check_similarity_clustering)
 
         # Enable or disable spatial update notifications
         register(check_spatial_update_setup)

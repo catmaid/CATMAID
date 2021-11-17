@@ -16,7 +16,16 @@
   Postgres 13. CATMAID's replication documentation explains what needs to be
   done. To benefit from Postgres 13's new index deduplication, run REINDEX in
   the CATMAID database. This might take up to an hour, but can reduce the space
-  and memory needs of CATMAID's database indexes by 30-50%.
+  and memory needs of CATMAID's database indexes by 30-50%
+
+- Some optional analysis features are implemented as Python functions inside the
+  database (at the moment only "clustering of NBLAST similarity scores"). Python
+  code can't be run by default inside a CATMAID database and if this feature
+  should be used, Python needs to be enabled as an extension first. This
+  requires Python 3 to be installed system-wide, along with the modules
+  numpy and sklearn. It also requires admins to login to the database, e.g.
+  through ``manage.py dbshell`` and run ``CREATE EXTENSION plpython3u`` in the
+  CATMAID database.
 
 - Should you have ``supervisor`` configured to run ``Celery``, newer Celery
   versions might show a DatabaseError about threads. To fix this, add the

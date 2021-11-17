@@ -14,6 +14,7 @@ from django.contrib.gis.db import models as spatial_models
 from django.db import connection, transaction
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.utils.decorators import method_decorator
+from django.db.utils import ProgrammingError
 
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -1410,6 +1411,152 @@ class SimilarityDetail(APIView):
         })
 
 
+class SimilarityClusterDetail(APIView):
+
+    @method_decorator(requires_user_role(UserRole.Browse))
+    def get(self, request:HttpRequest, project_id, similarity_id) -> JsonResponse:
+        """Get a set of similarity clusters in a bounding box.
+
+        This API assumes there are similarity values computed for the passed in
+        similarity ID.
+        ---
+        parameters:
+          - name: project_id
+            description: Project of the returned similarities
+            type: integer
+            paramType: path
+            required: true
+          - name: similarity_id
+            description: The similarity  to load.
+            type: integer
+            paramType: form
+            required: true
+          - name: min_x
+            description: The min X of the query bounding box
+            type: float
+            paramType: form
+            required: true
+          - name: min_y
+            description: The min Y of the query bounding box
+            type: float
+            paramType: form
+            required: true
+          - name: min_z
+            description: The min Z of the query bounding box
+            type: float
+            paramType: form
+            required: true
+          - name: max_x
+            description: The max X of the query bounding box
+            type: float
+            paramType: form
+            required: true
+          - name: max_y
+            description: The max Y of the query bounding box
+            type: float
+            paramType: form
+            required: true
+          - name: max_z
+            description: The max Z of the query bounding box
+            type: float
+            paramType: form
+            required: true
+          - name: min_cable_length
+            description: The minimum length of skeletons to consider
+            paramType: form
+            required: false
+            defaultValue: 0
+          - name: max_norm_dist
+            description: The maximum distance in [0,1] between two neurons to be considered in the same cluster
+            type: float
+            paramType: form
+            required: false
+            defaultValue: 0.5
+          - name: min_cluster_size
+            description: The minimum cluster size
+            type: int
+            paramType: form
+            required: false
+            defaultValue: 1
+          - name: with_unclustered
+            description: Whether or not to include a cluster with ID -1 in the result that contains all objects that could not be clustered.
+            type: boolean
+            paramType: form
+            required: false
+            defaultValue: false
+        """
+
+        min_x, min_y, min_z = (float(request.query_params['min_x']),
+                float(request.query_params['min_y']), float(request.query_params['min_z']))
+        max_x, max_y, max_z = (float(request.query_params['max_x']),
+                float(request.query_params['max_y']), float(request.query_params['max_z']))
+        min_cable_length = float(request.query_params.get('min_cable_length', 0))
+        max_norm_dist = float(request.query_params.get('max_norm_dist', 0.5))
+        min_cluster_size = float(request.query_params.get('min_cluster_size', 1))
+        with_unclustered = get_request_bool(request.query_params, 'with_unclustered', False)
+
+        cursor = connection.cursor()
+        cursor.execute("""
+            WITH skeleton_ids AS MATERIALIZED (
+            SELECT DISTINCT t.skeleton_id
+            FROM (
+              SELECT te.id, te.edge
+                FROM treenode_edge te
+                WHERE floatrange(ST_ZMin(te.edge),
+                     ST_ZMax(te.edge), '[]') && floatrange(%(min_z)s, %(max_z)s, '[)')
+                  AND te.project_id = %(project_id)s
+              ) e
+              JOIN treenode t
+                ON t.id = e.id
+              JOIN catmaid_skeleton_summary s
+                ON t.skeleton_id = s.skeleton_id
+              WHERE e.edge && ST_MakeEnvelope(%(min_x)s, %(min_y)s, %(max_x)s, %(max_y)s)
+                AND ST_3DDWithin(e.edge, ST_MakePolygon(ST_MakeLine(ARRAY[
+                    ST_MakePoint(%(min_x)s, %(min_y)s, %(half_z)s),
+                    ST_MakePoint(%(max_x)s, %(min_y)s, %(half_z)s),
+                    ST_MakePoint(%(max_x)s, %(max_y)s, %(half_z)s),
+                    ST_MakePoint(%(min_x)s, %(max_y)s, %(half_z)s),
+                    ST_MakePoint(%(min_x)s, %(min_y)s, %(half_z)s)]::geometry[])),
+                    200.0)
+                AND s.cable_length > %(min_cable_length)s
+            ),
+            query_targets AS (
+                SELECT q.skeleton_id AS query_id, t.skeleton_id AS target_id
+                FROM skeleton_ids t, skeleton_ids q
+            ),
+            score AS (
+                SELECT array_agg(query_id) AS query_ids, array_agg(target_id) AS target_ids,
+                    array_agg(score) AS scores FROM query_targets
+                JOIN nblast_similarity_score as nblast
+                ON nblast.query_object_id = query_targets.query_id AND
+                   nblast.target_object_id = query_targets.target_id
+                WHERE nblast.similarity_id = %(similarity_id)s
+            )
+            SELECT c.cluster_id, array_agg(c.object_id)
+            FROM score,
+                LATERAL cluster_nblast(query_ids, target_ids, scores,
+                    %(max_norm_dist)s::real, %(min_cluster_size)s::int,
+                    %(with_unclustered)s::bool) AS c
+            GROUP BY c.cluster_id;
+        """, {
+            'project_id': project_id,
+            'similarity_id': similarity_id,
+            'min_x': min_x,
+            'min_y': min_y,
+            'min_z': min_z,
+            'max_x': max_x,
+            'max_y': max_y,
+            'max_z': max_z,
+            'half_z': (max_z + min_z) * 0.5,
+            'min_cable_length': min_cable_length,
+            'max_norm_dist': max_norm_dist,
+            'min_cluster_size': min_cluster_size,
+            'with_unclustered': with_unclustered,
+        })
+
+        return JsonResponse(sorted(cursor.fetchall(), reverse=True, key=lambda x: len(x[1])), safe=False)
+
+
 @requires_user_role(UserRole.QueueComputeTask)
 def recompute_similarity(request:HttpRequest, project_id, similarity_id) -> JsonResponse:
     """Recompute the similarity matrix of the passed in NBLAST configuration.
@@ -1532,3 +1679,141 @@ def get_lobject_similarity_score(similarity_id, query_object_id, target_object_i
     if len(scores) > 1:
         raise ValueError(f'Found {len(scores)} matching scores, expected one')
     return scores[0][0]
+
+
+class SimilarityClusterMgmt(APIView):
+
+    @method_decorator(requires_user_role(UserRole.Browse))
+    def get(self, request:HttpRequest, project_id) -> JsonResponse:
+        """Get whether clustering is currently enabled.
+        ---
+        parameters:
+          - name: project_id
+            description: Project to work in
+            type: integer
+            paramType: path
+            required: true
+        """
+        cursor = connection.cursor()
+        try:
+            cursor.execute("""
+                SELECT pg_get_functiondef('cluster_nblast(bigint[], bigint[], float[], float, int, bool)'::regprocedure);
+            """)
+            clustering_enabled = True
+        except ProgrammingError as e:
+            clustering_enabled = False
+
+        return JsonResponse({
+            'enabled': clustering_enabled,
+        })
+
+
+    @method_decorator(requires_user_role(UserRole.Admin))
+    def post(self, request:HttpRequest, project_id, similarity_id) -> JsonResponse:
+        """Set the current storage mode of a similarity query.
+        ---
+        parameters:
+          - name: project_id
+            description: Project of the similarity computation
+            type: integer
+            paramType: path
+            required: true
+        """
+        enabled = get_request_bool(request.data, 'enabled', True)
+
+        if enabled:
+            status = enable_similarity_clustering()
+        else:
+            status = disable_similarity_clustering()
+
+        return JsonResponse({
+            'enabled': status,
+        })
+
+
+def enable_similarity_clustering():
+    """Create a database function to do similarity score based on Python and
+    scikit.learn. Since using Python in the database requires superuser
+    permissions to be installed, this feature is optional and needs to be
+    installed manually.
+    """
+    cursor = connection.cursor()
+
+    try:
+        cursor.execute("""
+            CREATE OR REPLACE FUNCTION cluster_nblast (query_objects bigint[],
+                target_objects bigint[], scores float[], eps float, min_samples int,
+                with_unclustered bool default false)
+            RETURNS TABLE(object_id bigint, cluster_id int)
+            AS $$
+                import numpy as np
+                from sklearn.cluster import DBSCAN
+                from collections import defaultdict
+
+                if not query_objects or not target_objects:
+                    return np.array([])
+
+                # Create index to look-up scoring value to query/target combination.
+                similarity_score = defaultdict(dict)
+                for q,t,s in zip(query_objects, target_objects, scores):
+                    similarity_score[q][t] = s
+
+                # The clustering works on the combined set query and target objects. If
+                # there is not actually a score available between two objects, because both
+                # where part of either the query or the target group (and can't be found in
+                # the other group), then their distance is seen as infinite.
+                distinct_query_objects = list(set(query_objects).union(set(target_objects)))
+
+                # The similarity function will return a zero distance if both objects are
+                # the same. Otherwise, it will look-up the object ID in the combined list
+                # query objects, which is then used to look up the similarity score between
+                # them.
+                def similarity_distance(x, y):
+                    if x == y or (x and y and x[0] == y[0]):
+                        return 0.0
+
+                    query, target = distinct_query_objects[int(x[0])], distinct_query_objects[int(y[0])]
+
+                    sim = similarity_score[query].get(target)
+                    if sim == None:
+                        sim = similarity_score[target].get(query) or 0
+
+                    return 1.0 - sim
+
+                # Our features we want to cluster are only represented as a list with
+                # increasing integer values, which has a length of the combined set of input
+                # and target objects.
+                features = np.arange(len(distinct_query_objects)).reshape(-1,1)
+
+                # Run clustering on set of combined objects and our distance function, along
+                # with the passed in parameters.
+                clustered_dataset = DBSCAN(eps=eps, min_samples=min_samples, metric=similarity_distance).fit(X=features)
+
+                # A table is returned that maps the looked-at object IDs to a cluster ID.
+                # Every object with the same ID is part of the same cluster. If no
+                # unclustered objects should be returned, the objects with label -1 are
+                # removed.
+                clusters = np.array([distinct_query_objects, clustered_dataset.labels_]).T
+                if with_unclustered:
+                    return clusters
+                return clusters[clusters[:,1] > -1]
+            $$ LANGUAGE 'plpython3u';
+        """)
+    except ProgrammingError as e:
+        logger.error(e)
+        return False
+
+    return True
+
+
+def disable_similarity_clustering():
+    """Remove the database logic to do similarity score clustering using Python.
+    Returns False, indicating clustering is not enabled anymore.
+    """
+    cursor = connection.cursor()
+    cursor.execute("""
+        DROP FUNCTION cluster_nblast (query_objects bigint[], target_objects bigint[],
+                scores float[], eps float, min_samples int);
+    """)
+
+    return False

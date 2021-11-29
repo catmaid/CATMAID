@@ -642,6 +642,9 @@ Miscellaneous:
 - Layer settings: the color transform filter matrix input elements use now
   background colors to better indicate the meaning of rows and columns.
 
+- Key shortcut widget: the content is now refreshed when the selected tool
+  changes.
+
 - The new settings.py setting `PROJECT_TOKEN_USER_VISIBILITY` allows to
   constrain the users that are visible to non-superuser users. If enabled, only
   users that share knowledge about the same project tokens can be seen.

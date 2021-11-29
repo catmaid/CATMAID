@@ -2343,7 +2343,10 @@ var WindowMaker = new function()
     content.style.backgroundColor = "#ffffff";
 
     container = document.getElementById("keyboard-shortcuts-window");
-    if (!container) {
+    if (container) {
+      // Clear container
+      CATMAID.DOM.removeAllChildren(container);
+    } else {
       container = createContainer("keyboard-shortcuts-window");
       content.appendChild( container );
     }
@@ -2423,29 +2426,42 @@ var WindowMaker = new function()
 
   var createKeyboardShortcutsWindow = function()
   {
+    let refreshWidget = function(win) {
+      let container = self.setKeyShortcuts(win);
+
+      $(container)
+        .append($('<h4 />').text('Contributors'))
+        .append('CATMAID &copy;&nbsp;2007&ndash;2020 ' +
+            '<a href="http://fly.mpi-cbg.de/~saalfeld/">Stephan Saalfeld</a>, ' +
+            '<a href="http://www.unidesign.ch/">Stephan Gerhard</a>, ' +
+            '<a href="http://longair.net/mark/">Mark Longair</a>, ' +
+            '<a href="http://albert.rierol.net/">Albert Cardona</a>, ' +
+            '<a href="https://github.com/tomka">Tom Kazimiers</a> and ' +
+            '<a href="https://github.com/aschampion">Andrew Champion</a>.<br /><br />' +
+            'Funded by <a href="http://www.mpi-cbg.de/research/research-groups/pavel-tomancak.html">' +
+            'Pavel Toman&#x010d;&aacute;k</a>, MPI-CBG, Dresden, Germany and ' +
+            '<a href="http://albert.rierol.net/">Albert Cardona</a>, ' +
+            'HHMI Janelia Research Campus, U.S..<br /><br />' +
+            'Visit the <a href="http://www.catmaid.org/" target="_blank">' +
+            'CATMAID homepage</a> for further information. You can find the ' +
+            'source code on <a href="https://github.com/catmaid/CATMAID">' +
+            'GitHub</a>, where you can also <a href="https://github.com/catmaid/CATMAID/issues">' +
+            'report</a> bugs and problems.');
+
+      return container;
+    };
+
     var win = new CMWWindow( "Keyboard Shortcuts" );
-    var container = self.setKeyShortcuts(win);
+    let container = refreshWidget(win);
 
-    $(container)
-      .append($('<h4 />').text('Contributors'))
-      .append('CATMAID &copy;&nbsp;2007&ndash;2020 ' +
-          '<a href="http://fly.mpi-cbg.de/~saalfeld/">Stephan Saalfeld</a>, ' +
-          '<a href="http://www.unidesign.ch/">Stephan Gerhard</a>, ' +
-          '<a href="http://longair.net/mark/">Mark Longair</a>, ' +
-          '<a href="http://albert.rierol.net/">Albert Cardona</a>, ' +
-          '<a href="https://github.com/tomka">Tom Kazimiers</a> and ' +
-          '<a href="https://github.com/aschampion">Andrew Champion</a>.<br /><br />' +
-          'Funded by <a href="http://www.mpi-cbg.de/research/research-groups/pavel-tomancak.html">' +
-          'Pavel Toman&#x010d;&aacute;k</a>, MPI-CBG, Dresden, Germany and ' +
-          '<a href="http://albert.rierol.net/">Albert Cardona</a>, ' +
-          'HHMI Janelia Research Campus, U.S..<br /><br />' +
-          'Visit the <a href="http://www.catmaid.org/" target="_blank">' +
-          'CATMAID homepage</a> for further information. You can find the ' +
-          'source code on <a href="https://github.com/catmaid/CATMAID">' +
-          'GitHub</a>, where you can also <a href="https://github.com/catmaid/CATMAID/issues">' +
-          'report</a> bugs and problems.');
+    CATMAID.Project.on(CATMAID.Project.EVENT_TOOL_CHANGED,
+        () => refreshWidget(win), win);
 
-    addListener(win, container);
+    let destroyWidget = function() {
+      CATMAID.Project.offAllInContext(win);
+    };
+
+    addListener(win, container, destroyWidget);
 
     addLogic(win);
 

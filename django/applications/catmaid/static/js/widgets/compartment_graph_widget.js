@@ -2943,10 +2943,14 @@
       names.push(node.data('label'));
     });
     var AdjM = ids.map(function() { return new Uint32Array(ids.length); });
-    this.cy.edges().each(function(i, edge) {
+    this.cy.edges().each((i, edge) => {
       if (edge.hidden()) return;
       var e = edge.data();
-      if (!e.directed) return; // intra-edge of a neuron split by synapse clustering
+      // If the edges's link type is directed, we will ignore undirected edges.
+      let linkType = this.linkTypeDirected.get(e.link_type);
+      if (linkType && linkType.directed) {
+        if (!e.directed) return; // intra-edge of a neuron split by synapse clustering
+      }
       var source = e.source,
           target = e.target;
       AdjM[indices[source]][indices[target]] = e.weight;

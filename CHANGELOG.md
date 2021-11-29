@@ -655,6 +655,8 @@ Miscellaneous:
   represented part of the outer boundary of a cropping area, this part was
   rendered only as black pixels. This is fixed now.
 
+- Cropping tool: fix error on tool destruction when clicking on Home link
+
 - Graph widget: fraction edge labels work again. They produced an error before.
 
 - Graph widget: edge color updates of non-synaptic links works now properly.

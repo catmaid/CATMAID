@@ -490,7 +490,9 @@
       // remove added elements from toolbar
       var toolbar = document.getElementById("toolbar_roi");
       $.each(added_elements, function(i, val) {
-        toolbar.removeChild(val);
+        if (val.parentNode === toolbar) {
+          toolbar.removeChild(val);
+        }
       });
 
       // call destroy of super class

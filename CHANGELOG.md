@@ -711,6 +711,9 @@ Miscellaneous:
 - Connectivity widget: the rendering of large sets of input skeletons is now
   much faster.
 
+- Connectivity widget: showing a list of displayed links ("List links" button)
+  is working again.
+
 - Neuron search: row highlighting for the active skeleton works now again for
   the whole row and registers deselection properly.
 

@@ -97,7 +97,8 @@
         // [connector_id, x, y, z, skeleton_id, confidence, creator_id,
         // treenode_id, creation_time, edition_time, relation_id]
         let connectorData = allowedConnectors.reduce(function(o, c) {
-          let partners = result.partners[c[0]];
+          // Get partners for this connector, default to empty list if there are none.
+          let partners = result.partners[c[0]] || [];
           for (let i=0; i<partners.length; ++i) {
             // Partners: link_id, treenode_id, skeleton_id, relation_id,
             // confidence, user_id, creation_time, edition_time

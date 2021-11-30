@@ -714,6 +714,9 @@ Miscellaneous:
 - Connectivity widget: showing a list of displayed links ("List links" button)
   is working again.
 
+- Connector list: shows now neuron names rather than skeleton IDs and can
+  optionally include them in exported CSVs as well.
+
 - Neuron search: row highlighting for the active skeleton works now again for
   the whole row and registers deselection properly.
 

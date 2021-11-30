@@ -25,6 +25,7 @@
     this.partnerSetSource = options.partnerSetSource || 'none';
     this.partnerSetExcludedSkeletonIds = new Set(options.partnerSetExcludedSkeletonIds || []);
     this.partnerSetRelation = options.partnerSetRelationId || 'none';
+    this.useNeuronNameInExport = false;
 
     // The displayed data table
     this.connectorTable = null;
@@ -138,6 +139,8 @@
     this.unregisterInstance();
     this.resultSkeletonSource.destroy();
 
+    CATMAID.NeuronNameService.getInstance().unregister(this);
+
     SkeletonAnnotations.off(CATMAID.SkeletonSourceManager.EVENT_SOURCE_ADDED,
         this.updateSkeletonConstraintSources, this);
     SkeletonAnnotations.off(CATMAID.SkeletonSourceManager.EVENT_SOURCE_REMOVED,
@@ -218,6 +221,15 @@
               self.updateFilters();
             });
         this.updateRelationSelect(partnerRelSelect, this.partnerSetRelation);
+
+        CATMAID.DOM.appendCheckbox(
+            controls,
+            "Use neuron name in export",
+            "Should the neuron name should be used in an exported file or the skeleton ID?",
+            this.useNeuronNameInExport,
+            e => {
+              this.useNeuronNameInExport = e.target.value;
+            });
       },
       contentID: this.idPrefix + 'content',
       createContent: function(content) {
@@ -241,9 +253,7 @@
           order: [],
           lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
           ajax: function(data, callback, settings) {
-
-
-              // Locally resolve request if no skeletons are provided
+            // Locally resolve request if no skeletons are provided
             Promise.all([
                 self.getData(),
                 CATMAID.Relations.getNameMap(project.id)
@@ -254,7 +264,20 @@
                 }
                 return self.filterResults(results[0]);
               })
-              .then(function(connectorData) {
+              // Register with Neuron Name Service
+              .then(connectorData => {
+                let skeletonIds = connectorData.reduce((o, link) => {
+                  let skid = link[4];
+                  if (skid) {
+                    o.push(skid);
+                  }
+                  return o;
+                }, []);
+                return CATMAID.NeuronNameService.getInstance().registerAllFromList(self, skeletonIds)
+                  .then(() => [connectorData, skeletonIds]);
+              })
+              .then(function(linkInfo) {
+                let [connectorData, skeletonIds] = linkInfo;
                 callback({
                   draw: data.draw,
                   recordsTotal: connectorData.length,
@@ -265,11 +288,8 @@
                 self.updateFilters();
 
                 // Populate result skeleton source
-                var models = connectorData.reduce(function(o, link) {
-                  var skid = link[4];
-                  if (skid) {
-                    o[skid]  = new CATMAID.SkeletonModel(skid);
-                  }
+                var models = skeletonIds.reduce((o, skid) => {
+                  o[skid] = new CATMAID.SkeletonModel(skid);
                   return o;
                 }, {});
                 self.resultSkeletonSource.clear();
@@ -281,9 +301,14 @@
             {
               data: 4,
               className: "cm-center",
-              title: "Skeleton ID",
+              title: "Skeleton",
               render: function(data, type, row, meta) {
-                return data == undefined ? '-' : data;
+                if (data == undefined) {
+                  return '-';
+                }
+                return type === 'display' ?
+                  CATMAID.NeuronNameService.getInstance().getName(row[4]) :
+                  data;
               }
             },
             {data: 0, className: "cm-center", title: "Connector ID"},
@@ -613,13 +638,16 @@
       .then(relationNames => {
         // Use original data, but change order to match the table
         var connectorRows = this.connectorTable.rows({"order": "current", "search": 'applied'})
-            .data().map(function(row) {
+            .data().map(row => {
               let relationId = row[10];
               let relationName = relationNames[relationId];
               if (relationName === undefined) {
                 relationName = relationId;
               }
-              return [row[4], row[0], relationName, row[1], row[2], row[3],
+              let skeletonRef = this.useNeuronNameInExport ?
+                  CATMAID.NeuronNameService.getInstance().getName(row[4]) :
+                  row[4];
+              return [skeletonRef, row[0], relationName, row[1], row[2], row[3],
                   row[5], row[6], row[7], row[8], row[9]];
             });
         var csv = header.join(',') + '\n' + connectorRows.map(function(row) {

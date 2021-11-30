@@ -248,6 +248,7 @@
         var showLinks = document.createElement('input');
         showLinks.setAttribute("type", "button");
         showLinks.setAttribute("value", "List links");
+        showLinks.setAttribute("title", "Show a list of individual links for all selected skeletons");
         showLinks.onclick = this.listLinks.bind(this);
         controls.appendChild(showLinks);
 

@@ -74,10 +74,6 @@ django/applications/catmaid/static/js/widgets/clustering_widget.js: line 634, co
 django/applications/catmaid/static/js/widgets/clustering_widget.js: line 691, col 13, 'x' is defined but never used.
 django/applications/catmaid/static/js/widgets/clustering_widget.js: line 691, col 25, 'h' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/connector-list.js: line 120, col 13, 'relationMap' is defined but never used.
-django/applications/catmaid/static/js/widgets/connector-list.js: line 123, col 13, 'connectorList' is defined but never used.
-django/applications/catmaid/static/js/widgets/connector-list.js: line 502, col 13, 'seenLinkTypes' is defined but never used.
-
 django/applications/catmaid/static/js/widgets/input.js: line 104, col 7, 'self' is defined but never used.
 django/applications/catmaid/static/js/widgets/input.js: line 5, col 10, 'Input' is defined but never used.
 
@@ -207,4 +203,4 @@ django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 1817, col
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 1850, col 1, 'async functions' is only available in ES8 (use 'esversion: 8').
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2009, col 29, The object literal notation {} is preferable.
 
-160 errors
+157 errors

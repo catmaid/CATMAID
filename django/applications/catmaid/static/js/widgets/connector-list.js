@@ -119,12 +119,8 @@
       })
       .then(function(results) {
         let connectorData = results[0];
-        let relationMap = results[1];
-
-        let focusSetRelationId;// = relationMap[relation];
-        let connectorList = CATMAID.ConnectorList.fromRawData(
-          connectorData, focusSetRelationId, undefined, undefined,
-          source).widget;
+        CATMAID.ConnectorList.fromRawData(connectorData, undefined, undefined,
+          undefined, source);
       })
       .catch(CATMAID.handleError);
   };
@@ -525,7 +521,6 @@
   ConnectorList.prototype.updateRelationSelect = function(relationSelect, selectedLinkType) {
     return CATMAID.Connectors.linkTypes(project.id)
       .then(function(json) {
-        var seenLinkTypes = new Set();
         var linkTypes = json.sort(function(a, b) {
             return CATMAID.tools.compareStrings(a.name, b.name);
           })

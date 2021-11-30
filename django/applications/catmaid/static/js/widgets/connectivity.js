@@ -157,6 +157,8 @@
       } else {
         added[skid] = model;
         this.ordered_skeleton_ids.push(parseInt(skid));
+        // Select added skeletons by default
+        this.skeletonSelection[skid] = true;
       }
       // Add or update
       this.skeletons[skid] = model;
@@ -1215,7 +1217,7 @@
         class: 'input-container',
         width: '3em',
         render: (data, type, row, meta) => {
-          return `<input type='checkbox' id='neuron-selector-${this.widgetID}-${row}' data-skeleton-id="${row}" ${row in this.skeletonSelection ? '' : 'checked '}></input>`;
+          return `<input type='checkbox' id='neuron-selector-${this.widgetID}-${row}' data-skeleton-id="${row}" ${row in this.skeletonSelection ? 'checked' : ''}></input>`;
         },
       }, {
         orderable: true,

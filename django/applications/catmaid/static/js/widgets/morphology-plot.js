@@ -84,7 +84,9 @@
              'Radial density of branch nodes',
              'Radial density of ends',
              'Radial density of input synapses',
-             'Radial density of output synapses']);
+             'Radial density of output synapses',
+             'Radial density of gap junctions',
+             'Radial density of desmosomes']);
 
         controls.appendChild(document.createTextNode(' Radius (nm): '));
         var radius = document.createElement('input');
@@ -264,8 +266,8 @@
         (function(skeleton_id, json) {
           this.lines[skeleton_id] = {nodes: json[0],
                                      connectors: json[1].filter(function(con) {
-                                       // Filter out non-synaptic connections
-                                       return con[2] === 0 || con[2] === 1;
+                                       // Keep only known connector types
+                                       return con[2] === 0 || con[2] === 1 || con[2] === 2 || con[2] === 3;
                                      }),
                                      tags: json[2]};
         }).bind(this),
@@ -352,9 +354,14 @@
           if (1 === row[2]) o[row[0]] = positions[row[0]];
           return o;
         }, {});
-      } else if (endsWith(this.mode, 'output synapses')) {
+      } else if (endsWith(this.mode, 'gap junctions')) {
         ps = line.connectors.reduce(function(o, row) {
-          if (0 === row[2]) o[row[0]] = positions[row[0]];
+          if (2 === row[2]) o[row[0]] = positions[row[0]];
+          return o;
+        }, {});
+      } else if (endsWith(this.mode, 'desmosomes')) {
+        ps = line.connectors.reduce(function(o, row) {
+          if (3 === row[2]) o[row[0]] = positions[row[0]];
           return o;
         }, {});
       }

@@ -307,6 +307,10 @@ Neuron navigator:
   first attempt now. Previously it took a second click to actually jump to a
   page.
 
+Morphology plot:
+
+- Radial density can now be shown also for desmosomes and gap junctions.
+
 Docker:
 
 - Asynchronous tasks can now also be run inside the Docker container. Celery and

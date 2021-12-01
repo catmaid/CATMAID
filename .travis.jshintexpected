@@ -77,11 +77,6 @@ django/applications/catmaid/static/js/widgets/clustering_widget.js: line 691, co
 django/applications/catmaid/static/js/widgets/input.js: line 104, col 7, 'self' is defined but never used.
 django/applications/catmaid/static/js/widgets/input.js: line 5, col 10, 'Input' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/morphology-plot.js: line 559, col 15, 'centerNodeId' is defined but never used.
-django/applications/catmaid/static/js/widgets/morphology-plot.js: line 548, col 13, 'result' is defined but never used.
-django/applications/catmaid/static/js/widgets/morphology-plot.js: line 597, col 15, 'centerNodeId' is defined but never used.
-django/applications/catmaid/static/js/widgets/morphology-plot.js: line 586, col 13, 'result' is defined but never used.
-
 django/applications/catmaid/static/js/widgets/neuron-dendrogram.js: line 969, col 9, 'rect' is defined but never used.
 
 django/applications/catmaid/static/js/widgets/neuron-history.js: line 241, col 17, 'tds' is defined but never used.
@@ -203,4 +198,4 @@ django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 1817, col
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 1850, col 1, 'async functions' is only available in ES8 (use 'esversion: 8').
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2009, col 29, The object literal notation {} is preferable.
 
-157 errors
+153 errors

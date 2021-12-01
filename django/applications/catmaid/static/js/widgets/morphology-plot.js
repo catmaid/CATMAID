@@ -509,7 +509,6 @@
       getCenter: (widget, arbor, positions, connectors, tags) => {
         let error;
         let taggedNodes = tags[widget.centerTag];
-        let result = {};
         // We need a copy, because the distance computation involves rerooting.
         // Technically, we don't need this, because we compare against root, but to
         // avoid potential changes, a copy is safer to operate on and isn't expensive in
@@ -520,7 +519,7 @@
           if (taggedNodes.length === 1) {
             return positions[taggedNodes[0]];
           }
-          let centerNodeId, minNode, minDistance = Infinity;
+          let minNode, minDistance = Infinity;
           for (let treenodeId of taggedNodes) {
             let distance = CATMAID.Skeletons.distanceBetweenNodesInArbor(arborCopy, positions,
                 arbor.root, treenodeId);
@@ -547,7 +546,6 @@
       getCenter: (widget, arbor, positions, connectors, tags) => {
         let error;
         let taggedNodes = tags[widget.centerTag];
-        let result = {};
         // We need a copy, because the distance computation involves rerooting.
         // Technically, we don't need this, because we compare against root, but to
         // avoid potential changes, a copy is safer to operate on and isn't expensive in
@@ -558,7 +556,7 @@
           if (taggedNodes.length === 1) {
             return positions[taggedNodes[0]];
           }
-          let centerNodeId, maxNode, maxDistance = -Infinity;
+          let maxNode, maxDistance = -Infinity;
           for (let treenodeId of taggedNodes) {
             let distance = CATMAID.Skeletons.distanceBetweenNodesInArbor(arborCopy, positions,
                 arbor.root, treenodeId);

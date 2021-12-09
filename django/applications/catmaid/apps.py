@@ -225,7 +225,7 @@ def check_media_path(app_configs, **kwargs) -> List[str]:
     return messages
 
 class CATMAIDConfig(AppConfig):
-    default_auto_field = 'django.db.models.AutoField'
+    default_auto_field = 'django.db.models.BigAutoField'
     name = 'catmaid'
     verbose_name = "CATMAID"
 

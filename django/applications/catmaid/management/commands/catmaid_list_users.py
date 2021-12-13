@@ -2,9 +2,11 @@
 import datetime as dt
 from contextlib import contextmanager
 import sys
+from zoneinfo import ZoneInfo
 
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
+from django.conf import settings
 
 from catmaid.models import *
 
@@ -25,6 +27,13 @@ def out_stream(fpath):
             yield f
 
 
+def parse_dt(s):
+    timestamp = dt.datetime.fromisoformat(s)
+    if timestamp.tzinfo is None:
+        timestamp = timestamp.astimezone(ZoneInfo(settings.TIME_ZONE))
+    return timestamp
+
+
 class Command(BaseCommand):
     help = 'List users as TSV'
 
@@ -36,7 +45,7 @@ class Command(BaseCommand):
             '-e', '--email', action="store_true", help='Only include users with email addresses',
         )
         parser.add_argument(
-            '-l', '--logged-in-after', type=dt.datetime.fromisoformat,
+            '-l', '--logged-in-after', type=parse_dt,
             help='Only include users who have logged in since the given ISO-8601 timestamp'
         )
         parser.add_argument(
@@ -66,10 +75,16 @@ class Command(BaseCommand):
                 logger.debug("Excluding users without login since %s", options["logged_in_after"])
 
             for user in users:
+                last_login_dt = user.last_login
+                if last_login_dt:
+                    last_login = last_login_dt.isoformat()
+                else:
+                    last_login = ""
+
                 fields = [
                     user.get_username(),
                     str(int(user.is_active)),
-                    (user.last_login or dt.datetime.min).isoformat(),
+                    last_login,
                     user.email or "",
                     user.get_full_name() or "",
                 ]

@@ -3,7 +3,7 @@
 from io import StringIO
 from abc import ABC
 import datetime as dt
-from pytz import UTC
+from zoneinfo import ZoneInfo
 
 import mock
 
@@ -15,6 +15,7 @@ from django.test.client import Client
 from guardian.shortcuts import assign_perm
 from catmaid.models import Class, ClassInstance, Project, User, Treenode
 
+UTC = ZoneInfo("UTC")
 
 class PruneSkeletonsTest(TestCase):
     """
@@ -157,12 +158,14 @@ class ListUsersTest(CommandTestCase):
     command_name = "catmaid_list_users"
 
     def setUp(self):
-        self.n_users = 10
+        self.existing_usernames = {user.username for user in User.objects.all()}
+        n_new_users = 10
+        self.n_users = n_new_users + len(self.existing_usernames)
         self.is_active = set()
         self.has_email = set()
         self.login_dates = dict()
 
-        for idx in range(0, self.n_users):
+        for idx in range(0, n_new_users):
             username = f"user{idx}"
             is_active = bool(idx % 2)
             has_email = bool(idx % 3)
@@ -197,17 +200,17 @@ class ListUsersTest(CommandTestCase):
 
     def test_is_active(self):
         result = self.attempt_and_parse("--active")
-        test = {row[0] for row in result}
+        test = {row[0] for row in result} - self.existing_usernames
         self.assertEqual(self.is_active, test)
 
     def test_has_email(self):
         result = self.attempt_and_parse("--email")
-        test = {row[0] for row in result if row[3]}
+        test = {row[0] for row in result if row[3]} - self.existing_usernames
         self.assertEqual(self.has_email, test)
 
     def test_logged_in_after(self):
         threshold = dt.datetime(2020, 1, 5, tzinfo=UTC)
         result = self.attempt_and_parse("--logged-in-after", "2020-01-05")
-        test = {row[0] for row in result}
+        test = {row[0] for row in result} - self.existing_usernames
         reference = {k for k, v in self.login_dates.items() if v >= threshold}
         self.assertEqual(reference, test)

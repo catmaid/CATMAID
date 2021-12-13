@@ -3,6 +3,7 @@
 from io import StringIO
 from abc import ABC
 import datetime as dt
+from pytz import UTC
 
 import mock
 
@@ -177,7 +178,7 @@ class ListUsersTest(CommandTestCase):
                 self.has_email.add(username)
                 kwargs["email"] = username + "@email.host"
             if has_logged_in:
-                timestamp = dt.datetime(2020, 1, idx)
+                timestamp = dt.datetime(2020, 1, idx, tzinfo=UTC)
                 self.login_dates[username] = timestamp
                 kwargs["last_login"] = timestamp
             User.objects.create(**kwargs).save()
@@ -205,7 +206,7 @@ class ListUsersTest(CommandTestCase):
         self.assertEqual(self.has_email, test)
 
     def test_logged_in_after(self):
-        threshold = dt.datetime.fromisoformat("2020-01-05")
+        threshold = dt.datetime(2020, 1, 5, tzinfo=UTC)
         result = self.attempt_and_parse("--logged-in-after", "2020-01-05")
         test = {row[0] for row in result}
         reference = {k for k, v in self.login_dates.items() if v >= threshold}

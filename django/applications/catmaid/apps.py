@@ -4,7 +4,9 @@ import logging
 import json
 import ujson
 import os
+import sys
 from typing import List
+from contextlib import redirect_stdout
 
 from catmaid import history, spatial
 
@@ -271,7 +273,8 @@ class CATMAIDConfig(AppConfig):
         if r_available:
             rpy2.rinterface_lib.embedded.set_initoptions(('rpy2', '--no-save',
                     '--no-restore', '--no-init-file', '--no-environ', '--max-ppsize=500000'))
-            rinterface.initr()
+            with redirect_stdout(sys.stderr):
+                rinterface.initr()
 
     # A list of settings that are expected to be available.
     required_setting_fields = {

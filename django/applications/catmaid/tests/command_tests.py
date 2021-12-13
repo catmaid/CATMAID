@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 from io import StringIO
+from abc import ABC
+import datetime as dt
 
 import mock
 
@@ -47,6 +49,7 @@ class PruneSkeletonsTest(TestCase):
         self.assertIn(f'Deleted 4 nodes in project "{p.project.id}"', out.getvalue())
 
 
+
 class TestProject():
     """
     Create a new project, assign brows and annotate permissions to the test
@@ -79,10 +82,19 @@ class TestProject():
                 parent_id=parent_id, radius=-1, skeleton=skeleton_id)
 
 
-class GetTokenTest(TestCase):
-    def setUp(self):
-        self.command_name = 'catmaid_get_auth_token'
+class CommandTestCase(TestCase, ABC):
+    command_name: str
 
+    def attempt_command(self, *args):
+        out = StringIO()
+        call_command(self.command_name, *args, stdout=out)
+        return out.getvalue()
+
+
+class GetTokenTest(CommandTestCase):
+    command_name = "catmaid_get_auth_token"
+
+    def setUp(self):
         self.username = 'real_username'
         self.password = 'real_password'
         self.user = User.objects.create(
@@ -92,11 +104,6 @@ class GetTokenTest(TestCase):
         self.client = Client()
         success = self.client.login(username=self.username, password=self.password)
         self.assertTrue(success)
-
-    def attempt_command(self, *args):
-        out = StringIO()
-        call_command(self.command_name, *args, stdout=out)
-        return out.getvalue()
 
     def test_new_token_success(self):
         output = self.attempt_command(self.username, '--password', self.password)
@@ -143,3 +150,63 @@ class GetTokenTest(TestCase):
         self.user.save()
         with self.assertRaisesMessage(CommandError, 'account is disabled'):
             self.attempt_command(self.username, '--password', self.password)
+
+
+class ListUsersTest(CommandTestCase):
+    command_name = "catmaid_list_users"
+
+    def setUp(self):
+        self.n_users = 10
+        self.is_active = set()
+        self.has_email = set()
+        self.login_dates = dict()
+
+        for idx in range(0, self.n_users):
+            username = f"user{idx}"
+            is_active = bool(idx % 2)
+            has_email = bool(idx % 3)
+            has_logged_in = bool(idx % 5)
+            kwargs = {
+                "username": username,
+                "password": "password",
+                "is_active": is_active,
+            }
+            if is_active:
+                self.is_active.add(username)
+            if has_email:
+                self.has_email.add(username)
+                kwargs["email"] = username + "@email.host"
+            if has_logged_in:
+                timestamp = dt.datetime(2020, 1, idx)
+                self.login_dates[username] = timestamp
+                kwargs["last_login"] = timestamp
+            User.objects.create(**kwargs).save()
+
+    def attempt_and_parse(self, *args):
+        result = self.attempt_command(*args)
+        return [line.split("\t") for line in result.split("\n") if line.strip()]
+
+    def test_get_all(self):
+        result = self.attempt_and_parse()
+        self.assertEqual(len(result), self.n_users)
+
+    def test_header(self):
+        result = self.attempt_and_parse("--header")
+        self.assertEqual(len(result), self.n_users + 1)
+
+    def test_is_active(self):
+        result = self.attempt_and_parse("--active")
+        test = {row[0] for row in result}
+        self.assertEqual(self.is_active, test)
+
+    def test_has_email(self):
+        result = self.attempt_and_parse("--email")
+        test = {row[0] for row in result if row[3]}
+        self.assertEqual(self.has_email, test)
+
+    def test_logged_in_after(self):
+        threshold = dt.datetime.fromisoformat("2020-01-05")
+        result = self.attempt_and_parse("--logged-in-after", "2020-01-05")
+        test = {row[0] for row in result}
+        reference = {k for k, v in self.login_dates.items() if v >= threshold}
+        self.assertEqual(reference, test)

@@ -420,6 +420,12 @@ var project;
     document.body.appendChild( CATMAID.statusBar.getView() );
     this.showVersionInStatusBar();
 
+    let checkLinkLength = (link) => {
+      if (link.length > 4096) {
+        CATMAID.warn('URL length > 4096 characters. Consider using Ctrl + Shift to create a persistent layout link.');
+      }
+    };
+
     var a_url = document.getElementById( "a_url" );
     a_url.onpointerover = function( e )
     {
@@ -427,6 +433,12 @@ var project;
       return true;
     };
     let urlToViewJustClicked = false;
+    a_url.addEventListener('contextmenu', e => {
+      e.target.href = project.createURL(e.shiftKey);
+      // Needs to be done through timeout, because Chrome/Chromium
+      // won't show anchor element context menu on right click.
+      setTimeout(() => checkLinkLength(e.target.href), 10);
+    });
     a_url.onclick = function( e )
     {
       // In case a deep link is created, the click is canceled to asyncronously
@@ -455,6 +467,7 @@ var project;
         return false;
       } else {
         this.href = project.createURL(e.shiftKey);
+        checkLinkLength(this.href);
       }
       return true;
     };

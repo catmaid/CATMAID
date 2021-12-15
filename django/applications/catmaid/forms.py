@@ -11,9 +11,9 @@ class RegisterForm(UserCreationForm):
     """An extended version of Django's user creation form. It also features
     first and last name as well as the email address.
     """
-    first_name = forms.CharField(max_length=150)
-    last_name = forms.CharField(max_length=150)
-    email = forms.EmailField(max_length=150)
+    first_name = forms.CharField(max_length=30)
+    last_name = forms.CharField(max_length=30)
+    email = forms.EmailField(max_length=75)
     terms_accepted = forms.BooleanField(label='Yes, I accept the terms and conditions below',
             required=settings.USER_REGISTRATION_CONFIRM_TERMS,
             widget=forms.CheckboxInput() if settings.USER_REGISTRATION_CONFIRM_TERMS else forms.HiddenInput())

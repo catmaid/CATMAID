@@ -17,10 +17,10 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.contrib.gis.db import models as spatial_models
-from django.contrib.postgres.fields import ArrayField
+from django.contrib.postgres.fields import JSONField, ArrayField
 from django.core.validators import RegexValidator
 from django.db import connection, models
-from django.db.models import JSONField, Q
+from django.db.models import Q
 from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
 from django.utils import timezone

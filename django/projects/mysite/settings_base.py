@@ -50,9 +50,6 @@ MANAGERS = ADMINS
 # to load the internationalization machinery.
 USE_I18N = True
 
-# The default ID field, generated on models
-DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
-
 MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',

@@ -3,9 +3,6 @@ django/applications/catmaid/static/js/3d/skeleton-shading.js: line 546, col 13, 
 django/applications/catmaid/static/js/3d/skeleton-shading.js: line 571, col 9, 'nAddedDomains' is defined but never used.
 django/applications/catmaid/static/js/3d/skeleton-shading.js: line 1044, col 13, 'arbor' is defined but never used.
 
-django/applications/catmaid/static/js/extensions.js: line 108, col 7, 'samePath' is defined but never used.
-django/applications/catmaid/static/js/extensions.js: line 147, col 7, 'samePath' is defined but never used.
-
 django/applications/catmaid/static/js/layers/skeleton-projection-layer.js: line 338, col 9, 'self' is defined but never used.
 django/applications/catmaid/static/js/layers/skeleton-projection-layer.js: line 115, col 7, 'hasSource' is defined but never used.
 
@@ -198,4 +195,4 @@ django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 1817, col
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 1850, col 1, 'async functions' is only available in ES8 (use 'esversion: 8').
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2009, col 29, The object literal notation {} is preferable.
 
-153 errors
+151 errors

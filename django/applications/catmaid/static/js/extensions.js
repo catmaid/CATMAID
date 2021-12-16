@@ -105,7 +105,6 @@ $.fn.dataTable.ext.oSort['hslcolor-desc']  = function(a, b) {
 };
 
 let compareHierarchicalName = function(a, b, reverse=false) {
-  let samePath = 0;
   let [aPath, aNamePath] = a;
   let [bPath, bNamePath] = b;
 
@@ -144,7 +143,6 @@ $.fn.dataTable.ext.oSort['hierarchical-search-name-desc']  = function(a, b) {
 };
 
 let compareHierarchicalType = function(a, b, reverse=false) {
-  let samePath = 0;
   let [aPath, aTypePath] = a;
   let [bPath, bTypePath] = b;
 

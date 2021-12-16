@@ -534,6 +534,10 @@ Landmark widget:
 
 Miscellaneous:
 
+- The dialog to add new annotations (F3 key) accepts now multiple annotations as
+  input, separated by commas. To include a literal coma, use baslash to escape
+  it: \,
+
 - Regular view links (URL to this view): virtual nodes can now be referenced.
   Only the parent and child ID are looked at when selecting a virtual node,
   which means URLs keep working if parent or child location of a virtual node

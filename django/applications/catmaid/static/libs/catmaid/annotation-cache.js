@@ -129,30 +129,66 @@
     annotationIDs.forEach(this.remove, this);
   };
 
+  AnnotationCache.split = function(val) {
+    let uniqueDelimiter = '|';
+    while (val.indexOf(uniqueDelimiter) > -1) {
+      uniqueDelimiter += '|';
+    }
+    return val.replaceAll('\\,', uniqueDelimiter)
+        .split(',').map(a => a.trim().replaceAll(uniqueDelimiter, ','));
+  };
+
+  AnnotationCache.extractLast = function(term) {
+    return AnnotationCache.split(term).pop();
+  };
+
   /**
    * Add jQuery autocompletion for all cached annotations to the given input
    * element.
    */
-  AnnotationCache.prototype.add_autocomplete_to_input = function(input)
+  AnnotationCache.prototype.add_autocomplete_to_input = function(input, multiple=false)
   {
     // Expects the annotation cache to be up-to-date
-    $(input).autocomplete({
-      maxResults: 30,
-      source: CATMAID.makeMaxResultsAutoCompleteSourceFn(this.getAllNames()),
-      select: (event, ui) => {
-        // If the expansion entry is clicked, recreate the autocomplete box
-        // without size limit.
-        if (ui.item.value === '…') {
-          $(event.target).autocomplete('destroy');
-          $(event.target).autocomplete({
-            source: CATMAID.makeSimpleAutoCompleteSourceFn(this.getAllNames()),
-          });
-          $(event.target).autocomplete('search', event.target.value);
-          // Cancel event
-          return false;
+    $(input)
+    // don't navigate away from the field on tab when selecting an item
+      .on("keydown", e => {
+        if ( event.keyCode === $.ui.keyCode.TAB &&
+            $( e.target ).autocomplete( "instance" ).menu.active ) {
+          event.preventDefault();
         }
-      }
-    });
+      })
+      .autocomplete({
+        maxResults: 30,
+        source: CATMAID.makeMaxResultsAutoCompleteSourceFn(this.getAllNames(), true),
+        focus: function() {
+          // prevent value inserted on focus
+          return false;
+        },
+        select: (event, ui) => {
+          // If the expansion entry is clicked, recreate the autocomplete box
+          // without size limit.
+          if (ui.item.value === '…') {
+            $(event.target).autocomplete('destroy');
+            $(event.target).autocomplete({
+              source: CATMAID.makeSimpleAutoCompleteSourceFn(this.getAllNames()),
+            });
+            $(event.target).autocomplete('search', event.target.value);
+            // Cancel event
+            return false;
+          }
+          if (multiple) {
+            var terms = AnnotationCache.split(event.target.value);
+            // remove the current input
+            terms.pop();
+            // add the selected item
+            terms.push(ui.item.value);
+            // add placeholder to get the comma-and-space at the end
+            terms.push("");
+            event.target.value = terms.join(", ");
+            return false;
+          }
+        }
+      });
   };
 
   // Export the annotation cache constructor and a generally available instance.

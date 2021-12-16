@@ -64,13 +64,15 @@
       .catch(CATMAID.handleError);
 
     // Add annotation input field supporting auto-completion
-    var annotation_input = dialog.appendField('New annotation: ', 'new-annotation',
+    var annotation_input = dialog.appendField('New annotation(s): ', 'new-annotation',
         '', true);
+    annotation_input.setAttribute('title', 'Separate annotations by comma. Use \\, (backslash-comma) for literal commas. Meta-annotations are applied to all specified annotations.');
 
     var helpMsg = dialog.appendMessage("Every occurrence of " +
         "'{nX}' with X being a number is replaced by a number that is " +
         "automatically incremented (starting from X) for each annotated " +
-        "object.");
+        "object. Multiple annotations can be separated by a comma. To " +
+        "include a literal comma, write backslash-comma (\\,).");
     helpMsg.classList.add('help');
 
     // Add button to toggle display of meta annotation input field
@@ -100,7 +102,7 @@
     return new Promise(function(resolve, reject) {
       dialog.onOK = function() {
         // Get annotation, if any
-        var annotation = annotation_input.value;
+        let annotation = annotation_input.value;
         if (!annotation) {
           throw new CATMAID.ValueError("No annotation provided");
         }
@@ -108,6 +110,13 @@
         if (0 === annotation.length) {
           throw new CATMAID.ValueError("No annotation provided");
         }
+        let uniqueDelimiter = '|';
+        while (annotation.indexOf(uniqueDelimiter) > -1) {
+          uniqueDelimiter += '|';
+        }
+        let all_annotations = annotation.replaceAll('\\,', uniqueDelimiter)
+            .split(',').map(a => a.trim().replaceAll(uniqueDelimiter, ','));
+
         // Get meta annotation, if any
         var meta_annotations = this.meta_annotation_inputs.reduce(function(o, e) {
           var ma = e.value.trim();
@@ -118,7 +127,7 @@
         }, []);
 
         resolve({
-          annotations: [annotation],
+          annotations: all_annotations,
           metaAnnotations: meta_annotations
         });
       };
@@ -131,7 +140,7 @@
       // Auto-completion has to be added after the dialog has been created to ensure
       // the auto completion controls com after the dialog in the DOM (to display
       // them above the dialog).
-      CATMAID.annotations.add_autocomplete_to_input(annotation_input);
+      CATMAID.annotations.add_autocomplete_to_input(annotation_input, true);
     });
   };
 

@@ -32,12 +32,29 @@
         }).catch(CATMAID.handleError);
   };
 
+  function splitAnnotations(annotation) {
+    if (!annotation) {
+      throw new CATMAID.ValueError("No annotation provided");
+    }
+    annotation = annotation.trim();
+    if (0 === annotation.length) {
+      throw new CATMAID.ValueError("No annotation provided");
+    }
+    let uniqueDelimiter = '|';
+    while (annotation.indexOf(uniqueDelimiter) > -1) {
+      uniqueDelimiter += '|';
+    }
+    return annotation.replaceAll('\\,', uniqueDelimiter)
+        .split(',').map(a => a.trim().replaceAll(uniqueDelimiter, ','))
+        .filter(a => a.length > 0);
+  }
+
   /**
    * Show an annotation dialog which allows to specify multiple new annotations
    * and meta annotations.
    */
   CATMAID.promptForAnnotations = function(projectId, entityIds, skeletonIds) {
-    var dialog = new CATMAID.OptionsDialog("Add new annotation");
+    var dialog = new CATMAID.OptionsDialog("Add new annotations");
     var annotationList = dialog.appendMessage("Current annotations: ");
     annotationList.classList.add('annotation-container');
     CATMAID.Annotations.forAny(projectId, entityIds, skeletonIds, true)
@@ -67,6 +84,11 @@
     var annotation_input = dialog.appendField('New annotation(s): ', 'new-annotation',
         '', true);
     annotation_input.setAttribute('title', 'Separate annotations by comma. Use \\, (backslash-comma) for literal commas. Meta-annotations are applied to all specified annotations.');
+
+    let annPreviewText = document.createElement('ul');
+    annPreviewText.classList.add('resultTags');
+    annPreviewText.style.marginLeft = '9.2em';
+    dialog.appendChild(annPreviewText);
 
     var helpMsg = dialog.appendMessage("Every occurrence of " +
         "'{nX}' with X being a number is replaced by a number that is " +
@@ -101,21 +123,7 @@
 
     return new Promise(function(resolve, reject) {
       dialog.onOK = function() {
-        // Get annotation, if any
-        let annotation = annotation_input.value;
-        if (!annotation) {
-          throw new CATMAID.ValueError("No annotation provided");
-        }
-        annotation = annotation.trim();
-        if (0 === annotation.length) {
-          throw new CATMAID.ValueError("No annotation provided");
-        }
-        let uniqueDelimiter = '|';
-        while (annotation.indexOf(uniqueDelimiter) > -1) {
-          uniqueDelimiter += '|';
-        }
-        let all_annotations = annotation.replaceAll('\\,', uniqueDelimiter)
-            .split(',').map(a => a.trim().replaceAll(uniqueDelimiter, ','));
+        let all_annotations = splitAnnotations(annotation_input.value);
 
         // Get meta annotation, if any
         var meta_annotations = this.meta_annotation_inputs.reduce(function(o, e) {
@@ -140,7 +148,17 @@
       // Auto-completion has to be added after the dialog has been created to ensure
       // the auto completion controls com after the dialog in the DOM (to display
       // them above the dialog).
-      CATMAID.annotations.add_autocomplete_to_input(annotation_input, true);
+      CATMAID.annotations.add_autocomplete_to_input(annotation_input, true, () => {
+        CATMAID.DOM.removeAllChildren(annPreviewText);
+        try {
+          for (let a of splitAnnotations(annotation_input.value)) {
+            let s = annPreviewText.appendChild(document.createElement('li'));
+            s.appendChild(document.createTextNode(a));
+          }
+        } catch (e){
+          // No UI Preview
+        }
+      });
     });
   };
 

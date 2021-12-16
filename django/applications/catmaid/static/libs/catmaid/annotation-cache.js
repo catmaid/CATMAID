@@ -146,7 +146,7 @@
    * Add jQuery autocompletion for all cached annotations to the given input
    * element.
    */
-  AnnotationCache.prototype.add_autocomplete_to_input = function(input, multiple=false)
+  AnnotationCache.prototype.add_autocomplete_to_input = function(input, multiple=false, onChange=false)
   {
     // Expects the annotation cache to be up-to-date
     $(input)
@@ -156,6 +156,9 @@
             $( e.target ).autocomplete( "instance" ).menu.active ) {
           event.preventDefault();
         }
+      })
+      .on("keyup", e => {
+        CATMAID.tools.callIfFn(onChange, e.target.value);
       })
       .autocomplete({
         maxResults: 30,
@@ -180,13 +183,15 @@
             var terms = AnnotationCache.split(event.target.value);
             // remove the current input
             terms.pop();
-            // add the selected item
-            terms.push(ui.item.value);
+            // add the selected item with all commas escaped
+            terms.push(ui.item.value.replaceAll(',', '\\,'));
             // add placeholder to get the comma-and-space at the end
             terms.push("");
             event.target.value = terms.join(", ");
+            CATMAID.tools.callIfFn(onChange, event.target.value);
             return false;
           }
+          CATMAID.tools.callIfFn(onChange, event.target.value);
         }
       });
   };

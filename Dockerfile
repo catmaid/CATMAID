@@ -12,9 +12,12 @@ RUN apt-get update -y \
     && apt-get install -y apt-utils apt-transport-https ca-certificates gnupg \
     && apt-get install -y gawk wget software-properties-common \
     && apt-get update -y \
-    && wget --quiet -O - https://packages.erlang-solutions.com/ubuntu/erlang_solutions.asc | apt-key add - \
-    && add-apt-repository "deb https://packages.erlang-solutions.com/ubuntu focal contrib" \
-    && wget --quiet -O - https://postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
+    && wget --quiet -O - "https://keys.openpgp.org/vks/v1/by-fingerprint/0A9AF2115F4687BD29803A206B73A36E6026DFCA" | gpg --dearmor | tee /usr/share/keyrings/com.rabbitmq.team.gpg > /dev/null \
+    && wget --quiet -O - "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xf77f1eda57ebb1cc" | gpg --dearmor | tee /usr/share/keyrings/net.launchpad.ppa.rabbitmq.erlang.gpg > /dev/null \
+    && wget --quiet -O - "https://packagecloud.io/rabbitmq/rabbitmq-server/gpgkey" | gpg --dearmor | tee /usr/share/keyrings/io.packagecloud.rabbitmq.gpg > /dev/null \
+    && echo "deb [signed-by=/usr/share/keyrings/net.launchpad.ppa.rabbitmq.erlang.gpg] http://ppa.launchpad.net/rabbitmq/rabbitmq-erlang/ubuntu focal main" > /etc/apt/sources.list.d/rabbitmq.list \
+    && echo "deb [signed-by=/usr/share/keyrings/io.packagecloud.rabbitmq.gpg] https://packagecloud.io/rabbitmq/rabbitmq-server/ubuntu focal main" >> /etc/apt/sources.list.d/rabbitmq.list \
+    && wget --quiet -O - https://postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - > /dev/null \
     && add-apt-repository "deb https://apt.postgresql.org/pub/repos/apt/ focal-pgdg main" \
     && add-apt-repository ppa:deadsnakes/ppa \
     && add-apt-repository -y ppa:nginx/stable \

@@ -3495,10 +3495,6 @@
                     })
                     .catch(CATMAID.handleError);
                 } else {
-                  if (widget.applyTransformation && mappings.length === 0) {
-                    CATMAID.error("Need at leat one source/target selection.");
-                    return;
-                  }
                   let source = CATMAID.skeletonListSources.getSource(skeletonSource);
                   if (!source) {
                     CATMAID.error("Can't find source: " + sourceSelect.value);
@@ -3520,6 +3516,10 @@
                         widget.update();
                       });
                   } else {
+                    if (widget.applyTransformation && (!mappings || mappings.length === 0)) {
+                      CATMAID.error("Need at leat one source/target selection.");
+                      return;
+                    }
                     let skeletonModels = Object.values(source.getSelectedSkeletonModels());
                     if (!skeletonModels || skeletonModels.length === 0) {
                       CATMAID.warn("No source skeletons found");

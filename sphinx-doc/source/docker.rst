@@ -356,11 +356,11 @@ password should be changed to something more secure (``CM_INITIAL_ADMIN_PASS``).
 
 .. glossary::
   ``CM_INITIAL_ADMIN_FIRST_NAME``
-  The first name of the admin user defined in CM_INITIAL_ADMIN_USER. Default: Super
+    The first name of the admin user defined in CM_INITIAL_ADMIN_USER. Default: Super
 
 .. glossary::
   ``CM_INITIAL_ADMIN_LAST_NAME``
-  The last name of the admin user defined in CM_INITIAL_ADMIN_USER. Default: User
+    The last name of the admin user defined in CM_INITIAL_ADMIN_USER. Default: User
 
 .. glossary::
   ``CM_DEBUG``
@@ -535,5 +535,5 @@ password should be changed to something more secure (``CM_INITIAL_ADMIN_PASS``).
 
 .. glossary::
   ``CORS_OPEN``
-  Whether or not the webserver configuration in the container will allow open
-  CORS access, including optional authentication. Defaults to true.
+    Whether or not the webserver configuration in the container will allow open
+    CORS access, including optional authentication. Defaults to true.

@@ -900,6 +900,9 @@
     var self = this;
     return CATMAID.Landmarks.getTransitivelyLinkedGroups(project.id, fromGroupId, relationId)
       .then(function(groups) {
+        if (groups.length === 0) {
+          throw new CATMAID.Warning("Could not find any groups linked through selected relation");
+        }
         for (let i=0; i<groups.length; ++i) {
           let toGroupId = groups[i];
           let skeletons = Object.values(getSkeletonModels());

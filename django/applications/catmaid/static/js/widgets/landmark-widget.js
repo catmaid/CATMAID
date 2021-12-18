@@ -909,7 +909,7 @@
           if (!skeletons || skeletons.length === 0 ) {
             throw new CATMAID.Warning("Could not find source skeletons");
           }
-          let lst = new CATMAID.LandmarkSkeletonTransformation(projectId,
+          let lst = new CATMAID.LandmarkSkeletonTransformation(project.id,
             skeletons, [[fromGroupId, toGroupId]], undefined, undefined,
             modelClass, self.useReversePointMatches);
           self.displayTransformations.push(lst);

@@ -272,6 +272,22 @@ Note that the ``db`` identifier moves from the ``build:`` line to the new
 
 For more available shared memory, increase the example of ``2gb``.
 
+Building a CATMAID Docker image
+-------------------------------
+
+Make sure to have a clean working directory, because everything in the CATMAID
+directory tree will be included in the Docker image. The easiest way to make
+sure of this is to clone the CATMAID repository into a new folder and move to
+the branch to build an image for. Then, build the image with the correct tag,
+login to DockerHub and push it::
+
+  git clone git@github.com:catmaid/CATMAID.git catmaid-docker
+  cd catmaid-docker
+  git checkout -b origin/dev
+  docker build -t catmaid/catmaid:latest .
+  docker login
+  docker push catmaid/catmaid:latest
+
 Parameterizing Docker containers
 --------------------------------
 

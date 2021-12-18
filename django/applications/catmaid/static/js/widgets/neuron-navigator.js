@@ -1007,10 +1007,10 @@
                     return e[4] === a_id;
                   });
                 });
-                var n_entries = result.totalRecords -
-                    filters.annotations.length;
-                result.totalDisplayRecords = n_entries;
-                result.totalRecords = n_entries;
+                let nFilterInResults = result.data.reduce((n,r) => filters.annotations.indexOf(r[4]) > -1 ? n + 1 : n, 0);
+                var n_entries = result.recordsTotal - nFilterInResults;
+                result.recordsFiltered = n_entries;
+                result.recordsTotal = n_entries;
                 result.data = new_data;
               }
               // Regular datatable processing and callback

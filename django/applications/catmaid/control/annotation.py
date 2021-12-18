@@ -1532,24 +1532,25 @@ def _fast_co_annotations(request:HttpRequest, project_id:Union[int,str], display
 
     entries = []
 
-    search_term = request.POST.get('sSearch', '').strip()
+    search_term = request.POST.get('search', '').strip()
     if search_term:
         rest += "\nAND a.name ~ %s" # django will escape and quote the string
         entries.append(search_term)
 
     # Sorting?
-    sorting = request.POST.get('iSortCol_0', False)
+    order = get_request_list(request.POST, 'order', default=[])
+    should_sort = len(order) > 0
     sorter = ''
-    if sorting:
-        column_count = int(request.POST.get('iSortingCols', 0))
-        sorting_directions = (request.POST.get('sSortDir_%d' % d, 'DESC') for d in range(column_count))
+    if should_sort:
+        column_count = len(order)
+        sorting_directions = [o[1] for o in order]
+        sorting_directions = list(map(lambda d: 'DESC' if d.upper() == 'DESC' else 'ASC',
+                sorting_directions))
 
-        fields = ('a.name', 'last_used', 'num_usage', 'last_user')
-        sorting_index = (int(request.POST.get('iSortCol_%d' % d)) for d in range(column_count))
-        sorting_cols = (fields[i] for i in sorting_index)
+        fields = ['name', 'id', 'last_used', 'num_usage', 'last_user']
+        sorting_cols = [fields[int(o[0])] for o in order]
 
         sorter = '\nORDER BY ' + ','.join('%s %s' % u for u in zip(sorting_cols, sorting_directions))
-
 
     cursor = connection.cursor()
 
@@ -1598,11 +1599,9 @@ def list_annotations_datatable(request:HttpRequest, project_id=None) -> JsonResp
     if display_length < 0:
         display_length = 2000  # Default number of result rows
 
-
     # Speed hack
     if 'parallel_annotations[0]' in request.POST:
         return _fast_co_annotations(request, project_id, display_start, display_length)
-
 
     annotation_query = create_annotation_query(project_id, request.POST)
 

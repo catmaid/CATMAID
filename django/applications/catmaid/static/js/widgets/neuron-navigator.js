@@ -2276,11 +2276,11 @@
       if (confirm("Are you sure that neuron '" + this.neuron_name +
           "' and its skeleton should get deleted?")) {
         CATMAID.Neurons.delete(project.id, this.neuron_id)
-          .then((function() {
+          .then((function(response) {
             // Other widgets like the tracing layer are automatically refreshed
             // due to the change event of the neuron controller.
             CATMAID.msg("Delete successful", "The neuron with ID " +
-                  this.neuron_id + " has been succesfully deleted.");
+                  response.skeleton_ids[0] + " has been succesfully deleted.");
             // Expect a parent node
             this.navigator.select_node(this.parent_node);
           }).bind(this),

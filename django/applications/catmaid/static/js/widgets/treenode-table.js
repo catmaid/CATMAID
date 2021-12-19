@@ -74,20 +74,21 @@
       },
       createContent: function(content) {
         content.innerHTML = `
-          <table cellpadding="0" cellspacing="0" border="0" class="display" id="${self.idPrefix}datatable"> 
-            <thead> 
-              <tr> 
-                <th>id</th> 
-                <th>type 
-                  <select id="${self.idPrefix}search-type" class="search_init"> 
-                    <option value="">Any</option> 
-                    <option value="R">Root</option>   
-                    <option value="L" selected="selected">Leaf</option> 
-                    <option value="B">Branch</option> 
-                    <option value="S">Slab</option>   
-                  </select> 
-                </th> 
-                <th>tags<input type="text" id="${self.idPrefix}search-labels" value="Search" class="search_init" /></th> 
+          <table cellpadding="0" cellspacing="0" border="0" class="display" id="${self.idPrefix}datatable">
+            <thead>
+              <tr>
+                <th>id</th>
+                <th>type
+                  <select id="${self.idPrefix}search-type" class="search_init">
+                    <option value="">Any</option>
+                    <option value="R">Root</option>
+                    <option value="L" selected="selected">Leaf</option>
+                    <option value="B">Branch</option>
+                    <option value="S">Slab</option>
+                    <option value="G">Adjacent to gap</option>
+                  </select>
+                </th>
+                <th>tags<input type="text" id="${self.idPrefix}search-labels" value="Search" class="search_init" /></th>
                 <th>c <br>
                   <div style="white-space: nowrap">
                     <select id="${self.idPrefix}conf-operator" class="search_init conf_filter">
@@ -161,7 +162,8 @@
     ['R', 'root'],
     ['L', 'leaf'],
     ['B', 'branch'],
-    ['S', 'slab']
+    ['S', 'slab'],
+    ['G', 'gap-adjacent'],
   ]);
 
   TreenodeTable.prototype.getFilteredTargets = function() {
@@ -335,6 +337,16 @@
             if (list) list.push(pair[1]);
             else tags[pair[0]] = [pair[1]];
           }
+          // Find all sections that a re broken or adjacent to them.
+          let stacks = project.getStackViewers().map(sv => sv.primaryStack);
+          let brokenSectionAdjacentMap = new Map();
+          for (let s of stacks) {
+            let brokenSectionAdjacent = new Set();
+            brokenSectionAdjacent.addAll(s.broken_slices);
+            brokenSectionAdjacent.addAll(s.broken_slices.map(b => b + 1));
+            brokenSectionAdjacent.addAll(s.broken_slices.map(b => b - 1));
+            brokenSectionAdjacentMap.set(s, brokenSectionAdjacent);
+          }
           // Edit the arrays
           for (var i=0; i<rows.length; ++i) {
             // Replace parent_id with type
@@ -347,6 +359,14 @@
                 default: row[1] = 'B'; break; // branch
               }
             }
+            // Add flag for broken-slice adjacency
+            for (let [s, brokenSlices] of brokenSectionAdjacentMap) {
+              let sZ = s.projectToStackZ(row[5], row[4], row[3]);
+              if (brokenSlices.has(sZ)) {
+                row[1] += 'G';
+              }
+            }
+
             // Insert tags
             var tag = tags[row[0]];
             row.splice(2, 0, tag ? tag.sort().join(', ') : '');

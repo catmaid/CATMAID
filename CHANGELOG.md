@@ -315,6 +315,12 @@ Morphology plot:
 
 - Radial density can now be shown also for desmosomes and gap junctions.
 
+Treenode table:
+
+- The new node type "Adjacent to gap" will show all nodes that are in a Z slice
+  marked as broken or adjacent to it. Such nodes are marked with an additional
+  "G" in the node type flags.
+
 Docker:
 
 - Asynchronous tasks can now also be run inside the Docker container. Celery and

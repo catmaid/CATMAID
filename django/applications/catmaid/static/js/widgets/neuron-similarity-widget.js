@@ -734,7 +734,7 @@
             title: 'Transformed skeletons',
             value: 'transformed-skeleton',
           }, {
-            title: 'Point clouds',
+            title: 'Selected point clouds (tab)',
             value: 'pointcloud',
           }],
           onchange: function() {
@@ -762,7 +762,7 @@
             title: 'Transformed skeletons',
             value: 'transformed-skeleton',
           }, {
-            title: 'Point clouds',
+            title: 'Selected point clouds (tab)',
             value: 'pointcloud',
           }],
           onchange: function() {

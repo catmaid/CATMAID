@@ -3982,8 +3982,7 @@
     // Create a CSV that includes the query skeletons as first column and the
     // target skeletons as first row/header.
     let today = new Date();
-    let filename = 'catmaid-nblast-scores-' + today.getFullYear() +
-        '-' + (today.getMonth() + 1) + '-' + today.getDate() + '.csv';
+    let filename = `catmaid-similarity-${similarity.id}-${similarity.name.substr(0, 15)}-${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}.csv`;
     let data = [];
     let emptyBufferLength = (with_ids ? 1 : 0) + (with_names ? 1 : 0);
     let buffer = new Array(emptyBufferLength).map(v => '""');

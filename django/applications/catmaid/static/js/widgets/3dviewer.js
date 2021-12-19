@@ -1842,7 +1842,7 @@
 
     // Add user interface
     dialog.appendMessage('Please define tag which displayed connectes need to have.');
-    var tagField = dialog.appendField("Tag: ", "connector-filter-only-tags", '');
+    var tagField = dialog.appendField("Tag: ", "connector-filter-only-tags", '', true, 'Connector tag');
 
     // Add handler for initiating the export
     dialog.onOK = () => {

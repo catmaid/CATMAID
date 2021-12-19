@@ -15,6 +15,7 @@
 
     // The displayed data tables
     this.landmarkDataTable = null;
+    this.displayTransformTable = null;
 
     // Data caches
     this.landmarks = null;
@@ -136,6 +137,8 @@
       this.displayTransformations.length = 0;
       CATMAID.Landmarks.trigger(CATMAID.Landmarks.EVENT_DISPLAY_TRANSFORM_REMOVED);
     }
+
+    CATMAID.NeuronNameService.unregister(this);
 
     // Reset original reference lines setting when the last landmark widget
     // closes.
@@ -273,9 +276,17 @@
   };
 
   LandmarkWidget.prototype.refresh = function() {
-    if (this.landmarkDataTable) {
-      this.landmarkDataTable.rows().invalidate();
+    if (this.landmarkdatatable) {
+      this.landmarkdatatable.rows().invalidate();
     }
+    if (this.displayTransformTable) {
+      this.displayTransformTable.rows().invalidate();
+    }
+  };
+
+  LandmarkWidget.prototype.updateNeuronNames = function() {
+    this.refresh();
+    this.update();
   };
 
   /**
@@ -2920,7 +2931,7 @@
             .appendChild(document.createTextNode('Existing display transformations'));
         let existingDTTable = existingDisplayTransformationsContainer.appendChild(
             document.createElement('table'));
-        let existingDTDataTable = $(existingDTTable).DataTable({
+        let existingDTDataTable = widget.displayTransformTable = $(existingDTTable).DataTable({
           data: widget.displayTransformations,
           autoWidth: false,
           order: [],
@@ -2939,7 +2950,10 @@
               orderable: false,
               render: function(data, type, row, meta) {
                 if (type === 'display') {
-                  return data.map(m => m.api ? `${m.id} (${m.api.name})` : m.id).join(', ');
+                  return data.map(m => {
+                    let nns = CATMAID.NeuronNameService.getInstance(m.api);
+                    return `<a href="#" data-action="select-skeleton" data-id="${m.id}" data-api="${m.api || ''}">${(m.api ? `${nns.getName(m.id)} (${m.api.name})` : nns.getName(m.id))}</a>`;
+                  }).join(', ');
                 }
                 return data;
               }
@@ -3001,6 +3015,14 @@
               }
             }
           ]
+        }).on('click', 'a[data-action=select-skeleton]', function() {
+          let skeletonId = $(this).attr('data-id');
+          let api = $(this).attr('data-api');
+          if (api && api.length > 0) {
+            CATMAID.warn("Can't select remote skeleton");
+            return;
+          }
+          CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeletonId);
         }).on('click', 'a[data-action=delete-transformation]', function() {
           let tr = $(this).closest('tr');
           let row = existingDTDataTable.row(tr);
@@ -3483,6 +3505,10 @@
                   }
                   let api = remote ? remote : null;
                   CATMAID.Skeletons.byAnnotation(sourceProject, [sourceNeuronAnnotation], false, api)
+                    .then(skeletonIds => {
+                      return CATMAID.NeuronNameService.getInstance(api).registerAllFromList(widget, skeletonIds)
+                        .then(() => skeletonIds);
+                    })
                     .then(function(skeletonIds) {
                       let skeletonModels = skeletonIds.map(skid =>
                           new CATMAID.SkeletonModel(skid, undefined, undefined, api));
@@ -3506,8 +3532,11 @@
 
                   if (displayTargetRelation) {
                     let getSkeletonModels = source.getSelectedSkeletonModels.bind(source);
-                    widget.addDisplayTransformationRule(getSkeletonModels, fromGroup,
-                        displayTargetRelation, selectedTransformModel())
+                    CATMAID.NeuronNameService.getInstance().registerAll(widget, getSkeletonModels())
+                      .then(() => {
+                        return widget.addDisplayTransformationRule(getSkeletonModels, fromGroup,
+                            displayTargetRelation, selectedTransformModel());
+                      })
                       .then(function() {
                         CATMAID.msg("Success", "Transformation rule applied");
                       })
@@ -3523,17 +3552,26 @@
                       CATMAID.error("Need at leat one source/target selection.");
                       return;
                     }
-                    let skeletonModels = Object.values(source.getSelectedSkeletonModels());
+                    let skeletonModelSet = source.getSelectedSkeletonModels();
+                    let skeletonModels = Object.values(skeletonModelSet);
                     if (!skeletonModels || skeletonModels.length === 0) {
                       CATMAID.warn("No source skeletons found");
                       return;
                     }
 
-                    widget.addDisplayTransformation(sourceProject, skeletonModels,
-                        mappings, displayTargetRelation, selectedTransformModel());
-                    CATMAID.msg("Success", "Transformation added");
-                    widget.updateDisplay();
-                    widget.update();
+                    CATMAID.NeuronNameService.getInstance().registerAll(widget, skeletonModelSet)
+                      .then(() => {
+                        return widget.addDisplayTransformation(sourceProject, skeletonModels,
+                          mappings, displayTargetRelation, selectedTransformModel());
+                      })
+                      .then(() => {
+                        CATMAID.msg("Success", "Transformation added");
+                      })
+                      .catch(CATMAID.handleError)
+                      .finally(() => {
+                        widget.updateDisplay();
+                        widget.update();
+                      });
                   }
                 }
               };

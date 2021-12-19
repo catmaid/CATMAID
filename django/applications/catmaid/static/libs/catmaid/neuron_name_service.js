@@ -993,6 +993,12 @@
         if (callback) result.then(callback).catch(CATMAID.handleError);
         return result;
       },
+
+      unregister: function(client, skids) {
+        for (let instance of instances.values()) {
+          instance.unregister(client, skids);
+        }
+      },
     };
   })();
 

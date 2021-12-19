@@ -536,6 +536,10 @@ Landmark widget:
 
 - Landmarks can now be exported from the widget as CSVs
 
+- Skeletons in the list of displayed transformations are now shown using their
+  Neuron Name Service based name, rather than only a skeleton ID. This works for
+  local and remote skeletons.
+
 Miscellaneous:
 
 - The dialog to add new annotations (F3 key) accepts now multiple annotations as

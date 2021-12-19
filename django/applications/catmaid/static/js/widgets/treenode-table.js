@@ -170,6 +170,7 @@
     var targets = [];
     var rowIdx = 1;
     this.oTable.rows({search: 'applied'}).every(function() {
+      /* jshint unused: false */
       var [id, type, tags, c, x, y, z, s, r, user, lastModified, reviewer] = this.data();
       targets.push({
         'coords': {

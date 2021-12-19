@@ -129,13 +129,6 @@ django/applications/catmaid/static/js/widgets/textlabel.js: line 879, col 13, 'c
 django/applications/catmaid/static/js/widgets/textlabel.js: line 754, col 7, 'self' is defined but never used.
 django/applications/catmaid/static/js/widgets/textlabel.js: line 1, col 10, 'TextlabelTool' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/treenode-table.js: line 171, col 22, 'tags' is defined but never used.
-django/applications/catmaid/static/js/widgets/treenode-table.js: line 171, col 28, 'c' is defined but never used.
-django/applications/catmaid/static/js/widgets/treenode-table.js: line 171, col 40, 's' is defined but never used.
-django/applications/catmaid/static/js/widgets/treenode-table.js: line 171, col 43, 'r' is defined but never used.
-django/applications/catmaid/static/js/widgets/treenode-table.js: line 171, col 46, 'user' is defined but never used.
-django/applications/catmaid/static/js/widgets/treenode-table.js: line 171, col 52, 'lastModified' is defined but never used.
-django/applications/catmaid/static/js/widgets/treenode-table.js: line 171, col 66, 'reviewer' is defined but never used.
 
 django/applications/catmaid/static/libs/catmaid/Arbor.js: line 1312, col 13, 'pivot' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/Arbor.js: line 1904, col 7, 'root' is defined but never used.
@@ -181,4 +174,4 @@ django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 1817, col
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 1850, col 1, 'async functions' is only available in ES8 (use 'esversion: 8').
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2009, col 29, The object literal notation {} is preferable.
 
-138 errors
+131 errors

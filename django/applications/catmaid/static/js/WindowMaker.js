@@ -2194,6 +2194,7 @@ var WindowMaker = new function()
           refreshPointcloudList, WA);
       CATMAID.Pointcloud.off(CATMAID.Pointcloud.EVENT_POINTCLOUD_DELETED,
           refreshPointcloudList, WA);
+      CATMAID.Landmarks.offAllInContext(WA);
     };
 
     var destroy = wrapSaveState(WA, WA.destroy);

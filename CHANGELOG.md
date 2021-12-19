@@ -701,6 +701,9 @@ Miscellaneous:
 
 - 3D viewer: mesh transparency is now handled in a more robust fashion.
 
+- 3D viewer: landmark group event handlers are now correctly unregistered,
+  fixing an error in the Landmark Widget showing if a 3D Viewer was closed.
+
 - Volume lists (drop down menus) are now automatically refreshed if a volume is
   added, updated or removed.
 

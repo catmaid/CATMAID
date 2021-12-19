@@ -1749,7 +1749,7 @@
   };
 
   /**
-   * Get user input for creating a goup share filter for connectors. It requires
+   * Get user input for creating a group share filter for connectors. It requires
    * two skeleton sources that form the groups between which connectors are
    * allowed.
    */
@@ -1816,6 +1816,63 @@
     }
   };
 
+  /**
+   * Allow only connectors that are tagged with a specific tag.
+   */
+  WebGLApplication.filterTaggedConnectors = function(taggedConnectorIds, counts) {
+    // Find all shared connecors
+    var common = {};
+    for (var connector_id in counts) {
+      if (counts.hasOwnProperty(connector_id)) {
+        if (connector_id in taggedConnectorIds) {
+          common[connector_id] = true;
+        }
+      }
+    }
+
+    return common;
+  };
+
+  /**
+   * Get user input for creating a tag filter for connectors.
+   */
+  WebGLApplication.makeTagConnectorFilter = function(skeletonIds, callback) {
+    // Add skeleton source message and controls
+    var dialog = new CATMAID.OptionsDialog('Specify tag');
+
+    // Add user interface
+    dialog.appendMessage('Please define tag which displayed connectes need to have.');
+    var tagField = dialog.appendField("Tag: ", "connector-filter-only-tags", '');
+
+    // Add handler for initiating the export
+    dialog.onOK = () => {
+      CATMAID.fetch(`${project.id}/connectors/`, 'POST', {
+          'skeleton_ids': skeletonIds,
+          'tags': [tagField.value],
+        })
+        .then(response => {
+          let taggedConnectorIds = response.connectors.reduce((o, c) => {
+            o[c[0]] = true;
+            return o;
+          }, {});
+          var filter =  WebGLApplication.filterTaggedConnectors.bind(this, taggedConnectorIds);
+
+          if (CATMAID.tools.isFn(callback)) {
+            callback(filter);
+          }
+        })
+        .catch(CATMAID.handleError);
+    };
+
+    dialog.onCancel = function() {
+      if (CATMAID.tools.isFn(callback)) {
+        callback(null);
+      }
+    };
+
+    dialog.show(350, 'auto', true);
+  };
+
   WebGLApplication.prototype.setConnectorRestriction = function(restriction) {
     var self = this;
 
@@ -1827,6 +1884,17 @@
       this.options.connector_filter = WebGLApplication.filterPrePostConnectors;
     } else if ('all-group-shared' === restriction) {
       WebGLApplication.makeGroupShareConnectorFilter(function(filter) {
+        if (filter) {
+          self.options.connector_filter = filter;
+          self.refreshRestrictedConnectors();
+          self.render();
+        }
+      });
+      // Prevent application of filter. This is done in function above, once user
+      // input is complete.
+      return;
+    } else if ('only-tagged' === restriction) {
+      WebGLApplication.makeTagConnectorFilter(this.getSelectedSkeletons(), function(filter) {
         if (filter) {
           self.options.connector_filter = filter;
           self.refreshRestrictedConnectors();

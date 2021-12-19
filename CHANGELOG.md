@@ -234,6 +234,10 @@ Graph widget:
   zoom and position change when using the scroll wheel without an with the Alt
   key, respectively.
 
+- Connector restrictions (View tab) now offer a new option: show only connectors
+  with a specific tag. If selected, a dialog will ask for the desired tag and
+  will hide all connectors that aren't tagged with it.
+
 - For both in-widget and exported animations a duration time in seconds can now
   be specified. When enabled and an animation is played in the 3D Viewer, the
   duration will just stop rotation and any other ongoing animation after the

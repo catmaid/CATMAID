@@ -524,6 +524,7 @@ var WindowMaker = new function()
     connectorRestrictionsSl.options.add(new Option('All shared connectors', 'all-shared'));
     connectorRestrictionsSl.options.add(new Option('All pre->post connectors', 'all-pre-post'));
     connectorRestrictionsSl.options.add(new Option('Group shared connectors', 'all-group-shared'));
+    connectorRestrictionsSl.options.add(new Option('Tagged connectors', 'only-tagged'));
     connectorRestrictionsSl.onchange = function () {
       WA.setConnectorRestriction(this.value);
     };

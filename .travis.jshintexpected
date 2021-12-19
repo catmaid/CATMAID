@@ -80,20 +80,6 @@ django/applications/catmaid/static/js/widgets/neuron-history.js: line 241, col 1
 django/applications/catmaid/static/js/widgets/neuron-history.js: line 319, col 12, 'compareCompactTreenodes' is defined but never used.
 django/applications/catmaid/static/js/widgets/neuron-history.js: line 323, col 12, 'compareCompactConnectors' is defined but never used.
 
-django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 562, col 11, 'datatable' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 931, col 19, 'targetProjectId' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 936, col 19, 'toLandmarkApi' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 1247, col 23, 'length' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 1273, col 23, 'length' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 1601, col 19, 'regex' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 1883, col 21, 'nColumns' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 3046, col 13, 'datatable' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 3127, col 11, 'csvFileWorkingSet' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 3461, col 11, 'tbody' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 362, col 12, 'invertYInPlace' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 3379, col 12, 'largerEqualZero' is defined but never used.
-django/applications/catmaid/static/js/widgets/neuron-similarity-widget.js: line 3975, col 12, 'concatLine' is defined but never used.
-
 django/applications/catmaid/static/js/widgets/notification-table.js: line 161, col 20, 'id' is defined but never used.
 django/applications/catmaid/static/js/widgets/notification-table.js: line 211, col 9, 'self' is defined but never used.
 django/applications/catmaid/static/js/widgets/notification-table.js: line 220, col 9, 'self' is defined but never used.
@@ -195,4 +181,4 @@ django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 1817, col
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 1850, col 1, 'async functions' is only available in ES8 (use 'esversion: 8').
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2009, col 29, The object literal notation {} is preferable.
 
-151 errors
+138 errors

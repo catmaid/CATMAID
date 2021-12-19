@@ -359,11 +359,6 @@
     return target;
   }
 
-  function invertYInPlace(p) {
-    p[1] = -p[1];
-    return p;
-  }
-
   function lhToRhInPlace(p) {
     let y = p[1];
     p[1] = p[2];
@@ -559,7 +554,7 @@
         return '?';
       };
 
-      let datatable = $(widgetNameTable).DataTable({
+      $(widgetNameTable).DataTable({
         dom: 'th<ip>',
         order: [],
         data: groupList,
@@ -926,14 +921,6 @@
               // global project from the local API.
               let targetSourceProjectId = CATMAID.tools.getDefined(selectedDT.projectId, project.id);
               let targetSourceLandmarkApi = selectedDT.fromApi;
-              // Transformations currently only specify the source projects
-              // explicitly. The target is assumed to be the current project.
-              let targetProjectId = project.id;
-
-              // If the query and the target API ar the same or both undefined,
-              // adn the projects are the same, no extra request needs to be
-              // made. This is the common case.
-              let toLandmarkApi = selectedDT.toApi;
 
               prepare = prepare
                 .then(() => CATMAID.Landmarks.listGroups(targetSourceProjectId,
@@ -1244,7 +1231,6 @@
                   let text = qo.length > 4 ?
                       (qo[0] + ', ' +  qo[1] +  ' … ' + qo[qo.length - 2] + ', ' + qo[qo.length - 1]) :
                       allBins;
-                  let length = qo.length;
 
                   return `<span title="${qo.length}" ${typeLabel}}(s)"><em>${capTypeLabel}s:</em> ${text}</span>`;
                 } else {
@@ -1270,7 +1256,6 @@
                   let text = to.length > 4 ?
                       (to[0] + ', ' +  to[1] +  ' … ' + to[to.length - 2] + ', ' + to[to.length - 1]) :
                       allBins;
-                  let length = to.length;
 
                   return `<span title="${to.length}" ${typeLabel}}(s)"><em>${capTypeLabel}s:</em> ${text}</span>`;
                 } else {
@@ -1598,7 +1583,7 @@
           disabled: similarityMode !== 'regex',
           onchange: function() {
             try {
-              let regex = new RegExp(this.value);
+              new RegExp(this.value);
             } catch(error) {
               similarityModeRegex = '';
               CATMAID.warn(error);
@@ -1878,9 +1863,6 @@
                 }
                 tableContainer.appendChild(table);
                 dialog.appendChild(tableContainer);
-
-                // Get maximum skeleton column number from first row
-                var nColumns = csvLines[0].length;
 
                 // Add option to change line skipping
                 let hasHeaders = Number.isNaN(Number(csvLines[0][0]));
@@ -3043,7 +3025,7 @@
             'import can be started using the "Import point clouds" button above.'));
         let table = container.appendChild(document.createElement('table'));
         table.setAttribute('id', widget.idPrefix + 'pointcloud-import-table');
-        let datatable = $(table).DataTable({
+        $(table).DataTable({
           dom: 'lfrtip',
           autoWidth: false,
           paging: true,
@@ -3124,7 +3106,6 @@
       newPointcloudSkipN) {
     newPointcloudSkipN = newPointcloudSkipN || 0;
     return new Promise(function(resolve, reject) {
-      let csvFileWorkingSet = Array.from(csvFiles);
       let filter;
       if (newPointcloudFilter && newPointcloudFilter.length > 0) {
         // Treat filter as regex search if it stats with '/'.
@@ -3376,10 +3357,6 @@
     dialog.show(880, 510, false);
   };
 
-  function largerEqualZero(value) {
-    return value >= 0;
-  }
-
   /**
    * Show a particular similarity result in a result dialog or result window,
    * depending on the widget settings.
@@ -3458,7 +3435,7 @@
       let theadTh2 = theadTr.appendChild(document.createElement('th'));
       theadTh2.appendChild(document.createTextNode('Top 10 target ' + similarity.target_type + 's'));
 
-      let tbody = table.appendChild(document.createElement('tbody'));
+      table.appendChild(document.createElement('tbody'));
 
       let getQueryName;
       if (similarity.query_type === 'skeleton') {
@@ -3971,11 +3948,6 @@
         throw new CATMAID.ValueError("Expected 4, 7, 9 or 15 columns, found " + nColumns);
       });
   };
-
-  function concatLine(line) {
-    /* jshint validthis: true */
-    return this.concat(line);
-  }
 
   NeuronSimilarityWidget.exportNblastCSV = function(similarity, config, with_ids = true,
       with_names = false, id_map_fn = undefined, name_map_fn = undefined) {

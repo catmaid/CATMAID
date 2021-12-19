@@ -8,7 +8,7 @@ For more information, see http://www.catmaid.org/
 
 This reflects the status of our tests:
 
-[![Build Status](https://travis-ci.org/catmaid/CATMAID.svg?branch=master)](https://travis-ci.org/catmaid/CATMAID)
+![CI](https://github.com/catmaid/catmaid/actions/workflows/ci.yaml/badge.svg)
 [![Coverage Status](https://coveralls.io/repos/catmaid/CATMAID/badge.svg?branch=master)](https://coveralls.io/r/catmaid/CATMAID)
 
 ### Releases

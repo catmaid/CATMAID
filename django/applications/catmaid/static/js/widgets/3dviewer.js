@@ -403,7 +403,7 @@
         }
 
         // Call passed in function
-        if (CATMAID.tools.isFn(fn)) fn(fileName);
+        if (CATMAID.tools.isFn(fn)) fn(fileName, transparentBackground);
       } catch (e) {
         CATMAID.error("An error occurred", e);
       }
@@ -427,10 +427,10 @@
    * Store the current view as PNG image.
    */
   WebGLApplication.prototype.exportPNG = function() {
-    this.askForDimensions("PNG export", "catmaid-3d-viewer.png", true, (function(fileName) {
+    this.askForDimensions("PNG export", "catmaid-3d-viewer.png", true, (function(fileName, transparentBackground) {
       try {
         /* jshint validthis: true */ // `this` is bound to this WebGLApplication
-        var imageData = this.space.view.getImageData();
+        var imageData = this.space.view.getImageData('image/png', transparentBackground);
         var blob = CATMAID.tools.dataURItoBlob(imageData);
         CATMAID.info("The exported PNG will have a transparent background");
         CATMAID.FileExporter.saveAs(blob, fileName);
@@ -5053,9 +5053,28 @@
   /**
    * Get the toDataURL() image data of the renderer in PNG format.
    */
-  WebGLApplication.prototype.Space.prototype.View.prototype.getImageData = function(type) {
+  WebGLApplication.prototype.Space.prototype.View.prototype.getImageData = function(type, transparentBackground) {
     type = type || "image/png";
-    return this.renderer.domElement.toDataURL(type);
+    if (transparentBackground) {
+      return this.renderer.domElement.toDataURL(type);
+    }
+
+    let srcCanvas = this.renderer.domElement;
+    let destinationCanvas = document.createElement("canvas");
+    destinationCanvas.width = srcCanvas.width;
+    destinationCanvas.height = srcCanvas.height;
+
+    let destCtx = destinationCanvas.getContext('2d');
+
+    //create a rectangle with the desired color
+    destCtx.fillStyle = this.space.options.background_color;
+    destCtx.fillRect(0,0,srcCanvas.width,srcCanvas.height);
+
+    //draw the original canvas onto the destination canvas
+    destCtx.drawImage(srcCanvas, 0, 0);
+
+    //finally use the destinationCanvas.toDataURL() method to get the desired output;
+    return destinationCanvas.toDataURL(type);
   };
 
   /**

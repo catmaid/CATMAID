@@ -1,0 +1,42 @@
+<p>
+The <em>Analyze Arbor</em> widget shows different statistics on whole neurons
+and different parts of them. Its working set of skeletons is shown in the table
+at the top, which skeletons can be added to or removed from through the source
+selector and buttons like <em>Append</em> in the widget toolbar, like it is the
+case with many widgets.
+</p>
+
+<p>
+This table is divided into information on four different views on a neuron,
+which are determined by CATMAID automatically by assuming the root node of a
+skeleton is at its soma and the end of visible microtubules are marked using the
+<em>microtubules end</em> tag. The neuron's axonic and dendritic parts are
+determined using flow centrality (FC). If no axon terminals can be determined
+through synapse clustering and FC, dendrites will be considered everything not
+part of the backbone (see below):
+<ol>
+  <li><em>Arbor:</em> this is the entire skeleton</li>
+  <li><em>Backbone:</em> all nodes reachable from the root node until a
+    "microtubules end" tag is found</li>
+  <li><em>Dendrites:</em> the dendritic nodes according to FC, usually most of
+    inputs. If FC finds no cut, dendrites will be all nodes not in backbone</li>
+  <li><em>Axon terminals:</em> the axon as determined by FC, usually most
+    outputs. If FC finds no cut, no axon terminals will be analyzed explicitly.</li>
+</ol>
+</p>
+<p>
+For each of those a set of statistics is listed:
+<ol>
+  <li><em>Cable (nm):</em>: the total length of the respective part, Gaussian
+    smoothed with a sigma of 200 nm</li>
+  <li><em>Inputs:</em> the number of postsynaptic sites</li>
+  <li><em>Outputs:</em> the number of presynaptic sites</li>
+  <li><em>Time (min):</em> the number of minutes in which nodes have been
+    created in this part</li>
+  <li><em>Mitochondria:</em> The number of nodes tagged with "mitochondrium" in
+    this part</li>
+</ol>
+</p>
+
+<p>The second part of the widget visualizes various histograms and statistics
+for each part.

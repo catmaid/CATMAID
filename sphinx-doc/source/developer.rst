@@ -15,3 +15,4 @@ Developer Documentation
    models_state_commands
    ami
    extensions
+   release

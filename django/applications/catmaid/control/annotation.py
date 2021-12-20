@@ -49,7 +49,8 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
         allowed_classes=['neuron', 'annotation'], sort_by=None, sort_dir=None,
         range_start=None, range_length=None, with_annotations:bool=True,
         with_skeletons:bool=True, with_timestamps:bool=False,
-        import_only:Union[None, str]=None, ignore_nonexisting:bool=False) -> Tuple[List, int]:
+        import_only:Union[None, str]=None, ignore_nonexisting:bool=False,
+        with_name:bool=True, with_type:bool=True) -> Tuple[List, int]:
     """Get a list of annotated entities based on the passed in search criteria.
     """
     if not relations:
@@ -358,10 +359,11 @@ def get_annotated_entities(project_id:Union[int,str], params, relations=None, cl
         class_name = allowed_class_idx[ent[5]]
         entity_info = {
             'id': ent[0],
-            'name': ent[6],
-            'type': class_name,
         }
-
+        if with_name:
+            entity_info['name'] = ent[6]
+        if with_type:
+            entity_info['type'] = class_name
         if with_timestamps:
             entity_info['creation_time'] = ent[2]
             entity_info['edition_time'] = ent[3]
@@ -588,6 +590,18 @@ def query_annotated_classinstances(request:HttpRequest, project_id:Optional[Unio
         required: false
         defaultValue: false
         paramType: form
+      - name: with_name
+        description: Whether to return the name of each entity.
+        type: boolean
+        required: false
+        defaultValue: true
+        paramType: form
+      - name: with_type
+        description: Whether to return the type of each entity.
+        type: boolean
+        required: false
+        defaultValue: true
+        paramType: form
     models:
       annotated_entity:
         id: annotated_entity
@@ -642,6 +656,8 @@ def query_annotated_classinstances(request:HttpRequest, project_id:Optional[Unio
     range_length = request.POST.get('range_length', None)
     with_annotations = get_request_bool(request.POST, 'with_annotations', False)
     with_timestamps = get_request_bool(request.POST, 'with_timestamps', False)
+    with_name = get_request_bool(request.POST, 'with_name', True)
+    with_type = get_request_bool(request.POST, 'with_type', True)
     import_only = request.POST.get('import_only', None)
     import_only = request.POST.get('import_only', None)
     ignore_nonexisting = get_request_bool(request.POST, 'ignore_nonexisting', False)
@@ -649,7 +665,8 @@ def query_annotated_classinstances(request:HttpRequest, project_id:Optional[Unio
     entities, num_total_records = get_annotated_entities(p.id, request.POST,
             relations, classes, allowed_classes, sort_by, sort_dir, range_start,
             range_length, with_annotations, with_timestamps=with_timestamps,
-            import_only=import_only, ignore_nonexisting=ignore_nonexisting)
+            import_only=import_only, ignore_nonexisting=ignore_nonexisting,
+            with_name=with_name, with_type=with_type)
 
     return JsonResponse({
         'entities': entities,

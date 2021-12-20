@@ -158,6 +158,12 @@ Neuron search:
 - The CSV export includes now the skeleton ID as well and will export metadata
   like cable length, if metadata display is enabled in the UI.
 
+- Expanded elements (e.g. annotations) are now sorted correctly within their
+  expansion group. This also fixes the out-of-order expansion display.
+
+- Escape underscore and percent sign properly. They were treated as wildcards
+  before.
+
 Connectivity Matrix:
 
 - The new buttons "Save JSON" and "Open JSON" can be used to save the row and
@@ -219,10 +225,44 @@ Volume manager:
   search and import volumes/meshes from other CATMAID projects, both local and
   remote. Volumes can be searched by name and annotation.
 
+- Don't show removal options by default. It happens generally rarely that one
+  wants to remove volumes, especially in the skeleton innervation tab. To reduce
+  the risk of accidental removals (even though a confirmation dialog is shown),
+  removal buttons are now only shown if the "Show removal options" checkbox is
+  enabled in the Main tab.
+
+- The connector listing for a volume will now include unlinked nodes.
+
+- The checkbox to show the removal tools is now colored red, to make it easier
+  to see how to remove volumes.
+
 Graph widget:
 
 - Add options to configure the edge text outline size and opacity. The options
   area available from the properties dialog.
+
+- Grouping with undirected edges like desmosomes won't lead to multiple edges
+  between the same groups anymore.
+
+- Ungrouping groups with members having non-synaptic links (e.g.  desmosomes)
+  doesn't lead to an error anymore.
+
+- Remember selected link types in local widget state storage.
+
+- Applying node filters works now correctly and only removes an edge if both
+  source and target node are not allowed according to the filter configuration.
+  It is now also possible to use additional subgraphs (e.g.  axon/dendrite
+  split) with filters applied.
+
+Connectivity widget:
+
+- Larger input and partner sets can now be displayed.
+
+- Make node filter test consistent with filter application in the Graph Widget.
+  A connection is now valid according to the selected filters if it uses a
+  connector node that is linked to a node allowed by the node filters. The node
+  filters are still only applied to the query skeletons.  This makes the
+  filtering numbers consistent with the Graph Widget.
 
 3D viewer:
 
@@ -311,6 +351,11 @@ Neuron navigator:
   first attempt now. Previously it took a second click to actually jump to a
   page.
 
+- Sorting annotation lists works again for all columns.
+
+- The annotation filter/search term survives now refreshes of the currently
+  displayed data (e.g. by clicking on the name in the navigator path).
+
 Morphology plot:
 
 - Radial density can now be shown also for desmosomes and gap junctions.
@@ -322,6 +367,10 @@ Treenode table:
   "G" in the node type flags.
 
 Docker:
+
+- The new environment variable CM_SERVER_SETTINGS can be used to define any
+  settings.py based setting. A valid Python code sting is expected, \n can be
+  used for newlines.
 
 - Asynchronous tasks can now also be run inside the Docker container. Celery and
   RabbitMQ are run by default, but can also be run in separate containers (see
@@ -475,6 +524,13 @@ Project statistics widget:
   shows currently the total cable length of skeletons in the project along with
   the total number of treenodes and connectors.
 
+Selection table:
+
+- A minim review percentage can now be used as a filter using the new numeric
+  input in the name column header table cell.
+
+- Duplicate skeleton IDs are now ignored in a CSV file import.
+
 TrakEM2 import managmenet command:
 
 - The new catmaid_import_from_trakem2 management command can be used to import
@@ -538,6 +594,10 @@ Cropping tool:
   the top or the bottom of the copping box. This makes it easier to visually
   confirm top and bottom of the bounding box.
 
+- The ARTIST TIFF tag is now used to store meta information about the cropping
+  task: the min and max coordinates of the bounding box as well as the
+  resolution. ImageJ/Fiji read this particular tag.
+
 Landmark widget:
 
 - Landmarks can now be exported from the widget as CSVs
@@ -545,6 +605,34 @@ Landmark widget:
 - Skeletons in the list of displayed transformations are now shown using their
   Neuron Name Service based name, rather than only a skeleton ID. This works for
   local and remote skeletons.
+
+Tracing layer:
+
+- Shift + Delete will now attempt to delete a node even if it is not in view.
+  This is mainly useful for deleting nodes in previously visible broken
+  sections.
+
+- It's now possible to add the personal tag set to newly created nodes. Both the
+  personal tag set and the new option can be configured in the Tracing section
+  of the Settings Widget.
+
+- Fallback to WebGL 1, if WebGL 2 is not available or can't be initialized
+  properly. In these cases image block rendering (e.g. N5) will be unavailable.
+  (Applies to image layer as well)
+
+Tracing tool:
+
+- Node distance measurements (icon in tracing tool bar) are now allowed also
+  between nodes of different skeletons. In this case only the straight line
+  distance will be displayed. Both the straight line distance and the path
+  distance will be displayed for nodes of the same skeleton.
+
+- Centering on the active node reads now the active node only once all present
+  tasks (like node creation) are done, which makes centering on newly created
+  nodes using 'A' center reliably on the new node rather than the parent.
+
+- The position and ID input box on the right side of the second tool bar accepts
+  now also location triplets that are delimited by space or tabs.
 
 Miscellaneous:
 
@@ -582,11 +670,6 @@ Miscellaneous:
   location and a radius. Generally, this helps working with registration
   problems e.g. at TEM gaps.
 
-- Node distance measurements (icon in tracing tool bar) are now allowed also
-  between nodes of different skeletons. In this case only the straight line
-  distance will be displayed. Both the straight line distance and the path
-  distance will be displayed for nodes of the same skeleton.
-
 - Client-side widget settings aren't stored by default anymore, if the widget is
   closed. The former default caused a lot of confusion, especially with the 3D
   Viewer. If widget settings should be stored, they have to be stored explicitly
@@ -599,20 +682,9 @@ Miscellaneous:
   settings & UI state" if a widget supports this. Deep links will include the UI
   state by default.
 
-- Tracing layer: Shift + Delete will now attempt to delete a node even if it is
-  not in view. This is mainly useful for deleting nodes in previously visible
-  broken sections.
-
-- Tracing layer: it's now possible to add the personal tag set to newly created
-  nodes. Both the personal tag set and the new option can be configured in the
-  Tracing section of the Settings Widget.
-
 - Auto-completion should now be faster by displaying only 15 filtering results
   by default. Clicking on the "..." entry will expand the auto-completion list
   to its full length.
-
-- Selection table: a minim review percentage can now be used as a filter using
-  the new numeric input in the name column header table cell.
 
 - Volume widget: box volumes can now be created also based on the active
   skeleton's bounding box.
@@ -623,8 +695,6 @@ Miscellaneous:
 - Global Search (looking glass icon): Neuron names are now properly displayed
   using the general naming service. This makes the naming respect global naming
   patterns.
-
-- Connectivity widget: larger input and partner sets can now be displayed.
 
 - Connector selection: a search filter is now available for the table that allows
   filtering across all columns.
@@ -654,13 +724,6 @@ Miscellaneous:
 - Log/history tables: the relevant data is now fetched in parallel and doesn't
   block the rest of CATMAID anymore.
 
-- Cropping: the ARTIST TIFF tag is now used to store meta information about the
-  cropping task: the min and max coordinates of the bounding box as well as the
-  resolution. ImageJ/Fiji read this particular tag.
-
-- The position and ID input box on the right side of the second tool bar accepts
-  now also location triplets that are delimited by space or tabs.
-
 - Layer settings: the color transform filter matrix input elements use now
   background colors to better indicate the meaning of rows and columns.
 
@@ -689,6 +752,8 @@ Miscellaneous:
 
 - Graph widget: edge color updates of non-synaptic links works now properly.
 
+- Graph widget: fix node width/height setting.
+
 - 3D viewer: PNG exports can now be transparent again.
 
 - 3D viewer: the default settings for orthographic mode and control lock are no
@@ -716,6 +781,8 @@ Miscellaneous:
 
 - 3D viewer: landmark group event handlers are now correctly unregistered,
   fixing an error in the Landmark Widget showing if a 3D Viewer was closed.
+
+- 3D viewer: history animations can be created again.
 
 - Volume lists (drop down menus) are now automatically refreshed if a volume is
   added, updated or removed.
@@ -793,69 +860,12 @@ Miscellaneous:
 - Neuron navigator: require less neuron name updates when updating the active
   skeleton display.
 
-## Maintenance updates
-
-- Volume widget: don't show removal options by default. It happens generally
-  rarely that one wants to remove volumes, especially in the skeleton
-  innervation tab. To reduce the risk of accidental removals (even though a
-  confirmation dialog is shown), removal buttons are now only shown if the "Show
-  removal options" checkbox is enabled in the Main tab.
-
-- Neuron search: expanded elements (e.g. annotations) are now sorted correctly
-  within their expansion group. This also fixes the out-of-order expansion
-  display.
-
-- Docker: the new environment variable CM_SERVER_SETTINGS can be used to define
-  any settings.py based setting. A valid Python code sting is expected, \n can
-  be used for newlines.
-
 - Node filters: the "Pruned arbor" filter works again.
-
-- Graph widget: applying node filters works now correctly and only removes an
-  edge if both source and target node are not allowed according to the filter
-  configuration. It is now also possible to use additional subgraphs (e.g.
-  axon/dendrite split) with filters applied.
-
-- Graph widget: fix node width/height setting.
-
-- Tracing tool: centering on the active node reads now the active node only once
-  all present tasks (like node creation) are done, which makes centering on
-  newly created nodes using 'A' center reliably on the new node rather than the
-  parent.
-
-- Connectivity widget: make node filter test consistent with filter application
-  in the Graph Widget. A connection is now valid according to the selected
-  filters if it uses a connector node that is linked to a node allowed by the
-  node filters. The node filters are still only applied to the query skeletons.
-  This makes the filtering numbers consistent with the Graph Widget.
-
-- Tracing/image layer: fallback to WebGL 1, if WebGL 2 is not available or can't
-  be initialized properly. In these cases image block rendering (e.g. N5) will
-  be unavailable.
 
 - Neuron search: row highlighting for the active skeleton works now again for
   the whole row and registers deselection properly.
 
 - Connector list: can now display connectors without links.
-
-- Volume manager: the connector listing for a volume will now include unlinked
-  nodes.
-
-- Volume manager: the checkbox to show the removal tools is now colored red, to
-  make it easier to see how to remove volumes.
-
-- Selection table: duplicate skeleton IDs are now ignored in a CSV file import.
-
-- Neuron navigator: sorting annotation lists works again for all columns.
-
-- Neuron navigator: the annotation filter/search term survives now refreshes of
-  the currently displayed data (e.g. by clicking on the name in the navigator
-  path).
-
-- Name search: escape underscore and percent sign properly. They were treated as
-  wildcards before.
-
-- 3D viewer: history animations can be created again.
 
 - Measurements table: "N presynaptic sites" column includes now by default also
   presynaptic connectors that don't have any postsynaptic link. To restore the
@@ -864,14 +874,6 @@ Miscellaneous:
 
 - Navigator tool and sub-tools like Tracing tool: the Z slider is now properly
   hidden if the image data set has only one section.
-
-- Graph widget: grouping with undirected edges like desmosomes won't lead to
-  multiple edges between the same groups anymore.
-
-- Graph widget: ungrouping groups with members having non-synaptic links (e.g.
-  desmosomes) doesn't lead to an error anymore.
-
-- Graph widget: remember selected link types in local widget state storage.
 
 ## 2020.02.15
 

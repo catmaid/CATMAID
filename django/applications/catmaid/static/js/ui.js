@@ -14,15 +14,10 @@
 
     var leftMouseDown = false;
     var rightMouseDown = false;
-    var shiftKeyDown = false;
-    var ctrlKeyDown = false;
-    var altKeyDown = false;
     var contextMenuEnabled = false;
     var checkboxToggler = null;
     var lastX = 0;
     var lastY = 0;
-    var x = 0;
-    var y = 0;
 
     // Keep track of already pressed keys
     var currentSequence = new Set();
@@ -88,10 +83,6 @@
         }
       }
 
-      var projectKeyPress;
-      var key;
-      var keyAction;
-
       // The event object can't be modified directly. To be able to do this, a
       // new event object is created. The data we need is copied over.
       var fakeEvent = {};
@@ -107,10 +98,7 @@
       fakeEvent.repeat = e.repeat;
       fakeEvent.target = CATMAID.UI.getTargetElement(e);
 
-      var shift = e.shiftKey;
-      var alt = e.altKey;
-      var ctrl = e.ctrlKey;
-      var meta = e.metaKey;
+      let meta = e.metaKey;
 
       // Track key events as long as key down events or ESC removes them from
       // stack.
@@ -404,7 +392,6 @@
     {
       var realPagePosition = CATMAID.UI.getRealPagePosition(e);
       var offset;
-      var target;
       propagate = (typeof propagate == "undefined") ? false : propagate;
       var m = {};
       m.x = realPagePosition.x;

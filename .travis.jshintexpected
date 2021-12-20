@@ -35,19 +35,6 @@ django/applications/catmaid/static/js/tools/selector.js: line 48, col 13, 'yp' i
 
 django/applications/catmaid/static/js/tools/tagging-tool.js: line 1, col 10, 'TaggingTool' is defined but never used.
 
-django/applications/catmaid/static/js/ui.js: line 80, col 11, 'projectKeyPress' is defined but never used.
-django/applications/catmaid/static/js/ui.js: line 81, col 11, 'key' is defined but never used.
-django/applications/catmaid/static/js/ui.js: line 82, col 11, 'keyAction' is defined but never used.
-django/applications/catmaid/static/js/ui.js: line 96, col 11, 'shift' is defined but never used.
-django/applications/catmaid/static/js/ui.js: line 97, col 11, 'alt' is defined but never used.
-django/applications/catmaid/static/js/ui.js: line 98, col 11, 'ctrl' is defined but never used.
-django/applications/catmaid/static/js/ui.js: line 393, col 11, 'target' is defined but never used.
-django/applications/catmaid/static/js/ui.js: line 17, col 9, 'shiftKeyDown' is defined but never used.
-django/applications/catmaid/static/js/ui.js: line 18, col 9, 'ctrlKeyDown' is defined but never used.
-django/applications/catmaid/static/js/ui.js: line 19, col 9, 'altKeyDown' is defined but never used.
-django/applications/catmaid/static/js/ui.js: line 24, col 9, 'x' is defined but never used.
-django/applications/catmaid/static/js/ui.js: line 25, col 9, 'y' is defined but never used.
-
 django/applications/catmaid/static/js/widgets/annotation-graph.js: line 186, col 11, 'created' is defined but never used.
 django/applications/catmaid/static/js/widgets/annotation-graph.js: line 249, col 9, 'self' is defined but never used.
 
@@ -174,4 +161,4 @@ django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 1817, col
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 1850, col 1, 'async functions' is only available in ES8 (use 'esversion: 8').
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2009, col 29, The object literal notation {} is preferable.
 
-131 errors
+119 errors

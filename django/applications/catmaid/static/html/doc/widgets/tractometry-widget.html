@@ -1,0 +1,15 @@
+<p>Find bundles of similar neurons based on NBLAST similarity result scores.
+This widget requires a certain server configuration, see below if you get a
+warning when the widget is started.</p>
+
+<h3>Server configuration</h3>
+
+<p>The neuron similarity clustering requires the <em>plpython3u</em> extension
+to be installed in the CATMAID database. Since this requires super-user
+permissions, it isn't done automatically. If you see a warning when the widget
+is loaded, you need to do a brief manual configuration steup.</p>
+<p>This requires <em>Python 3</em>to be installed system-wide, along with the
+modules <span class="inline-code">numpy</span> and <span class="inline-code">
+sklearn</span>. It also requires admins to login to the database, e.g. through
+<span class="inline-code">manage.py dbshell</span> and run <span
+class="inline-code">CREATE EXTENSION plpython3u;</span> in the CATMAID database.</p>

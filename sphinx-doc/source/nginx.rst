@@ -34,7 +34,7 @@ connection pooling and communicates efficiently with Nginx.
       [uwsgi]
       virtualenv = <path-to-virtual-env>
       chdir = <catmaid-path>/django
-      socket = /run/uwsgi/app/catmaid/socket
+      socket = /var/run/catmaid/uwsgi.socket
       mount = /<catmaid-relative-url>=<catmaid-path>/django/projects/mysite/django.wsgi
       manage-script-name = true
       workers = 2
@@ -62,17 +62,18 @@ connection pooling and communicates efficiently with Nginx.
    assigned (typically ``www-data``).
 
 5.  Here is a sample nginx configuration file, where ``<catmaid-relative-url> = /catmaid``
-    (replace this with ``/`` if you don't run in a subdirectory)::
+    (replace this with ``/`` if you don't run in a subdirectory). At the end of
+    this chapter you will find a more complete example configuration::
 
        server {
          listen 80;
          server_name <CATMAID-HOST>;
-       
+
          # Give access to Django's static files
          location /catmaid/static/ {
            alias <CATMAID-PATH>/django/static/;
          }
-       
+
          # Route all CATMAID Django WSGI requests to uWSGI
          location /catmaid/ {
            include uwsgi_params;
@@ -166,15 +167,20 @@ Image data
 Image data often is supposed to be accessed from many different clients, some of
 which aren't originating from the same domain name the images are hosted. In
 order to make this as seamless as possible, CORS needs to be set up (see
-previous section). A typical tile data location block could look like this::
+previous section). A typical tile data location block could look like the
+example below. There a tile is looked up and if not found, a black default tile
+is returned instead::
 
- location /tiles/ {
-   # Regular cached tile access
-   alias /path/to/tiles/;
+ location ~ /tiles/dataset/(.*)$ {
+   # Try to open path to tile, fallback to black.jpg for non-existent tiles.
+   try_files /data/dataset/tiles/$1 /data/dataset/tiles/black.jpg =404;
+
    expires max;
    add_header Cache-Control public;
    # CORS header to allow cross-site access to the tile data
    add_header Access-Control-Allow-Origin *;
+   # Logging usually not needed
+   access_log off;
  }
 
 Besides adding the CORS header, caching is also set to be explicitly allowed,
@@ -184,191 +190,10 @@ Of course, like with other static files, Nginx must be able able read those
 files and it needs execute permissions on every directory in the path to the
 image data.
 
-Setup based on Nginx and Gevent
--------------------------------
-
-`Nginx  <http://nginx.org/>`__ is a web server with focus on high performance
-and concurrency while maintaining a low memory footprint. However, it is
-(by default) not a WSGI server and one needs to set this up separately. Here,
-we will use `Gevent <http://gevent.org/>`_ to provide this functionality. It
-is a WSGI server is based on Python `coroutines <http://en.wikipedia.org/wiki/Coroutine>`_
-and `greenlets <http://greenlet.readthedocs.org/en/latest/>`_.
-
-Of course, you need to install Nginx, and the libevent package if you will use gevent.
-In Debian based distributions, this can be done with::
-
-  sudo apt-get install nginx libevent-dev
-
-Nginx can be started after this.
-
-Gevent in turn is a Python module. To make it usable, activate the *virtualenv*
-and install Gevent by running::
-
-  pip install gevent
-
-After this, Gevent is usable. In the next sections we will configure both
-the web and the WSGI server.
-
-Nginx configuration
-###################
-
-A good general introduction to Nginx configuration can be found
-`here <http://blog.martinfjordvald.com/2010/07/nginx-primer/>`_. In the
-following, a Nginx configuration is provided to give access to CATMAID:
-
-.. code-block:: nginx
-
-  upstream catmaid-wsgi {
-      server 127.0.0.1:8080;
-  }
-
-  server {
-      listen 80;
-      server_name <CATMAID-HOST>;
-
-      # Give access to Django's static files
-      location /catmaid/static/ {
-          alias <CATMAID-PATH>/django/static/;
-      }
-
-      # Route all CATMAID Django WSGI requests to the Gevent WSGI server
-      location /catmaid/ {
-          proxy_pass http://catmaid-wsgi/;
-          proxy_redirect http://catmaid-wsgi/ http://$host/;
-          # This is required to tell Django it is behind a proxy
-          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-          # This lets Django know which protocol was used to connect and also
-          # overrides the header a client who fakes it.
-          proxy_set_header X-Forwarded-Proto $scheme;
-      }
-  }
-
-This setup expects CATMAID to be accessible from a `catmaid` subdirectory
-under the domain's root. To use this configuration when CATMAID lives on
-the domain's root, just remove `/catmaid` from every location block (and
-do the same in Django's settings.py, of course).
-
-The first block (upstream) defines where the Gevent server will be available.
-In this case, we assumed we can access it under `127.0.0.1:8080`. The server
-block defines the actual web server.
-
-There you have to adjust `<CATMAID-HOST>` to where your CATMAID instance
-should be available (e.g. catmaid.example.org). The first location block
-defines from where the static files should be served. The `<CATMAID-PATH>`
-placeholder needs to be replaced with the absolute path to your CATMAID
-folder. The second location block passes all requests to the WSGI server
-defined before and allows therefore the execution of Django.
-
-A note on the ``proxy_redirect`` command
-****************************************
-
-In general, this command modifies the *Location* and the *Refresh* HTTP header
-fields in the header of a redirect reply of the proxied server. In our case
-this is the WSGI server, running CATMAID. Redirects happen e.g. as the correct
-response to HTTP POST request (which e.g. happen if you change something from
-within the admin interface). The first URL gets replaced by the second one,
-i.e.  ``http://catmaid-wsgi/`` with ``http://$host/``. The
-`$host <http://wiki.nginx.org/HttpCoreModule#.24host>`_ variable is the header's
-*Host* field and therefore the host CATMAID is running on. This makes the
-outside world see the front end server in the request URLs---a good thing and
-if CATMAID is *not* running in a subdirectory, one can remove this line and the
-default behavior should just work. The
-`default behavior <http://wiki.nginx.org/HttpProxyModule#proxy_redirect>`_
-replaces the URL given to ``proxy_pass`` with the path of the whole
-``location`` block. When CATMAID doesn't live in a subdirectory, this is
-equivalent to:
-
-.. code-block:: nginx
-
-  proxy_redirect http://catmaid-wsgi/ /;
-
-This is fine, so the line could be removed, but it gets a problem if CATMAID
-lives in a subdirectory. The default behavior would then translate to (wrt. to
-the configuration above):
-
-.. code-block:: nginx
-
-  proxy_redirect http://catmaid-wsgi/ /catmaid/;
-
-If CATMAID lives in a subdirectory, you likely also have the
-``FORCE_SCRIPT_NAME`` property in your settings file set accordingly (e.g. to
-``/catmaid``). In short, this leads Django to prepend every generated URL with
-this path. If in a subdirectory, it is needed for all types of HTTP
-requests---not only, but also for redirects. This in turn results in prepending
-the subdirectory twice for redirect requests: 1. Django does it due to
-``FORCE_SCRIPT_NAME`` 2. Nginx does it when ``proxy_redirect`` is used with its
-default behavior (e.g. if left out). To fix this, the rewrite of proxies
-redirects has to be explicitly set to rewrite the WSGI URL to ``$host`` or to
-``/``, i.e. to:
-
-.. code-block:: nginx
-
-  proxy_redirect http://catmaid-wsgi/ http://$host/;
-
-Therefore, it is is part of the above configuration.
-
-Gevent run script
-#################
-
-To start Gevent, a small Python script is used. It is best to place it in::
-
-  <CATMAID-path>/django/projects/mysite/
-
-There, you put the following lines into a file (e.g. run-gevent.py)::
-
-  #!/usr/bin/env python
-
-  # Import gevent monkey and patch everything
-  from gevent import monkey
-  monkey.patch_all(httplib=True)
-
-  # Import the rest
-  from django.core.wsgi import get_wsgi_application
-  from django.core.management import setup_environ
-  from gevent.wsgi import WSGIServer
-  import sys
-  import settings
-
-  setup_environ(settings)
-
-  def runserver():
-      # Create the server
-      application = get_wsgi_application()
-      address = "127.0.0.1", 8080
-      server = WSGIServer( address, application )
-      # Run the server
-      try:
-          server.serve_forever()
-      except KeyboardInterrupt:
-          server.stop()
-          sys.exit(0)
-
-  if __name__ == '__main__':
-      runserver()
-
-If executed, this will start a Gevent server on IP 127.0.0.1 and port 8080.
-Adjust those values to your liking.
-
-Having configured and started both servers, you should now be able to access
-CATMAID.
-
-Setup based on Nginx and Gunicorn
----------------------------------
-
-For using the Gunicorn WSGI server, the same Nginx configuration
-can be used as that given above for use with gevent.  (You may
-need to change the port, however.)  As an example of how to
-start Gunicorn, there is a upstart script, suitable for Ubuntu,
-in ``django/projects/mysite/gunicorn-catmaid.conf``.  You would
-copy this to ``/etc/init/``, customize it, and start Gunicorn
-with ``initctl start gunicorn-catmaid``.  (Thereafter it will be
-started on boot automatically, and can be restarted with
-``initctl restart gunicorn-catmaid``.
-
 .. _supervisord:
 
-Using Supervisord for process management
-----------------------------------------
+Process management with Supervisor
+----------------------------------
 
 Depending on your setup, you might use custom scripts to run a WSGI server,
 Celery or other server components. In this case, process management has to be
@@ -385,16 +210,16 @@ a typical setup with a uWSGI start script and a Celery start script, both
 grouped under the name "catmaid"::
 
   [program:catmaid-app]
-  command = /opt/catmaid/django/env/bin/uwsgi --ini /opt/catmaid/django/projects/mysite/catmaid-uwsgi.ini
+  command = /home/catmaid/catmaid-server/django/env/bin/uwsgi --ini /opt/catmaid/django/projects/mysite/catmaid-uwsgi.ini
   user = www-data
-  stdout_logfile = /opt/catmaid/django/projects/mysite/uwsgi.log
+  stdout_logfile = /home/catmaid/catmaid-server/django/projects/mysite/uwsgi.log
   redirect_stderr = true
   stopsignal = INT
 
   [program:catmaid-celery]
-  command = /opt/catmaid/django/projects/mysite/run-celery.sh
+  command = /home/catmaid/catmaid-server/django/projects/mysite/run-celery.sh
   user = www-data
-  stdout_logfile = /opt/catmaid/django/projects/mysite/celery.log
+  stdout_logfile = /home/catmaid/catmaid-server/django/projects/mysite/celery.log
   redirect_stderr = true
 
   [group:catmaid]
@@ -404,7 +229,7 @@ This of course expects a CATMAID instance installed in the folder
 ``/opt/catmaid/``. The ``stopsignal = INT`` directive is needed for ``uwsgi``,
 because it interprets Supervisor's default ``SIGTERM`` as "brutal reload"
 instead of stop. An example for a working ``run-celery.sh`` script can be found
-:ref:`here <celery-supervisord>`. With the configuration and the scripts in
+:ref:`here <celery_supervisord>`__. With the configuration and the scripts in
 place, ``supervisord`` can be instructed to reload its configuration and start
 the catmaid group::
 
@@ -427,7 +252,7 @@ in the case of an unreachable upstream server::
   location / {
     # Handle error pages
     location @maintenance {
-      root /home/catmaid/docs/html;
+      root /home/catmaid/catmaid-server/docs/html;
       rewrite ^(.*)$ /maintenance.html break;
     }
 
@@ -439,3 +264,187 @@ in the case of an unreachable upstream server::
       # Add optional CORS header
     }
   }
+
+.. _example_configs:
+
+Example configurations
+======================
+
+This shows a more complete example configuration that we have used in a similar
+form in production, including support for WebSockets (``/channels/`` endpoint).
+The CORS config above is made available as ``/etc/nginx/snippets/cors.conf`` and
+included in the CATMAID config::
+
+  server {
+    listen 443 ssl http2;
+
+    server_name <CATMAID-HOST>;
+
+    ssl_certificate <CERT-PATH>;
+    ssl_certificate_key <CERT-KEY-PATH>;
+
+    # Force browsers to keep using https instead of http
+    add_header Strict-Transport-Security "max-age=604800";
+
+    location ~ /tiles/dataset/(.*)$ {
+      # Try to open path to tile, fallback to black.jpg for non-existent tiles.
+      try_files /data/dataset/tiles/$1 /data/dataset/tiles/black.jpg =404;
+
+      expires max;
+      add_header Cache-Control public;
+      # CORS header to allow cross-site access to the tile data
+      add_header Access-Control-Allow-Origin *;
+      # Logging usually not needed
+      access_log off;
+    }
+
+    location /path/to/catmaid/static/ {
+      alias /home/catmaid/catmaid-server/django/static/;
+    }
+    location /path/to/catmaid/files/ {
+      alias /home/catmaid/catmaid-server/django/files/;
+    }
+    location /path/to/catmaid/channels/ {
+      proxy_pass http://catmaid-fafb-v14-asgi/channels/;
+      proxy_http_version 1.1;
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection "upgrade";
+
+      proxy_redirect     off;
+      proxy_set_header   Host $host;
+      proxy_set_header   X-Real-IP $remote_addr;
+      proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header   X-Forwarded-Host $server_name;
+    }
+    location /path/to/catmaid/ {
+      error_page 502 503 504 @maintenance;
+
+      # Use default uWSGI params and unix socket
+      include uwsgi_params;
+      uwsgi_pass unix:///var/run/catmaid/uwsgi.socket;
+
+      # No caching
+      expires 0;
+      add_header Cache-Control no-cache;
+
+      # We need to allow larger requests for our setup (long neuron lists).
+      client_max_body_size 20m;
+
+      # Include open CORS config
+      include snippets/cors.conf;
+    }
+
+    # Handle error pages
+    location @maintenance {
+      root /home/catmaid/public_html;
+      rewrite ^(.*)$ /502.html break;
+    }
+  }
+
+In order to makue sure, the in-memory filesystem folder
+``/run/catmaid/uwsgi.socket`` is available after a reboot, the following can be
+added to ``/etc/rc.local``::
+
+  if [ ! -d /var/run/catmaid ]; then
+    mkdir /var/run/catmaid/
+    chown www-data:www-data /var/run/catmaid/
+    chmod 755 /var/run/catmaid/
+  fi
+
+  # Make sure to exit rc.local with success code
+  exit 0
+
+The following uWSGI configuration allows zero-downtime updates and includes a
+statistics socket for ``uwsgi-top``::
+
+  ;uWSGI instance configuration for CATMAID
+  [uwsgi]
+  chdir = /home/catmaid/catmaid-server/django/
+  virtualenv = /home/catmaid/catmaid-server/django/env
+  pidfile = /var/run/catmaid/uwsgi.pid
+  chmod-socket = 666
+  socket = /var/run/catmaid/uwsgi.socket
+  mount = /path/to/catmaid=/home/catmaid/catmaid-server/django/projects/mysite/django.wsgi
+  manage-script-name = true
+  uid = www-data
+  gid = www-data
+  #plugins = python
+  workers = 8
+  threads = 2
+  disable-logging = true
+  master = true
+
+  # POST buffering
+  post-buffering = 8192
+
+  # Stats
+  stats = /var/run/catmaid/uwsgi-stats.socket
+  memory-report = true
+
+  # During deploy, old and new master share the same socket. With vacuum=true,
+  # old master would delete it during shutdown.
+  vacuum = false
+
+  # CATMAID in started in lazy-apps mode, i.e. each worker has a full copy of
+  # the code in memory. Workers are managed by a master process (no emperor).
+  master = true
+  lazy-apps = true
+
+  # Use this file as a flag to indicate the uwsgi process is ready to accept
+  # connections.  The file can be looked up during deploy, but it has no meaning
+  # afterwards. Even there, it is not strictly necessary. It's only a safety
+  # check.
+  hook-accepting1-once = write:/var/run/catmaid/catmaid.ready ok
+  hook-as-user-atexit = unlink:/var/run/catmaid/catmaid.ready
+
+  # Create two FIFO slots that we can switch between during runtime. A switch is
+  # done by sending [0,10] to the current FIFO, by default the first (0) is
+  # selected.
+  master-fifo = /var/run/catmaid/new_instance.fifo
+  master-fifo = /var/run/catmaid/running_instance.fifo
+
+  # If there is a running instance, terminate it as soon as the first worker is
+  # ready to accept connections.
+  if-exists = /var/run/catmaid/running_instance.fifo
+    hook-accepting1-once = writefifo:/var/run/catmaid/running_instance.fifo q
+  endif =
+
+  # On start-up, switch from the initial new_instance fifo queue to the
+  # new_instance queue, by providing the new fifo's index (1) and update the PID
+  # file (P).
+  hook-accepting1-once = writefifo:/var/run/catmaid/new_instance.fifo 1P
+
+Like in the initial example, the Supervisor config ties all programs together,
+this time including the ASGI server Daphne::
+
+  [program:catmaid-server-uwsgi]
+  directory = /home/catmaid/catmaid-server/django/projects/
+  command = /home/catmaid/catmaid-server/django/env/bin/uwsgi --ini /etc/uwsgi/apps-available/catmaid-server.ini
+  user = www-data
+  stdout_logfile = /var/log/catmaid/catmaid-server.log
+  redirect_stderr = true
+  stopsignal = INT
+
+  [program:catmaid-server-daphne]
+  directory = /home/catmaid/catmaid-server/django/projects/
+  command = /home/catmaid/catmaid-server/django/env/bin/daphne --unix-socket=/var/run/catmaid/daphne.sock --access-log - --proxy-headers mysite.asgi:application
+  user = www-data
+  stdout_logfile = /var/log/catmaid/daphne-server.log
+  redirect_stderr = true
+
+  [program:catmaid-server-celery]
+  directory = /home/catmaid/catmaid-server/django/projects/
+  command = /home/catmaid/catmaid-server/django/env/bin/celery -A mysite worker -l info --pidfile=/var/run/catmaid/celery.pid
+  user = www-data
+  stdout_logfile = /var/log/catmaid/celery.log
+  redirect_stderr = true
+
+  [program:catmaid-server-celery-beat]
+  directory = /home/catmaid/catmaid-server/django/projects/
+  command = /home/catmaid/catmaid-server/django/env/bin/celery -A mysite beat -l info --pidfile=/var/run/catmaid/celery-beat.pid --schedule=/var/run/catmaid/celery-beat-schedule-catmaid-server
+  user = www-data
+  stdout_logfile = /var/log/catmaid/celery-beat.log
+  redirect_stderr = true
+
+  [group:catmaid-server]
+  programs=catmaid-server-uwsgi,catmaid-server-daphne,catmaid-server-celery,catmaid-server-celery-beat

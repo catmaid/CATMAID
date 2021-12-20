@@ -307,21 +307,20 @@ serving static files.
 You have various options for setting up CATMAID with a production webserver -
 you can choose from (at least) the following two:
 
-1. Nginx and either Gevent, uWSGI or Gunicorn, in which case see
-   :ref:`nginx`
-
-2. Apache + mod_wsgi, in which case see :ref:`apache`
+1. :ref:`Nginx and uWSGI <nginx>` (or alternatively with :ref:`Gevent or Gunicorn <alternative_setup>`)
+2. Apache and mod_wsgi, in which case see :ref:`apache`
 
 We prefer to use Nginx because of a more straight-forward configuration, smaller
-memory footprint and better performance with available WSGI servers.
+memory footprint and better performance with available WSGI servers. In
+production setups we made good experience with uWSGI running behind Nginx, which
+is described in more detail in the :ref:`Nginx and uWSGI <nginx>` section.
 
 Note if the domain you are serving your image data from is different from where
-CATMAID is running, `CORS
-<https://en.wikipedia.org/wiki/Cross-origin_resource_sharing>`_ headers have to
+CATMAID is running, `CORS <https://en.wikipedia.org/wiki/Cross-origin_resource_sharing>`_ headers have to
 be sent by the image server or some aspects of the web front-end won't work as
 expected. For more details, have a look :ref:`here <nginx-image-data>`. The same
 is true for CATMAID back-ends that should be accessed by clients originating not
-from the same domain. Check the :ref:`CORS setup <nginc-cors>`_ section for more
+from the same domain. Check the :ref:`CORS setup <nginx-cors>` section for more
 details.
 
 In general you want to fine-tune your setup to improve performance. Please have

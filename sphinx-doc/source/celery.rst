@@ -6,10 +6,10 @@ Installation of the Celery task queue
 Some tasks of CATMAID can be somewhat time consuming and don't fit into the
 regular request-response cycle, e.g. cropping or statistics aggregation. These
 tasks are run asynchronously by the task queue
-`Celery <http://www.celeryproject.org/>`_. CATMAID doesn't talk directly to
+`Celery <http://www.celeryproject.org/>`__. CATMAID doesn't talk directly to
 Celery, but uses a so called message broker, which Celery talks to to get new
 tasks. Different brokers are supported by Celery and a popular choice is
-`RabbitMQ <http://www.rabbitmq.com>`_. Like most of the CATMAID server
+`RabbitMQ <http://www.rabbitmq.com>`__. Like most of the CATMAID server
 configuration, Celery can be configured through the ``settings.py`` file.
 
 Note that Celery or the message broker don't need to be running to run CATMAID
@@ -110,7 +110,7 @@ cores, but if you would want to limit it to e.g. a single process, set::
 There are many more configuration options, but these two are the two central
 ones in our context. You can find a list of all options along with their
 description in the
-`Celery documentation <http://docs.celeryproject.org/en/latest/userguide/configuration.html>`_.
+`Celery documentation <http://docs.celeryproject.org/en/latest/userguide/configuration.html>`__.
 Note that for CATMAID all options have to have the prefix ``CELERY_`` and have
 to be upper case. Also, CATMAID currently doesn't need a result back-end.
 
@@ -123,7 +123,7 @@ this::
 To run Celery as a daemon, you have to integrate in your process management
 system. The section discussing :ref:`Supervisord <supervisord>` for process
 management includes an example on how to do this for Celery and an actual start
-script for Celery is shown :ref:`below <celery-supervisord>`. Also, make sure
+script for Celery is shown :ref:`below <celery_supervisord>`. Also, make sure
 that this Celery daemon process has the permissions to write to the temporary
 directory (``TMP_DIR``).
 
@@ -193,7 +193,7 @@ there a file called ``celerybeat-schedule`` to keep track of task execution.
 To adjust this file name and path of this file, use the ``--schedule`` option
 for Celery beat.
 
-.. _celery-supervisord:
+.. _celery_supervisord:
 
 Supervisord
 ^^^^^^^^^^^

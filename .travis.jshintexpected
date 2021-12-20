@@ -116,7 +116,6 @@ django/applications/catmaid/static/js/widgets/textlabel.js: line 879, col 13, 'c
 django/applications/catmaid/static/js/widgets/textlabel.js: line 754, col 7, 'self' is defined but never used.
 django/applications/catmaid/static/js/widgets/textlabel.js: line 1, col 10, 'TextlabelTool' is defined but never used.
 
-
 django/applications/catmaid/static/libs/catmaid/Arbor.js: line 1312, col 13, 'pivot' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/Arbor.js: line 1904, col 7, 'root' is defined but never used.
 

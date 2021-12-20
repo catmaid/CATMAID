@@ -1236,6 +1236,10 @@
     let nns = CATMAID.NeuronNameService.getInstance();
     let node = this;
 
+    let selectedNeuronIds = new Set();
+    let selectedSkeletonIds = new Set();
+    let essentialParams = {};
+
     // Fill neuron table
     var datatable = $(table).DataTable({
       "destroy": true,
@@ -1246,7 +1250,8 @@
       "serverSide": true,
       "displayStart": node.lastNeuronListStart || 0,
       "ajax": function(data, dtCallback, settings) {
-        // Build own set of request parameters
+
+        // Build own set of request parameters.
         var params = {};
 
         // Set general parameters
@@ -1291,6 +1296,20 @@
             // cancel this update.
             searchInput.css('background-color', 'salmon');
             return;
+          }
+        }
+
+        // Maintain a copy of essential parameters, to make a potential select-all
+        // request easier.
+        essentialParams = {
+          'with_name': false,
+          'with_type': false,
+          'annotated_by': params['annotated_by'],
+          'name': params['name'],
+        };
+        for (let key in params) {
+          if (key.startsWith('annotated_with') || key.startsWith('types')) {
+            essentialParams[key] = params[key];
           }
         }
 
@@ -1367,10 +1386,7 @@
           "searchable": false,
           "orderable": false,
           "render": function(data, type, row, meta) {
-            var cb_id = 'navigator_neuron_' + row.id + '_selection' +
-                node.navigator.widgetID;
-            return '<input type="checkbox" id="' + cb_id +
-                '" name="someCheckbox" neuron_id="' + row.id + '" />';
+            return `<input type="checkbox" id="navigator_neuron_${row.id}_selection${node.navigator.widgetID}" name="someCheckbox" neuron_id="${row.id}" ${selectedSkeletonIds.has(row.id) ? 'checked' : ''} />`;
           }
         },
         {
@@ -1400,33 +1416,20 @@
     var self = this;
 
     // Wire up handlers
-    var getSelectedNeurons = function() {
-      var cb_selector = '#navigator_neuronlist_table' +
-          self.navigator.widgetID + ' tbody td.selector_column input';
-      return $(cb_selector).toArray().reduce(function(ret, cb) {
-        if ($(cb).prop('checked')) {
-          ret.push($(cb).attr('neuron_id'));
-        }
-        return ret;
-      }, []);
-    };
-
     $(annotate_button).click(function() {
-      var selected_neurons = getSelectedNeurons();
-      if (selected_neurons.length > 0) {
-        CATMAID.annotate_entities(selected_neurons);
+      if (selectedNeuronIds.size > 0) {
+        CATMAID.annotate_entities(Array.from(selectedNeuronIds));
       } else {
-        alert("Please select at least one neuron to annotate first!");
+        CATMAID.warn("Please select at least one neuron to annotate first!");
       }
     });
 
     $(delete_button).click(function() {
-      var selected_neurons = getSelectedNeurons();
-      if (selected_neurons.length > 0) {
-        if (confirm("Do you really want to delete " + selected_neurons.length +
+      if (selectedNeuronIds.size > 0) {
+        if (confirm("Do you really want to delete " + selectedNeuronIds.size +
             " neurons and their skeletons?")) {
           var unsuccessful_deletions = [];
-          var deletionPromises = selected_neurons.map(function(n) {
+          var deletionPromises = Array.from(selectedNeuronIds).map(function(n) {
             return CATMAID.Neurons.delete(project.id, n)
               .catch(function(error) {
                 unsuccessful_deletions.push({
@@ -1438,18 +1441,17 @@
           Promise.all(deletionPromises)
             .then(function() {
               if (unsuccessful_deletions.length === 0) {
-                CATMAID.msg("Delete successful", "All " + selected_neurons.length + " neurons have been deleted");
+                CATMAID.msg("Delete successful", "All " + selectedNeuronIds.size + " neurons have been deleted");
                 // Expect a parent node
                 self.navigator.select_node(self.parent_node);
               } else {
                 var msg;
-                var succesful_deletions = selected_neurons.length -
-                    unsuccessful_deletions.length;
+                var succesful_deletions = selectedNeuronIds.size - unsuccessful_deletions.length;
                 if (succesful_deletions === 0) {
                   msg = "Could not delete any neuron from the selection";
                 } else {
                   msg = "Could only delete " + succesful_deletions +
-                      " out of " + selected_neurons.length + " neurons";
+                      " out of " + selectedNeuronIds.size + " neurons";
                 }
                 var detail = unsuccessful_deletions.map(function(e) {
                   return "Neuron ID: " + e.id + " Error: " + e.error;
@@ -1465,22 +1467,20 @@
     });
 
     $(deannotate_buttons).click(function() {
-      var selected_neurons = getSelectedNeurons();
-      if (selected_neurons.length > 0) {
+      if (selectedNeuronIds.size > 0) {
         // Get annotation ID
         var annotation_id = parseInt(this.getAttribute('data-annotationid'));
         return CATMAID.confirmAndRemoveAnnotations(project.id,
-            selected_neurons, [annotation_id]);
+            Array.from(selectedNeuronIds), [annotation_id]);
       } else {
         CATMAID.warn("Please select at least one neuron to remove the annotation from first!");
       }
     });
 
     $(renameReplaceButton).click(e => {
-      var skeletonIds = this.navigator.getSelectedSkeletons();
-      if (skeletonIds.length > 0) {
+      if (selectedSkeletonIds.size > 0) {
         // Get annotation ID
-        let dialog = new CATMAID.RenameNeuronsDialog(skeletonIds);
+        let dialog = new CATMAID.RenameNeuronsDialog(Array.from(selectedSkeletonIds));
         dialog.show();
       } else {
         CATMAID.warn("Please select at least one neuron to rename!");
@@ -1490,22 +1490,56 @@
     // Add click handler for the select column's header to select/unselect
     // all check boxes at once.
     $('#' + table_id).on('click', 'thead th input,tfoot th input', function (e) {
-      var checkboxes = $('#' + table_id).find('tbody td.selector_column input');
-      checkboxes.prop("checked", $(this).prop("checked"));
-      // Toggle second checkbox
-      var $cb1 = $('#' + table_id).find('thead th input');
-      var $cb2 = $('#' + table_id).find('tfoot th input');
-      if ($cb1.length > 0 && $cb2.length > 0) {
-        if (this === $cb1[0]) {
-          $cb2.prop('checked', !$cb2.prop('checked'));
-        } else if (this === $cb2[0]) {
-          $cb1.prop('checked', !$cb1.prop('checked'));
-        }
-      }
+      let selectAll = e.target.checked;
+      // Block UI, in case this takes a moment
+      $.blockUI({message: `<img src="${CATMAID.makeStaticURL('images/busy.gif')}" /> <span>Please wait</span>`});
+      let prepare = selectAll ?
+        CATMAID.fetch(`${project.id}/annotations/query-targets`, 'POST', essentialParams)
+          .then(response => {
+            selectedSkeletonIds.addAll(response.entities.map(e => e.skeleton_ids[0]));
+            selectedNeuronIds.addAll(response.entities.map(e => e.id));
+          }) :
+        new Promise(resolve => {
+          selectedSkeletonIds.clear();
+          resolve();
+        });
+      // Query all skeleton IDs that make up the table. Because the table itself
+      // only displays the current page, we can't just get the data from there,
+      // but need to do a separate query.
+      prepare
+        .then(() => {
+          var checkboxes = $('#' + table_id).find('tbody td.selector_column input');
+          checkboxes.prop("checked", $(e.target).prop("checked"));
+          // Toggle second checkbox
+          var $cb1 = $('#' + table_id).find('thead th input');
+          var $cb2 = $('#' + table_id).find('tfoot th input');
+          if ($cb1.length > 0 && $cb2.length > 0) {
+            if (e.target === $cb1[0]) {
+              $cb2.prop('checked', !$cb2.prop('checked'));
+            } else if (e.target === $cb2[0]) {
+              $cb1.prop('checked', !$cb1.prop('checked'));
+            }
+          }
+        })
+        .catch(CATMAID.handleError)
+        .finally(() => $.unblockUI());
     });
 
     // Add a change handler for the check boxes in each row
-    $('#' + table_id).on('change', 'tbody td.selector_column input', (function() {
+    $('#' + table_id).on('change', 'tbody td.selector_column input', (function(e) {
+      let data = datatable.row($(e.target).closest('tr')).data();
+      if (e.target.checked) {
+        selectedNeuronIds.add(data.id);
+        if (data.skeleton_ids) {
+          selectedSkeletonIds.add(data.skeleton_ids[0]);
+        }
+      } else {
+        selectedNeuronIds.delete(data.id);
+        if (data.skeleton_ids) {
+          selectedSkeletonIds.delete(data.skeleton_ids[0]);
+        }
+      }
+
       // Update sync link
       this.navigator.triggerChange(this.navigator.getSelectedSkeletonModels());
     }).bind(this));

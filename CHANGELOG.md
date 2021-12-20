@@ -356,6 +356,9 @@ Neuron navigator:
 - The annotation filter/search term survives now refreshes of the currently
   displayed data (e.g. by clicking on the name in the navigator path).
 
+- The select-all checkboxes in neuron lists now actually select all neurons
+  across all pages. This allows for bulk annotation, deannotation and deletion.
+
 Morphology plot:
 
 - Radial density can now be shown also for desmosomes and gap junctions.

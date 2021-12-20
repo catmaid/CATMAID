@@ -293,6 +293,18 @@
           CATMAID.Client.Settings,
           'use_file_export_streams',
           SETTINGS_SCOPE));
+
+      ds.append(wrapSettingsControl(
+          CATMAID.DOM.createCheckboxSetting(
+              'Warn if Caps-Lock is enabled',
+              CATMAID.Client.Settings[SETTINGS_SCOPE].warn_on_caps_lock,
+              'Key commands won\'t work as expected with Caps-Lock enabled. By default, CATMAID warns users on each key press in this case.',
+              function() {
+                CATMAID.Client.Settings[SETTINGS_SCOPE].warn_on_caps_lock = this.checked;
+              }),
+          CATMAID.Client.Settings,
+          'warn_on_caps_lock',
+          SETTINGS_SCOPE));
     };
 
     /**

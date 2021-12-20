@@ -221,6 +221,9 @@ var project;
           default: false,
           overridable: false,
         },
+        warn_on_caps_lock: {
+          default: true
+        },
       }
     });
 

@@ -3,8 +3,8 @@
 from io import StringIO
 from abc import ABC
 import datetime as dt
-from zoneinfo import ZoneInfo
 
+import dateutil
 import mock
 
 from rest_framework.authtoken.models import Token
@@ -15,7 +15,7 @@ from django.test.client import Client
 from guardian.shortcuts import assign_perm
 from catmaid.models import Class, ClassInstance, Project, User, Treenode
 
-UTC = ZoneInfo("UTC")
+UTC = dateutil.tz.UTC
 
 class PruneSkeletonsTest(TestCase):
     """

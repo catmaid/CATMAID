@@ -2,8 +2,8 @@
 import datetime as dt
 from contextlib import contextmanager
 import sys
-from zoneinfo import ZoneInfo
 
+from dateutil.tz import gettz
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 from django.conf import settings
@@ -30,7 +30,7 @@ def out_stream(fpath):
 def parse_dt(s):
     timestamp = dt.datetime.fromisoformat(s)
     if timestamp.tzinfo is None:
-        timestamp = timestamp.astimezone(ZoneInfo(settings.TIME_ZONE))
+        timestamp = timestamp.astimezone(gettz(settings.TIME_ZONE))
     return timestamp
 
 

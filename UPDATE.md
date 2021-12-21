@@ -10,7 +10,8 @@ and other administration related changes are listed in order.
   set for the `db` container (watch the Docker output). CATMAID's documentation
   Docker has more information. If a replication setup is in use, the database
   configuration changes for Postgres 12. CATMAID's replication documentation
-  explains what needs to be done.
+  explains what needs to be done. The next CATMAID release will require Postgres
+  13, which is also supported by this version.
 
 - If R extensions are used, make sure to use R 3.6. On Ubuntu this can be made
   available by first installing the official R PPA repository:
@@ -28,7 +29,9 @@ and other administration related changes are listed in order.
   This also requires updating all installed R packages. In all likelihood this
   requires executing "manage.py catmaid_setup_nblast_environment".
 
-- The recommended python version is now 3.8, although support for 3.6 is maintained.
+- The recommended python version is now 3.8, although support for 3.6 is
+  maintained in this version. The next CATMAID release will require at least Python 3.8
+  and will drop support for Python 3.6.
 
 - A virtualenv update is required.
 

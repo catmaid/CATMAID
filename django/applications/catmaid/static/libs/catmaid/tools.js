@@ -923,4 +923,26 @@ CATMAID.tools = CATMAID.tools || {};
     return pattern.test(uuid);
   };
 
+  /**
+   * Aggregate elements of the same index from many arrays.
+   * For N given arrays, the shortest of which has length L,
+   * return an L-length array of N-length arrays,
+   * where the array at index I in the output contains
+   * all of the elements at index I in the input arrays.
+   *
+   * @param  {...any[]} arrays
+   * @returns any[]
+   */
+  tools.zip = function (...arrays) {
+    const minLen = arrays.reduce(
+      (accum, curr) => Math.min(accum, curr.length),
+      Infinity
+    );
+    const out = [];
+    for (let i = 0; i < minLen; ++i) {
+      out.push(arrays.map((a) => a[i]));
+    }
+    return out;
+  };
+
 })(CATMAID.tools);

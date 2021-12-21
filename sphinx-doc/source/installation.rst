@@ -9,9 +9,9 @@
 Basic Installation Instructions
 ===============================
 
-These installation instructions have been tested on the most
-recent stable release of Ubuntu (18.04 bionic), so may need
-some minor changes for other Debian-based distributions.
+These installation instructions have been tested on Ubuntu 18.04
+(Bionic Beaver), so may need some minor changes for other Debian-based
+distributions.
 For installation on Mac OS X, first read these
 :ref:`additional instructions <installation-osx>`.
 
@@ -44,7 +44,7 @@ To be able to install it on Ubuntu 16.04 and earlier, the following needs to be 
 
 The Django version we use also requires a GDAL version of at least 2.0. The
 installed version can be checked using ``gdalinfo --version``. Should version 2
-or newer not  be available on your system, use the following PPA::
+or newer not be available on your system, use the following PPA::
 
     sudo add-apt-repository ppa:ubuntugis/ppa
     sudo apt-get update
@@ -56,7 +56,7 @@ And then you can install these dependencies with::
 CATMAID is based on the `Django web framework
 <https://www.djangoproject.com/>`_.  If you just wish to work on
 developing CATMAID, you can use Django's built-in lightweight
-development server.  However, for production you will need to
+development server. However, for production you will need to
 configure your webserver to talk to the CATMAID web application
 using WSGI. We have successfully tested using either Apache
 with mod_wsgi, or Nginx with gevent, gunicorn or uSWGI.
@@ -116,7 +116,7 @@ you can do::
 
 That will create a virtualenv in ``~/.virtualenvs/catmaid/``, and
 while your virtualenv is activated, Python libraries will be
-imported from (and installed to) there.  After creating the
+imported from (and installed to) there. After creating the
 virtualenv as above, it will be activated for you, but in new
 shells, for example, you will need to activate it by running::
 
@@ -160,7 +160,7 @@ If you set up a production environment, please also install the
     pip install -r requirements-production.txt
 
 This will rebuild some dependencies from source. If asked whether existing
-packages schould be replaced by the new version, anwer with yes.
+packages should be replaced by the new version, answer with yes.
 
 
 3. Install and configure PostgreSQL
@@ -179,9 +179,9 @@ pgadmin3``) or phpPgAdmin (``sudo apt-get install phppgadmin``).
 
 We suppose for the examples below that you want to create a
 database called ``catmaid`` and a database user called
-``catmaid_user``.  Firstly, we need to reconfigure PostgreSQL to
+``catmaid_user``. Firstly, we need to reconfigure PostgreSQL to
 allow password-based authentication for that user to that
-database.  To do that, edit the file
+database. To do that, edit the file
 ``/etc/postgresql/11/main/pg_hba.conf`` and add this line as the
 *first* rule in that file::
 
@@ -195,7 +195,7 @@ You can generate the commands for creating the database and
 database user with the ``scripts/createuser.sh`` helper script.
 This takes the database name, the database user and the user's
 password as arguments and outputs some commands that can be
-interpreted by the PostgreSQL shell.  These can be piped
+interpreted by the PostgreSQL shell. These can be piped
 directly to ``psql``, so you could create the database and the
 user with, for example::
 
@@ -230,7 +230,7 @@ Now you should change into
     cp configuration.py.example configuration.py
 
 You should now edit ``configuration.py`` and fill in all the
-details requested.  Then you should run::
+details requested. Then you should run::
 
     ./create_configuration.py
 
@@ -259,7 +259,7 @@ for applications that mange changes to their tables with South::
 The static files (mostly Javascript, CSS and image files) that
 CATMAID requires need to be collected together into
 ``/home/alice/catmaid/django/static`` before they will be
-available.  To do this, you need to run::
+available. To do this, you need to run::
 
    ./manage.py collectstatic -l
 
@@ -316,25 +316,25 @@ production setups we made good experience with uWSGI running behind Nginx, which
 is described in more detail in the :ref:`Nginx and uWSGI <nginx>` section.
 
 Note if the domain you are serving your image data from is different from where
-CATMAID is running, `CORS <https://en.wikipedia.org/wiki/Cross-origin_resource_sharing>`_ headers have to
-be sent by the image server or some aspects of the web front-end won't work as
-expected. For more details, have a look :ref:`here <nginx-image-data>`. The same
-is true for CATMAID back-ends that should be accessed by clients originating not
-from the same domain. Check the :ref:`CORS setup <nginx-cors>` section for more
+CATMAID is running, `CORS <https://en.wikipedia.org/wiki/Cross-origin_resource_sharing>`_
+headers have to be sent by the image server or some aspects of the web front-end
+won't work as expected. For more details, have a look :ref:`here <nginx-image-data>`.
+The same is true for CATMAID back-ends that should be accessed by clients originating
+not from the same domain. Check the :ref:`CORS setup <nginx-cors>` section for more
 details.
 
 In general you want to fine-tune your setup to improve performance. Please have
 a look at our :ref:`collection of advice <performance-tuning>` for the various
-infrastructure parts (e.g.  webserver, database, file system). This can really
+infrastructure parts (e.g. webserver, database, file system). This can really
 make a difference. An explanation of all possible settings in the `settings.py`
 file can be found :ref:`here <options>`.
 
 11. Using the admin interface
 #############################
 
-You should be able to login to the CATMAID admin interface and
+You should be able to log in to the CATMAID admin interface and
 complete administration tasks by adding ``/admin/`` after the
-root URL of your CATMAID instance.  For example, with the
+root URL of your CATMAID instance. For example, with the
 development server, this would be::
 
     http://localhost:8000/admin/
@@ -359,7 +359,7 @@ stack.
 
 CATMAID offers a growing set of :ref:`tools <tools>`. To not overload
 the user-interface, all tools which go beyond navigation are hidden by
-default. Which tools are visible is stored a
+default. Which tools are visible is stored in a
 :ref:`user profile <user-profiles>` for each user. You can adjust these
 settings at the bottom of the page while editing a user in the admin
 interface.

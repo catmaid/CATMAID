@@ -1,0 +1,41 @@
+<p>
+This widget allows users to create persistent deep links into the dataset using
+an alias. This alias needs to be unique per project. The link table in the first
+tab will only list links that are marked as visible to others who have access to
+the project. Links marked as private, are only visible and accessible by the
+creator of the link.
+</p>
+
+<p>
+The stored parameters are the same as for regular deep links, with
+most of them being optional, including the widget layout, widget settings and
+loaded skeletons. The widget tab to add links allows to configure these options
+in the tab button panel. By default the Link Widget itself is ignored when
+storing layouts, which can of course be changed as well.
+
+<p>
+The alias defined for a link can be used to open the deep link, either by using
+the link presented in the widget (the Alias column):
+</p>
+
+<p class="inline-code">
+&lt;catmaid-url&gt;/&lt;project-id&gt;/links/&lt;alias&gt;
+</p>
+
+<p>
+which is only an internal redirect to
+</p>
+
+<p class="inline-code">
+&lt;catmaid-url&gt;?pid=&lt;project-id&gt;&link=&lt;alias&gt;
+</p>
+
+<p>
+but looks friendlier. Moreover links can be marked private, making them
+only accessible (and listable) by the creator of the link.
+</p>
+
+<p>
+An optional message can be stored with the link and is shown to the user when
+the links is opened.
+</p>

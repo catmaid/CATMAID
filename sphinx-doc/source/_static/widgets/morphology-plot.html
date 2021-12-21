@@ -1,0 +1,48 @@
+<h1>Morphology Plot</h1>
+<p>
+  This widget is a histogram based analysis tool which provides information on
+  nodes with a similar distance to a reference location, which can be a specified
+  in the user interface.  Example choices are the root node or the average node
+  position. Around this center, spheres are formed with an increasing radius that
+  can be defined by the user and defaults to 1000nm per step. All nodes within the
+  part of a sphere that doesn\'t overlap with the last smaller sphere is treated
+  as one bin of a histogram. This is shown for three bins in 2D below:</p>
+<p>
+  <svg height="100" with="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="50" cy="50" r="49" style="stroke: #000; fill: #fff"/>
+    <circle cx="50" cy="50" r="30" style="stroke: #000; fill: #fff"/>
+    <circle cx="50" cy="50" r="10" style="stroke: #000; fill: #fff"/>
+    <text x="50" y="53" style="font-size: 10px; text-anchor: middle">1</text>
+    <text x="31" y="53" style="font-size: 10px; text-anchor: middle">2</text>
+    <text x="10" y="53" style="font-size: 10px; text-anchor: middle">3</text>
+  </svg>
+</p>
+<p>
+  Which nodes are part of which bin depends heavily on the morphology of a
+  neuron. The widget allows then to compute various metrics on those bins:
+  <ul>
+    <li><b>Sholl analysis:</b> The number of edges intersecting with the boundary
+      of the smaller sphere. Notice that if parent-child segments are longer than
+      radius-increment in the radial direction, some parent-child segments will be
+      counted more than once, which is correct.</li>
+    <li><b>Radial density of cable:</b> Approximate aggregated cable length per
+      bin by adding the length of all child-parent edges of all child nodes in the
+      bin.</li>
+    <li><b>Radial density of branch nodes:</b>The number of branch nodes in a
+      particular bin.</li>
+    <li><b>Radial density of ends:</b> The number of end nodes in a particular
+      bin.</li>
+    <li><b>Radial density of input synapses:</b> The number of input synapses in
+      a particular bin.</li>
+    <li><b>Radial density of output synapses:</b> The number of output synapses
+      in a particular bin.</li>
+    <li><b>Radial density of gap junctions:</b> The number of gap junctions in a
+      particular bin.</li>
+    <li><b>Radial density of desmosomes:</b> The number of desmosomes in a
+      particular bin.</li>
+  </ul>
+</p>
+<p>
+  The plot itself shows the distance from the selected center on the X axis and
+  the bin value (e.g. the number of end nodes) is shown on the Y axis.
+<p>

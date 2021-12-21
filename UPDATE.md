@@ -1,6 +1,10 @@
 Some CATMAID versions require manual changes to an existing setup. Below these
 and other administration related changes are listed in order.
 
+## Under development
+
+- This version requires Python 3.8+.
+
 ## 2021.12.21
 
 - The version requires PostgreSQL 12. If you also want to upgrade PostGIS,

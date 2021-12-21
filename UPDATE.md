@@ -1,7 +1,7 @@
 Some CATMAID versions require manual changes to an existing setup. Below these
 and other administration related changes are listed in order.
 
-## Under development
+## 2021.12.21
 
 - The version requires PostgreSQL 12. If you also want to upgrade PostGIS,
   update PostGIS firstand run ``ALTER EXTENSION postgis UPDATE;`` in every

@@ -36,7 +36,7 @@ var WindowMaker = new function()
     var serializedState = stateSerializer.serialize({
       'state': stateManager.getState(widget, withInteractionState)
     });
-    localStorage.setItem(key, serializedState);
+    CATMAID.setLocalStorageItem(key, serializedState);
     return true;
   };
 
@@ -44,7 +44,7 @@ var WindowMaker = new function()
    * Remove all stored widget states in the front-end.
    */
   CATMAID.clearLocalSettings = function() {
-    localStorage.clear();
+    CATMAID.clearLocalSettings();
   };
 
   /**
@@ -76,7 +76,7 @@ var WindowMaker = new function()
     if (stateManager) {
       try {
         var key = windowManagerStoragePrefix + stateManager.key;
-        localStorage.removeItem(key);
+        CATMAID.removeLocalStorageItem(key);
         return true;
       } catch (e) {
         CATMAID.warn("Couldn't save widget state");
@@ -120,17 +120,19 @@ var WindowMaker = new function()
    */
   var loadWidgetState = function(widget, stateManager) {
     key = windowManagerStoragePrefix + stateManager.key;
-    var serializedWidgetData = localStorage.getItem(key);
+    var serializedWidgetData = CATMAID.getLocalStorageItem(key);
     if (!serializedWidgetData) {
-      // Try to find information in cookie. If the item is found, it is copied
-      // to the local storage and removed from the cookie. This test can be
-      // removed in future versions and is only meant to not surprise users with
-      // lost defaults and stale cookie information.
-      serializedWidgetData = CATMAID.getCookie(key);
+      // Try to find information in local storage without a suffix. If the item
+      // is found, it is copied to the local storage with suffix and the
+      // unnamespaced version is removed. This test can be removed in future
+      // versions and is only meant to not surprise users with lost defaults and
+      // stale local storage information.
+      serializedWidgetData = CATMAID.getLocalStorageItem(key, true);
       if (serializedWidgetData) {
-        localStorage.setItem(key, serializedWidgetData);
-        // Remove old cookie entry
-        CATMAID.setCookie(key, '', -1);
+        // Remove old local storage entry
+        CATMAID.removeLocalStorageItem(key, true);
+        // Add new entry
+        CATMAID.setLocalStorageItem(key, serializedWidgetData);
       }
     }
     if (serializedWidgetData) {

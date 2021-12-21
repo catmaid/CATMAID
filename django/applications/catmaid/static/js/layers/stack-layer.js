@@ -61,7 +61,7 @@
           mirrorIndex = parseInt(lastUsedMirror, 10);
 
           if (mirrorIndex >= this.stack.mirrors.length) {
-            localStorage.removeItem(this.lastMirrorStorageName);
+            CATMAID.removeLocalStorageItem(this.lastMirrorStorageName);
             mirrorIndex = undefined;
           }
         }
@@ -99,16 +99,19 @@
   }
 
   var readStateItem = function(key) {
-    var item = localStorage.getItem(key);
+    var item = CATMAID.getLocalStorageItem(key);
     if (!item) {
-    // Try to load custom mirror from cookie if no local storage information
-    // is found. This is removed in a future release and is only meant to not
-    // cause surprising defaults after an update.
-      item = CATMAID.getCookie(key);
+      // Try to find information in local storage without a suffix. If the item
+      // is found, it is copied to the local storage with suffix and the
+      // unnamespaced version is removed. This test can be removed in future
+      // versions and is only meant to not surprise users with lost defaults and
+      // stale local storage information.
+      item = CATMAID.getLocalStorageItem(key, true);
       if (item) {
-        localStorage.setItem(key, item);
-        // Remove old cookie entry
-        CATMAID.setCookie(key, '', -1);
+        // Remove old local storage entry
+        CATMAID.removeLocalStorageItem(key, true);
+        // Add new entry
+        CATMAID.setLocalStorageItem(key, item);
       }
     }
     return item;
@@ -335,7 +338,7 @@
       var customMirrorData = getMirrorData();
       var newMirrorIndex = self.stack.addMirror(customMirrorData);
       self.switchToMirror(newMirrorIndex);
-      localStorage.setItem(self.customMirrorStorageName,
+      CATMAID.setLocalStorageItem(self.customMirrorStorageName,
           JSON.stringify(customMirrorData));
 
       // Update layer control UI to reflect settings changes.
@@ -362,7 +365,7 @@
     customMirrorIndices.sort().reverse().forEach(function(ci) {
       this.stack.removeMirror(ci);
     }, this);
-    localStorage.removeItem(this.customMirrorStorageName);
+    CATMAID.removeLocalStorageItem(this.customMirrorStorageName);
     this.switchToMirror(this.mirrorIndex, true);
 
     CATMAID.msg("Done", "Custom mirrors cleared");
@@ -566,7 +569,7 @@
     this.stackViewer.replaceStackLayer(layerKey, newStackLayer);
 
     // Store last used mirror information in cookie
-    localStorage.setItem(this.lastMirrorStorageName, mirrorIndex);
+    CATMAID.setLocalStorageItem(this.lastMirrorStorageName, mirrorIndex);
   };
 
   /**

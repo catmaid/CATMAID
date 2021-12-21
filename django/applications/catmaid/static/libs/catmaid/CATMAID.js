@@ -233,6 +233,81 @@ var requestQueue = new CATMAID.RequestQueue();
   };
 
   /**
+   * Return a named value from local storage.
+   *
+   * @param {String}  name     The key for the value to retrieve.
+   * @param {Boolean} noSuffix Optional, disable automatic appending of
+   *                           CATMAID's instance identifier suffix to the
+   *                           localStorage key.
+   * @returns                  The returned value or undefined if no value for
+   *                           the passed in name is available.
+   */
+  CATMAID.getLocalStorageItem = function(name, noSuffix=false) {
+    if (!noSuffix) {
+      name = `${name}_${CATMAID.cookieSuffix}`;
+    }
+
+    return localStorage.getItem(name);
+  };
+
+  /**
+   * Define a local storage value for a particular name.
+   *
+   * @param {String}  name     The key for the value to store.
+   * @param {String}  value    The value to store.
+   * @param {Boolean} noSufifx Optional, disable automatic appending of
+   *                           CATMAID's instance identifier to the local
+   *                           storage name.
+   */
+  CATMAID.setLocalStorageItem = function(name, value, noSuffix=false) {
+    try {
+      if (!noSuffix) {
+        name = `${name}_${CATMAID.cookieSuffix}`;
+      }
+      localStorage.setItem(name, value);
+    } catch (e) {
+      CATMAID.handleError(e);
+    }
+  };
+
+  /**
+   * Remove a local storage value with a particular name.
+   *
+   * @param {String}  name     The key for the value to store.
+   * @param {Boolean} noSufifx Optional, disable automatic appending of
+   *                           CATMAID's instance identifier to the local
+   *                           storage name.
+   */
+  CATMAID.removeLocalStorageItem = function(name, noSuffix=false) {
+    if (!noSuffix) {
+      name = `${name}_${CATMAID.cookieSuffix}`;
+    }
+    localStorage.removeItem(name);
+  };
+
+  /**
+   * Clear local storage, usually for a suffix.
+   *
+   * @param {Boolean} noSufifx Optional, disable automatic appending of
+   *                           CATMAID's instance identifier to the local
+   *                           storage name. Will clear storage for entire
+   *                           domain.
+   */
+  CATMAID.clearLocalStorage = function(noSuffix=false) {
+    if (noSuffix) {
+      localStorage.clear();
+      return;
+    }
+    let suffix = `_${CATMAID.cookieSuffix}`;
+    for (let i = 0; i < localStorage.length; i++) {
+      let name = localStorage.key(i);
+      if (name.endsWith(suffix)) {
+        localStorage.removeItem(name);
+      }
+    }
+  };
+
+  /**
    * Return a named value from a cookie.
    *
    * @param {String}  name     The key for the value to retrieve.

@@ -736,6 +736,10 @@ Miscellaneous:
 - If Caps-Lock is enabled, users now see a warning by default if they press down
   any key. This can be disabled in the Settings Widget.
 
+- Client settings that are stored in the browser's local storage are now
+  properly namespaced so that they work with multiple instances on the same
+  server.
+
 - The new settings.py setting `PROJECT_TOKEN_USER_VISIBILITY` allows to
   constrain the users that are visible to non-superuser users. If enabled, only
   users that share knowledge about the same project tokens can be seen.

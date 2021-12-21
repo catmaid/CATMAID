@@ -59,7 +59,7 @@ thing. Those don't ask for a password, but require a
 <http://www.postgresql.org/docs/current/static/libpq-pgpass.html>`_).
 
 Note that the ``pg_dump`` command above will not include any Postgres user
-information. Like explained in the installation instructions, the would have to
+information. Like explained in the installation instructions, this would have to
 be created first, before the ``pg_restore`` command is called. Alternatively,
 users and other global database objects can be backed up as well in a separate
 file::
@@ -117,7 +117,7 @@ backup, four steps are needed. Assuming the database name is ``catmaid``
    $ sudo -u postgres pg_restore -p 5432 -d catmaid --data-only --disable-triggers \
           -S postgres --jobs=4 /path/to/backups/catmaid.all.gz.dump
 
-3. Analyze database, for faster restoration of materialzied views::
+3. Analyze the database, for faster restoration of materialzied views::
 
    $ sudo -u postgres psql -p 5432 -d catmaid -c "\timing on" -c "ANALYZE;"
 

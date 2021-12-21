@@ -5,6 +5,22 @@ Postgres administration
 
 This is a collection of some common and uncommen database administration tasks.
 
+Create a read-only database user
+--------------------------------
+
+This is useful for some independent analysis tasks. Assuming the CATMAID
+database is called ``catmaid`` and the read-only user should be called
+``catmaid_read_only``, login to Postgres and run the following::
+
+  CREATE ROLE catmaid_read_only WITH LOGIN PASSWORD 'a-very-strong-password' NOSUPERUSER INHERIT NOCREATEDB NOCREATEROLE NOREPLICATION VALID UNTIL 'infinity';
+  \c catmaid
+  GRANT CONNECT ON DATABASE catmaid TO catmaid_read_only;
+  GRANT USAGE ON SCHEMA public TO catmaid_read_only;
+  GRANT SELECT ON ALL TABLES IN SCHEMA public TO catmaid_read_only;
+  GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO catmaid_read_only;
+  GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public to catmaid_read_only;
+  ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO catmaid_read_only;
+
 Copy data from other (CATMAID) database
 ---------------------------------------
 
@@ -112,7 +128,7 @@ use::
     LEFT JOIN guardian_groupobjectpermission ggop
       ON ggop.id = rggop.id
     WHERE ggop.id IS NULL;
-    
+
 If this matches the expectation, this can now be imported::
 
     INSERT INTO auth_user

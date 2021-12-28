@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 
 from abc import ABCMeta
-from aggdraw import Draw, Pen, Brush, Font
 from collections import defaultdict
 from concurrent import futures
 import copy
 import json
 import math
 import msgpack
+import logging
 from PIL import Image, ImageDraw
 import progressbar
 import psycopg2.extras
@@ -32,6 +32,12 @@ from catmaid.control.authentication import requires_user_role, \
 from catmaid.control.common import (batches, get_relation_to_id_map,
         get_request_bool, get_request_list)
 
+logger = logging.getLogger(__name__)
+
+try:
+    from aggdraw import Draw, Pen, Brush, Font
+except ImportError:
+    logger.warning('No aggdraw found, server-side tracing data will be unavailable')
 
 
 ORIENTATIONS = {

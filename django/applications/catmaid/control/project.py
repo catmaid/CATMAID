@@ -120,7 +120,7 @@ def update_project_tags(request:HttpRequest, project_id=None, tags=None) -> Json
         tags = [t.strip() for t in tags]
 
     # Add tags to the model
-    p.tags.set(*tags)
+    p.tags.set(tags)
 
     # Return an empty closing response
     return JsonResponse("", safe=False)

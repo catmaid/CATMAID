@@ -124,7 +124,7 @@ def update_stack_tags(request:HttpRequest, project_id=None, stack_id=None, tags=
         tags = [t.strip() for t in tags]
 
     # Add tags to the model
-    s.tags.set(*tags)
+    s.tags.set(tags)
 
     # Return an empty closing response
     return JsonResponse("", safe=False)

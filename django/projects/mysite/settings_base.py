@@ -184,7 +184,7 @@ AUTHENTICATION_BACKENDS = (
 REQUIRE_EXTRA_TOKEN_PERMISSIONS = True
 
 # Main ASGI router for CATMAID
-ASGI_APPLICATION = "mysite.routing.application"
+ASGI_APPLICATION = "mysite.asgi.application"
 
 # Project ID of a dummy project that will keep all ontologies and
 # classifications that are shared between multiple projects (and are

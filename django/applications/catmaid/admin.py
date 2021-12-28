@@ -53,6 +53,9 @@ def add_related_field_wrapper(form, col_name, rel=None) -> None:
         form.fields[col_name].widget, rel, form.admin_site, can_add_related=True)
 
 
+@admin.action(
+    description = "Duplicate selected without relations",
+)
 def duplicate_action(modeladmin, request, queryset) -> None:
     """
     An action that can be added to individual model admin forms to duplicate
@@ -62,9 +65,11 @@ def duplicate_action(modeladmin, request, queryset) -> None:
     for object in queryset:
         object.id = None
         object.save()
-duplicate_action.short_description = "Duplicate selected without relations" # type: ignore # https://github.com/python/mypy/issues/2087
 
 
+@admin.action(
+    description="Export projects as JSON file",
+)
 def export_project_json_action(modeladmin, request, queryset) -> HttpResponse:
     """An action that will export projects into a JSON file.
     """
@@ -80,9 +85,10 @@ def export_project_json_action(modeladmin, request, queryset) -> HttpResponse:
 
     return response
 
-export_project_json_action.short_description = "Export projects as JSON file" # type: ignore # https://github.com/python/mypy/issues/2087
 
-
+@admin.action(
+    description="Export projects as YAML file",
+)
 def export_project_yaml_action(modeladmin, request, queryset) -> HttpResponse:
     """An action that will export projects into a YAML file.
     """
@@ -98,18 +104,21 @@ def export_project_yaml_action(modeladmin, request, queryset) -> HttpResponse:
 
     return response
 
-export_project_yaml_action.short_description = "Export projects as YAML file" # type: ignore # https://github.com/python/mypy/issues/2087
 
-
+@admin.action(
+    description="Delete selected incl. linked stack data",
+)
 def delete_projects_plus_stack_data(modeladmin, request, queryset) -> None:
     """An action that expects a list of projects as queryset that will be
     deleted. All stacks linked with a project_stack relation to those projects
     will be deleted as well along with stack groups that exclusivelt use the
     stacks and broken sections."""
     delete_projects_and_stack_data(queryset)
-delete_projects_plus_stack_data.short_description = "Delete selected incl. linked stack data" # type: ignore # https://github.com/python/mypy/issues/2087
 
 
+@admin.action(
+    description="Delete selected",
+)
 def delete_projects_and_data(modeladmin, request, queryset) -> HttpResponseRedirect:
     """An action that expects a list of projects as queryset that will be
     deleted along with all data that reference it (e.g. treenodes, volumes,
@@ -118,7 +127,6 @@ def delete_projects_and_data(modeladmin, request, queryset) -> HttpResponseRedir
     project_ids = list(map(str, queryset.values_list('id', flat=True)))
     return HttpResponseRedirect(reverse("catmaid:delete-projects-with-data") +
             f"?ids={','.join(project_ids)}")
-delete_projects_and_data.short_description = "Delete selected" # type: ignore # https://github.com/python/mypy/issues/2087
 
 
 class GroupNameFilter(admin.SimpleListFilter):

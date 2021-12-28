@@ -9,7 +9,7 @@ import errno
 
 # This variable contains a reference version of the current code-base. It is
 # updated by release and dev-cycle scripts.
-BASE_VERSION = '2021.12.21-dev'
+BASE_VERSION = '2021.12.21'
 # This commit is the reference commit of the BASE_VERSION above. Technically, it
 # is the commit right before the BASE_VERSION, because the release script will
 # change these fields and onlt create the actual release commit after the changes.

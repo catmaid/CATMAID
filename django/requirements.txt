@@ -31,4 +31,5 @@ requests==2.26.0
 scipy==1.7.3; platform_python_implementation != 'PyPy'
 scipy==1.5.4; platform_python_implementation == 'PyPy'
 trimesh==3.9.36
-ujson==5.1.0
+ujson==5.1.0; platform_python_implementation != 'PyPy'
+ujson==4.3.0; platform_python_implementation == 'PyPy'

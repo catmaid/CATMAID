@@ -15,14 +15,14 @@ on how to see all active connections if ``uwsgi`` is used as application server.
 List active connections
 -----------------------
 
-To get an idea how many active connections there are to a CATMAID back-end and
-``uwsgi`` is used as WSGI server, the tool ``uwsgitop`` can come in handy. It
+If ``uwsgi`` is used as WSGI server, you can get an idea how many active
+connections there are to a CATMAID back-end with the ``uwsgitop`` tool. It
 has to be installed separately into the ``virtualenv``::
 
     pip install uwsgitop
 
 Then make sure ``uwsgi`` is configured to export statistics through a socket
-file. This can be done by adding the following two lines to the respective
+file. This can be done by adding the following two lines to the
 ``uwsgi.ini`` file for the CATMAID setup::
 
     stats = <path-to-run-dir>/uwsgi-stats.socket
@@ -100,8 +100,8 @@ required::
   > ALTER EXT…
   > …
 
-Once, done perform, install the new database version and  upgrade the database
-cluster using ``pg_upgrade``. Using the ``--link`` option can safe time on large
+Once done, install the new database version and upgrade the database
+cluster using ``pg_upgrade``. Using the ``--link`` option can save time on large
 databases and has been robust in our experience. This step can also be skipped,
 if no database upgrade is needed.
 
@@ -137,7 +137,7 @@ can close the virtualenv as follows::
 Backup and restore of the database
 ----------------------------------
 
-Ther eis a dedicated documentation page on this `here <backup>`.
+There is a dedicated documentation page on this `here <backup>`.
 
 Adding custom code
 ------------------
@@ -173,7 +173,7 @@ Operating system and infrastructure
   can be used as a shared resource by different processes. A rule of thumb is
   that one should use about 25% of the system's RAM, but if the machine is
   equipped with plenty of RAM one should be fine for most setups with 4GB (or
-  even less). You  can check this kernel setting with ``sysctl kernel.shmmax``.
+  even less). You can check this kernel setting with ``sysctl kernel.shmmax``.
   The default for most distributions is in the range of kilobytes and megabytes.
 
 * The partition that is hosting the image tiles should be mounted with the
@@ -207,11 +207,11 @@ Webserver
   to disk, especially if multiple users use CATMAID, can be a real performance
   hit.
 
-* Make use of the `HTTP/2 <https://http://en.wikipedia.org/wiki/HTTP/2>`_ protocol.
+* Make use of the `HTTP/2 <https://en.wikipedia.org/wiki/HTTP/2>`_ protocol.
   Modern browsers and webservers support it and it only requires you to set up
   SSL/TLS as an additional step before activating it. Through multiplexing,
-  compression and prioritization much better use of single connections. Requests
-  can be answered more quickly and CATMAID will feel more responsive.
+  compression and prioritization, it makes much better use of single connections.
+  Requests can be answered more quickly and CATMAID will feel more responsive.
 
 * A cache server like Varnish can be beneficial on the machine that serves the
   image data. If multiple users load the same image data, it will reduce the
@@ -367,7 +367,7 @@ to your Nginx server configuration::
         ssl_certificate /etc/nginx/ssl/server.crt;
         ssl_certificate_key /etc/nginx/ssl/server.key;
         ssl_prefer_server_ciphers on;
-        ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+        ssl_protocols TLSv1.2 TLSv1.3;
         ssl_ciphers "EECDH+ECDSA+AESGCM:EECDH+aRSA+AESGCM:EECDH+ECDSA+SHA256:EECDH+aRSA+SHA256:EECDH+ECDSA+SHA384:EECDH+ECDSA+SHA256:EECDH+aRSA+SHA384:EDH+aRSA+AESGCM:EDH+aRSA+SHA256:EDH+aRSA:EECDH:!aNULL:!eNULL:!MEDIUM:!LOW:!3DES:!MD5:!EXP:!PSK:!SRP:!DSS:!RC4:!SEED";
 
         ...
@@ -393,7 +393,7 @@ hand out session cookies and CSRF tokens on a secure connection::
     # 'https' if the connection is actually secure.
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-Please make also sure that
+Please make also make sure that
 you override the ``X-Forwarded-Proto`` header passed to Django. It should only
 contain "https" if the connection is actually secure. Consult the `Django
 documentation

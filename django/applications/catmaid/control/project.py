@@ -120,7 +120,7 @@ def update_project_tags(request:HttpRequest, project_id=None, tags=None) -> Json
         tags = [t.strip() for t in tags]
 
     # Add tags to the model
-    p.tags.set(*tags)
+    p.tags.set(tags)
 
     # Return an empty closing response
     return JsonResponse("", safe=False)
@@ -477,7 +477,7 @@ def export_project_data(projects) -> List:
             'dimension': str(row[3]),
             'resolution': row[4],
             'downsample_factors': None if row[5] is None else [str(r) for r in row[5]],
-            'metadata': row[6],
+            'metadata': json.loads(row[6]) if row[6] else None,
             'comment': row[7],
             'attribution': row[8],
             'description': row[9],

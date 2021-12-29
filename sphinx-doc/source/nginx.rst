@@ -49,7 +49,7 @@ connection pooling and communicates efficiently with Nginx.
 
 4. Make sure that the ``socket`` directory from your ``.ini`` file
    (``/run/uwsgi/app/catmaid/`` above) exists and is readable and writable by
-   the user that will run ``uwsgi``. You now should able to start
+   the user that will run ``uwsgi``. You now should be able to start
    uWSGI manually, running it as the current user::
 
       uwsgi --ini <catmaid-path>/django/projects/mysite/catmaid-uwsgi.ini
@@ -89,7 +89,7 @@ connection pooling and communicates efficiently with Nginx.
    permissions for each path component when called like this:
    ``namei -l <CATMAID-PATH>/django/static``.
 
-   Also, it easy to miss, but important that the the relative URL in the
+   Also, it is easy to miss, but important that the the relative URL in the
    ``mount`` line of the uWSGI configuration in step 3 has to be exactly the
    same as the uWSGI location block in the Nginx configuration in step 5,
    including whether there is an ending slash character.

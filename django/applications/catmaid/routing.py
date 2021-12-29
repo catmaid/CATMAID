@@ -4,5 +4,5 @@ from catmaid.consumers import UpdateConsumer
 
 
 websocket_urlpatterns = [
-    url(r'^channels/updates/$', UpdateConsumer),
+    url(r'^channels/updates/$', UpdateConsumer.as_asgi()),
 ]

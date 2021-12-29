@@ -2,6 +2,7 @@
 
 import logging
 import json
+import ujson
 import os
 from typing import List
 
@@ -225,6 +226,7 @@ def check_media_path(app_configs, **kwargs) -> List[str]:
     return messages
 
 class CATMAIDConfig(AppConfig):
+    default_auto_field = 'django.db.models.AutoField'
     name = 'catmaid'
     verbose_name = "CATMAID"
 

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import ujson
 
 from typing import Dict
 from django.db import connection
@@ -115,7 +116,7 @@ def transaction_collection(request:Request, project_id) -> Response:
             'range_length': range_length,
         })
         result = cursor.fetchall()
-        json_data = [row[0] for row in result]
+        json_data = [ujson.loads(row[0]) for row in result]
         total_count = result[0][1] if len(json_data) > 0 else 0
 
         return Response({

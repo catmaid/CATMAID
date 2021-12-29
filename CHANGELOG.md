@@ -1,6 +1,8 @@
 ## Under development
 
+### Notes
 
+- This version requires Python 3.8+.
 
 ### Features and enhancements
 

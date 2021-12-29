@@ -23,7 +23,7 @@ from catmaid.control.common import (id_generator, get_request_bool,
 from catmaid.control.tile import get_tile_source
 from catmaid.control.message import notify_user
 
-from celery.task import task
+from celery import shared_task
 from io import BytesIO
 
 logger = logging.getLogger(__name__)
@@ -547,7 +547,7 @@ def rotate2d(degrees, point, origin) -> Tuple[float, float]:
 
     return newx, newyorz
 
-@task()
+@shared_task()
 def process_crop_job(job: CropJob, create_message=True) -> str:
     """ This method does the actual cropping. It controls the data extraction
     and the creation of the sub-stack. It can be executed as Celery task.

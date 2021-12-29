@@ -2,6 +2,7 @@
 
 import logging
 import json
+import ujson
 import os
 from typing import List
 

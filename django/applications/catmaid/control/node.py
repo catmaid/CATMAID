@@ -122,8 +122,11 @@ class CachedJsonNodeNodeProvder(CachedNodeProvider):
             explicit_connector_ids, include_labels, with_relation_map,
             with_origin) -> Tuple[Any, Optional[str]]:
         cursor = connection.cursor()
-        # For JSONB type cache, use ujson to decode, this is roughly 2x faster
-        psycopg2.extras.register_default_jsonb(loads=ujson.loads)
+        # For JSONB type cache, use ujson to decode, this is roughly 2x faster.
+        # Unfortunately, since Django 3.1.1 we can't simply define a psycopg2
+        # default (register_default_jsonb), because Django overrides it.
+        # Instead, we need to explicitely call ujson.loads() when reading the
+        # result.
         cursor.execute("""
             SELECT json_data FROM node_query_cache
             WHERE project_id = %s AND depth = %s
@@ -132,7 +135,7 @@ class CachedJsonNodeNodeProvder(CachedNodeProvider):
         rows = cursor.fetchone()
 
         if rows and rows[0]:
-            tuples = rows[0]
+            tuples = ujson.loads(rows[0])
             # If there are exta nodes required, query them explicitely using a
             # regular Postgis 2D query. Inject the result into cached data.
             if explicit_treenode_ids or explicit_connector_ids:
@@ -321,8 +324,6 @@ class GridCachedNodeProvider(CachedNodeProvider):
         params['volume'] = (params['right'] - params['left']) * \
                 (params['bottom'] - params['top']) * (params['z2'] - params['z1'])
 
-        # For JSONB type cache, use ujson to decode, this is roughly 2x faster
-        psycopg2.extras.register_default_jsonb(loads=ujson.loads)
         # Find grid that has a cell configuration closest to what we are looking for.
         cursor.execute("""
             SELECT id, cell_width, cell_height, cell_depth, n_lod_levels
@@ -404,10 +405,17 @@ class GridCachedNodeProvider(CachedNodeProvider):
         })
         rows = cursor.fetchall()
 
-
+        # For JSONB type cache, use ujson to decode, this is roughly 2x faster.
+        # Unfortunately, since Django 3.1.1 we can't simply define a psycopg2
+        # default (register_default_jsonb), because Django overrides it.
+        # Instead, we need to explicitely call ujson.loads() when reading the
+        # result.
         if rows and rows[0]:
             # It is the first LOD of the LOD set of the first result cell.
-            first_cell_lods = rows[0][0]
+            if self.data_type == 'json':
+                first_cell_lods = ujson.loads(rows[0])[0]
+            else:
+                first_cell_lods = rows[0][0]
             tuples = first_cell_lods[0]
 
             # All extra LODs that are included are transmitted as extra tuples.

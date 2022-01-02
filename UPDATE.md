@@ -40,7 +40,7 @@ and other administration related changes are listed in order.
 - A virtualenv update is required.
 
 - For production environments it is now recommended to also install the Python
-  depedencies listedn in the new requirements-production.txt file:
+  depedencies listed in the new requirements-production.txt file:
 
   pip install -r requirements-production.txt
 

@@ -409,16 +409,10 @@ def export_project_data(projects) -> List:
 
     # Get information on all relevant stack mirrors
     cursor.execute("""
-        SELECT sm.id, sm.stack_id, sm.title, sm.image_base, sm.file_extension,
+        SELECT DISTINCT ON (sm.id) sm.id, sm.stack_id, sm.title, sm.image_base, sm.file_extension,
                 sm.tile_width, sm.tile_height, sm.tile_source_type, sm.position
         FROM project_stack ps
-        JOIN LATERAL (
-          SELECT *
-          FROM stack_mirror sm
-          WHERE sm.stack_id = ps.stack_id
-          LIMIT 1
-        ) sm
-          ON TRUE
+        JOIN stack_mirror sm ON sm.stack_id = ps.stack_id
         WHERE ps.project_id = ANY(%(user_project_ids)s::integer[])
         ORDER BY sm.id ASC, sm.position ASC
     """, {

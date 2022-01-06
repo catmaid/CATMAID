@@ -114,10 +114,6 @@ class PreMirror(object):
         if not self.image_base:
             raise ValueError("Could not find valid image base for stack mirror")
 
-        # Make sure the image base has a trailing slash, because this is expected
-        if self.image_base[-1] != '/':
-            self.image_base = self.image_base + '/'
-
         # Test if the data is accessible through HTTP
         self.accessible = check_http_accessibility(self.image_base,
                 self.file_extension, auth=None)

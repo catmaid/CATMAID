@@ -20,7 +20,7 @@ Introduction
 
 The most fundamental dependencies of CATMAID are:
 
-1. PostgreSQL 12 and PostGIS 2.5
+1. PostgreSQL 13+ and PostGIS 3.1 (PostgreSQL 14 and PostGIS 3.2 is recommended)
 2. CPython 3.8, 3.9 or PyPy3.8 (CPython 3.8 is recommended)
 
 To get the required PostgreSQL version for Debian-based systems, such as
@@ -51,7 +51,7 @@ or newer not be available on your system, use the following PPA::
 
 And then you can install these dependencies with::
 
-    sudo apt-get install python3.8 postgresql-12 postgresql-12-postgis-2.5 gdal-bin
+    sudo apt-get install python3.8 postgresql-13 postgresql-13-postgis-3-scripts gdal-bin
 
 CATMAID is based on the `Django web framework
 <https://www.djangoproject.com/>`_.  If you just wish to work on
@@ -182,7 +182,7 @@ database called ``catmaid`` and a database user called
 ``catmaid_user``. Firstly, we need to reconfigure PostgreSQL to
 allow password-based authentication for that user to that
 database. To do that, edit the file
-``/etc/postgresql/11/main/pg_hba.conf`` and add this line as the
+``/etc/postgresql/13/main/pg_hba.conf`` and add this line as the
 *first* rule in that file::
 
     local catmaid catmaid_user md5

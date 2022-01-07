@@ -105,7 +105,7 @@ Next, Postgres needs to be told to use the WAL for replication. Edit
 
   wal_level = replica
   max_wal_senders = 3 # max number of walsender processes
-  wal_keep_segments = 64 # in logfile segments, 16MB each; 0 disables
+  wal_keep_size = 256 # WAL space retained for replication, in MB
 
 The ``replica`` value for the ``wal_level`` is the default. The number of kept
 WAL segments should be enough for most setups, but on write heavy setups, it is

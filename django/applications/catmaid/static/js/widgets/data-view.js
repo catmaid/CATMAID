@@ -334,6 +334,10 @@
     }
   }
 
+  let compareMirrors = function (a, b) {
+    return a.position - b.position;
+  };
+
   /**
    * Update the displayed project list based on the cache entries. This can
    * involve a filter in the text box "project_filter_text".
@@ -403,7 +407,8 @@
         let imgSpan = rowSpan.appendChild(document.createElement('span'));
         if (p.stacks && p.stacks.length > 0) {
           let stack = p.stacks[0];
-          let mirror = stack.mirrorsByPriority()[this.sample_mirror_index];
+          // Sort mirror objects by priority without creating a full Stack instance.
+          let mirror = stack.mirrors.sort(compareMirrors)[this.sample_mirror_index];
           if (mirror) {
             let tileSource = CATMAID.TileSources.get(mirror.id,
               mirror.tile_source_type, mirror.image_base, mirror.file_extension,

@@ -136,7 +136,8 @@
       var self = this;
       CATMAID.Nodes.getLocation(this.lookAt)
         .then(function(position) {
-          self.webglapp.lookAt(position);
+          // The getLocation() response is of form [id, x, y, z]
+          self.webglapp.lookAt(position.slice(1));
         })
         .catch(CATMAID.handleError);
     } else if (this.lookAt instanceof Array) {

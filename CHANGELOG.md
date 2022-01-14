@@ -3,6 +3,9 @@
 - Node distance measurements: computation of straight line distance has been
   fixed. (#2193)
 
+- 3D confirmation dialog: focusing on single nodes works again. Previously the
+  wrong node location was used.
+
 ## 2021.12.21
 
 Contributors: Chris Barnes, Albert Cardona, Andrew Champion, Stephan Gerhard, Sanja Jasek, Tom Kazimiers

@@ -2128,9 +2128,9 @@
               sameSkeleton ? CATMAID.Skeletons.distanceBetweenNodes(project.id,
                   skeletonId, firstNodeId, secondNodeId, arborTransform) : -1,
               firstPosition ? firstPosition : CATMAID.Nodes.getLocation(firstNodeId)
-                  .then(l => new THREE.Vector3(l[0], l[1], l[2])),
+                  .then(l => new THREE.Vector3(l[1], l[2], l[3])),
               secondPosition ? secondPosition : CATMAID.Nodes.getLocation(secondNodeId)
-                  .then(l => new THREE.Vector3(l[0], l[1], l[2])),
+                  .then(l => new THREE.Vector3(l[1], l[2], l[3])),
             ]).then(results => {
               resolve({
                 sameSkeleton: sameSkeleton,

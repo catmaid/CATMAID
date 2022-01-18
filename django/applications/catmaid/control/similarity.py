@@ -1198,7 +1198,7 @@ def compare_skeletons(request:HttpRequest, project_id) -> JsonResponse:
 
     with transaction.atomic():
         # In case of a pointset, new pointset model objects needs to be created
-        # before the similariy query is created.
+        # before the similarity query is created.
         if query_type_id == 'pointset':
             created_ids = []
             for pointset_id in query_ids:
@@ -1573,6 +1573,120 @@ def recompute_similarity(request:HttpRequest, project_id, similarity_id) -> Json
         'status': 'queued',
         'task_id': task.task_id
     })
+
+
+class SkeletonDetail(APIView):
+
+    @method_decorator(requires_user_role(UserRole.Browse))
+    def get(self, request:HttpRequest, project_id, similarity_id) -> JsonResponse:
+        """Get a set of skeletons that were considered similar in a particular
+        similarity computation to a set of input skeletons. Other filters, like a
+        bounding box or minimum similarity score can optionally be applied.
+        ---
+        parameters:
+          - name: project_id
+            description: Project of the returned similarities
+            type: integer
+            paramType: path
+            required: true
+          - name: similarity_id
+            description: The similarity  to load.
+            type: integer
+            paramType: path
+            required: true
+          - name: skeleton_ids
+            description: The skeleton partner matches should be looked up for.
+            type: integer
+            paramType: form
+            required: true
+          - name: min_cable_length
+            description: The minimum length of skeletons to consider
+            paramType: form
+            required: false
+            defaultValue: 0
+          - name: min_similarity_score
+            description: The minimum similarity score
+            paramType: form
+            required: false
+            defaultValue: 0
+        """
+        skeleton_ids = get_request_list(request.query_params, 'skeleton_ids', map_fn=int)
+        min_cable_length = float(request.query_params.get('min_cable_length', 0))
+        min_similarity_score = float(request.query_params.get('min_similarity_score', 0))
+
+        if not skeleton_ids:
+            raise ValueError("Need at least one skeleton ID")
+
+        cursor = connection.cursor()
+
+        similarity = NblastSimilarity.objects.get(pk=similarity_id)
+        if similarity.scoring:
+            pconn = cursor.cursor.connection
+            lobj = pconn.lobject(oid=similarity.scoring, mode='rb')
+            # For all query skeletons, get the scores for all target skeletons
+            scores = dict()
+            for skeleton_id in skeleton_ids:
+                query_index = similarity.query_objects.index(skeleton_id)
+                # We look through 32 bit floats
+                lobj.seek(query_index * 4)
+                raw_data = np.frombuffer(lobj.read(len(similarity.target_objects) * 4), dtype=np.float32)
+                scores[skeleton_id] = raw_data.reshape((1, len(similarity.target_objects))).tolist()[0]
+
+            # Remove all target skeletons that are too short
+            target_skids = similarity.target_objects.copy()
+            if min_cable_length:
+                cursor.execute("""
+                    SELECT skeleton_id
+                    FROM catmaid_skeleton_summary
+                    WHERE cable_length < %(min_cable_length)s
+                """, {
+                    'target_object_ids': similarity.target_objects,
+                    'min_cable_length': min_cable_length,
+                })
+                indexes_to_remove = [
+                    similarity.target_objects.index(tskid)
+                    for (tskid,) in cursor.fetchall()
+                ].sort(reverse=True)
+                for _, target_object_ids in scores.items():
+                    for idx in indexes_to_remove:
+                        del target_object_ids[idx]
+                for idx in indexes_to_remove:
+                    del target_skids[idx]
+
+            # Remove all scores that are too small
+            if min_similarity_score:
+                return JsonResponse([
+                        [skeleton_id, [
+                            [tskid, ts] for (tskid, ts)
+                            in zip(target_skids, target_scores)
+                            if ts > min_similarity_score
+                        ]]
+                        for skeleton_id, target_scores in scores.items()
+                    ], safe=False)
+            else:
+                return JsonResponse([
+                        [skeleton_id, list(zip(target_skids, target_scores))]
+                        for skeleton_id, target_scores in scores.items()
+                    ], safe=False)
+        else:
+            cursor.execute("""
+                SELECT skeleton.id, json_agg(json_build_array(target_object_id, score))
+                FROM UNNEST(%(skeleton_ids)s::bigint[]) skeleton(id)
+                JOIN nblast_similarity_score nss
+                    ON nss.query_object_id = skeleton.id
+                JOIN catmaid_skeleton_summary css
+                    ON css.skeleton_id = skeleton.id
+                WHERE nss.score >= %(min_similarity_score)s
+                AND css.cable_length >= %(min_cable_length)s
+            """, {
+                'project_id': project_id,
+                'similarity_id': similarity_id,
+                'skeleton_ids': skeleton_ids,
+                'min_cable_length': min_cable_length,
+                'min_similarity_score': min_similarity_score,
+            })
+
+            return JsonResponse(sorted(cursor.fetchall(), key=lambda x: x[0]), safe=False)
 
 
 class SimilarityStorageDetail(APIView):

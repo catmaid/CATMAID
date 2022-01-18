@@ -20,7 +20,7 @@ msgpack_python==0.5.6
 networkx==2.6.2; platform_python_implementation != 'PyPy'
 networkx==2.5.1; platform_python_implementation == 'PyPy'
 numpy==1.19.5
-pillow==8.3.2
+pillow==9.0.0
 progressbar2==3.47.0
 psycopg2-binary==2.9.2; platform_python_implementation != 'PyPy'
 psycopg2cffi==2.9.0;  platform_python_implementation == 'PyPy'

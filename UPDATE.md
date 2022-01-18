@@ -5,6 +5,18 @@ and other administration related changes are listed in order.
 
 - This version requires Python 3.8+.
 
+- The version requires PostgreSQL 13+ and PostGIS 3.1+. If you need or want to
+  upgrade Postgres, update PostGIS first and run ``ALTER EXTENSION postgis
+  UPDATE;`` in every existing database in the cluster that should be upgraded.
+  For ``docker-compose`` setups this database update is performed automatically if
+  `DB_UPDATE=true` is set for the `db` container (watch the Docker output) in
+  the configuration file.  CATMAID's documentation Docker has more information.
+  If a replication setup is in use, the database configuration changes for
+  Postgres 13. CATMAID's replication documentation explains what needs to be
+  done. To benefit from Postgres 13's new index deduplication, run REINDEX in
+  the CATMAID database. This might take up to an hour, but can reduce the space
+  and memory needs of CATMAID's database indexes by 30-50%.
+
 ## 2021.12.21
 
 - The version requires PostgreSQL 12. If you also want to upgrade PostGIS,

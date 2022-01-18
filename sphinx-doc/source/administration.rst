@@ -87,15 +87,17 @@ Update Python packages::
 
    pip install -r requirements.txt
 
-Should a database upgrade be required (e.g. Postgres 11 to 12 or PostGIS 2.5 to
-3), make sure to upgrade PostGIS first, by installing the new version for the
-current database and connect to every (!) database in the cluster and update the
+Should a database upgrade be required (e.g. Postgres 12 to 13 or PostGIS 2.5 to
+3), make sure to upgrade PostGIS first in the current database (to the same
+version of the target database), by installing the new version for the current
+database and connect to every (!) database in the cluster and update the
 ``postgis`` extension like this. This can be skipped if no database upgrade is
 required::
 
   $ sudo -u postgres psql
   > \c catmaid
   > ALTER EXTENSION postgis UPDATE;
+  > SELECT postgis_extensions_upgrade();
   > \c <next-database>
   > ALTER EXT…
   > …

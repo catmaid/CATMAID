@@ -1119,6 +1119,11 @@ def compare_skeletons(request:HttpRequest, project_id) -> JsonResponse:
         type: boolean
         required: false
         defaultValue: true
+      - name: storage_mode
+        description: How the scoring should be stored: blob or relation
+        type: string
+        required: false
+        defaultValue: blob
       - name: top_n
         description: |
             How many results should be returned sorted by score. A
@@ -1195,6 +1200,12 @@ def compare_skeletons(request:HttpRequest, project_id) -> JsonResponse:
     soma_tags = get_request_list(request.POST, 'soma_tags', default=['soma'])
     remove_target_duplicates = get_request_bool(request.POST,
             'remove_target_duplicates', True)
+    storage_mode = request.POST.get('storage_mode', 'blob')
+    if storage_mode not in ('blob', 'relation'):
+        raise ValueError(f'Unknown storage mode "{storage_mode}"')
+    relational_results = storage_mode == 'relation'
+
+    get_request_bool(request.POST, 'relational_results', False)
 
     with transaction.atomic():
         # In case of a pointset, new pointset model objects needs to be created
@@ -1240,7 +1251,8 @@ def compare_skeletons(request:HttpRequest, project_id) -> JsonResponse:
     task = compute_nblast.delay(project_id, request.user.id, similarity.id,
             remove_target_duplicates, simplify, required_branches,
             use_cache=use_cache, min_length=min_length,
-            min_soma_length=min_soma_length, soma_tags=soma_tags)
+            min_soma_length=min_soma_length, soma_tags=soma_tags,
+            relational_results=relational_results)
 
     return JsonResponse({
         'task_id': task.task_id,
@@ -1560,14 +1572,36 @@ class SimilarityClusterDetail(APIView):
 @requires_user_role(UserRole.QueueComputeTask)
 def recompute_similarity(request:HttpRequest, project_id, similarity_id) -> JsonResponse:
     """Recompute the similarity matrix of the passed in NBLAST configuration.
+        ---
+        parameters:
+          - name: project_id
+            description: Project of the similarity computation
+            type: integer
+            paramType: path
+            required: true
+          - name: similarity_id
+            description: The similarity to use.
+            type: integer
+            paramType: path
+            required: true
+          - name: storage_mode
+            description: The storage mode to use: "blob" or "relation"
+            type: string
+            paramType: form
+            required: true
     """
     simplify = get_request_bool(request.GET, 'simplify', True)
     required_branches = int(request.GET.get('required_branches', '10'))
     can_edit_or_fail(request.user, similarity_id, 'nblast_similarity')
     use_cache = get_request_bool(request.GET, 'use_cache', True)
+    storage_mode = request.GET.get('storage_mode', 'blob')
+    if storage_mode not in ('blob', 'relation'):
+        raise ValueError('Storage mode needs to be "blob" or "relation"')
+    relational_results = storage_mode == 'relation'
     task = compute_nblast.delay(project_id, request.user.id, similarity_id,
             remove_target_duplicates=True, simplify=simplify,
-            required_branches=required_branches, use_cache=use_cache)
+            required_branches=required_branches, use_cache=use_cache,
+            relational_results=relational_results)
 
     return JsonResponse({
         'status': 'queued',

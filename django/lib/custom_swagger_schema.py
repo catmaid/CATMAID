@@ -41,8 +41,9 @@ class CustomSchema(AutoSchema):
                     # description of the API. The second document is the API specification.
                     api_components = doc.split('---')
                     api_doc = api_components[0]
-                    api_spec = api_components[1]
-                    yaml_doc = yaml.load(api_spec, Loader=yaml.FullLoader)
+                    if len(api_components) > 1:
+                        api_spec = api_components[1]
+                        yaml_doc = yaml.load(api_spec, Loader=yaml.FullLoader)
                 except Exception as e:
                     logger.warning(f"Can't parse YAML doc string for {view}: {e}")
                     yaml_doc = None

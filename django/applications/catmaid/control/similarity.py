@@ -237,8 +237,9 @@ class ConfigurationList(APIView):
             paramType: form
             required: true
           - name: source
-            description: Where random skeletons come from. Either
-            "data", "request" or "backend-random".
+            description: |
+              Where random skeletons come from. Either "data", "request" or
+              "backend-random".
             required: false
             defaultValue: "backend-random"
             paramType: form

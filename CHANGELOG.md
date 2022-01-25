@@ -31,6 +31,9 @@
 - 3D confirmation dialog: focusing on single nodes works again. Previously the
   wrong node location was used.
 
+- API docs: API parameters and descriptions are now visible again in the /apis
+  docs endpoint.
+
 ## 2021.12.21
 
 Contributors: Chris Barnes, Albert Cardona, Andrew Champion, Stephan Gerhard, Sanja Jasek, Tom Kazimiers

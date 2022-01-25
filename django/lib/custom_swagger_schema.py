@@ -7,6 +7,9 @@ from rest_framework.schemas.coreapi import AutoSchema
 from urllib.parse import urljoin
 import yaml
 import coreapi
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class CustomSchema(AutoSchema):
@@ -25,19 +28,23 @@ class CustomSchema(AutoSchema):
             method_name = getattr(view, 'action', method.lower())
             method_docstring = getattr(view, method_name, None).__doc__
 
+            if method_docstring:
+                doc = method_docstring
+
             if not doc and view.__doc__:
                 doc = view.__doc__
 
             if doc:
                 try:
                     # Extract schema information from yaml, expect the documentation to be
-                    # devided into two YAML documents: The top one is a general verbatim
+                    # divided into two YAML documents: The top one is a general verbatim
                     # description of the API. The second document is the API specification.
                     api_components = doc.split('---')
                     api_doc = api_components[0]
                     api_spec = api_components[1]
-                    yaml_doc = yaml.load(api_spec)
-                except:
+                    yaml_doc = yaml.load(api_spec, Loader=yaml.FullLoader)
+                except Exception as e:
+                    logger.warning(f"Can't parse YAML doc string for {view}: {e}")
                     yaml_doc = None
 
             if api_doc:
@@ -46,7 +53,7 @@ class CustomSchema(AutoSchema):
         if not _method_desc:
             _method_desc = view.__doc__ if view and view.__doc__ else ''
 
-        # Remove any leading or trailing whitespace, otherwise everthing becomes
+        # Remove any leading or trailing whitespace, otherwise everything becomes
         # a block quote (due to Python comments being indented).
         _method_desc = '\n'.join(line.strip() for line in _method_desc.splitlines())
 

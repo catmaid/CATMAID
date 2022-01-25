@@ -916,7 +916,7 @@ def add_multiple_sampler_domains(request:HttpRequest, project_id, sampler_id) ->
     parameters:
      - name: domains
        description: List of domains to add
-       type: array:
+       type: array
        items:
          type: string
        required: true
@@ -1085,11 +1085,11 @@ def add_all_intervals(request:HttpRequest, project_id, domain_id) -> JsonRespons
     parameters:
      - name: domain_id
        description: Domain to add intervals in
-       type: integer:
+       type: integer
        required: true
      - name: intervals
        description: A list of two-element lists, with start and end node each
-       type: array:
+       type: array
        items:
          type: string
        required: true

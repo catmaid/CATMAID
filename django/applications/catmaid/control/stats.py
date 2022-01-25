@@ -39,7 +39,7 @@ def stats_cable_length(request:HttpRequest, project_id=None) -> JsonResponse:
       type: integer
       paramType: form
     - name: name_pattern
-      description |
+      description: |
         Optional name pattern that returned neuron names have to match. Start
         with '/' for a regular expression.
       required: false

@@ -1613,43 +1613,98 @@ class SkeletonDetail(APIView):
 
     @method_decorator(requires_user_role(UserRole.Browse))
     def get(self, request:HttpRequest, project_id, similarity_id) -> JsonResponse:
-        """Get a set of skeletons that were considered similar in a particular
-        similarity computation to a set of input skeletons. Other filters, like a
-        bounding box or minimum similarity score can optionally be applied.
+        """Get a set of skeletons that were considered similar to others in a
+        particular similarity computation.
+
+        This can be further constrained by specifying a set of input skeletons,
+        of which the result skeletons need to be partners. Other filters, like a
+        bounding box or minimum similarity score can optionally be applied as
+        well. If neither a set of query skeleton IDs or a bounding box is
+        supplied, all possible query and target skeletons of the referenced
+        similarity object will be considered. If a bounding box is supplied,
+        both the query and target objects of a single similarity score need to
+        intersect the given bounding box.
+
+        Returned is a list of lists, each list item represents a set of matches
+        for a query skeleton and contains two elements: The first item
+        is the query skeleton ID, and the second item is another list of
+        two-element lists. Each of these inner lists contains a target skeleton
+        ID and the respective similarity score.
         ---
         parameters:
           - name: project_id
-            description: Project of the returned similarities
+            description: Project to operate in.
             type: integer
             paramType: path
             required: true
           - name: similarity_id
-            description: The similarity  to load.
+            description: The similarity computation to work with.
             type: integer
             paramType: path
             required: true
           - name: skeleton_ids
-            description: The skeleton partner matches should be looked up for.
+            description: |
+                A set of skeletons that can be used to constrain the query part
+                of the returned similarity matches.
             type: integer
             paramType: form
-            required: true
+            required: false
           - name: min_cable_length
-            description: The minimum length of skeletons to consider
+            description: |
+                The minimum length that both query and target skeletons need to
+                have to be considered.
             paramType: form
             required: false
             defaultValue: 0
           - name: min_similarity_score
-            description: The minimum similarity score
+            description: The minimum similarity score each match needs to have.
             paramType: form
             required: false
             defaultValue: 0
+          - name: min_x
+            description: The min X of the query bounding box
+            type: float
+            paramType: form
+            required: false
+          - name: min_y
+            description: The min Y of the query bounding box
+            type: float
+            paramType: form
+            required: false
+          - name: min_z
+            description: The min Z of the query bounding box
+            type: float
+            paramType: form
+            required: false
+          - name: max_x
+            description: The max X of the query bounding box
+            type: float
+            paramType: form
+            required: false
+          - name: max_y
+            description: The max Y of the query bounding box
+            type: float
+            paramType: form
+            required: false
+          - name: max_z
+            description: The max Z of the query bounding box
+            type: float
+            paramType: form
+            required: false
         """
         skeleton_ids = get_request_list(request.query_params, 'skeleton_ids', map_fn=int)
         min_cable_length = float(request.query_params.get('min_cable_length', 0))
         min_similarity_score = float(request.query_params.get('min_similarity_score', 0))
 
-        if not skeleton_ids:
-            raise ValueError("Need at least one skeleton ID")
+        min_x, min_y, min_z = (request.query_params.get('min_x'),
+                request.query_params.get('min_y'), request.query_params.get('min_z'))
+        max_x, max_y, max_z = (request.query_params.get('max_x'),
+                request.query_params.get('max_y'), request.query_params.get('max_z'))
+
+        has_bb = all([min_x, min_y, min_z, max_x, max_y, max_z])
+        if has_bb:
+            min_x, min_y, min_z, max_x, max_y, max_z = (float(min_x), float(min_y),
+                    float(min_z), float(max_x), float(max_y), float(max_z))
 
         cursor = connection.cursor()
 
@@ -1659,6 +1714,10 @@ class SkeletonDetail(APIView):
             lobj = pconn.lobject(oid=similarity.scoring, mode='rb')
             # For all query skeletons, get the scores for all target skeletons
             scores = dict()
+
+            if has_bb:
+                raise ValueError("Bounding boxes are not yet supported for large object storage")
+
             for skeleton_id in skeleton_ids:
                 query_index = similarity.query_objects.index(skeleton_id)
                 # We look through 32 bit floats
@@ -1703,21 +1762,96 @@ class SkeletonDetail(APIView):
                         for skeleton_id, target_scores in scores.items()
                     ], safe=False)
         else:
-            cursor.execute("""
+            if has_bb:
+                if skeleton_ids:
+                    skeleton_constraints = """
+                        JOIN UNNEST(%(skeleton_ids)s::bigint[]) skeleton_constr(id)
+                            ON skeleton_constr.id = t.id
+                    """
+                else:
+                    skeleton_constraints = ""
+
+                skeleton_src = f"""
+                    WITH skeleton_in_bb AS MATERIALIZED (
+                      SELECT DISTINCT t.skeleton_id AS id
+                      FROM (
+                          SELECT te.id, te.edge
+                          FROM treenode_edge te
+                          WHERE floatrange(ST_ZMin(te.edge),
+                               ST_ZMax(te.edge), '[]') && floatrange(%(min_z)s, %(max_z)s, '[)')
+                            AND te.project_id = %(project_id)s
+                      ) e
+                      JOIN treenode t
+                        ON t.id = e.id
+                      WHERE e.edge && ST_MakeEnvelope(%(min_x)s, %(min_y)s, %(max_x)s, %(max_y)s)
+                        AND ST_3DDWithin(e.edge, ST_MakePolygon(ST_MakeLine(ARRAY[
+                            ST_MakePoint(%(min_x)s, %(min_y)s, %(half_z)s),
+                            ST_MakePoint(%(max_x)s, %(min_y)s, %(half_z)s),
+                            ST_MakePoint(%(max_x)s, %(max_y)s, %(half_z)s),
+                            ST_MakePoint(%(min_x)s, %(max_y)s, %(half_z)s),
+                            ST_MakePoint(%(min_x)s, %(min_y)s, %(half_z)s)]::geometry[])),
+                            200.0)
+                    ), skeleton AS (
+                        SELECT DISTINCT t.id
+                        FROM skeleton_in_bb t
+                        {skeleton_constraints}
+                    )
+                """
+            elif skeleton_ids:
+                skeleton_src = """
+                    WITH skeleton AS MATERIALIZED (
+                        SELECT id FROM UNNEST(%(skeleton_ids)s::bigint[]) skeleton(id)
+                    )
+                """
+            else:
+                skeleton_src = """
+                    WITH skeleton AS MATERIALIZED (
+                        SELECT DISTINCT query_object_id AS id
+                        FROM nblast_similarity_score
+                        WHERE similarity_id = %(similarity_id)s
+                        UNION
+                        SELECT DISTINCT target_object_id AS id
+                        FROM nblast_similarity_score nss
+                        WHERE similarity_id = %(similarity_id)s
+                    )
+                """
+
+            bb_target_filter = ""
+            if has_bb:
+                bb_target_filter = """
+                    JOIN skeleton_in_bb sbb
+                        ON sbb.id = nss.target_object_id
+                """
+
+            cursor.execute(f"""
+                {skeleton_src}
                 SELECT skeleton.id, json_agg(json_build_array(target_object_id, score))
-                FROM UNNEST(%(skeleton_ids)s::bigint[]) skeleton(id)
+                FROM skeleton
                 JOIN nblast_similarity_score nss
                     ON nss.query_object_id = skeleton.id
                 JOIN catmaid_skeleton_summary css
                     ON css.skeleton_id = skeleton.id
-                WHERE nss.score >= %(min_similarity_score)s
+                JOIN catmaid_skeleton_summary css_target
+                    ON css_target.skeleton_id = nss.target_object_id
+                {bb_target_filter}
+                WHERE nss.similarity_id = %(similarity_id)s
+                AND nss.score >= %(min_similarity_score)s
                 AND css.cable_length >= %(min_cable_length)s
+                AND css_target.cable_length >= %(min_cable_length)s
+                GROUP BY skeleton.id
             """, {
                 'project_id': project_id,
                 'similarity_id': similarity_id,
                 'skeleton_ids': skeleton_ids,
                 'min_cable_length': min_cable_length,
                 'min_similarity_score': min_similarity_score,
+                'min_x': min_x,
+                'min_y': min_y,
+                'min_z': min_z,
+                'max_x': max_x,
+                'max_y': max_y,
+                'max_z': max_z,
+                'half_z': (max_z + min_z) * 0.5 if has_bb else None,
             })
 
             return JsonResponse(sorted(cursor.fetchall(), key=lambda x: x[0]), safe=False)

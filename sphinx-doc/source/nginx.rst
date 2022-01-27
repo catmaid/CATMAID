@@ -48,7 +48,7 @@ connection pooling and communicates efficiently with Nginx.
    ``postgresql.conf``). Make sure you have enough memory available here.
 
 4. Make sure that the ``socket`` directory from your ``.ini`` file
-   (``/run/uwsgi/app/catmaid/`` above) exists and is readable and writable by
+   (``/var/run/catmaid/`` above) exists and is readable and writable by
    the user that will run ``uwsgi``. You now should be able to start
    uWSGI manually, running it as the current user::
 
@@ -77,7 +77,7 @@ connection pooling and communicates efficiently with Nginx.
          # Route all CATMAID Django WSGI requests to uWSGI
          location /catmaid/ {
            include uwsgi_params;
-           uwsgi_pass unix:///run/uwsgi/app/catmaid/socket;
+           uwsgi_pass unix:///var/run/catmaid/uwsgi.socket;
          }
        }
 

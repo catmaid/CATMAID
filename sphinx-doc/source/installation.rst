@@ -9,8 +9,8 @@
 Basic Installation Instructions
 ===============================
 
-These installation instructions have been tested on Ubuntu 18.04
-(Bionic Beaver), so may need some minor changes for other Debian-based
+These installation instructions have been tested on Ubuntu 20.04 LTS
+(Focal Fossa), so may need some minor changes for other Debian-based
 distributions.
 For installation on Mac OS X, first read these
 :ref:`additional instructions <installation-osx>`.
@@ -107,7 +107,7 @@ If it gives you a version, everything is fine. Otherwise, e.g. if the command
 ``mkvirtualenv`` is not found, add the following line to your ``~/.bashrc`` file
 and call ``source ~/.bashrc`` again::
 
-    source /etc/bash_completion.d/virtualenvwrapper
+    source /usr/share/virtualenvwrapper/virtualenvwrapper.sh
 
 To create a new virtualenv for CATMAID's Python dependencies,
 you can do::
@@ -207,8 +207,8 @@ access the database and see that it is currently empty except for PostGIS
 relations, e.g.::
 
     psql -U catmaid_user catmaid
-    Password:
-    psql (11.3)
+    Password for user catmaid_user:
+    psql (12.9 (Ubuntu 12.9-2.pgdg20.04+1))
     Type "help" for help.
 
     catmaid=> \d

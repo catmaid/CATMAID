@@ -15,6 +15,23 @@
       font-size: xx-large;
     }
   </style>
+
+  <script>
+    // For lack of a better way we define the global field `drsSettings` to be a
+    // getter/setter in order to define additional settings.
+    let swaggerUiSettings = {};
+    Object.defineProperty(window, 'drsSettings', {
+      set: function(x) {
+        swaggerUiSettings = x;
+        // Add deep link support to API view
+        swaggerUiSettings.deepLinking = true;
+      },
+      get: function() {
+        return swaggerUiSettings;
+      }
+    });
+
+  </script>
 {% endblock %}
 
 {% block extra_scripts %}

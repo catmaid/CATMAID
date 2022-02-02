@@ -19,6 +19,10 @@
 ### Features and enhancements
 
 
+Miscellaneous:
+
+- The built-in API docs (/apis endpoint) now supports deep links, which allows
+  linking to individual APIs.
 
 ### Bug fixes
 

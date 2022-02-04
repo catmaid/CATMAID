@@ -92,6 +92,10 @@ class Command(BaseCommand):
                 help='The NBLAST similarity configuration to use, which also includes all NBLAST parameters'),
         parser.add_argument('--min-length', dest='min_length', type=float,
                 default=None, help='An optional minimum length for skeletons looked at')
+        parser.add_argument("--ignore-impossible-targets", dest='ignore_impossible_targets', type=str2bool, nargs='?',
+                const=True, default=False, help="Only consider target objects that have a closest point to the query point set that can lead to a NBLAST score")
+        parser.add_argument('--max-partner-distance', dest='max_partner_distance', type=float,
+                default=None, help='Can be used to override the default max distance (largest dist break in the NBLAST config).'),
         parser.add_argument('--n-jobs', dest='n_jobs', type=int,
                 default=50, help='How many jobs should be created.'),
         parser.add_argument("--create-tasks", dest='create_tasks', type=str2bool, nargs='?',
@@ -130,6 +134,8 @@ class Command(BaseCommand):
         create_tasks = options['create_tasks']
         job_index = options['bin']
         remove_target_duplicates = options['remove_target_duplicates']
+        ignore_impossible_targets = options['ignore_impossible_targets']
+        max_partner_distance = options['max_partner_distance']
         min_length = options['min_length'] or 0
         working_dir = options['working_dir']
 
@@ -254,15 +260,60 @@ class Command(BaseCommand):
             if job_index < 0 or job_index >= len(skeleton_groups):
                 raise ValueError('Invalid job index: {job_index}')
             query_skeletons = skeleton_groups[job_index]
+
             if query_skeletons:
+                target_skeletons = None
+                if ignore_impossible_targets:
+                    # Find a set of potential target objects to avoid having to fetch
+                    # all potential partners in each worker. This is done by only
+                    # allowing skeletons with a maximum distance from the set of query
+                    # skeletons. This distance is compued by looking at the
+                    # similarity matrix to see at what distance the score is
+                    # lowest.
+                    max_distance = max_partner_distance
+                    if not max_distance:
+                        max_distance = similarity.config.distance_breaks[-1]
+                    logger.info(f'Selecting close skeletons as potential partners, max distance: {max_distance}')
+                    cursor.execute("""
+                        SELECT DISTINCT skeleton.id
+                        FROM treenode t
+                        JOIN UNNEST(%(query_skeleton_ids)s::bigint[]) query(id)
+                            ON query.id = t.skeleton_id
+                        JOIN LATERAL (
+                            SELECT edge
+                            FROM treenode_edge
+                            WHERE id = t.id
+                            LIMIT 1) AS e ON TRUE
+                        JOIN LATERAL (
+                            SELECT id
+                            FROM treenode_edge te
+                            WHERE te.project_id = %(project_id)s
+                            AND ST_3DDWithin(e.edge, te.edge, %(max_distance)s)
+                        ) target(id) ON TRUE
+                        JOIN LATERAL (
+                            SELECT skeleton_id
+                            FROM treenode tt
+                            WHERE tt.id = target.id
+                            AND project_id = %(project_id)s
+                            LIMIT 1) skeleton(id) ON TRUE
+                    """, {
+                        'project_id': similarity.project_id,
+                        'query_skeleton_ids': query_skeletons,
+                        'max_distance': max_distance,
+                    })
+                    target_skeletons = [r[0] for r in cursor.fetchall()]
+
                 logger.info(f'Computing NBLAST values for similarity {similarity.id}, '
                         f'bin {job_index} ({job_index+1}/{len(skeleton_groups)}), '
                         f'containing {len(query_skeletons)} skeletons')
+                if target_skeletons:
+                    logger.info(f'Limiting target object set to {len(target_skeletons)} skeletons with a max distance of {max_distance} nm')
 
                 compute_nblast(similarity.project_id, similarity.user_id,
                         similarity.id, remove_target_duplicates,
                         relational_results=True, query_object_ids=query_skeletons,
-                        notify_user=False, write_scores_only=True, clear_results=False)
+                        target_object_ids=target_skeletons, notify_user=False,
+                        write_scores_only=True, clear_results=False)
             else:
                 logger.info(f'Nothing to compute for similarity {similarity.id}, '
                         f'bin {job_index} ({job_index+1}/{len(skeleton_groups)}), '

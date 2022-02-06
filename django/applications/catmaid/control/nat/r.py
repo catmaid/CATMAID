@@ -8,12 +8,13 @@ import math
 import multiprocessing
 import numpy
 import os
-import progressbar
+from tqdm import tqdm
 import re
 import subprocess
 from typing import Any, Dict, List, Tuple
 
-from django.db import connection
+from django.db import connection, connections
+from django.db.utils import DEFAULT_DB_ALIAS, load_backend
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse, JsonResponse
 
@@ -270,7 +271,7 @@ def setup_environment() -> None:
         install.packages(c("curl", "httr", "R.utils", "git2r"))
 
         if(!require("devtools")) install.packages("devtools")
-        devtools::install_github(c("natverse/nat", "natverse/nat.nblast",
+        devtools::install_github(c("natverse/nat", "natverse/natcpp", "natverse/nat.nblast",
                 "natverse/rcatmaid", "natverse/fafbseg", "natverse/elmr",
                 "natverse/nat.templatebrains", "natverse/nat.flybrains",
                 "natverse/nat.jrcbrains"))
@@ -284,7 +285,7 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
         random_sample, distbreaks=NblastConfigDefaultDistanceBreaks,
         dotbreaks=NblastConfigDefaultDotBreaks, resample_step=1000,
         tangent_neighbors=5, omit_failures=True, resample_by=1e3,
-        use_http=False) -> Dict[str, Any]:
+        use_http=False, parallel=False) -> Dict[str, Any]:
     """Create NBLAST scoring matrix for a set of matching skeleton IDs and a set
     of random skeleton IDs. Matching skeletons are skeletons with a similar
     morphology, e.g. KCy in FAFB.
@@ -365,8 +366,8 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
         logger.debug(f'Fetching {len(matching_skeleton_ids)} matching skeletons')
 
         matching_neurons = neuronlist_for_skeletons(project_id,
-                matching_skeleton_ids, omit_failures, scale=nm_to_um, conn=conn)
-
+                matching_skeleton_ids, omit_failures, scale=nm_to_um,
+                conn=conn, parallel=False)
 
         # Create dotprop instances and resample
         logger.debug('Computing matching skeleton stats')
@@ -374,6 +375,7 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
                     'k': tangent_neighbors,
                     'resample': resample_by * nm_to_um,
                     '.progress': 'none',
+                    '.parallel': parallel,
                     'OmitFailures': omit_failures,
                 })
 
@@ -398,6 +400,7 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
                         'k': tangent_neighbors,
                         'resample': resample_by * nm_to_um,
                         '.progress': 'none',
+                        '.parallel': parallel,
                         'OmitFailures': omit_failures,
                     })
 
@@ -428,6 +431,7 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
                         'k': tangent_neighbors,
                         'resample': resample_by * nm_to_um,
                         '.progress': 'none',
+                        '.parallel': parallel,
                         'OmitFailures': omit_failures,
                     })
 
@@ -440,13 +444,15 @@ def compute_scoring_matrix(project_id, user_id, matching_sample,
         logger.debug(f'Fetching {len(random_skeleton_ids)} random skeletons')
 
         nonmatching_neurons = neuronlist_for_skeletons(project_id,
-                random_skeleton_ids, omit_failures, scale=nm_to_um, conn=conn)
+                random_skeleton_ids, omit_failures, scale=nm_to_um, conn=conn,
+                parallel=parallel)
 
         logger.debug('Computing random skeleton stats')
         nonmatching_neurons_dps = rnat.dotprops(nonmatching_neurons, **{
                     'k': tangent_neighbors,
                     'resample': resample_by * nm_to_um,
                     '.progress': 'none',
+                    '.parallel': parallel,
                     'OmitFailures': omit_failures,
                 })
 
@@ -577,6 +583,10 @@ def get_cached_dps_data(project_id, object_type, simplification=10):
     (skeleton, pointcloud, pointset), if available. If not, None is returned.
     """
     cache_path = get_cache_file_path(project_id, object_type, simplification)
+    return get_cached_dps_data_from_file(cache_path)
+
+
+def get_cached_dps_data_from_file(cache_path):
     if not os.path.exists(cache_path) \
             or not os.access(cache_path, os.R_OK ) \
             or not os.path.isfile(cache_path):
@@ -587,6 +597,42 @@ def get_cached_dps_data(project_id, object_type, simplification=10):
         object_dps_cache = base.readRDS(cache_path)
 
         return object_dps_cache
+    except RRuntimeError:
+        return None
+
+
+def combine_cache_files(cache_dir, target_cache_path):
+    if not os.path.exists(cache_dir):
+        logger.info(f'Can\'t access: {cache_dir}')
+        return None
+
+    try:
+        cache_objects = []
+        for file in os.listdir(cache_dir):
+            filename = os.fsdecode(file)
+            cache_path = os.path.join(cache_dir, filename)
+            logger.info(f'Reading {cache_path}')
+            cache_data = get_cached_dps_data_from_file(cache_path)
+            if cache_data:
+                cache_objects.append(cache_data)
+            else:
+                logger.error('Found no data')
+
+        import ipdb; ipdb.set_trace()
+
+        if cache_objects:
+            base = importr('base')
+            # Needed to concatenate neuronlists
+            rnat = importr('nat')
+            logger.info(f'Combining {len(cache_objects)} cache objects into file: {target_cache_path}')
+            objects_dps = robjects.r.c(*cache_objects)
+            base.saveRDS(objects_dps, **{
+                'file': target_cache_path,
+            })
+            return objects_dps
+        else:
+            logger.info('Nothing to save')
+            return None
     except RRuntimeError:
         return None
 
@@ -612,20 +658,43 @@ def get_catmaid_connection(user_id):
 def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
         parallel=True, detail=10, omit_failures=True, min_length=15000,
         min_soma_length=1000, soma_tags=('soma'), resample_by=1e3,
-        use_http=False, progress=False, max_nodes=None, bb=None) -> None:
+        use_http=False, progress=False, max_nodes=None, bb=None,
+        max_length=None, max_length_exclusive=False, update_cache=False,
+        batch_length=None, cache_path=None, object_ids=None,
+        skip_existing_files=True) -> None:
     """Create a new cache file for a particular project object type and
     detail level. All objects of a type in a project are prepared.
     """
+
+    if batch_length and max_length:
+        batches = list(range(min_length, max_length, batch_length))
+        for nb, batch_start in enumerate(batches):
+            batch_end = min(max_length, batch_start + batch_length)
+            excl_end = False if (nb + 1) < len(batches) else max_length_exclusive
+            logger.info(f'Batch {nb+1}/{len(batches)}: {batch_start} - {batch_end}')
+            create_dps_data_cache(project_id, object_type, tangent_neighbors,
+                    parallel, detail, omit_failures, batch_start,
+                    min_soma_length, soma_tags, resample_by, use_http, progress,
+                    max_nodes, bb, batch_end, excl_end, update_cache, None)
+        return
+
     # A circular dependency would be the result of a top level import
     from catmaid.control.similarity import get_all_object_ids
 
-    cache_file = get_cache_file_name(project_id, object_type, detail)
-    cache_dir = os.path.join(settings.MEDIA_ROOT, settings.MEDIA_CACHE_SUBDIRECTORY)
-    cache_path = os.path.join(cache_dir, cache_file)
-    if not os.path.exists(cache_dir) or not os.access(cache_dir, os.W_OK):
-        raise ValueError(f"Can not access cache directory: {cache_dir}")
+    if not cache_path:
+        cache_file = get_cache_file_name(project_id, object_type, detail)
+        cache_dir = os.path.join(settings.MEDIA_ROOT, settings.MEDIA_CACHE_SUBDIRECTORY)
+        if not os.path.exists(cache_dir) or not os.access(cache_dir, os.W_OK):
+            raise ValueError(f"Can not access cache directory: {cache_dir}")
+        cache_path = os.path.join(cache_dir, cache_file)
+
+    if skip_existing_files and os.path.exists(cache_path):
+        logger.info(f'Skipping existing {cache_path}')
+        return
+
     if os.path.exists(cache_path) and not os.access(cache_path, os.W_OK):
         raise ValueError(f"Can not access cache file for writing: {cache_path}")
+    logger.info(f'Cache file: {cache_path}')
 
     timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
 
@@ -643,55 +712,53 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
         rdomc.registerDoMC(settings.MAX_PARALLEL_ASYNC_WORKERS)
 
     if object_type == 'skeleton':
-        logger.debug('Finding matching skeletons')
-        object_ids = get_all_object_ids(project_id, user.id, object_type, min_length,
-                min_soma_length, soma_tags, max_nodes, bb=bb)
+        logger.info('Finding matching skeletons')
+        if not object_ids:
+            object_ids = get_all_object_ids(project_id, user.id, object_type, min_length,
+                    min_soma_length, soma_tags, max_nodes, bb=bb,
+                    max_length=max_length, max_length_exclusive=max_length_exclusive)
         if not object_ids:
             logger.info("No skeletons found to populate cache from")
             return
 
         conn = get_catmaid_connection(user.id) if use_http else None
 
-        logger.debug(f'Fetching {len(object_ids)} skeletons')
+        logger.info(f'Fetching {len(object_ids)} skeletons')
         # Note: scaling down to um
         objects = neuronlist_for_skeletons(project_id, object_ids, omit_failures,
-                progress=progress, scale=nm_to_um, conn=conn)
+                progress=progress, scale=nm_to_um, conn=conn, parallel=parallel)
 
         # Simplify
         if detail > 0:
-            logger.debug('Simplifying skeletons')
+            logger.info(f'Simplifying {len(objects)} skeletons')
             simplified_objects = robjects.r.nlapply(objects, rnat.simplify_neuron, **{
                 'n': detail,
-                'OmitFailures': omit_failures,
                 '.parallel': parallel,
+                'OmitFailures': omit_failures,
             })
             # Make sure unneeded R objects are deleted
             del(objects)
             gc.collect()
             objects = simplified_objects
 
-        logger.debug('Computing skeleton stats')
+        logger.info(f'Computing stats for {len(objects)} skeletons')
         objects_dps = rnat.dotprops(objects, **{
                     'k': tangent_neighbors,
                     'resample': resample_by * nm_to_um,
                     '.progress': 'text' if progress else 'none',
+                    '.parallel': parallel,
                     'OmitFailures': omit_failures,
                 })
 
         del(objects)
-
-        # Save cache to disk
-        logger.debug(f'Storing skeleton cache with {len(objects_dps)} entries: {cache_path}')
-        base.saveRDS(objects_dps, **{
-            'file': cache_path,
-        })
     elif object_type == 'pointcloud':
         # The system user is superuser and should have access to all pointclouds
-        object_ids = get_all_object_ids(project_id, user.id, object_type)
+        if not object_ids:
+            object_ids = get_all_object_ids(project_id, user.id, object_type)
         if not object_ids:
             logger.info("No pointclouds found to populate cache from")
             return
-        logger.debug(f'Fetching {len(object_ids)} query point clouds')
+        logger.info(f'Fetching {len(object_ids)} query point clouds')
         pointclouds = []
         for pcid in object_ids:
             target_pointcloud = PointCloud.objects.prefetch_related('points').get(pk=pcid)
@@ -708,19 +775,31 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
                 lambda x: str(x), object_ids))
         objects.names = rinterface.StrSexpVector(effective_object_ids)
 
-        logger.debug('Computing query pointcloud stats')
+        logger.info('Computing query pointcloud stats')
         objects_dps = rnat.dotprops(objects.ro * nm_to_um, **{
                     'k': tangent_neighbors,
                     'resample': resample_by * nm_to_um,
                     '.progress': 'none',
+                    '.parallel': parallel,
                     'OmitFailures': omit_failures,
                 })
-        # Save
-        base.saveRDS(objects_dps, **{
-            'file': cache_path,
-        })
     else:
         raise ValueError(f'Unsupported object type: {object_type}')
+
+    # Save
+    if update_cache:
+        cache_data = get_cached_dps_data_from_file(cache_path)
+        if cache_data:
+            logger.info(f'Found existing cache data ({len(cache_data)} entries), attempting to merge cache file: {cache_path}')
+            objects_dps = robjects.r.c(cache_data, objects_dps)
+        else:
+            logger.info(f'No existing cache data found, writing new cache file: {cache_path}')
+
+    # Replace file
+    logger.info(f'Writing {len(objects_dps)} objects to cache file: {cache_path}')
+    base.saveRDS(objects_dps, **{
+        'file': cache_path,
+    })
 
 
 def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
@@ -728,7 +807,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
         normalized='raw', use_alpha=False, remove_target_duplicates=True,
         min_length=15000, min_soma_length=1000, simplify=True, required_branches=10,
         soma_tags=('soma', ), use_cache=True, reverse=False, top_n=0,
-        resample_by=1e3, use_http=False, bb=None) -> Dict[str, Any]:
+        resample_by=1e3, use_http=False, bb=None, parallel=False) -> Dict[str, Any]:
     """Create NBLAST score for forward similarity from query objects to target
     objects. Objects can either be pointclouds or skeletons, which has to be
     reflected in the respective type parameter. This is executing essentially
@@ -768,16 +847,18 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
         all_by_all = not query_object_ids and not target_object_ids and \
                 query_type == target_type
         if all_by_all:
-            logger.debug('Disabling remove_target_duplicates option due to all-by-all computation')
+            logger.info('Disabling remove_target_duplicates option due to all-by-all computation')
             remove_target_duplicates = False
 
         nblast_params = {}
 
         parallel = False
         if settings.MAX_PARALLEL_ASYNC_WORKERS > 1:
-            # Parallelise NBLASTing across 4 cores using doMC package
+            # Parallelise NBLASTing across a defined number of cores
             rdomc = importr('doMC')
             rdomc.registerDoMC(settings.MAX_PARALLEL_ASYNC_WORKERS)
+            rdoparallel = importr('doParallel')
+            rdoparallel.registerDoParallel(**{'cores': settings.MAX_PARALLEL_ASYNC_WORKERS})
             parallel = True
 
         nblast_params['.parallel'] = parallel
@@ -816,6 +897,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
         pointset_cache = None
         if use_cache:
             object_types = (query_type, target_type)
+            logger.info('Looking for object cache')
             if 'skeleton' in object_types:
                 # Check if skeleton cache file with R DPS dotprops exists and
                 # load it, if available.
@@ -855,25 +937,27 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                 cache_typed_query_object_ids = []
                 effective_query_object_ids = query_object_ids
 
-            logger.debug(f'Fetching {len(effective_query_object_ids)} query skeletons ({cache_hits} cache hits)')
+            logger.info(f'Fetching {len(effective_query_object_ids)} query skeletons ({cache_hits} cache hits)')
             if effective_query_object_ids:
+                logger.info(f'Example IDs to fetch: {effective_query_object_ids[:3]}')
                 query_objects = neuronlist_for_skeletons(project_id,
                         effective_query_object_ids, omit_failures,
-                        scale=nm_to_um, conn=conn)
+                        scale=nm_to_um, conn=conn, parallel=parallel)
 
                 if simplify:
-                    logger.debug(f"Simplifying query neurons, removing parts below branch level {required_branches}")
+                    logger.info(f"Simplifying fetched query neurons, removing parts below branch level {required_branches}")
                     query_objects = robjects.r.nlapply(query_objects,
                             rnat.simplify_neuron, **{
                                 'n': required_branches,
                                 'OmitFailures': omit_failures,
                                 '.parallel': parallel,
                             })
-                logger.debug('Computing query skeleton stats')
+                logger.info(f'Computing fetched query skeleton stats, resampling and using {config.tangent_neighbors} neighbors for tangents')
                 query_dps = rnat.dotprops(query_objects, **{
                             'k': config.tangent_neighbors,
                             'resample': resample_by * nm_to_um,
                             '.progress': 'none',
+                            '.parallel': parallel,
                             'OmitFailures': omit_failures,
                         })
                 non_cache_typed_query_object_ids = list(base.names(query_dps)) if query_dps else []
@@ -919,7 +1003,8 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                 cache_typed_query_object_ids = []
                 effective_query_object_ids = query_object_ids
 
-            logger.debug(f'Fetching {len(effective_query_object_ids)} query point clouds ({cache_hits} cache hits)')
+            logger.info(f'Fetching {len(effective_query_object_ids)} query point clouds ({cache_hits} cache hits)')
+            logger.info(f'Example IDs to fetch: {effective_query_object_ids[:3]}')
             if effective_query_object_ids:
                 pointclouds = []
                 for pcid in effective_query_object_ids:
@@ -937,11 +1022,12 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                         lambda x: f"pointcloud-{x}", effective_query_object_ids))
                 query_objects.names = rinterface.StrSexpVector(non_cache_typed_query_object_ids)
 
-                logger.debug('Computing query pointcloud stats')
+                logger.info('Computing query pointcloud stats')
                 query_dps = rnat.dotprops(query_objects.ro * nm_to_um, **{
                             'k': config.tangent_neighbors,
                             'resample': resample_by * nm_to_um,
                             '.progress': 'none',
+                            '.parallel': parallel,
                             'OmitFailures': omit_failures,
                         })
                 non_cache_typed_query_object_ids = list(base.names(query_dps)) if query_dps else []
@@ -966,7 +1052,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
             if use_cache and pointset_cache:
                 pass
 
-            logger.debug(f'Fetching {len(query_object_ids)} query point sets')
+            logger.info(f'Fetching {len(query_object_ids)} query point sets')
             pointsets = []
             for psid in query_object_ids:
                 target_pointset = PointSet.objects.get(pk=psid)
@@ -979,11 +1065,12 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
             effective_query_object_ids = typed_query_object_ids
             query_objects.names = rinterface.StrSexpVector(effective_query_object_ids)
 
-            logger.debug('Computing query pointset stats')
+            logger.info('Computing query pointset stats')
             query_dps = rnat.dotprops(query_objects.ro * nm_to_um, **{
                         'k': config.tangent_neighbors,
                         'resample': resample_by * nm_to_um,
                         '.progress': 'none',
+                        '.parallel': parallel,
                         'OmitFailures': omit_failures,
                     })
             typed_query_object_ids = list(base.names(query_dps))
@@ -992,7 +1079,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
 
         # Target objects, only needed if no all-by-all computation is done
         if all_by_all:
-            logger.debug('All-by-all computation: using query objects and dps for target')
+            logger.info('All-by-all computation: using query objects and dps for target')
             target_dps = query_dps
         else:
             if target_type == 'skeleton':
@@ -1019,14 +1106,15 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                     cache_typed_target_object_ids = []
                     effective_target_object_ids = target_object_ids
 
-                logger.debug(f'Fetching {len(effective_target_object_ids)} target skeletons ({cache_hits} cache hits)')
+                logger.info(f'Fetching {len(effective_target_object_ids)} target skeletons ({cache_hits} cache hits)')
+                logger.info(f'Example IDs to fetch: {effective_target_object_ids[:3]}')
                 if effective_target_object_ids:
                     target_objects = neuronlist_for_skeletons(project_id,
                             effective_target_object_ids, omit_failures,
-                            scale=nm_to_um, conn=conn)
+                            scale=nm_to_um, conn=conn, parallel=parallel)
 
                     if simplify:
-                        logger.debug(f"Simplifying target neurons, removing parts below branch level {required_branches}")
+                        logger.info(f"Simplifying fetched target neurons, removing parts below branch level {required_branches}")
                         target_objects = robjects.r.nlapply(target_objects,
                                 rnat.simplify_neuron, **{
                                     'n': required_branches,
@@ -1034,11 +1122,12 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                                     '.parallel': parallel,
                                 })
 
-                    logger.debug('Computing target skeleton stats')
+                    logger.info('Computing fetched target skeleton stats')
                     target_dps = rnat.dotprops(target_objects, **{
                                 'k': config.tangent_neighbors,
                                 'resample': resample_by * nm_to_um,
                                 '.progress': 'none',
+                                '.parallel': parallel,
                                 'OmitFailures': omit_failures,
                             })
                     non_cache_typed_target_object_ids = list(base.names(target_dps)) if target_dps else []
@@ -1084,7 +1173,8 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                     cache_typed_target_object_ids = []
                     effective_target_object_ids = target_object_ids
 
-                logger.debug(f'Fetching {len(effective_target_object_ids)} target point clouds ({cache_hits} cache hits)')
+                logger.info(f'Fetching {len(effective_target_object_ids)} target point clouds ({cache_hits} cache hits)')
+                logger.info(f'Example IDs to fetch: {effective_target_object_ids[:3]}')
                 if effective_target_object_ids:
                     pointclouds = []
                     for pcid in effective_target_object_ids:
@@ -1102,11 +1192,12 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                             lambda x: f"pointcloud-{x}", effective_target_object_ids))
                     target_objects.names = rinterface.StrSexpVector(non_cache_typed_target_object_ids)
 
-                    logger.debug('Computing target pointcloud stats')
+                    logger.info('Computing target pointcloud stats')
                     target_dps = rnat.dotprops(target_objects.ro * nm_to_um, **{
                                 'k': config.tangent_neighbors,
                                 'resample': resample_by * nm_to_um,
                                 '.progress': 'none',
+                                '.parallel': parallel,
                                 'OmitFailures': omit_failures,
                             })
                     non_cache_typed_target_object_ids = list(base.names(target_dps)) if target_dps else []
@@ -1127,7 +1218,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
             elif target_type == 'pointset':
                 typed_target_object_ids = list(map(
                         lambda x: f"pointset-{x}", target_object_ids))
-                logger.debug(f'Fetching {len(target_object_ids)} target point sets')
+                logger.info(f'Fetching {len(target_object_ids)} target point sets')
                 pointsets = []
                 for psid in target_object_ids:
                     target_pointset = PointSet.objects.get(pk=psid)
@@ -1139,11 +1230,12 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                 target_objects = rnat.as_neuronlist(pointsets)
                 target_objects.names = rinterface.StrSexpVector(typed_target_object_ids)
 
-                logger.debug('Computing target pointset stats')
+                logger.info('Computing target pointset stats')
                 target_dps = rnat.dotprops(target_objects.ro * nm_to_um, **{
                             'k': config.tangent_neighbors,
                             'resample': resample_by * nm_to_um,
                             '.progress': 'none',
+                            '.parallel': parallel,
                             'OmitFailures': omit_failures,
                         })
                 typed_target_object_ids = list(base.names(target_dps))
@@ -1155,6 +1247,15 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
 
         if len(target_dps) == 0:
             raise ValueError("No valid target objects found")
+
+        # Make sure unneeded R objects are deleted
+        if skeleton_cache:
+            del(skeleton_cache)
+        if pointcloud_cache:
+            del(pointcloud_cache)
+        if pointset_cache:
+            del(pointset_cache)
+        gc.collect()
 
         # Restore R matrix for use with nat.nblast.
         cells = list(chain.from_iterable(config.scoring))
@@ -1168,7 +1269,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
         smat.do_slot_assign('distbreaks', rdistbreaks)
         smat.do_slot_assign('dotprodbreaks', rdotbreaks)
 
-        logger.debug('Computing score (alpha: {a}, noramlized: {n}, reverse: {r}, top N: {tn})'.format(**{
+        logger.info('Computing score (alpha: {a}, noramlized: {n}, reverse: {r}, top N: {tn})'.format(**{
             'a': 'Yes' if use_alpha else 'No',
             'n': 'No' if normalized == 'raw' else f'Yes ({normalized})',
             'r': 'Yes' if reverse else 'No',
@@ -1194,7 +1295,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
         # Only select a subset if there are more items than the limit in either
         # of the dimensions.
         if top_n and len(b_ids) > top_n:
-            logger.debug(f'top n {top_n}')
+            logger.info(f'top n {top_n}')
             # Compute forward scores, either unnormalized or normalized so that a
             # self-match is 1.
             scores = as_matrix(rnblast.NeuriteBlast(a, b, **nblast_params), a, b)
@@ -1204,7 +1305,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
             target_scores = None
             for n, query_object_dps in enumerate(query_dps):
                 query_name = query_dps.names[n]
-                logger.debug(f'Query object {n+1}/{len(query_dps)}: {query_name}')
+                logger.info(f'Query object {n+1}/{len(query_dps)}: {query_name}')
                 query_object_dps = rnat.subset_neuronlist(query_dps,
                         rinterface.StrSexpVector([query_name]))
 
@@ -1350,7 +1451,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
         elif target_type == 'pointset':
             target_object_ids_in_use = list(map(lambda x: int(x.lstrip('pointset-')), column_names))
 
-        logger.debug('NBLAST computation done')
+        logger.info('NBLAST computation done')
 
     except (IOError, OSError, ValueError) as e:
         logger.exception(e)
@@ -1388,7 +1489,7 @@ def as_matrix(scores, a, b, transposed=False):
 
 
 def neuronlist_for_skeletons(project_id, skeleton_ids, omit_failures=False,
-        scale=None, conn=None, progress=False):
+        scale=None, conn=None, progress=False, parallel=False):
     """Get the R dotprops data structure for a set of skeleton IDs.
     If <conn> is true, those skeletons will be requested through HTTP.
     """
@@ -1532,57 +1633,87 @@ def neuronlist_for_skeletons(project_id, skeleton_ids, omit_failures=False,
         }
     ''')
 
-    from catmaid.control.skeletonexport import _compact_skeleton
-
     if progress:
-        bar = progressbar.ProgressBar(max_value=len(skeleton_ids), redirect_stdout=True).start()
+        bar = tqdm(total=len(skeleton_ids))
+        def update(x):
+            bar.update(1)
     else:
         bar = None
+        def update(x):
+            pass
 
-    manager = multiprocessing.Manager()
-    shared_cs_r = manager.dict()
+    if parallel:
+        manager = multiprocessing.Manager()
+        shared_cs_r = manager.dict()
 
-    pool = multiprocessing.Pool(processes=settings.NBLAST_OBJECT_LOAD_WORKERS)
-    for ni, skeleton_id in enumerate(skeleton_ids):
-        pool.apply_async(load_skeleton, args=(project_id, skeleton_id, scale,
-                omit_failures, progress, bar, ni, shared_cs_r, read_neuron_local))
-    pool.close()
-    pool.join()
+        def err(e):
+            logger.error(e)
 
-    cs_r = dict(shared_cs_r)
+        pool = multiprocessing.Pool(processes=settings.NBLAST_OBJECT_LOAD_WORKERS)
+        for ni, skeleton_id in enumerate(skeleton_ids):
+            pool.apply_async(load_skeleton, args=(project_id, skeleton_id,
+                    scale, omit_failures, False, None, ni, shared_cs_r,
+                    read_neuron_local, parallel), callback=update,
+                    error_callback=err)
+        pool.close()
+        pool.join()
 
+        cs_r = dict(shared_cs_r)
+    else:
+        cs_r = dict()
+        for ni, skeleton_id in enumerate(skeleton_ids):
+            load_skeleton(project_id, skeleton_id, scale, omit_failures,
+                    progress, bar, ni, cs_r, read_neuron_local, parallel)
 
-    if progress:
-        bar.finish()
+    if progress and bar:
+        bar.close()
 
+    logger.info('Creating combined neuronlist')
     objects = concat_neurons_local(
             rinterface.IntSexpVector(skeleton_ids),
             robjects.ListVector(cs_r), **{
+                'pid': project_id,
                 '.progress': 'text' if progress else 'none',
-                'OmitFailures': omit_failures
+                'OmitFailures': omit_failures,
+                '.parallel': parallel,
             })
-    logger.info(f"Converted {len(objects)}/{len(skeleton_ids)} neurons")
 
+    logger.info('Freeing memory')
     del(cs_r)
     gc.collect()
+
+    logger.info(f"Loaded {len(objects)}/{len(skeleton_ids)} neurons")
 
     return objects
 
 
+def create_connection(alias=DEFAULT_DB_ALIAS):
+    connections.ensure_defaults(alias)
+    connections.prepare_test_settings(alias)
+    db = connections.databases[alias]
+    backend = load_backend(db['ENGINE'])
+    return backend.DatabaseWrapper(db, alias)
+
+
 def load_skeleton(project_id, skeleton_id, scale, omit_failures, progress, bar,
-        ni, cs_r, read_neuron_local):
+        ni, cs_r, read_neuron_local, parallel=False):
+    from catmaid.control.skeletonexport import _compact_skeleton
     try:
+        conn = create_connection() if parallel else None
         cs = _compact_skeleton(project_id, skeleton_id,
-                with_connectors=True, with_tags=True, scale=scale)
+                with_connectors=True, with_tags=True, scale=scale, conn=conn)
     except Exception as e:
         if not omit_failures:
             raise
         logger.error(f'Error loading skeleton {skeleton_id}')
         logger.error(e)
         return
+    finally:
+        if conn:
+            conn.close()
 
-    if progress:
-        bar.update(ni + 1)
+    if progress and bar:
+        bar.update(1)
 
     raw_nodes = cs[0]
     raw_connectors = cs[1]

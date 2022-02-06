@@ -727,7 +727,7 @@ def compute_nblast_config(config_id, user_id, use_cache=True) -> str:
 
 def get_all_object_ids(project_id, user_id, object_type, min_length=15000,
         min_soma_length=1000, soma_tags=('soma'), limit=None, max_length=None,
-        bb=None) -> List:
+        bb=None, max_length_exclusive=False) -> List:
     """Return all IDs of objects that fit the query parameters. A bounding box
     can optionally be provided with a dictionary having the keys minx, miny,
     minz, maxx, maxy, maxz.
@@ -748,9 +748,14 @@ def get_all_object_ids(project_id, user_id, object_type, min_length=15000,
             params['min_length'] = min_length
 
         if max_length:
-            extra_where.append("""
-                css.cable_length <= %(max_length)s
-            """)
+            if max_length_exclusive:
+                extra_where.append("""
+                    css.cable_length < %(max_length)s
+                """)
+            else:
+                extra_where.append("""
+                    css.cable_length <= %(max_length)s
+                """)
             params['max_length'] = max_length
 
         if bb:
@@ -826,7 +831,7 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
         min_length=15000, min_soma_length=1000, soma_tags=('soma',),
         relational_results=False, max_length=float('inf'), query_object_ids=None,
         target_object_ids=None, notify_user=True, write_scores_only=False,
-        clear_results=True, force_objects=False, bb=None) -> str:
+        clear_results=True, force_objects=False, bb=None, parallel=False) -> str:
     start_time = timer()
     write_non_scores = not write_scores_only
     try:
@@ -882,12 +887,13 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
         scoring_info = nblast(project_id, user_id, config.id,
                 query_object_ids, target_object_ids,
                 similarity.query_type_id, similarity.target_type_id,
-                normalized=similarity.normalized,
-                use_alpha=similarity.use_alpha,
+                min_length=min_length, min_soma_length=min_soma_length,
+                normalized=similarity.normalized, use_alpha=similarity.use_alpha,
                 remove_target_duplicates=remove_target_duplicates,
                 simplify=simplify, required_branches=required_branches,
                 use_cache=use_cache, reverse=similarity.reverse,
-                top_n=similarity.top_n, use_http=use_http, bb=bb)
+                top_n=similarity.top_n, use_http=use_http, bb=bb,
+                parallel=parallel)
 
         duration = timer() - start_time
 
@@ -913,8 +919,8 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
                 else:
                     similarity.invalid_target_objects = None
 
-            logger.info(f'NBLAST computation completed, used {len(similarity.query_object_ids) if similarity.query_object_ids else "zero"} '
-                    f'query objects and {len(similarity.target_object_ids) if similarity.target_object_ids else "zero"}')
+            logger.info(f'NBLAST computation completed, used {len(scoring_info["query_object_ids"]) if scoring_info["query_object_ids"] else "zero"} '
+                    f'query objects and {len(scoring_info["target_object_ids"]) if scoring_info["target_object_ids"] else "zero"} target objects')
 
             # Write the result as a Postgres large object, unless specifically
             # asked to store relational results. To query many result scores at
@@ -934,13 +940,17 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
                         'similarity_id': similarity.id
                     })
                 logger.info('Preparing to store positive NBLAST scores in result relation')
-                non_zero_idx = np.nonzero(scoring_info['similarity'])
+                # We pnly want positive scores
+                non_zero_idx = np.where(scoring_info['similarity'] > 0)
                 # Find all non-zero matches that aren't self-matches
                 non_zero_results = tuple(filter(lambda x: x[0] != x[1], map(to_row, zip(non_zero_idx[0], non_zero_idx[1]))))
-                logger.info(f'Storing {len(non_zero_results)} non-zero and non-self scores (out of {len(similarity.query_objects) * len(similarity.target_objects)})')
+                max_scores = len(scoring_info["query_object_ids"]) * len(scoring_info["target_object_ids"]) if scoring_info["query_object_ids"] and scoring_info["target_object_ids"] else "?"
+                logger.info(f'Storing {len(non_zero_results)} non-zero and non-self scores (out of {max_scores})')
                 execute_batch(cursor, f"""
                     INSERT INTO nblast_similarity_score (similarity_id, query_object_id, target_object_id, score)
                     VALUES ({similarity.id}, %s, %s, %s)
+                    ON CONFLICT (similarity_id, query_object_id, target_object_id)
+                    DO UPDATE SET score = EXCLUDED.score
                 """, non_zero_results, page_size=100)
                 logger.info('Stored non-zero results')
             else:

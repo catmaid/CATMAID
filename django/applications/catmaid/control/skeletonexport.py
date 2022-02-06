@@ -522,7 +522,7 @@ def compact_skeleton_detail_many(request:HttpRequest, project_id=None) -> Union[
 def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
         with_tags=True, with_history=False, with_merge_history=True,
         with_reviews=False, with_annotations=False, with_user_info=False,
-        ordered=False, scale=None) -> Tuple[Tuple, Tuple, DefaultDict[Any, List], List, List]:
+        ordered=False, scale=None, conn=None) -> Tuple[Tuple, Tuple, DefaultDict[Any, List], List, List]:
     """Get a compact treenode representation of a skeleton, optionally with the
     history of individual nodes and connector, reviews and annotationss. Note
     this function is performance critical! Returns, in JSON:
@@ -542,8 +542,8 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
     the original creation time is needed for data that was created without
     history tables enabled.
     """
-
-    cursor = connection.cursor()
+    conn = conn or connection
+    cursor = conn.cursor()
 
     if not with_history:
         cursor.execute('''

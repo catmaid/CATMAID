@@ -25,6 +25,7 @@ snippets = {
 LOCAL_PORT={ssh_local_port}
 REMOTE_PORT={ssh_remote_port}
 HOST={ssh_host}
+SSH_PORT={ssh_port}
 SSH_IDENTITY={ssh_identity}
 
 # Go into temp dir to not have nodes overwrite each other
@@ -32,7 +33,7 @@ WORKING_DIR=$(mktemp -d)
 cd $WORKING_DIR
 
 echo "Waiting a few seconds to establish tunnel..."
-ssh -M -S catmaid-ctrl-socket -fnNT -L $LOCAL_PORT:localhost:$REMOTE_PORT -i $SSH_IDENTITY $HOST
+ssh -M -S catmaid-ctrl-socket -fnNT -L $LOCAL_PORT:localhost:$REMOTE_PORT -i $SSH_IDENTITY -p $SSH_PORT $HOST
 ssh -S catmaid-ctrl-socket -O check $HOST
 while [ ! -e catmaid-ctrl-socket ]; do sleep 0.1; done
         """,
@@ -71,12 +72,15 @@ BIN_IDX={bin}
 MIN_LENGTH={min_length}
 INITIAL_WORKING_DIR="{working_dir}"
 N_JOBS={n_jobs}
+MAX_CLUSTER_SIZE={max_cluster_size}
+MAX_PARTNER_DISTANCE={max_partner_distance}
+IGNORE_IMPOSSIBLE_TARGETS={ignore_impossible_targets}
 
 {pre_matter}
 
 # Do work
 cd "$INITIAL_WORKING_DIR"
-python manage.py catmaid_parallel_nblast --similarity-id $SIMILARITY_ID --n-jobs $N_JOBS --min-length $MIN_LENGTH --compute-bin $BIN_IDX
+python manage.py catmaid_parallel_nblast --similarity-id $SIMILARITY_ID --n-jobs $N_JOBS --min-length $MIN_LENGTH --compute-bin $BIN_IDX  --max-cluster-size $MAX_CLUSTER_SIZE --max-partner-distance $MAX_PARTNER_DISTANCE $IGNORE_IMPOSSIBLE_TARGETS
 
 {post_matter}
 
@@ -118,6 +122,8 @@ class Command(BaseCommand):
                 default=5432, help='The remote port for an optional SSH tunnel'),
         parser.add_argument('--ssh-host', dest='ssh_host',
                 default='', help='The user@host string for an SSH tunnel'),
+        parser.add_argument('--ssh-port', dest='ssh_port', type=int,
+                default=22, help='The SSH port for an SSH tunnel'),
         parser.add_argument('--ssh-identity', dest='ssh_identity',
                 default='', help='The path to the private SSH key for the tunnel (-I in ssh)'),
         parser.add_argument("--conda", dest='conda', default=None,
@@ -145,6 +151,7 @@ class Command(BaseCommand):
         ssh_local_port = options['ssh_local_port']
         ssh_remote_port = options['ssh_remote_port']
         ssh_host = options['ssh_host']
+        ssh_port = options['ssh_port']
         ssh_identity = options['ssh_identity']
         if ssh_tunnel:
             if not ssh_host:
@@ -236,12 +243,14 @@ class Command(BaseCommand):
                     'ssh_local_port': ssh_local_port,
                     'ssh_remote_port': ssh_remote_port,
                     'ssh_host': ssh_host,
+                    'ssh_port': ssh_port,
                     'ssh_identity': ssh_identity,
                 }))
                 post.append(snippets['ssh']['post'].format(**{
                     'ssh_local_port': ssh_local_port,
                     'ssh_remote_port': ssh_remote_port,
                     'ssh_host': ssh_host,
+                    'ssh_port': ssh_port,
                     'ssh_identity': ssh_identity,
                 }))
 
@@ -252,6 +261,9 @@ class Command(BaseCommand):
                     'bin': n,
                     'n_jobs': n_jobs,
                     'min_length': min_length,
+                    'max_cluster_size': max_cluster_size,
+                    'max_partner_distance': max_partner_distance,
+                    'ignore_impossible_targets': '--ignore-impossible-targets' if ignore_impossible_targets else '',
                     'pre_matter': '\n'.join(pre),
                     'post_matter': '\n'.join(post),
                 })
@@ -277,11 +289,12 @@ class Command(BaseCommand):
                     if not max_distance:
                         max_distance = similarity.config.distance_breaks[-1]
 
+                    logger.info('Finding skeletons close by')
                     cursor.execute("""
                         WITH query_skeleton AS (
                             SELECT id FROM UNNEST(%(query_object_ids)s::bigint[]) query(id)
                         ), merged_edges AS (
-                            SELECT ST_Collect(edge) AS cluster
+                            SELECT ST_Collect(ST_Expand(box3d(edge), %(max_distance)s)) AS cluster
                             FROM (
                                 SELECT ST_ClusterKMeans(edge, 1, %(max_cluster_size)s) over () AS cid, edge
                                 FROM treenode t
@@ -304,26 +317,31 @@ class Command(BaseCommand):
                     """, {
                         'query_object_ids': query_skeletons,
                         'max_cluster_size': max_cluster_size,
+                        'max_distance': max_distance,
                     })
 
                     boundingboxes = cursor.fetchall()
-                    logger.info(f'Split query skeleton nodes into {len(boundingboxes)} cluster (allowing max 500nm inner distance)')
+                    logger.info(f'Split query skeleton edges into {len(boundingboxes)} clusters (max radius {max_cluster_size} nm)')
 
                     # Unfortunately, I found no good way to do this in single
                     # query
                     target_acc = set()
-                    for bb in boundingboxes:
-                        cursor.execute("""
-                            WITH filtered_edges AS (
-                                SELECT id
-                                FROM treenode_edge te
-                                WHERE te.project_id = %(project_id)s
-                                AND edge &&& ST_MakeLine(ARRAY[
-                                    ST_MakePoint(%(min_x)s, %(max_y)s, %(max_z)s),
-                                    ST_MakePoint(%(max_x)s, %(min_y)s, %(min_z)s)] ::geometry[])
-                                AND floatrange(ST_ZMin(edge), ST_ZMax(edge), '[]') &&
-                                floatrange(%(min_z)s, %(max_z)s, '[)')
-                            )
+                    bb_filters = [f"""
+                        SELECT id
+                        FROM treenode_edge te
+                        WHERE te.project_id = %(project_id)s
+                        AND edge &&& Box3d(ST_MakeLine(ARRAY[
+                            ST_MakePoint({bb[0]}, {bb[4]}, {bb[5]}),
+                            ST_MakePoint({bb[3]}, {bb[1]}, {bb[2]})] ::geometry[]))
+                        AND floatrange(ST_ZMin(edge), ST_ZMax(edge), '[]') &&
+                        floatrange({bb[2]}, {bb[5]}, '[]')
+                    """ for bb in boundingboxes]
+
+                    collect_op = '\nUNION\n'
+                    cursor.execute(f"""
+                        WITH filtered_edges AS (
+                            {collect_op.join(bb_filters)}
+                        ), skeleton AS (
                             SELECT DISTINCT skeleton.id
                             FROM filtered_edges t
                             JOIN LATERAL (
@@ -334,20 +352,16 @@ class Command(BaseCommand):
                             JOIN catmaid_skeleton_summary css
                                 ON css.skeleton_id = skeleton.id
                             WHERE css.cable_length >= %(min_length)s
-                        """, {
-                            'project_id': similarity.project_id,
-                            'min_length': min_length,
-                            'min_x': bb[0],
-                            'min_y': bb[1],
-                            'min_z': bb[2],
-                            'max_x': bb[3],
-                            'max_y': bb[4],
-                            'max_z': bb[5],
-                        })
-                        target_acc.update([r[0] for r in cursor.fetchall()])
+                        )
+                        SELECT array_agg(id)
+                        FROM skeleton
+                    """, {
+                        'project_id': similarity.project_id,
+                        'min_length': min_length,
+                    })
+                    target_skeletons = cursor.fetchone()[0]
 
-                    logger.info(f'Found {len(target_acc)} close skeletons as potential partners, max distance: {max_distance}')
-                    target_skeletons = list(target_acc)
+                    logger.info(f'Found {len(target_skeletons)} close skeletons as potential partners, max distance: {max_distance}')
 
                 logger.info(f'Computing NBLAST values for similarity {similarity.id}, '
                         f'bin {job_index} ({job_index+1}/{len(skeleton_groups)}), '
@@ -357,10 +371,11 @@ class Command(BaseCommand):
 
                 compute_nblast(similarity.project_id, similarity.user_id,
                         similarity.id, remove_target_duplicates,
+                        min_length=min_length, min_soma_length=min_length,
                         relational_results=True, query_object_ids=query_skeletons,
                         target_object_ids=target_skeletons, notify_user=False,
-                        write_scores_only=True, clear_results=False)
+                        write_scores_only=True, clear_results=False, parallel=True)
             else:
                 logger.info(f'Nothing to compute for similarity {similarity.id}, '
                         f'bin {job_index} ({job_index+1}/{len(skeleton_groups)}), '
-                        f'containing {len(query_skeletons)} skeletons')
+                        f'containing no skeletons')

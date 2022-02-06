@@ -5,6 +5,7 @@ import gc
 from itertools import chain
 import logging
 import math
+import multiprocessing
 import numpy
 import os
 import progressbar
@@ -566,12 +567,16 @@ def get_cache_file_name(project_id, object_type, simplification=10) -> str:
     })
 
 
+def get_cache_file_path(project_id, object_type, simplification=10):
+    cache_file = get_cache_file_name(project_id, object_type, simplification)
+    return os.path.join(settings.MEDIA_ROOT, settings.MEDIA_CACHE_SUBDIRECTORY, cache_file)
+
+
 def get_cached_dps_data(project_id, object_type, simplification=10):
     """Return the loaded R object for cache file of a particular <object_type>
     (skeleton, pointcloud, pointset), if available. If not, None is returned.
     """
-    cache_file = get_cache_file_name(project_id, object_type, simplification)
-    cache_path = os.path.join(settings.MEDIA_ROOT, settings.MEDIA_CACHE_SUBDIRECTORY, cache_file)
+    cache_path = get_cache_file_path(project_id, object_type, simplification)
     if not os.path.exists(cache_path) \
             or not os.access(cache_path, os.R_OK ) \
             or not os.path.isfile(cache_path):
@@ -666,7 +671,6 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
             objects = simplified_objects
 
         logger.debug('Computing skeleton stats')
-        print('Computing skeleton stats')
         objects_dps = rnat.dotprops(objects, **{
                     'k': tangent_neighbors,
                     'resample': resample_by * nm_to_um,
@@ -832,6 +836,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
             query_cache_objects_dps:Any = None
             n_query_objects = len(query_object_ids)
             if use_cache and skeleton_cache:
+                logger.info(f'Using skeleton cache file: {get_cache_file_path(project_id, "skeleton")}')
                 # Find all skeleton IDs that aren't part of the cache
                 # TODO: There must be a simler way to extract non-NA values only
                 query_object_id_str = rinterface.StrSexpVector(list(map(str, query_object_ids)))
@@ -1531,96 +1536,21 @@ def neuronlist_for_skeletons(project_id, skeleton_ids, omit_failures=False,
 
     if progress:
         bar = progressbar.ProgressBar(max_value=len(skeleton_ids), redirect_stdout=True).start()
+    else:
+        bar = None
 
-    cs_r = {}
+    manager = multiprocessing.Manager()
+    shared_cs_r = manager.dict()
+
+    pool = multiprocessing.Pool(processes=settings.NBLAST_OBJECT_LOAD_WORKERS)
     for ni, skeleton_id in enumerate(skeleton_ids):
-        try:
-            cs = _compact_skeleton(project_id, skeleton_id,
-                    with_connectors=True, with_tags=True, scale=scale)
-        except Exception as e:
-            if not omit_failures:
-                raise
-            logger.error(f'Error loading skeleton {skeleton_id}')
-            logger.error(e)
-            continue
+        pool.apply_async(load_skeleton, args=(project_id, skeleton_id, scale,
+                omit_failures, progress, bar, ni, shared_cs_r, read_neuron_local))
+    pool.close()
+    pool.join()
 
-        if progress:
-            bar.update(ni + 1)
+    cs_r = dict(shared_cs_r)
 
-        raw_nodes = cs[0]
-        raw_connectors = cs[1]
-        raw_tags = cs[2]
-
-        # Require at least two nodes
-        if len(raw_nodes) < 2:
-            if omit_failures:
-                continue
-            raise ValueError(f"Skeleton {skeleton_id} has less than two nodes")
-
-        # Nodes in Rpy2 format
-        node_cols = [
-                ('id', rinterface.IntSexpVector, robjects.NA_Integer),
-                ('parent_id', rinterface.IntSexpVector, robjects.NA_Integer),
-                ('user_id', rinterface.IntSexpVector, robjects.NA_Integer),
-                ('x', rinterface.FloatSexpVector, robjects.NA_Real),
-                ('y', rinterface.FloatSexpVector, robjects.NA_Real),
-                ('z', rinterface.FloatSexpVector, robjects.NA_Real),
-                ('radius', rinterface.FloatSexpVector, robjects.NA_Real),
-                ('confidence', rinterface.IntSexpVector, robjects.NA_Integer)
-        ]
-        nodes:List = [(k,[]) for k,_,_ in node_cols]
-        for rn in raw_nodes:
-            for n, kv in enumerate(node_cols):
-                val = rn[n]
-                if val is None:
-                    val = kv[2]
-                nodes[n][1].append(val)
-        r_nodes = [(kv[0], node_cols[n][1](kv[1])) for n, kv in enumerate(nodes)]
-
-        # Connectors in Rpy2 format
-        connector_cols = [
-                ('treenode_id', rinterface.IntSexpVector, robjects.NA_Integer),
-                ('connector_id', rinterface.IntSexpVector, robjects.NA_Integer),
-                ('prepost', rinterface.IntSexpVector, robjects.NA_Integer),
-                ('x', rinterface.FloatSexpVector, robjects.NA_Real),
-                ('y', rinterface.FloatSexpVector, robjects.NA_Real),
-                ('z', rinterface.FloatSexpVector, robjects.NA_Real)
-        ]
-        connectors:List = [(k,[]) for k,_,_ in connector_cols]
-        for rn in raw_connectors:
-            for n, kv in enumerate(connector_cols):
-                val = rn[n]
-                if val is None:
-                    val = kv[2]
-                connectors[n][1].append(val)
-        r_connectors = [
-            (kv[0], connector_cols[n][1](kv[1])) for n, kv in enumerate(connectors)
-        ]
-
-        # Tags in Rpy2 format
-        r_tags = {}
-        for tag, node_ids in raw_tags.items():
-            r_tags[tag] = rinterface.IntSexpVector(node_ids)
-
-        # Construct output similar to rcatmaid's request response parsing function.
-        skeleton_data = robjects.ListVector({
-                'nodes': robjects.DataFrame(rlc.OrdDict(r_nodes)),
-                'connectors': robjects.DataFrame(rlc.OrdDict(r_connectors)),
-                'tags': robjects.ListVector(r_tags),
-        })
-
-        skeleton_envelope = {}
-        skeleton_envelope[str(skeleton_id)] = skeleton_data
-        cs_r[str(skeleton_id)] = read_neuron_local(str(skeleton_id),
-                robjects.ListVector(skeleton_envelope), project_id)
-
-        # Make sure all temporary R values are garbage collected. With many
-        # skeletons, this can otherwise become a memory problem quickly (the
-        # Python GC doesn't now about the R memory).
-        del r_nodes, r_connectors, r_tags, skeleton_data
-
-        # Explicitly garbage collect after each skeleton is loaded.
-        gc.collect()
 
     if progress:
         bar.finish()
@@ -1637,3 +1567,94 @@ def neuronlist_for_skeletons(project_id, skeleton_ids, omit_failures=False,
     gc.collect()
 
     return objects
+
+
+def load_skeleton(project_id, skeleton_id, scale, omit_failures, progress, bar,
+        ni, cs_r, read_neuron_local):
+    try:
+        cs = _compact_skeleton(project_id, skeleton_id,
+                with_connectors=True, with_tags=True, scale=scale)
+    except Exception as e:
+        if not omit_failures:
+            raise
+        logger.error(f'Error loading skeleton {skeleton_id}')
+        logger.error(e)
+        return
+
+    if progress:
+        bar.update(ni + 1)
+
+    raw_nodes = cs[0]
+    raw_connectors = cs[1]
+    raw_tags = cs[2]
+
+    # Require at least two nodes
+    if len(raw_nodes) < 2:
+        if omit_failures:
+            return
+        raise ValueError(f"Skeleton {skeleton_id} has less than two nodes")
+
+    # Nodes in Rpy2 format
+    node_cols = [
+            ('id', rinterface.IntSexpVector, robjects.NA_Integer),
+            ('parent_id', rinterface.IntSexpVector, robjects.NA_Integer),
+            ('user_id', rinterface.IntSexpVector, robjects.NA_Integer),
+            ('x', rinterface.FloatSexpVector, robjects.NA_Real),
+            ('y', rinterface.FloatSexpVector, robjects.NA_Real),
+            ('z', rinterface.FloatSexpVector, robjects.NA_Real),
+            ('radius', rinterface.FloatSexpVector, robjects.NA_Real),
+            ('confidence', rinterface.IntSexpVector, robjects.NA_Integer)
+    ]
+    nodes:List = [(k,[]) for k,_,_ in node_cols]
+    for rn in raw_nodes:
+        for n, kv in enumerate(node_cols):
+            val = rn[n]
+            if val is None:
+                val = kv[2]
+            nodes[n][1].append(val)
+    r_nodes = [(kv[0], node_cols[n][1](kv[1])) for n, kv in enumerate(nodes)]
+
+    # Connectors in Rpy2 format
+    connector_cols = [
+            ('treenode_id', rinterface.IntSexpVector, robjects.NA_Integer),
+            ('connector_id', rinterface.IntSexpVector, robjects.NA_Integer),
+            ('prepost', rinterface.IntSexpVector, robjects.NA_Integer),
+            ('x', rinterface.FloatSexpVector, robjects.NA_Real),
+            ('y', rinterface.FloatSexpVector, robjects.NA_Real),
+            ('z', rinterface.FloatSexpVector, robjects.NA_Real)
+    ]
+    connectors:List = [(k,[]) for k,_,_ in connector_cols]
+    for rn in raw_connectors:
+        for n, kv in enumerate(connector_cols):
+            val = rn[n]
+            if val is None:
+                val = kv[2]
+            connectors[n][1].append(val)
+    r_connectors = [
+        (kv[0], connector_cols[n][1](kv[1])) for n, kv in enumerate(connectors)
+    ]
+
+    # Tags in Rpy2 format
+    r_tags = {}
+    for tag, node_ids in raw_tags.items():
+        r_tags[tag] = rinterface.IntSexpVector(node_ids)
+
+    # Construct output similar to rcatmaid's request response parsing function.
+    skeleton_data = robjects.ListVector({
+            'nodes': robjects.DataFrame(rlc.OrdDict(r_nodes)),
+            'connectors': robjects.DataFrame(rlc.OrdDict(r_connectors)),
+            'tags': robjects.ListVector(r_tags),
+    })
+
+    skeleton_envelope = {}
+    skeleton_envelope[str(skeleton_id)] = skeleton_data
+    cs_r[str(skeleton_id)] = read_neuron_local(str(skeleton_id),
+            robjects.ListVector(skeleton_envelope), project_id)
+
+    # Make sure all temporary R values are garbage collected. With many
+    # skeletons, this can otherwise become a memory problem quickly (the
+    # Python GC doesn't now about the R memory).
+    del r_nodes, r_connectors, r_tags, skeleton_data
+
+    # Explicitly garbage collect after each skeleton is loaded.
+    gc.collect()

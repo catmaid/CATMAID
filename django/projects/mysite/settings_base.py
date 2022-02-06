@@ -513,6 +513,7 @@ CREATE_DEFAULT_DATAVIEWS = True
 
 # NBLAST support
 NBLAST_ALL_BY_ALL_MIN_SIZE = 10
+NBLAST_OBJECT_LOAD_WORKERS = 1
 MAX_PARALLEL_ASYNC_WORKERS = 1
 
 # Intersection grid settings, dimensions in project coordinates (nm)

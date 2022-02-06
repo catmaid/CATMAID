@@ -913,13 +913,17 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
                 else:
                     similarity.invalid_target_objects = None
 
+            logger.info(f'NBLAST computation completed, used {len(similarity.query_object_ids) if similarity.query_object_ids else "zero"} '
+                    f'query objects and {len(similarity.target_object_ids) if similarity.target_object_ids else "zero"}')
+
             # Write the result as a Postgres large object, unless specifically
             # asked to store relational results. To query many result scores at
             # once, the large object facility can be quite slow.
             if relational_results:
                 def to_row(x):
-                    return (similarity.query_objects[x[0]], similarity.target_objects[x[1]],
-                        float(scoring_info['similarity'][x[0], x[1]]))
+                    query_obj_src = scoring_info['query_object_ids'] or similarity.query_objects
+                    target_obj_src = scoring_info['target_object_ids'] or similarity.target_objects
+                    return (query_obj_src[x[0]], target_obj_src[x[1]], float(scoring_info['similarity'][x[0], x[1]]))
 
                 cursor = connection.cursor()
                 if clear_results:

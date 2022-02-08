@@ -23,7 +23,7 @@
   $.extend(ProjectManagementWidget.prototype, new InstanceRegistry());
 
   ProjectManagementWidget.prototype.getName = function() {
-    return `Project management ${this.widgetID}: ${project.title}`;
+    return `Project management ${this.widgetID}: ${project.title} (ID: ${project.id})`;
   };
 
   ProjectManagementWidget.prototype.destroy = function() {

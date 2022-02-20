@@ -132,6 +132,10 @@ class Command(BaseCommand):
                 help="A venv environment to load in tasks")
         parser.add_argument("--working-dir", dest='working_dir', default='$(pwd)',
                 help="An optional working directory")
+        parser.add_argument('--remote-dps-host', dest='remote_dps_host', required=False,
+                default=None, help='A host to use to load DPS objects'),
+        parser.add_argument('--remote-dps-port', dest='remote_dps_port', required=False,
+                default=None, type=int, help='A port to use to load DPS objects'),
 
     def handle(self, *args, **options):
         similarity = NblastSimilarity.objects.get(pk=options['similarity_id'])
@@ -161,6 +165,13 @@ class Command(BaseCommand):
 
         venv_path = options['venv']
         conda_env = options['conda']
+
+        remote_dps_host = options['remote_dps_host']
+        remote_dps_port = options['remote_dps_port']
+        if remote_dps_host and remote_dps_port:
+            remote_dps_source = (remote_dps_host, remote_dps_port)
+        else:
+            remote_dps_source = None
 
         skeleton_constraints = None
         if similarity.query_objects and len(similarity.query_objects):
@@ -374,7 +385,8 @@ class Command(BaseCommand):
                         min_length=min_length, min_soma_length=min_length,
                         relational_results=True, query_object_ids=query_skeletons,
                         target_object_ids=target_skeletons, notify_user=False,
-                        write_scores_only=True, clear_results=False, parallel=True)
+                        write_scores_only=True, clear_results=False,
+                        parallel=True, remote_dps_source=remote_dps_source)
             else:
                 logger.info(f'Nothing to compute for similarity {similarity.id}, '
                         f'bin {job_index} ({job_index+1}/{len(skeleton_groups)}), '

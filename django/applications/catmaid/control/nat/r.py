@@ -12,6 +12,9 @@ from tqdm import tqdm
 import re
 import subprocess
 from typing import Any, Dict, List, Tuple
+import socket
+import pickle
+import time
 
 from django.db import connection, connections
 from django.db.utils import DEFAULT_DB_ALIAS, load_backend
@@ -601,6 +604,65 @@ def get_cached_dps_data_from_file(cache_path):
         return None
 
 
+def get_remote_dps_data(object_ids, host='127.0.0.1', port=34565):
+    """Get DPS cache data from a remote service, running the
+    catmaid_parallel_nblast_cache_server management command.
+    """
+    if type(object_ids) == list:
+        object_ids = ','.join(map(str, object_ids))
+    clientMultiSocket = socket.socket()
+    logger.info('Waiting for connection response')
+    try:
+        clientMultiSocket.connect((host, port))
+    except socket.error as e:
+        logger.error(f'Socket error: {e}')
+
+    clientMultiSocket.send(str.encode(object_ids))
+    res = recv_timeout(clientMultiSocket)
+    res = pickle.loads(res)
+    logger.info(f'Received {len(res)} objects')
+
+    clientMultiSocket.close()
+
+    return res
+
+
+def recv_timeout(the_socket, timeout=2):
+    #make socket non blocking
+    the_socket.setblocking(0)
+
+    #total data partwise in an array
+    total_data=[];
+    data='';
+
+    #beginning time
+    begin=time.time()
+    while 1:
+        #if you got some data, then break after timeout
+        if total_data and time.time()-begin > timeout:
+            break
+
+        #if you got no data at all, wait a little longer, twice the timeout
+        elif time.time()-begin > timeout*2:
+            break
+
+        #recv something
+        try:
+            data = the_socket.recv(8192)
+            if data:
+                total_data.append(data)
+                #change the beginning time for measurement
+                begin = time.time()
+            else:
+                #sleep for sometime to indicate a gap
+                time.sleep(0.1)
+        except:
+            pass
+
+    #join all parts to make final string
+    return b''.join(total_data)
+
+
 def combine_cache_files(cache_dir, target_cache_path):
     if not os.path.exists(cache_dir):
         logger.info(f'Can\'t access: {cache_dir}')
@@ -617,8 +679,6 @@ def combine_cache_files(cache_dir, target_cache_path):
                 cache_objects.append(cache_data)
             else:
                 logger.error('Found no data')
-
-        import ipdb; ipdb.set_trace()
 
         if cache_objects:
             base = importr('base')
@@ -807,7 +867,8 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
         normalized='raw', use_alpha=False, remove_target_duplicates=True,
         min_length=15000, min_soma_length=1000, simplify=True, required_branches=10,
         soma_tags=('soma', ), use_cache=True, reverse=False, top_n=0,
-        resample_by=1e3, use_http=False, bb=None, parallel=False) -> Dict[str, Any]:
+        resample_by=1e3, use_http=False, bb=None, parallel=False,
+        remote_dps_source=None) -> Dict[str, Any]:
     """Create NBLAST score for forward similarity from query objects to target
     objects. Objects can either be pointclouds or skeletons, which has to be
     reflected in the respective type parameter. This is executing essentially
@@ -825,6 +886,8 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
     query_dp = dotprops(query, resample=1, k=5)
     target_dp = dotprops(target, resample=1, k=5)
     neurons.similarity = nblast_allbyall.neuronlist(neurons.dps, smat, FALSE, 'raw')
+
+    remote_dps_source: a (host, port) tuple.
     """
     # TODO: Break up this function
     timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
@@ -895,7 +958,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
         skeleton_cache = None
         pointcloud_cache = None
         pointset_cache = None
-        if use_cache:
+        if use_cache and not remote_dps_source:
             object_types = (query_type, target_type)
             logger.info('Looking for object cache')
             if 'skeleton' in object_types:
@@ -917,7 +980,17 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
             cache_hits = 0
             query_cache_objects_dps:Any = None
             n_query_objects = len(query_object_ids)
-            if use_cache and skeleton_cache:
+            if remote_dps_source:
+                logger.info(f'Using remote DPS source: {remote_dps_source}')
+                query_cache_objects_dps = get_remote_dps_data(query_object_ids,
+                        remote_dps_source[0], remote_dps_source[1])
+                cache_typed_query_object_ids = list(base.names(query_cache_objects_dps))
+                effective_query_object_ids = list(filter(
+                        # Only allow neurons that are not part of the cache
+                        lambda x: query_cache_objects_dps.rx2(str(x)) == robjects.NULL,
+                        query_object_ids))
+                cache_hits = n_query_objects - len(effective_query_object_ids)
+            elif use_cache and skeleton_cache:
                 logger.info(f'Using skeleton cache file: {get_cache_file_path(project_id, "skeleton")}')
                 # Find all skeleton IDs that aren't part of the cache
                 # TODO: There must be a simler way to extract non-NA values only
@@ -967,7 +1040,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
 
             # If we found cached items before, use them to complete the query
             # objects.
-            if use_cache and cache_typed_query_object_ids:
+            if (use_cache or remote_dps_source) and cache_typed_query_object_ids:
                 if len(query_dps) > 0:
                     query_dps = robjects.r.c(query_dps, query_cache_objects_dps)
                     typed_query_object_ids = non_cache_typed_query_object_ids + \
@@ -1087,7 +1160,17 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                 cache_hits = 0
                 target_cache_objects_dps:Any = None
                 n_target_objects = len(target_object_ids)
-                if use_cache and skeleton_cache:
+                if remote_dps_source:
+                    logger.info(f'Using remote DPS source: {remote_dps_source}')
+                    target_cache_objects_dps = get_remote_dps_data(target_object_ids,
+                            remote_dps_source[0], remote_dps_source[1])
+                    cache_typed_target_object_ids = list(base.names(target_cache_objects_dps))
+                    effective_target_object_ids = list(filter(
+                            # Only allow neurons that are not part of the cache
+                            lambda x: target_cache_objects_dps.rx2(str(x)) == robjects.NULL,
+                            target_object_ids))
+                    cache_hits = n_target_objects - len(effective_target_object_ids)
+                elif use_cache and skeleton_cache:
                     # Find all skeleton IDs that aren't part of the cache
                     # TODO: There must be a simler way to extract non-NA values only
                     target_object_id_str = rinterface.StrSexpVector(list(map(str, target_object_ids)))
@@ -1137,7 +1220,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
 
                 # If we found cached items before, use them to complete the target
                 # objects.
-                if use_cache and cache_typed_target_object_ids:
+                if (use_cache or remote_dps_source) and cache_typed_target_object_ids:
                     if len(target_dps) > 0:
                         target_dps = robjects.r.c(target_dps, target_cache_objects_dps)
                         typed_target_object_ids = non_cache_typed_target_object_ids + \

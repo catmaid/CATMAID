@@ -831,7 +831,8 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
         min_length=15000, min_soma_length=1000, soma_tags=('soma',),
         relational_results=False, max_length=float('inf'), query_object_ids=None,
         target_object_ids=None, notify_user=True, write_scores_only=False,
-        clear_results=True, force_objects=False, bb=None, parallel=False) -> str:
+        clear_results=True, force_objects=False, bb=None, parallel=False,
+        remote_dps_source=None) -> str:
     start_time = timer()
     write_non_scores = not write_scores_only
     try:
@@ -893,7 +894,7 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
                 simplify=simplify, required_branches=required_branches,
                 use_cache=use_cache, reverse=similarity.reverse,
                 top_n=similarity.top_n, use_http=use_http, bb=bb,
-                parallel=parallel)
+                parallel=parallel, remote_dps_source=remote_dps_source)
 
         duration = timer() - start_time
 

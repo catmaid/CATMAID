@@ -6,6 +6,8 @@ import psycopg2
 import numpy as np
 import os
 import pickle
+import struct
+import selectors
 
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
@@ -38,7 +40,7 @@ class Command(BaseCommand):
          parser.add_argument('--port', dest='port', type=int,
                  required=False, default=34565, help='The port to listen on')
          parser.add_argument('--host', dest='host', type=str,
-                 required=False, default='127.0.0.1', help='The host to listen on')
+                 required=False, default='', help='The host to listen on')
          parser.add_argument("--cache-path", dest='cache_path', required=True,
                  help="The path of the cache file to load")
 
@@ -68,29 +70,42 @@ class Command(BaseCommand):
          rnat = importr('nat')
 
          def multi_threaded_client(connection):
-             while True:
-                 data = recv_timeout(connection)
-                 if not data:
-                     break
-                 object_ids = map(lambda x: x.strip(), data.decode('utf-8').split(','))
-                 object_id_str = rinterface.StrSexpVector(list(map(str, object_ids)))
-                 objects_dps = cache_data.rx(object_id_str)
-                 non_na_ids = list(filter(lambda x: type(x) == str,
-                         list(base.names(objects_dps))))
-                 cache_typed_object_ids = non_na_ids
-                 cache_objects_dps = rnat.subset_neuronlist(
-                         objects_dps, rinterface.StrSexpVector(non_na_ids))
+             connection.setblocking(True)
+             data = recv_timeout(connection)
+             if not data:
+                 return
+             object_ids = map(lambda x: x.strip(), data.decode('utf-8').split(','))
+             object_id_str = rinterface.StrSexpVector(list(map(str, object_ids)))
+             objects_dps = cache_data.rx(object_id_str)
+             non_na_ids = list(filter(lambda x: type(x) == str,
+                     list(base.names(objects_dps))))
+             cache_typed_object_ids = non_na_ids
+             cache_objects_dps = rnat.subset_neuronlist(
+                     objects_dps, rinterface.StrSexpVector(non_na_ids))
 
-                 response = pickle.dumps(cache_objects_dps)
-                 connection.sendall(response)
+             data = pickle.dumps(cache_objects_dps)
+             # Prefix with a 4-bytet length in network byte order
+             data_size = struct.pack('!I', len(data))
+
+             try:
+                 # Send size of data and data
+                 connection.sendall(data_size)
+                 connection.sendall(data)
+             except BlockingIOError:
+                 pass
+             connection.shutdown(socket.SHUT_RDWR)
              connection.close()
 
-         while True:
-             serverSideSocket.listen(5)
-             client, address = serverSideSocket.accept()
-             logger.info(f'Connected to: {address[0]}: {address[1]}')
-             start_new_thread(multi_threaded_client, (client, ))
-             threadCount += 1
-             logger.info(f'Thread Number: {threadCount}')
-
-         serverSideSocket.close()
+         try:
+             while True:
+                 serverSideSocket.listen(5)
+                 client, (address, port) = serverSideSocket.accept()
+                 logger.info(f'Connected to: {address}: {port}')
+                 start_new_thread(multi_threaded_client, (client, ))
+                 threadCount += 1
+                 logger.info(f'Thread Number: {threadCount}')
+         except KeyboardInterrupt:
+             logger.info('Keyboard interrupt received')
+         finally:
+             serverSideSocket.close()
+             logger.info('Stopping server')

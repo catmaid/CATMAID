@@ -13,6 +13,7 @@ import re
 import subprocess
 from typing import Any, Dict, List, Tuple
 import socket
+import struct
 import pickle
 import time
 
@@ -610,7 +611,7 @@ def get_remote_dps_data(object_ids, host='127.0.0.1', port=34565):
     """
     if type(object_ids) == list:
         object_ids = ','.join(map(str, object_ids))
-    clientMultiSocket = socket.socket()
+    clientMultiSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     logger.info('Waiting for connection response')
     try:
         clientMultiSocket.connect((host, port))
@@ -618,13 +619,30 @@ def get_remote_dps_data(object_ids, host='127.0.0.1', port=34565):
         logger.error(f'Socket error: {e}')
 
     clientMultiSocket.send(str.encode(object_ids))
-    res = recv_timeout(clientMultiSocket)
-    res = pickle.loads(res)
-    logger.info(f'Received {len(res)} objects')
 
+    packed_size = recvall(clientMultiSocket, struct.calcsize('!I'))
+    # Decode the size and get the image data.
+    size, = struct.unpack('!I', packed_size)
+    logger.info(f'Expecting {size} bytes')
+
+    data = recvall(clientMultiSocket, size)
+    clientMultiSocket.shutdown(socket.SHUT_RDWR)
     clientMultiSocket.close()
 
+    res = pickle.loads(data)
+    logger.info(f'Received {len(res)} objects')
+
     return res
+
+def recvall(sock, count):
+    buf = b''
+    while count:
+        newbuf = sock.recv(count)
+        if not newbuf:
+            raise EOFError(f'Could not receive all expected data (missing {count} bytes)!')
+        buf += newbuf
+        count -= len(newbuf)
+    return buf
 
 
 def recv_timeout(the_socket, timeout=2):

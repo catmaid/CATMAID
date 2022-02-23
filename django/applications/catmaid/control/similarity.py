@@ -832,7 +832,7 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
         relational_results=False, max_length=float('inf'), query_object_ids=None,
         target_object_ids=None, notify_user=True, write_scores_only=False,
         clear_results=True, force_objects=False, bb=None, parallel=False,
-        remote_dps_source=None) -> str:
+        remote_dps_source=None, target_cache=False) -> str:
     start_time = timer()
     write_non_scores = not write_scores_only
     try:
@@ -860,7 +860,7 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
                     f'{similarity.target_type_id} with min length {min_length}, min '
                     f'length if soma found {min_soma_length}, soma tags {soma_tags}, '
                     f'max length {max_length}, and the bounding box {bb}')
-        if not target_object_ids:
+        if not target_object_ids and not target_cache:
             logger.info('Getting target object IDs')
             target_object_ids = get_all_object_ids(project_id, user_id,
                     similarity.target_type_id, min_length, min_soma_length,
@@ -894,7 +894,8 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
                 simplify=simplify, required_branches=required_branches,
                 use_cache=use_cache, reverse=similarity.reverse,
                 top_n=similarity.top_n, use_http=use_http, bb=bb,
-                parallel=parallel, remote_dps_source=remote_dps_source)
+                parallel=parallel, remote_dps_source=remote_dps_source,
+                target_cache=target_cache)
 
         duration = timer() - start_time
 
@@ -942,7 +943,7 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
                     })
                 logger.info('Preparing to store positive NBLAST scores in result relation')
                 # We pnly want positive scores
-                non_zero_idx = np.where(scoring_info['similarity'] > 0)
+                non_zero_idx = np.where(scoring_info['similarity'] > 0.01)
                 # Find all non-zero matches that aren't self-matches
                 non_zero_results = tuple(filter(lambda x: x[0] != x[1], map(to_row, zip(non_zero_idx[0], non_zero_idx[1]))))
                 max_scores = len(scoring_info["query_object_ids"]) * len(scoring_info["target_object_ids"]) if scoring_info["query_object_ids"] and scoring_info["target_object_ids"] else "?"

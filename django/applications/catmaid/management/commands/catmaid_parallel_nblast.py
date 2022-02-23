@@ -136,6 +136,8 @@ class Command(BaseCommand):
                 default=None, help='A host to use to load DPS objects'),
         parser.add_argument('--remote-dps-port', dest='remote_dps_port', required=False,
                 default=None, type=int, help='A port to use to load DPS objects'),
+        parser.add_argument("--target-cache", dest='target_cache', type=str2bool, nargs='?',
+                const=True, default=False, help="Compute NBLAST scores for entire set of cached skeletons")
 
     def handle(self, *args, **options):
         similarity = NblastSimilarity.objects.get(pk=options['similarity_id'])
@@ -151,6 +153,7 @@ class Command(BaseCommand):
         min_length = options['min_length'] or 0
         working_dir = options['working_dir']
         max_cluster_size = options['max_cluster_size']
+        target_cache = options['target_cache']
 
         ssh_local_port = options['ssh_local_port']
         ssh_remote_port = options['ssh_remote_port']
@@ -386,7 +389,8 @@ class Command(BaseCommand):
                         relational_results=True, query_object_ids=query_skeletons,
                         target_object_ids=target_skeletons, notify_user=False,
                         write_scores_only=True, clear_results=False,
-                        parallel=True, remote_dps_source=remote_dps_source)
+                        parallel=True, remote_dps_source=remote_dps_source,
+                        target_cache=target_cache)
             else:
                 logger.info(f'Nothing to compute for similarity {similarity.id}, '
                         f'bin {job_index} ({job_index+1}/{len(skeleton_groups)}), '

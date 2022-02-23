@@ -898,7 +898,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
         min_length=15000, min_soma_length=1000, simplify=True, required_branches=10,
         soma_tags=('soma', ), use_cache=True, reverse=False, top_n=0,
         resample_by=1e3, use_http=False, bb=None, parallel=False,
-        remote_dps_source=None) -> Dict[str, Any]:
+        remote_dps_source=None, target_cache=False) -> Dict[str, Any]:
     """Create NBLAST score for forward similarity from query objects to target
     objects. Objects can either be pointclouds or skeletons, which has to be
     reflected in the respective type parameter. This is executing essentially
@@ -956,35 +956,6 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
 
         nblast_params['.parallel'] = parallel
 
-        cursor = connection.cursor()
-
-        # In case either query_object_ids or target_object_ids is not given, the
-        # value will be filled in with all objects of the respective type.
-        from catmaid.control.similarity import get_all_object_ids
-        if all_by_all:
-            query_object_ids = get_all_object_ids(project_id, user_id,
-                    query_type, min_length, min_soma_length, soma_tags, bb=bb)
-            target_object_ids = query_object_ids
-        else:
-            if not query_object_ids:
-                query_object_ids = get_all_object_ids(project_id, user_id,
-                        query_type, min_length, min_soma_length, soma_tags, bb=bb)
-            if not target_object_ids:
-                target_object_ids = get_all_object_ids(project_id, user_id,
-                        target_type, min_length, min_soma_length, soma_tags, bb=bb)
-
-        # If both query and target IDs are of the same type, the target list of
-        # object IDs can't contain any of the query IDs.
-        if query_type == target_type and remove_target_duplicates:
-            target_object_ids = list(set(target_object_ids) - set(query_object_ids))
-
-        # The query and target objects that need to be loaded
-        effective_query_object_ids = query_object_ids
-        effective_target_object_ids = target_object_ids
-
-        typed_query_object_ids = query_object_ids
-        typed_target_object_ids = target_object_ids
-
         skeleton_cache = None
         pointcloud_cache = None
         pointset_cache = None
@@ -1003,6 +974,39 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                 # Check if pointcloud cache file with R DPS dotprops exists and
                 # load it, if available.
                 pointset_cache = get_cached_dps_data(project_id, 'pointset')
+
+        cursor = connection.cursor()
+
+        # In case either query_object_ids or target_object_ids is not given, the
+        # value will be filled in with all objects of the respective type.
+        from catmaid.control.similarity import get_all_object_ids
+        if all_by_all:
+            query_object_ids = get_all_object_ids(project_id, user_id,
+                    query_type, min_length, min_soma_length, soma_tags, bb=bb)
+            target_object_ids = query_object_ids
+        else:
+            if not query_object_ids:
+                query_object_ids = get_all_object_ids(project_id, user_id,
+                        query_type, min_length, min_soma_length, soma_tags, bb=bb)
+            if not target_object_ids:
+                if target_cache and skeleton_cache:
+                    target_object_ids = list(skeleton_cache.names)
+                    logger.info(f'Limiting target set to all {len(target_object_ids)} cached skeletons')
+                else:
+                    target_object_ids = get_all_object_ids(project_id, user_id,
+                            target_type, min_length, min_soma_length, soma_tags, bb=bb)
+
+        # If both query and target IDs are of the same type, the target list of
+        # object IDs can't contain any of the query IDs.
+        if query_type == target_type and remove_target_duplicates:
+            target_object_ids = list(set(target_object_ids) - set(query_object_ids))
+
+        # The query and target objects that need to be loaded
+        effective_query_object_ids = query_object_ids
+        effective_target_object_ids = target_object_ids
+
+        typed_query_object_ids = query_object_ids
+        typed_target_object_ids = target_object_ids
 
         # Query objects
         if query_type == 'skeleton':
@@ -1201,20 +1205,27 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                             target_object_ids))
                     cache_hits = n_target_objects - len(effective_target_object_ids)
                 elif use_cache and skeleton_cache:
-                    # Find all skeleton IDs that aren't part of the cache
-                    # TODO: There must be a simler way to extract non-NA values only
-                    target_object_id_str = rinterface.StrSexpVector(list(map(str, target_object_ids)))
-                    target_cache_objects_dps = skeleton_cache.rx(target_object_id_str)
-                    non_na_ids = list(filter(lambda x: type(x) == str,
-                            list(base.names(target_cache_objects_dps))))
-                    cache_typed_target_object_ids = non_na_ids
-                    target_cache_objects_dps = rnat.subset_neuronlist(
-                            target_cache_objects_dps, rinterface.StrSexpVector(non_na_ids))
-                    effective_target_object_ids = list(filter(
-                            # Only allow neurons that are not part of the cache
-                            lambda x: target_cache_objects_dps.rx2(str(x)) == robjects.NULL,
-                            target_object_ids))
-                    cache_hits = n_target_objects - len(effective_target_object_ids)
+                    if target_cache:
+                        cache_typed_target_object_ids = target_object_ids
+                        effective_target_object_ids = []
+                        cache_hits = n_target_objects
+                        target_dps = skeleton_cache
+                        non_cache_typed_target_object_ids = list(base.names(target_dps))
+                    else:
+                        # Find all skeleton IDs that aren't part of the cache
+                        # TODO: There must be a simler way to extract non-NA values only
+                        target_object_id_str = rinterface.StrSexpVector(list(map(str, target_object_ids)))
+                        target_cache_objects_dps = skeleton_cache.rx(target_object_id_str)
+                        non_na_ids = list(filter(lambda x: type(x) == str,
+                                list(base.names(target_cache_objects_dps))))
+                        cache_typed_target_object_ids = non_na_ids
+                        target_cache_objects_dps = rnat.subset_neuronlist(
+                                target_cache_objects_dps, rinterface.StrSexpVector(non_na_ids))
+                        effective_target_object_ids = list(filter(
+                                # Only allow neurons that are not part of the cache
+                                lambda x: target_cache_objects_dps.rx2(str(x)) == robjects.NULL,
+                                target_object_ids))
+                        cache_hits = n_target_objects - len(effective_target_object_ids)
                 else:
                     cache_typed_target_object_ids = []
                     effective_target_object_ids = target_object_ids
@@ -1244,13 +1255,14 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                                 'OmitFailures': omit_failures,
                             })
                     non_cache_typed_target_object_ids = list(base.names(target_dps)) if target_dps else []
-                else:
+                elif not target_cache:
                     target_dps = []
                     non_cache_typed_target_object_ids = []
 
                 # If we found cached items before, use them to complete the target
                 # objects.
-                if (use_cache or remote_dps_source) and cache_typed_target_object_ids:
+                if (use_cache or remote_dps_source) and \
+                        cache_typed_target_object_ids and target_cache_objects_dps:
                     if len(target_dps) > 0:
                         target_dps = robjects.r.c(target_dps, target_cache_objects_dps)
                         typed_target_object_ids = non_cache_typed_target_object_ids + \

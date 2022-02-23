@@ -609,16 +609,23 @@ def get_remote_dps_data(object_ids, host='127.0.0.1', port=34565):
     """Get DPS cache data from a remote service, running the
     catmaid_parallel_nblast_cache_server management command.
     """
-    if type(object_ids) == list:
-        object_ids = ','.join(map(str, object_ids))
+    if type(object_ids) == str:
+        object_ids = list(map(int, object_ids.split(',')))
+
     clientMultiSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    clientMultiSocket.setblocking(False)
+
     logger.info('Waiting for connection response')
+    addr = (host, port)
     try:
-        clientMultiSocket.connect((host, port))
+        clientMultiSocket.connect_ex(addr)
     except socket.error as e:
         logger.error(f'Socket error: {e}')
 
-    clientMultiSocket.send(str.encode(object_ids))
+    data = pickle.dumps(object_ids)
+    data_size = struct.pack('!I', len(data))
+    clientMultiSocket.sendall(data_size)
+    clientMultiSocket.sendall(data)
 
     packed_size = recvall(clientMultiSocket, struct.calcsize('!I'))
     # Decode the size and get the image data.
@@ -637,11 +644,16 @@ def get_remote_dps_data(object_ids, host='127.0.0.1', port=34565):
 def recvall(sock, count):
     buf = b''
     while count:
-        newbuf = sock.recv(count)
-        if not newbuf:
-            raise EOFError(f'Could not receive all expected data (missing {count} bytes)!')
-        buf += newbuf
-        count -= len(newbuf)
+        try:
+            newbuf = sock.recv(count)
+        except BlockingIOError:
+            # Resource temporarily unavailable (errno EWOULDBLOCK)
+            pass
+        else:
+            if not newbuf:
+                raise EOFError(f'Could not receive all expected data (missing {count} bytes)!')
+            buf += newbuf
+            count -= len(newbuf)
     return buf
 
 

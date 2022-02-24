@@ -5,6 +5,7 @@ import msgpack
 import psycopg2
 import numpy as np
 import os
+import pickle
 
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
@@ -138,6 +139,10 @@ class Command(BaseCommand):
                 default=None, type=int, help='A port to use to load DPS objects'),
         parser.add_argument("--target-cache", dest='target_cache', type=str2bool, nargs='?',
                 const=True, default=False, help="Compute NBLAST scores for entire set of cached skeletons")
+        parser.add_argument('--store-targets-and-stop', dest='store_targets_and_stop', required=False,
+                default=None, help='If only the potential targets should be computed'),
+        parser.add_argument('--load-targets-from', dest='load_targets_from', required=False,
+                default=None, help='Load a list of target skeletons from a file'),
 
     def handle(self, *args, **options):
         similarity = NblastSimilarity.objects.get(pk=options['similarity_id'])
@@ -154,6 +159,8 @@ class Command(BaseCommand):
         working_dir = options['working_dir']
         max_cluster_size = options['max_cluster_size']
         target_cache = options['target_cache']
+        compute_targets_and_stop = options['store_targets_and_stop']
+        load_targets_from = options['load_targets_from']
 
         ssh_local_port = options['ssh_local_port']
         ssh_remote_port = options['ssh_remote_port']
@@ -293,96 +300,106 @@ class Command(BaseCommand):
             if query_skeletons:
                 target_skeletons = None
                 if ignore_impossible_targets:
-                    # Find a set of potential target objects to avoid having to fetch
-                    # all potential partners in each worker. This is done by only
-                    # allowing skeletons with a maximum distance from the set of query
-                    # skeletons. This distance is compued by looking at the
-                    # similarity matrix to see at what distance the score is
-                    # lowest.
-                    max_distance = max_partner_distance
-                    if not max_distance:
-                        max_distance = similarity.config.distance_breaks[-1]
+                    if load_targets_from:
+                        logger.info(f'Loading target candidates from {load_targets_from}')
+                        with open(load_targets_from, 'rb') as handle:
+                            target_skeletons = pickle.load(handle)
+                        logger.info(f'Loaded {len(target_skeletons)} target candidates')
+                    else:
+                        # Find a set of potential target objects to avoid having to fetch
+                        # all potential partners in each worker. This is done by only
+                        # allowing skeletons with a maximum distance from the set of query
+                        # skeletons. This distance is compued by looking at the
+                        # similarity matrix to see at what distance the score is
+                        # lowest.
+                        max_distance = max_partner_distance
+                        if not max_distance:
+                            max_distance = similarity.config.distance_breaks[-1]
 
-                    logger.info('Finding skeletons close by')
-                    cursor.execute("""
-                        WITH query_skeleton AS (
-                            SELECT id FROM UNNEST(%(query_object_ids)s::bigint[]) query(id)
-                        ), merged_edges AS (
-                            SELECT ST_Collect(ST_Expand(box3d(edge), %(max_distance)s)) AS cluster
-                            FROM (
-                                SELECT ST_ClusterKMeans(edge, 1, %(max_cluster_size)s) over () AS cid, edge
-                                FROM treenode t
-                                JOIN query_skeleton query
-                                    ON query.id = t.skeleton_id
+                        logger.info('Finding skeletons close by')
+                        cursor.execute("""
+                            WITH query_skeleton AS (
+                                SELECT id FROM UNNEST(%(query_object_ids)s::bigint[]) query(id)
+                            ), merged_edges AS (
+                                SELECT ST_Collect(ST_Expand(box3d(edge), %(max_distance)s)) AS cluster
+                                FROM (
+                                    SELECT ST_ClusterKMeans(edge, 1, %(max_cluster_size)s) over () AS cid, edge
+                                    FROM treenode t
+                                    JOIN query_skeleton query
+                                        ON query.id = t.skeleton_id
+                                    JOIN LATERAL (
+                                        SELECT edge
+                                        FROM treenode_edge
+                                        WHERE id = t.id
+                                        LIMIT 1
+                                    ) AS e ON TRUE
+                                ) sq
+                                GROUP BY cid
+                            ), clusterextent AS (
+                                SELECT box3d(c.cluster) as bb
+                                FROM merged_edges c
+                            )
+                            SELECT ST_XMin(bb), ST_YMin(bb), ST_ZMin(bb), ST_XMax(bb), ST_YMax(bb), ST_ZMax(bb)
+                            FROM clusterextent
+                        """, {
+                            'query_object_ids': query_skeletons,
+                            'max_cluster_size': max_cluster_size,
+                            'max_distance': max_distance,
+                        })
+
+                        boundingboxes = cursor.fetchall()
+                        logger.info(f'Split query skeleton edges into {len(boundingboxes)} clusters (max radius {max_cluster_size} nm)')
+
+                        # Unfortunately, I found no good way to do this in single
+                        # query
+                        target_acc = set()
+                        bb_filters = [f"""
+                            SELECT id
+                            FROM treenode_edge te
+                            WHERE te.project_id = %(project_id)s
+                            AND edge &&& Box3d(ST_MakeLine(ARRAY[
+                                ST_MakePoint({bb[0]}, {bb[4]}, {bb[5]}),
+                                ST_MakePoint({bb[3]}, {bb[1]}, {bb[2]})] ::geometry[]))
+                            AND floatrange(ST_ZMin(edge), ST_ZMax(edge), '[]') &&
+                            floatrange({bb[2]}, {bb[5]}, '[]')
+                        """ for bb in boundingboxes]
+
+                        collect_op = '\nUNION\n'
+                        cursor.execute(f"""
+                            WITH filtered_edges AS (
+                                {collect_op.join(bb_filters)}
+                            ), skeleton AS (
+                                SELECT DISTINCT skeleton.id
+                                FROM filtered_edges t
                                 JOIN LATERAL (
-                                    SELECT edge
-                                    FROM treenode_edge
-                                    WHERE id = t.id
-                                    LIMIT 1
-                                ) AS e ON TRUE
-                            ) sq
-                            GROUP BY cid
-                        ), clusterextent AS (
-                            SELECT box3d(c.cluster) as bb
-                            FROM merged_edges c
-                        )
-                        SELECT ST_XMin(bb), ST_YMin(bb), ST_ZMin(bb), ST_XMax(bb), ST_YMax(bb), ST_ZMax(bb)
-                        FROM clusterextent
-                    """, {
-                        'query_object_ids': query_skeletons,
-                        'max_cluster_size': max_cluster_size,
-                        'max_distance': max_distance,
-                    })
+                                    SELECT skeleton_id
+                                    FROM treenode tt
+                                    WHERE tt.id = t.id
+                                    LIMIT 1) skeleton(id) ON TRUE
+                                JOIN catmaid_skeleton_summary css
+                                    ON css.skeleton_id = skeleton.id
+                                WHERE css.cable_length >= %(min_length)s
+                            )
+                            SELECT array_agg(id)
+                            FROM skeleton
+                        """, {
+                            'project_id': similarity.project_id,
+                            'min_length': min_length,
+                        })
+                        target_skeletons = cursor.fetchone()[0]
 
-                    boundingboxes = cursor.fetchall()
-                    logger.info(f'Split query skeleton edges into {len(boundingboxes)} clusters (max radius {max_cluster_size} nm)')
+                        logger.info(f'Found {len(target_skeletons)} close skeletons as potential partners, max distance: {max_distance}')
 
-                    # Unfortunately, I found no good way to do this in single
-                    # query
-                    target_acc = set()
-                    bb_filters = [f"""
-                        SELECT id
-                        FROM treenode_edge te
-                        WHERE te.project_id = %(project_id)s
-                        AND edge &&& Box3d(ST_MakeLine(ARRAY[
-                            ST_MakePoint({bb[0]}, {bb[4]}, {bb[5]}),
-                            ST_MakePoint({bb[3]}, {bb[1]}, {bb[2]})] ::geometry[]))
-                        AND floatrange(ST_ZMin(edge), ST_ZMax(edge), '[]') &&
-                        floatrange({bb[2]}, {bb[5]}, '[]')
-                    """ for bb in boundingboxes]
-
-                    collect_op = '\nUNION\n'
-                    cursor.execute(f"""
-                        WITH filtered_edges AS (
-                            {collect_op.join(bb_filters)}
-                        ), skeleton AS (
-                            SELECT DISTINCT skeleton.id
-                            FROM filtered_edges t
-                            JOIN LATERAL (
-                                SELECT skeleton_id
-                                FROM treenode tt
-                                WHERE tt.id = t.id
-                                LIMIT 1) skeleton(id) ON TRUE
-                            JOIN catmaid_skeleton_summary css
-                                ON css.skeleton_id = skeleton.id
-                            WHERE css.cable_length >= %(min_length)s
-                        )
-                        SELECT array_agg(id)
-                        FROM skeleton
-                    """, {
-                        'project_id': similarity.project_id,
-                        'min_length': min_length,
-                    })
-                    target_skeletons = cursor.fetchone()[0]
-
-                    logger.info(f'Found {len(target_skeletons)} close skeletons as potential partners, max distance: {max_distance}')
+                        if compute_targets_and_stop:
+                            with open(compute_targets_and_stop, 'wb') as f:
+                                pickle.dump(target_skeletons, f, protocol=pickle.HIGHEST_PROTOCOL)
+                            logger.info(f'Wrote target set to {compute_targets_and_stop}')
+                            logger.info('Stopping')
+                            return
 
                 logger.info(f'Computing NBLAST values for similarity {similarity.id}, '
                         f'bin {job_index} ({job_index+1}/{len(skeleton_groups)}), '
                         f'containing {len(query_skeletons)} skeletons')
-                if target_skeletons:
-                    logger.info(f'Limiting target object set to {len(target_skeletons)} skeletons with a max distance of {max_distance} nm')
-
                 compute_nblast(similarity.project_id, similarity.user_id,
                         similarity.id, remove_target_duplicates,
                         min_length=min_length, min_soma_length=min_length,

@@ -1019,6 +1019,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                 query_cache_objects_dps = get_remote_dps_data(query_object_ids,
                         remote_dps_source[0], remote_dps_source[1])
                 cache_typed_query_object_ids = list(base.names(query_cache_objects_dps))
+                logger.info('Received data, checking for completeness')
                 effective_query_object_ids = list(filter(
                         # Only allow neurons that are not part of the cache
                         lambda x: query_cache_objects_dps.rx2(str(x)) == robjects.NULL,

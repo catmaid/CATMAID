@@ -832,7 +832,8 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
         relational_results=False, max_length=float('inf'), query_object_ids=None,
         target_object_ids=None, notify_user=True, write_scores_only=False,
         clear_results=True, force_objects=False, bb=None, parallel=False,
-        remote_dps_source=None, target_cache=False) -> str:
+        remote_dps_source=None, target_cache=False, skeleton_cache=None,
+        pointcloud_cache=None, pointset_cache=None) -> str:
     start_time = timer()
     write_non_scores = not write_scores_only
     try:
@@ -895,7 +896,8 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
                 use_cache=use_cache, reverse=similarity.reverse,
                 top_n=similarity.top_n, use_http=use_http, bb=bb,
                 parallel=parallel, remote_dps_source=remote_dps_source,
-                target_cache=target_cache)
+                target_cache=target_cache, skeleton_cache=skeleton_cache,
+                pointcloud_cache=pointcloud_cache, pointset_cache=pointset_cache)
 
         duration = timer() - start_time
 

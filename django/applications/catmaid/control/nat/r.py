@@ -898,7 +898,8 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
         min_length=15000, min_soma_length=1000, simplify=True, required_branches=10,
         soma_tags=('soma', ), use_cache=True, reverse=False, top_n=0,
         resample_by=1e3, use_http=False, bb=None, parallel=False,
-        remote_dps_source=None, target_cache=False) -> Dict[str, Any]:
+        remote_dps_source=None, target_cache=False, skeleton_cache=None,
+        pointcloud_cache=None, pointset_cache=None) -> Dict[str, Any]:
     """Create NBLAST score for forward similarity from query objects to target
     objects. Objects can either be pointclouds or skeletons, which has to be
     reflected in the respective type parameter. This is executing essentially
@@ -956,24 +957,30 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
 
         nblast_params['.parallel'] = parallel
 
-        skeleton_cache = None
-        pointcloud_cache = None
-        pointset_cache = None
         if use_cache and not remote_dps_source:
             object_types = (query_type, target_type)
             logger.info('Looking for object cache')
             if 'skeleton' in object_types:
-                # Check if skeleton cache file with R DPS dotprops exists and
-                # load it, if available.
-                skeleton_cache = get_cached_dps_data(project_id, 'skeleton')
+                if skeleton_cache:
+                    logging.info('Using preloaded skeleton cache')
+                else:
+                    # Check if skeleton cache file with R DPS dotprops exists and
+                    # load it, if available.
+                    skeleton_cache = get_cached_dps_data(project_id, 'skeleton')
             if 'pointcloud' in object_types:
-                # Check if pointcloud cache file with R DPS dotprops exists and
-                # load it, if available.
-                pointcloud_cache = get_cached_dps_data(project_id, 'pointcloud')
+                if pointcloud_cache:
+                    logging.info('Using preloaded pointcloud cache')
+                else:
+                    # Check if pointcloud cache file with R DPS dotprops exists and
+                    # load it, if available.
+                    pointcloud_cache = get_cached_dps_data(project_id, 'pointcloud')
             if 'pointset' in object_types:
-                # Check if pointcloud cache file with R DPS dotprops exists and
-                # load it, if available.
-                pointset_cache = get_cached_dps_data(project_id, 'pointset')
+                if pointset_cache:
+                    logging.info('Using preloaded pointset cache')
+                else:
+                    # Check if pointcloud cache file with R DPS dotprops exists and
+                    # load it, if available.
+                    pointset_cache = get_cached_dps_data(project_id, 'pointset')
 
         cursor = connection.cursor()
 
@@ -1014,7 +1021,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
             cache_hits = 0
             query_cache_objects_dps:Any = None
             n_query_objects = len(query_object_ids)
-            if remote_dps_source:
+            if remote_dps_source and not skeleton_cache:
                 logger.info(f'Using remote DPS source: {remote_dps_source}')
                 query_cache_objects_dps = get_remote_dps_data(query_object_ids,
                         remote_dps_source[0], remote_dps_source[1])
@@ -1195,7 +1202,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                 cache_hits = 0
                 target_cache_objects_dps:Any = None
                 n_target_objects = len(target_object_ids)
-                if remote_dps_source:
+                if remote_dps_source and not skeleton_cache:
                     logger.info(f'Using remote DPS source: {remote_dps_source}')
                     target_cache_objects_dps = get_remote_dps_data(target_object_ids,
                             remote_dps_source[0], remote_dps_source[1])

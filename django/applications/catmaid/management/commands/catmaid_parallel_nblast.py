@@ -12,6 +12,7 @@ from django.conf import settings
 from django.db import connection
 
 from catmaid.control.similarity import compute_nblast
+from catmaid.control.nat.r import get_remote_dps_data, get_cached_dps_data
 from catmaid.models import NblastSimilarity
 from catmaid.util import str2bool
 
@@ -143,6 +144,10 @@ class Command(BaseCommand):
                 default=None, help='If only the potential targets should be computed'),
         parser.add_argument('--load-targets-from', dest='load_targets_from', required=False,
                 default=None, help='Load a list of target skeletons from a file'),
+        parser.add_argument('--store-dotprops-cache-and-stop', dest='store_dotprops_and_stop', required=False,
+                default=None, help='If a file path is provided, all dotprops needed for computation are stored there. Can contain {bin_index}.'),
+        parser.add_argument('--load-dotprops-from', dest='load_dotprops_from', required=False,
+                default=None, help='Load dotprops cache from a file, can contain {bin_index}'),
 
     def handle(self, *args, **options):
         similarity = NblastSimilarity.objects.get(pk=options['similarity_id'])
@@ -161,6 +166,8 @@ class Command(BaseCommand):
         target_cache = options['target_cache']
         compute_targets_and_stop = options['store_targets_and_stop']
         load_targets_from = options['load_targets_from']
+        compute_dotprops_and_stop = options['store_dotprops_and_stop']
+        load_dotprops_from = options['load_dotprops_from']
 
         ssh_local_port = options['ssh_local_port']
         ssh_remote_port = options['ssh_remote_port']
@@ -301,9 +308,10 @@ class Command(BaseCommand):
                 target_skeletons = None
                 if ignore_impossible_targets:
                     if load_targets_from:
-                        logger.info(f'Loading target candidates from {load_targets_from}')
-                        with open(load_targets_from, 'rb') as handle:
-                            target_skeletons = pickle.load(handle)
+                        target_file = load_targets_from.format(bin_index=('' if job_index is None else job_index))
+                        logger.info(f'Loading target candidates from {target_file}')
+                        with open(target_file, 'rb') as f:
+                            target_skeletons = pickle.load(f)
                         logger.info(f'Loaded {len(target_skeletons)} target candidates')
                     else:
                         # Find a set of potential target objects to avoid having to fetch
@@ -391,11 +399,60 @@ class Command(BaseCommand):
                         logger.info(f'Found {len(target_skeletons)} close skeletons as potential partners, max distance: {max_distance}')
 
                         if compute_targets_and_stop:
-                            with open(compute_targets_and_stop, 'wb') as f:
+                            target_file = compute_targets_and_stop.format(bin_index=('' if job_index is None else job_index))
+                            with open(target_file, 'wb') as f:
                                 pickle.dump(target_skeletons, f, protocol=pickle.HIGHEST_PROTOCOL)
-                            logger.info(f'Wrote target set to {compute_targets_and_stop}')
+                            logger.info(f'Wrote target set to {target_file}')
                             logger.info('Stopping')
                             return
+
+                skeleton_cache = None
+                if load_dotprops_from:
+                    import lzma
+                    dotprops_file = load_dotprops_from.format(bin_index=('' if job_index is None else job_index))
+                    logger.info(f'Loading dotprops cache from file {dotprops_file}')
+                    with lzma.open(dotprops_file, 'rb') as f:
+                        skeleton_cache = pickle.load(f)
+                    logger.info(f'Loaded dotprops cache with {len(skeleton_cache.names)} entries')
+
+                if compute_dotprops_and_stop:
+                    import lzma
+                    dotprops_file = compute_dotprops_and_stop.format(bin_index=('' if job_index is None else job_index))
+                    if query_skeletons or target_skeletons:
+                        logger.info(f'Computing dotprops for {len(query_skeletons)} query objects and {len(target_skeletons)} target objects')
+                        object_ids = list(set(query_skeletons + target_skeletons))
+                        import rpy2.rinterface as rinterface
+                        from rpy2.robjects.packages import importr
+                        import rpy2.robjects as robjects
+                        base = importr('base')
+                        rnat = importr('nat')
+                        if remote_dps_source:
+                            logger.info(f'Using remote DPS source: {remote_dps_source}')
+                            query_cache_objects_dps = get_remote_dps_data(object_ids,
+                                    remote_dps_source[0], remote_dps_source[1])
+                        else:
+                            logger.info('Loading dotprops cache')
+                            skeleton_cache = get_cached_dps_data(similarity.project_id, 'skeleton')
+                            if not skeleton_cache:
+                                logger.info('No cache found, direct look-up not implemented. Stopping.')
+                                return
+                            # Find all skeleton IDs that aren't part of the cache
+                            # TODO: There must be a simler way to extract non-NA values only
+                            query_object_id_str = rinterface.StrSexpVector(list(map(str, object_ids)))
+                            query_cache_objects_dps = skeleton_cache.rx(query_object_id_str)
+                            non_na_ids = list(filter(lambda x: type(x) == str,
+                                    list(base.names(query_cache_objects_dps))))
+                            query_cache_objects_dps = rnat.subset_neuronlist(
+                                    query_cache_objects_dps, rinterface.StrSexpVector(non_na_ids))
+
+                        logger.info(f'Storing {len(query_cache_objects_dps)} cache objects')
+                        with lzma.open(dotprops_file, 'wb') as f:
+                            pickle.dump(query_cache_objects_dps, f, protocol=pickle.HIGHEST_PROTOCOL)
+                        logger.info(f'Wrote cache to {dotprops_file}')
+                    else:
+                        logger.info('Was asked to compute dotprops, but found neither query objects nor target objects.')
+                    logger.info('Stopping')
+                    return
 
                 logger.info(f'Computing NBLAST values for similarity {similarity.id}, '
                         f'bin {job_index} ({job_index+1}/{len(skeleton_groups)}), '
@@ -407,7 +464,7 @@ class Command(BaseCommand):
                         target_object_ids=target_skeletons, notify_user=False,
                         write_scores_only=True, clear_results=False,
                         parallel=True, remote_dps_source=remote_dps_source,
-                        target_cache=target_cache)
+                        target_cache=target_cache, skeleton_cache=skeleton_cache)
             else:
                 logger.info(f'Nothing to compute for similarity {similarity.id}, '
                         f'bin {job_index} ({job_index+1}/{len(skeleton_groups)}), '

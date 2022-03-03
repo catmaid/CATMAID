@@ -1043,10 +1043,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                 cache_typed_query_object_ids = non_na_ids
                 query_cache_objects_dps = rnat.subset_neuronlist(
                         query_cache_objects_dps, rinterface.StrSexpVector(non_na_ids))
-                effective_query_object_ids = list(filter(
-                        # Only allow neurons that are not part of the cache
-                        lambda x: query_cache_objects_dps.rx2(str(x)) == robjects.NULL,
-                        query_object_ids))
+                effective_query_object_ids = list(set(query_object_ids) - set(map(int, query_cache_objects_dps.names)))
                 cache_hits = n_query_objects - len(effective_query_object_ids)
             else:
                 cache_typed_query_object_ids = []
@@ -1229,10 +1226,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                         cache_typed_target_object_ids = non_na_ids
                         target_cache_objects_dps = rnat.subset_neuronlist(
                                 target_cache_objects_dps, rinterface.StrSexpVector(non_na_ids))
-                        effective_target_object_ids = list(filter(
-                                # Only allow neurons that are not part of the cache
-                                lambda x: target_cache_objects_dps.rx2(str(x)) == robjects.NULL,
-                                target_object_ids))
+                        effective_target_object_ids = list(set(target_object_ids) - set(map(int, target_cache_objects_dps.names)))
                         cache_hits = n_target_objects - len(effective_target_object_ids)
                 else:
                     cache_typed_target_object_ids = []

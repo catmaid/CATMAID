@@ -959,28 +959,38 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
 
         if use_cache and not remote_dps_source:
             object_types = (query_type, target_type)
-            logger.info('Looking for object cache')
             if 'skeleton' in object_types:
                 if skeleton_cache:
                     logging.info('Using preloaded skeleton cache')
                 else:
+                    logger.info('Looking for object cache')
                     # Check if skeleton cache file with R DPS dotprops exists and
                     # load it, if available.
+                    # TODO: Test if using pickled cache is faster to load
+                    # (https://stackoverflow.com/questions/26860051)
                     skeleton_cache = get_cached_dps_data(project_id, 'skeleton')
+                    if skeleton_cache:
+                        logger.info(f'Using skeleton cache file: {get_cache_file_path(project_id, "skeleton")}')
             if 'pointcloud' in object_types:
                 if pointcloud_cache:
                     logging.info('Using preloaded pointcloud cache')
                 else:
+                    logger.info('Looking for object cache')
                     # Check if pointcloud cache file with R DPS dotprops exists and
                     # load it, if available.
                     pointcloud_cache = get_cached_dps_data(project_id, 'pointcloud')
+                    if pointcloud_cache:
+                        logger.info(f'Using pointcloud cache file: {get_cache_file_path(project_id, "pointcloud")}')
             if 'pointset' in object_types:
                 if pointset_cache:
                     logging.info('Using preloaded pointset cache')
                 else:
+                    logger.info('Looking for object cache')
                     # Check if pointcloud cache file with R DPS dotprops exists and
                     # load it, if available.
                     pointset_cache = get_cached_dps_data(project_id, 'pointset')
+                    if pointset_cache:
+                        logger.info(f'Using pointset cache file: {get_cache_file_path(project_id, "pointset")}')
 
         cursor = connection.cursor()
 
@@ -1033,7 +1043,6 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                         query_object_ids))
                 cache_hits = n_query_objects - len(effective_query_object_ids)
             elif use_cache and skeleton_cache:
-                logger.info(f'Using skeleton cache file: {get_cache_file_path(project_id, "skeleton")}')
                 # Find all skeleton IDs that aren't part of the cache
                 # TODO: There must be a simler way to extract non-NA values only
                 query_object_id_str = rinterface.StrSexpVector(list(map(str, query_object_ids)))

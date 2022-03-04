@@ -6,6 +6,7 @@ import psycopg2
 import numpy as np
 import os
 import pickle
+import multiprocessing
 
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
@@ -94,6 +95,22 @@ cd "$INITIAL_WORKING_DIR"
 """
 
 
+def load_and_filter_cache(project_id, object_type, filter_ids, result_dict):
+    """Worker for loading the cache data in a separate process.
+    """
+    import rpy2.rinterface as rinterface
+    from rpy2.robjects.packages import importr
+    base = importr('base')
+    rnat = importr('nat')
+    cached_dps_data = get_cached_dps_data(project_id, object_type)
+    query_object_id_str = rinterface.StrSexpVector(list(map(str, filter_ids)))
+    query_cache_objects_dps = cached_dps_data.rx(query_object_id_str)
+    non_na_ids = list(filter(lambda x: type(x) == str,
+            list(base.names(query_cache_objects_dps))))
+    result_dict['cache'] = rnat.subset_neuronlist(
+            query_cache_objects_dps, rinterface.StrSexpVector(non_na_ids))
+
+
 class Command(BaseCommand):
     help = "Create a set of separate shell scripts to run independently on a cluster"
 
@@ -152,6 +169,9 @@ class Command(BaseCommand):
                 default=None, help='If a file path is provided, all dotprops needed for computation are stored there. Can contain {bin_index}.'),
         parser.add_argument('--load-dotprops-from', dest='load_dotprops_from', required=False,
                 default=None, help='Load dotprops cache from a file, can contain {bin_index}'),
+        parser.add_argument("--preload-cache", dest='preload_cache', type=str2bool, nargs='?',
+                const=True, default=False, help="Preload and filter cache in a separate process to reduce memory requirements")
+
 
     def handle(self, *args, **options):
         similarity = NblastSimilarity.objects.get(pk=options['similarity_id'])
@@ -172,6 +192,7 @@ class Command(BaseCommand):
         load_targets_from = options['load_targets_from']
         compute_dotprops_and_stop = options['store_dotprops_and_stop']
         load_dotprops_from = options['load_dotprops_from']
+        preload_cache = options['preload_cache']
 
         ssh_local_port = options['ssh_local_port']
         ssh_remote_port = options['ssh_remote_port']
@@ -422,6 +443,25 @@ class Command(BaseCommand):
                     with lzma.open(dotprops_file, 'rb') as f:
                         skeleton_cache = pickle.load(f)
                     logger.info(f'Loaded dotprops cache with {len(skeleton_cache.names)} entries')
+
+                if preload_cache:
+                    def update(_):
+                        logger.info('Done filtering cache file')
+                    def err(e):
+                        logger.error(f'Error filtering cache file: {e}')
+                    # This is done in a separate process to clean up Python memory more easily
+                    object_ids = list(set(query_skeletons + target_skeletons))
+                    manager = multiprocessing.Manager()
+                    shared_result = manager.dict()
+                    p = multiprocessing.Pool(processes=1)
+                    p.apply_async(load_and_filter_cache,
+                            args=(similarity.project_id, 'skeleton',
+                                object_ids, shared_result), callback=update,
+                            error_callback=err)
+                    p.close()
+                    p.join()
+                    skeleton_cache = shared_result['cache']
+                    logger.info(f'Finished loading cache, {len(skeleton_cache)} objects available')
 
                 if compute_dotprops_and_stop:
                     import lzma

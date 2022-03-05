@@ -39,7 +39,7 @@ echo "Waiting a few seconds to establish tunnel..."
 ssh -M -S catmaid-ctrl-socket -fnNT -o "ExitOnForwardFailure=yes" -o "TCPKeepAlive=yes" -o "ServerAliveInterval=30" -L $LOCAL_PORT:localhost:$REMOTE_PORT -i $SSH_IDENTITY -p $SSH_PORT $HOST
 if [ $? -ne 0 ]; then
   echo "Could not establish tunnel"
-  #exit 1
+  exit 1
 fi
 ssh -S catmaid-ctrl-socket -O check $HOST
 # If tunnel isn't there after 10 seconds, stop.
@@ -49,6 +49,19 @@ if ( [ ! -e catmaid-ctrl-socket ] ); then
   echo "Could not create tunnel socket file"
   exit 1
 fi
+
+echo ""
+echo "To use this tunnel as a database connection in CATMAID, make sure"
+echo "the following is part of your settings.py file, added right after"
+echo "the DATABASES setting:
+echo ""
+echo "import os"
+echo "if 'DATABASE_PORT' in os.environ:
+echo "    DATABASES['default']['PORT'] = os.environ['DATABASE_PORT']"
+echo ""
+echo "This is done to ensure each job can use their own tunnel."
+echo ""
+export DATABASE_PORT={ssh_local_port}
         """,
         'post': """
 echo "Closing SSH tunnel"
@@ -95,13 +108,15 @@ COMPUTE_DOTPROPS_AND_STOP={compute_dotprops_and_stop}
 
 {pre_matter}
 
+function finish {
+    {post_matter}
+    cd "$INITIAL_WORKING_DIR"
+}
+trap finish EXIT
+
 # Do work
 cd "$INITIAL_WORKING_DIR"
 python manage.py catmaid_parallel_nblast --similarity-id $SIMILARITY_ID --n-jobs $N_JOBS --min-length $MIN_LENGTH --compute-bin $BIN_IDX  --max-cluster-size $MAX_CLUSTER_SIZE --max-partner-distance $MAX_PARTNER_DISTANCE $IGNORE_IMPOSSIBLE_TARGETS $LOAD_TARGETS_FROM $COMPUTE_TARGETS_AND_STOP $LOAD_DOTPROPS_FROM $COMPUTE_DOTPROPS_AND_STOP
-
-{post_matter}
-
-cd "$INITIAL_WORKING_DIR"
 """
 
 
@@ -213,7 +228,7 @@ class Command(BaseCommand):
             if not ssh_host:
                 raise CommandError('Need --ssh-host if --ssh is used')
             if not ssh_identity:
-                raise CommandError('Need --ssh-dentity if --ssh is used')
+                raise CommandError('Need --ssh-identity if --ssh is used')
 
         venv_path = options['venv']
         conda_env = options['conda']

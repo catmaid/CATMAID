@@ -105,6 +105,7 @@ LOAD_TARGETS_FROM="{load_targets_from}"
 COMPUTE_TARGETS_AND_STOP={compute_targets_and_stop}
 LOAD_DOTPROPS_FROM="{load_dotprops_from}"
 COMPUTE_DOTPROPS_AND_STOP={compute_dotprops_and_stop}
+PRELOAD_CACHE={preload_cache}
 
 {pre_matter}
 
@@ -116,7 +117,7 @@ trap finish EXIT
 
 # Do work
 cd "$INITIAL_WORKING_DIR"
-python manage.py catmaid_parallel_nblast --similarity-id $SIMILARITY_ID --n-jobs $N_JOBS --min-length $MIN_LENGTH --compute-bin $BIN_IDX  --max-cluster-size $MAX_CLUSTER_SIZE --max-partner-distance $MAX_PARTNER_DISTANCE $IGNORE_IMPOSSIBLE_TARGETS $LOAD_TARGETS_FROM $COMPUTE_TARGETS_AND_STOP $LOAD_DOTPROPS_FROM $COMPUTE_DOTPROPS_AND_STOP
+python manage.py catmaid_parallel_nblast --similarity-id $SIMILARITY_ID --n-jobs $N_JOBS --min-length $MIN_LENGTH --compute-bin $BIN_IDX  --max-cluster-size $MAX_CLUSTER_SIZE --max-partner-distance $MAX_PARTNER_DISTANCE $IGNORE_IMPOSSIBLE_TARGETS $LOAD_TARGETS_FROM $COMPUTE_TARGETS_AND_STOP $LOAD_DOTPROPS_FROM $COMPUTE_DOTPROPS_AND_STOP $PRELOAD_CACHE
 """
 
 
@@ -353,6 +354,7 @@ class Command(BaseCommand):
                     'compute_targets_and_stop': '--compute-targets-and-stop' if compute_targets_and_stop else '',
                     'load_dotprops_from': f'--load-dotprops-from {load_dotprops_from}' if load_dotprops_from else '',
                     'compute_dotprops_and_stop': '--compute-dotprops-and-stop' if compute_dotprops_and_stop else '',
+                    'preload_cache': '--preload-cache' if preload_cache else '',
                     'pre_matter': '\n'.join(pre),
                     'post_matter': '\n'.join(post),
                 })

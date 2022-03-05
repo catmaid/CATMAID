@@ -53,15 +53,15 @@ fi
 echo ""
 echo "To use this tunnel as a database connection in CATMAID, make sure"
 echo "the following is part of your settings.py file, added right after"
-echo "the DATABASES setting:
+echo "the DATABASES setting:"
 echo ""
 echo "import os"
-echo "if 'DATABASE_PORT' in os.environ:
+echo "if 'DATABASE_PORT' in os.environ:"
 echo "    DATABASES['default']['PORT'] = os.environ['DATABASE_PORT']"
 echo ""
 echo "This is done to ensure each job can use their own tunnel."
 echo ""
-export DATABASE_PORT={ssh_local_port}
+export DATABASE_PORT=$LOCAL_PORT
         """,
         'post': """
 echo "Closing SSH tunnel"
@@ -108,10 +108,10 @@ COMPUTE_DOTPROPS_AND_STOP={compute_dotprops_and_stop}
 
 {pre_matter}
 
-function finish {
+function finish {{
     {post_matter}
     cd "$INITIAL_WORKING_DIR"
-}
+}}
 trap finish EXIT
 
 # Do work
@@ -164,8 +164,10 @@ class Command(BaseCommand):
                 help='The bin to compute scores for'),
         parser.add_argument("--remove-target_duplicates", dest='remove_target_duplicates', type=str2bool, nargs='?',
                 const=True, default=False, help="Whether to remove duplicates in the target set")
-        parser.add_argument('--ssh-local-port', dest='ssh_local_port',
+        parser.add_argument('--ssh-local-port', dest='ssh_local_port', type=int,
                 default=7777, help='The local port for an optional SSH tunnel'),
+        parser.add_argument('--auto-select-local-port', dest='ssh_local_port_autoselect', type=str2bool, nargs='?',
+                const=True, default=True, help='The local port for an optional SSH tunnel will be selecte dautomatically based on the defined local port and the job index'),
         parser.add_argument('--ssh-remote-port', dest='ssh_remote_port',
                 default=5432, help='The remote port for an optional SSH tunnel'),
         parser.add_argument('--ssh-host', dest='ssh_host',
@@ -220,6 +222,7 @@ class Command(BaseCommand):
         preload_cache = options['preload_cache']
 
         ssh_local_port = options['ssh_local_port']
+        ssh_local_port_autoselect = options['ssh_local_port_autoselect']
         ssh_remote_port = options['ssh_remote_port']
         ssh_host = options['ssh_host']
         ssh_port = options['ssh_port']
@@ -310,31 +313,33 @@ class Command(BaseCommand):
         if create_tasks:
             logger.info(f'Generating {len(skeleton_groups)} jobs with a cumulative '
                     f'cable length with an average of {int(avg_skeleton_count)} skeletons per group')
-
-            pre, post = [], []
-            if conda_env:
-                pre.append(snippets['conda']['pre'].format(conda_env=conda_env))
-            if venv_path:
-                pre.append(snippets['venv']['pre'].format(venv_path=venv_path))
-            if ssh_tunnel:
-                pre.append(snippets['ssh']['pre'].format(**{
-                    'ssh_local_port': ssh_local_port,
-                    'ssh_remote_port': ssh_remote_port,
-                    'ssh_host': ssh_host,
-                    'ssh_port': ssh_port,
-                    'ssh_identity': ssh_identity,
-                    'bin': n,
-                }))
-                post.append(snippets['ssh']['post'].format(**{
-                    'ssh_local_port': ssh_local_port,
-                    'ssh_remote_port': ssh_remote_port,
-                    'ssh_host': ssh_host,
-                    'ssh_port': ssh_port,
-                    'ssh_identity': ssh_identity,
-                    'bin': n,
-                }))
-
             for n, sg in enumerate(skeleton_groups):
+                if ssh_local_port_autoselect:
+                    local_port = ssh_local_port + n
+                else:
+                    local_port = ssh_local_port
+                pre, post = [], []
+                if conda_env:
+                    pre.append(snippets['conda']['pre'].format(conda_env=conda_env))
+                if venv_path:
+                    pre.append(snippets['venv']['pre'].format(venv_path=venv_path))
+                if ssh_tunnel:
+                    pre.append(snippets['ssh']['pre'].format(**{
+                        'ssh_local_port': local_port,
+                        'ssh_remote_port': ssh_remote_port,
+                        'ssh_host': ssh_host,
+                        'ssh_port': ssh_port,
+                        'ssh_identity': ssh_identity,
+                        'bin': n,
+                    }))
+                post.append(snippets['ssh']['post'].format(**{
+                    'ssh_local_port': local_port,
+                    'ssh_remote_port': ssh_remote_port,
+                    'ssh_host': ssh_host,
+                    'ssh_port': ssh_port,
+                    'ssh_identity': ssh_identity,
+                    'bin': n,
+                }))
                 job_sh = job_template.format(**{
                     'working_dir': working_dir,
                     'similarity_id': similarity.id,

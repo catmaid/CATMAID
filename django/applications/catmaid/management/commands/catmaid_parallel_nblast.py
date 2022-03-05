@@ -36,9 +36,19 @@ WORKING_DIR=$(mktemp -d)
 cd $WORKING_DIR
 
 echo "Waiting a few seconds to establish tunnel..."
-ssh -M -S catmaid-ctrl-socket -fnNT -L $LOCAL_PORT:localhost:$REMOTE_PORT -i $SSH_IDENTITY -p $SSH_PORT $HOST
+ssh -M -S catmaid-ctrl-socket -fnNT -o "ExitOnForwardFailure=yes" -o "TCPKeepAlive=yes" -o "ServerAliveInterval=30" -L $LOCAL_PORT:localhost:$REMOTE_PORT -i $SSH_IDENTITY -p $SSH_PORT $HOST
+if [ $? -ne 0 ]; then
+  echo "Could not establish tunnel"
+  #exit 1
+fi
 ssh -S catmaid-ctrl-socket -O check $HOST
-while [ ! -e catmaid-ctrl-socket ]; do sleep 0.1; done
+# If tunnel isn't there after 10 seconds, stop.
+count=0
+while ( [ ! -e catmaid-ctrl-socket ] && ((count < 101)) ); do sleep 0.1 && count=$((count+1)); done
+if ( [ ! -e catmaid-ctrl-socket ] ); then
+  echo "Could not create tunnel socket file"
+  exit 1
+fi
         """,
         'post': """
 echo "Closing SSH tunnel"
@@ -298,6 +308,7 @@ class Command(BaseCommand):
                     'ssh_host': ssh_host,
                     'ssh_port': ssh_port,
                     'ssh_identity': ssh_identity,
+                    'bin': n,
                 }))
                 post.append(snippets['ssh']['post'].format(**{
                     'ssh_local_port': ssh_local_port,
@@ -305,6 +316,7 @@ class Command(BaseCommand):
                     'ssh_host': ssh_host,
                     'ssh_port': ssh_port,
                     'ssh_identity': ssh_identity,
+                    'bin': n,
                 }))
 
             for n, sg in enumerate(skeleton_groups):

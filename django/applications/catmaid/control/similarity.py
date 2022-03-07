@@ -7,6 +7,7 @@ import numpy as np
 from timeit import default_timer as timer
 from typing import Any, Dict, List
 import sys
+import pickle
 
 from celery import shared_task
 from celery.utils.log import get_task_logger
@@ -833,7 +834,8 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
         target_object_ids=None, notify_user=True, write_scores_only=False,
         clear_results=True, force_objects=False, bb=None, parallel=False,
         remote_dps_source=None, target_cache=False, skeleton_cache=None,
-        pointcloud_cache=None, pointset_cache=None) -> str:
+        pointcloud_cache=None, pointset_cache=None,
+        relational_storage_page_size=100, score_file=None) -> str:
     start_time = timer()
     write_non_scores = not write_scores_only
     try:
@@ -926,15 +928,26 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
             logger.info(f'NBLAST computation completed, used {len(scoring_info["query_object_ids"]) if scoring_info["query_object_ids"] else "zero"} '
                     f'query objects and {len(scoring_info["target_object_ids"]) if scoring_info["target_object_ids"] else "zero"} target objects')
 
-            # Write the result as a Postgres large object, unless specifically
-            # asked to store relational results. To query many result scores at
-            # once, the large object facility can be quite slow.
-            if relational_results:
-                def to_row(x):
-                    query_obj_src = scoring_info['query_object_ids'] or similarity.query_objects
-                    target_obj_src = scoring_info['target_object_ids'] or similarity.target_objects
-                    return (query_obj_src[x[0]], target_obj_src[x[1]], float(scoring_info['similarity'][x[0], x[1]]))
-
+            # If an output score file path is passed in, results are stored
+            # there. Otherwise, write the result as a Postgres large object,
+            # unless specifically asked to store relational results. To query
+            # many result scores at once, the large object facility can be quite
+            # slow.
+            def to_row(x):
+                query_obj_src = scoring_info['query_object_ids'] or similarity.query_objects
+                target_obj_src = scoring_info['target_object_ids'] or similarity.target_objects
+                return (query_obj_src[x[0]], target_obj_src[x[1]], float(scoring_info['similarity'][x[0], x[1]]))
+            if score_file:
+                # We pnly want positive scores
+                non_zero_idx = np.where(scoring_info['similarity'] > 0.01)
+                # Find all non-zero matches that aren't self-matches
+                non_zero_results = tuple(filter(lambda x: x[0] != x[1], map(to_row, zip(non_zero_idx[0], non_zero_idx[1]))))
+                max_scores = len(scoring_info["query_object_ids"]) * len(scoring_info["target_object_ids"]) if scoring_info["query_object_ids"] and scoring_info["target_object_ids"] else "?"
+                logger.info(f'Storing {len(non_zero_results)} non-zero and non-self scores (out of {max_scores})')
+                with open(score_file, 'wb') as f:
+                    pickle.dump(non_zero_results, f, protocol=pickle.HIGHEST_PROTOCOL)
+                logger.info(f'Stored non-zero results to {score_file}')
+            elif relational_results:
                 cursor = connection.cursor()
                 if clear_results:
                     logger.info('Deleting all existing results for this similarity query')
@@ -955,7 +968,7 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
                     VALUES ({similarity.id}, %s, %s, %s)
                     ON CONFLICT (similarity_id, query_object_id, target_object_id)
                     DO UPDATE SET score = EXCLUDED.score
-                """, non_zero_results, page_size=100)
+                """, non_zero_results, page_size=relational_storage_page_size)
                 logger.info('Stored non-zero results')
             else:
                 # The large object handling needs to be explicitly in a

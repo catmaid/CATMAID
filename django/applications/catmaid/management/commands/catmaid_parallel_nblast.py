@@ -17,6 +17,8 @@ from catmaid.control.nat.r import get_remote_dps_data, get_cached_dps_data
 from catmaid.models import NblastSimilarity
 from catmaid.util import str2bool
 
+from psycopg2.extras import execute_batch
+
 
 logger = logging.getLogger(__name__)
 
@@ -199,6 +201,12 @@ class Command(BaseCommand):
                 default=None, help='Load dotprops cache from a file, can contain {bin_index}'),
         parser.add_argument("--preload-cache", dest='preload_cache', type=str2bool, nargs='?',
                 const=True, default=False, help="Preload and filter cache in a separate process to reduce memory requirements")
+        parser.add_argument('--store-scores-in-file', dest='store_scores_in_file', required=False,
+                default=None, help='If a file path is provided, all result scores are stored there rather than being written to the database. Can contain {bin_index}.'),
+        parser.add_argument('--import-scores-from', dest='import_scores_from', required=False,
+                default=None, help='Load scoring results from a file and load into database, can contain {bin_index}'),
+        parser.add_argument('--score-write-batch-size', dest='score_write_batch_size', required=False,
+                default=1000, help='The number of batches of data writes should be done when writing scores'),
 
 
     def handle(self, *args, **options):
@@ -221,6 +229,9 @@ class Command(BaseCommand):
         compute_dotprops_and_stop = options['store_dotprops_and_stop']
         load_dotprops_from = options['load_dotprops_from']
         preload_cache = options['preload_cache']
+        store_scores_in_file = options['store_scores_in_file']
+        import_scores_from = options['import_scores_from']
+        score_write_batch_size = options['score_write_batch_size']
 
         ssh_local_port = options['ssh_local_port']
         ssh_local_port_autoselect = options['ssh_local_port_autoselect']
@@ -243,6 +254,22 @@ class Command(BaseCommand):
             remote_dps_source = (remote_dps_host, remote_dps_port)
         else:
             remote_dps_source = None
+
+        # If only an import is asked for, attempt to do it.
+        if import_scores_from:
+            import_file = import_scores_from.format(bin_index=('' if job_index is None else job_index))
+            logger.info(f'Importing precomputed scores from file {import_file}')
+            with open(import_file, 'rb') as f:
+                scores_to_import = pickle.load(f)
+            cursor = connection.cursor()
+            execute_batch(cursor, f"""
+                INSERT INTO nblast_similarity_score (similarity_id, query_object_id, target_object_id, score)
+                VALUES ({similarity.id}, %s, %s, %s)
+                ON CONFLICT (similarity_id, query_object_id, target_object_id)
+                DO UPDATE SET score = EXCLUDED.score
+            """, scores_to_import, page_size=score_write_batch_size)
+            logger.info(f'Import of {len(scores_to_import)} scores into similarity {similarity.id} done')
+            return
 
         skeleton_constraints = None
         if similarity.query_objects and len(similarity.query_objects):
@@ -536,6 +563,11 @@ class Command(BaseCommand):
                     logger.info('Stopping')
                     return
 
+                if store_scores_in_file:
+                    score_file = store_scores_in_file.format(bin_index=('' if job_index is None else job_index))
+                else:
+                    score_file = None
+
                 logger.info(f'Computing NBLAST values for similarity {similarity.id}, '
                         f'bin {job_index} ({job_index+1}/{len(skeleton_groups)}), '
                         f'containing {len(query_skeletons)} skeletons')
@@ -546,7 +578,9 @@ class Command(BaseCommand):
                         target_object_ids=target_skeletons, notify_user=False,
                         write_scores_only=True, clear_results=False,
                         parallel=True, remote_dps_source=remote_dps_source,
-                        target_cache=target_cache, skeleton_cache=skeleton_cache)
+                        target_cache=target_cache,
+                        skeleton_cache=skeleton_cache, score_file=score_file,
+                        relational_storage_page_size=score_write_batch_size)
             else:
                 logger.info(f'Nothing to compute for similarity {similarity.id}, '
                         f'bin {job_index} ({job_index+1}/{len(skeleton_groups)}), '

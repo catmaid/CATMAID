@@ -521,10 +521,10 @@
           return this.registerAll(client, models, callback);
         },
 
-        registerAllFromList: function(client, skeletonIds)
+        registerAllFromList: function(client, skeletonIds, projectId = undefined)
         {
           let models = skeletonIds.reduce((o, skid) => {
-            o[skid] = new CATMAID.SkeletonModel(skid, undefined, undefined, api);
+            o[skid] = new CATMAID.SkeletonModel(skid, undefined, undefined, api, projectId);
             return o;
           }, {});
           return this.registerAll(client, models);

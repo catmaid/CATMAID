@@ -3506,7 +3506,7 @@
                   let api = remote ? remote : null;
                   CATMAID.Skeletons.byAnnotation(sourceProject, [sourceNeuronAnnotation], false, api)
                     .then(skeletonIds => {
-                      return CATMAID.NeuronNameService.getInstance(api).registerAllFromList(widget, skeletonIds)
+                      return CATMAID.NeuronNameService.getInstance(api).registerAllFromList(widget, skeletonIds, sourceProject)
                         .then(() => skeletonIds);
                     })
                     .then(function(skeletonIds) {

@@ -9,6 +9,8 @@ the most recent skeleton data from the database. For bigger datasets this can
 introduce some performance problems. Typically, in bigger datasets, only a small
 portion of skeleton does actually change and a cache can be used for some data.
 
+.. _nblast-skeleton-cache:
+
 Creating skeleton caches
 ------------------------
 

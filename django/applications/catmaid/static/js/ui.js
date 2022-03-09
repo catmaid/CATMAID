@@ -75,8 +75,11 @@
       released = !!released;
 
       // If Caps-Lock is pressed down, warn the user, because this is likely
-      // unintentional.
-      if (event.getModifierState("CapsLock") && CATMAID.Client.Settings.session.warn_on_caps_lock) {
+      // unintentional. The check for getModifierState() being a function is
+      // needed, because it is more fault-tolerant wrt. other passed in event
+      // types.
+      let capsLockPressed = CATMAID.tools.isFn(event.getModifierState) && event.getModifierState("CapsLock");
+      if (capsLockPressed && CATMAID.Client.Settings.session.warn_on_caps_lock) {
         // Only warn on key-down
         if (!released) {
           CATMAID.warn('Caps-Lock is enabled, key commands might not work as expected');
@@ -91,7 +94,7 @@
       // If Caps-Lock is pressed, we want to handle this as if Shift was pressed. If
       // however Shift is pressed while Caps-Lock is pressed, we want to treat it has
       // if neither was pressed down. Generally, using Caps-Lock is not recommended.
-      fakeEvent.shiftKey = (e.shiftKey && !event.getModifierState("CapsLock")) || (!e.shiftKey && event.getModifierState("CapsLock"));
+      fakeEvent.shiftKey = (e.shiftKey && !capsLockPressed) || (!e.shiftKey && capsLockPressed);
       fakeEvent.altKey = e.altKey;
       fakeEvent.ctrlKey = e.ctrlKey;
       fakeEvent.metaKey = e.metaKey;

@@ -9,7 +9,7 @@
     [/^st(a(c(k)?)?)?[:]?\s*/, 'stack-location'],
     [/^px[:]?\s*/, 'stack-location'],
     [/^ne(u(r(o(n)?)?)?)?[:]?\s*/, 'neuron-id'],
-    [/^s(k(e(l(e(t(o(n)?)?)?)?)?)?)?[:]?\s*/, 'skeleton-id'],
+    [/^s(k(e(l(e(t(o(n(s)?)?)?)?)?)?)?)?[:]?\s*/, 'skeleton-id'],
     [/^n(o(d(e)?)?)?[:]?\s*/, 'location-id'],
     [/^c(o(n(n(e(c(t(o(r)?)?)?)?)?)?)?)?[:]?\s*/, 'location-id'],
     [/^u(r(l)?)?[:]?\s*/, 'url'],
@@ -44,7 +44,7 @@
           .replace(/\s*,\s*/g, ',').replace(/^\s\+/, '')
           .replace(/\s\+$/, '').replace(/\s/g, ',');
       let parts = cleaned.split(',').map(c => c.trim());
-      if (parts.length > 2) {
+      if (parts.length === 3) {
         let coords = parts.map(Number);
         if (coords.every(c => !Number.isNaN(c))) {
           project.moveTo(coords[2], coords[1], coords[0], coords[3]);
@@ -74,7 +74,7 @@
       // Remove all brackets and parentheses.
       let cleaned = command.replace(/[\[\]\|\(\){}]/g, '');
       let parts = cleaned.split(',').map(c => c.trim());
-      if (parts.length > 2) {
+      if (parts.length === 3) {
         let coords = parts.map(Number);
         if (coords.every(c => !Number.isNaN(c))) {
           let xp = ps.stackToProjectX(coords[2], coords[1], coords[0]);
@@ -101,7 +101,14 @@
     name: 'skeleton-id',
     handle: (command) => {
       let value = Number(command);
-      if (!Number.isNaN(value)) {
+      if (Number.isNaN(value)) {
+        // If it turns out to be multiple numbers, try parsing it as list of skeleton IDs.
+        let cleaned = command.replace(/[\[\]\|\(\){}]/g, '');
+        let parts = cleaned.split(',').map(c => c.trim());
+        let skeletonIds = parts.map(Number);
+        WindowMaker.create('selection-table').widget.addSkeletons(skeletonIds);
+        return true;
+      } else {
         // Ask back-end for location coordinates
         return CATMAID.Skeletons.getRootNode(project.id, value)
           .then(result => {

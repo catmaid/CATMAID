@@ -285,7 +285,7 @@
   Remote.previewSkeletonsByAnnotation = function(projectId, neuronAnnotation,
       includeSubAnnotations, options) {
     // Get all remote skeletons
-    let api = options.remote ? options.remote : null;
+    let api = options.api ? options.api : null;
     return CATMAID.Skeletons.byAnnotation(projectId, [neuronAnnotation],
         includeSubAnnotations, api)
       .then(skeletonIds => CATMAID.Remote.previewSkeletons(projectId,

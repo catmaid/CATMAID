@@ -42,6 +42,14 @@ Miscellaneous:
 - API docs: API parameters and descriptions are now visible again in the /apis
   docs endpoint.
 
+- A key event error about the missing function getModifierState is fixed.
+
+- Fix error on link creation with key shortcut help open.
+
+- Landmark widget: the remote annotation preview is fixed.
+
+- Landmark widget: remote transformations can be added again.
+
 ## 2021.12.21
 
 Contributors: Chris Barnes, Albert Cardona, Andrew Champion, Stephan Gerhard, Sanja Jasek, Tom Kazimiers

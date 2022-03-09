@@ -896,7 +896,7 @@
 
       // Store widget settings, if requested
       let widgetSettings;
-      if (withWidgetSettings) {
+      if (withWidgetSettings && widgetInfo.widget) {
         let state = CATMAID.getWidgetState(widgetInfo.widget, true);
         if (state) {
           state = state.replace(/"/g, "'");

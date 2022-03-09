@@ -2435,7 +2435,7 @@ var WindowMaker = new function()
 
       $(container)
         .append($('<h4 />').text('Contributors'))
-        .append('CATMAID &copy;&nbsp;2007&ndash;2020 ' +
+        .append('CATMAID &copy;&nbsp;2007&ndash;2022 ' +
             '<a href="http://fly.mpi-cbg.de/~saalfeld/">Stephan Saalfeld</a>, ' +
             '<a href="http://www.unidesign.ch/">Stephan Gerhard</a>, ' +
             '<a href="http://longair.net/mark/">Mark Longair</a>, ' +
@@ -2445,7 +2445,7 @@ var WindowMaker = new function()
             'Funded by <a href="http://www.mpi-cbg.de/research/research-groups/pavel-tomancak.html">' +
             'Pavel Toman&#x010d;&aacute;k</a>, MPI-CBG, Dresden, Germany and ' +
             '<a href="http://albert.rierol.net/">Albert Cardona</a>, ' +
-            'HHMI Janelia Research Campus, U.S..<br /><br />' +
+            'HHMI Janelia Research Campus, U.S. as well as the National Institutes of Health BRAIN Initiative grant 1RF1MH120679-01 to Davi Bock and Greg Jefferis.<br /><br />' +
             'Visit the <a href="http://www.catmaid.org/" target="_blank">' +
             'CATMAID homepage</a> for further information. You can find the ' +
             'source code on <a href="https://github.com/catmaid/CATMAID">' +

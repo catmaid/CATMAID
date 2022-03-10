@@ -2136,7 +2136,7 @@
               render: function(data, type, row, meta) {
                 let selected = widget.selectedLandmarks.has(row.id);
                 if (type === 'display') {
-                  return '<input type="checkbox" data-action="select-landmark" value="' +
+                  return '<input type="checkbox" data-action="select-location" value="' +
                       row.id + '" ' + (selected ? 'checked' : '') + ' />';
                 }
                 return selected;
@@ -2165,13 +2165,13 @@
                   }
                   if (landmarks.length === 1) {
                     let landmark = landmarks[0];
-                    return '<a href="#" data-action="select-landmark" data-id="' +
+                    return '<a href="#" data-action="select-location" data-id="' +
                         landmark.id + '" >' + landmark.name + '</a>';
                   }
                   let links = new Array(landmarks.length);
                   for (let i=0, imax=links.length; i<imax; ++i) {
                     let landmark = landmarks[i];
-                    links[i] = '<a href="#" data-action="select-landmark" data-id="' +
+                    links[i] = '<a href="#" data-action="select-location" data-id="' +
                         landmark.id + '" >' + landmark.name + '</a>';
                   }
                   return links.join(' ');
@@ -2211,9 +2211,9 @@
               width: "10%",
               orderable: false,
               render: function(data, type, row, meta) {
-                return '<a href="#" data-id="' + row.id +
-                    '" data-action="select-location">Go to</a> <a href="#" data-id="' +
-                    row.id + '" data-action="delete">Delete</a>';
+                return '<ul class="resultTags"><li title="Go to landmark location" data-id="' + row.id +
+                    '" data-action="select-location">Go to</li><li title="Delete landmark" data-id="' +
+                    row.id + '" data-action="delete">Delete</li></ul>';
               }
             }
           ],
@@ -2224,12 +2224,12 @@
             var data =  $(table).DataTable().row(this).data();
             selectLocation(data);
           }
-        }).on('click', 'a[data-action=select-location]', function() {
+        }).on('click', 'a[data-action=select-location], li[data-action=select-location]', function() {
           let table = $(this).closest('table');
           let tr = $(this).closest('tr');
           let loc =  $(table).DataTable().row(tr).data();
           selectLocation(loc);
-        }).on('click', 'a[data-action=delete]', function() {
+        }).on('click', 'a[data-action=delete], li[data-action=delete]', function() {
           if (!confirm("Are you sure you want to delete the landmark and its location from this group?")) {
             return;
           }

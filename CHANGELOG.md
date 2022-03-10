@@ -17,6 +17,9 @@
 
 - Landmark widget: remote transformations can be added again.
 
+- Landmark widget: landmark edit buttons are now easier to read and single
+  clicks on a landmark name take the view now to their location.
+
 ## 2021.12.21
 
 Contributors: Chris Barnes, Albert Cardona, Andrew Champion, Stephan Gerhard, Sanja Jasek, Tom Kazimiers

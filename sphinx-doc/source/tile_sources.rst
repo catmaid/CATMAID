@@ -397,7 +397,7 @@ Tile source types are listed by the enumeration integer ID referenced by
 
    For example::
 
-    gs://neuroglancer/basil_v0/son_of_alignment/v3.04_cracks_only_normalized_rechunked/%SCALE_DATASET%/0_1_2
+    gs://neuroglancer/pinky100_v0/son_of_alignment_v15_rechunked/%SCALE_DATASET%/0_1_2
 
    Also note that Neuroglancer datasets can have a property called
    ``voxelOffset``, which by default is ``(0, 0, 0)``. If set to other values

@@ -28,6 +28,10 @@ Miscellaneous:
   the upper right corner of the Tracing Tool will now open a Selection Table and
   attempt to load all entries as skeleton IDs.
 
+- When executing a UI command that can be handled in multiple ways (e.g. as a
+  coordinate or a list of skeleton IDs), a small dialog is now shown that allows
+  users to select which option to use.
+
 ### Bug fixes
 
 

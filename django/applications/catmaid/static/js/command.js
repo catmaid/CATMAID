@@ -19,6 +19,9 @@
   CATMAID.CommandParser = function(name, handle, passive) {
     this.name = name;
     this.handle = handle;
+    this.test = (command) => {
+      return this.handle(command, true);
+    };
     this.passive = !!passive;
     if (!CATMAID.tools.isFn(handle)) {
       throw new CATMAID.ValueError('Need function has handler');
@@ -36,7 +39,7 @@
   // accepts spaces and tabs as delimiter.
   CATMAID.registerCommandParser({
     name: 'location',
-    handle: (command) => {
+    handle: (command, dry_run=false) => {
       // Remove all brackets and parentheses and removeall spapces arround
       // commas and at the beginning and the end. Replace all remaining spaces
       // with commas for easier splitting.
@@ -47,13 +50,17 @@
       if (parts.length === 3) {
         let coords = parts.map(Number);
         if (coords.every(c => !Number.isNaN(c))) {
-          project.moveTo(coords[2], coords[1], coords[0], coords[3]);
+          if (!dry_run) {
+            project.moveTo(coords[2], coords[1], coords[0], coords[3]);
+          }
           return true;
         }
       } else if (parts.length === 2) {
         let coords = parts.map(Number);
         if (coords.every(c => !Number.isNaN(c))) {
-          project.moveTo(project.coordinates.z, c[1], c[0]);
+          if (!dry_run) {
+            project.moveTo(project.coordinates.z, coords[1], coords[0]);
+          }
           return true;
         }
       }
@@ -66,7 +73,7 @@
   CATMAID.registerCommandParser({
     name: 'stack-location',
     passive: true,
-    handle: (command) => {
+    handle: (command, dry_run=false) => {
       if (!project.focusedStackViewer) {
         return;
       }
@@ -80,7 +87,9 @@
           let xp = ps.stackToProjectX(coords[2], coords[1], coords[0]);
           let yp = ps.stackToProjectY(coords[2], coords[1], coords[0]);
           let zp = ps.stackToProjectZ(coords[2], coords[1], coords[0]);
-          project.moveTo(zp, yp, xp);
+          if (!dry_run) {
+            project.moveTo(zp, yp, xp);
+          }
           return true;
         }
       } else if (parts.length === 2) {
@@ -88,7 +97,9 @@
         if (coords.every(c => !Number.isNaN(c))) {
           let xp = ps.stackToProjectX(coords[2], coords[1], coords[0]);
           let yp = ps.stackToProjectY(coords[2], coords[1], coords[0]);
-          project.moveTo(project.coordinates.z, yp, xp);
+          if (!dry_run) {
+            project.moveTo(project.coordinates.z, yp, xp);
+          }
           return true;
         }
       }
@@ -99,14 +110,18 @@
   // Try to find the root node of a skeleton with the user input as ID.
   CATMAID.registerCommandParser({
     name: 'skeleton-id',
-    handle: (command) => {
+    handle: (command, dry_run=false) => {
       let value = Number(command);
       if (Number.isNaN(value)) {
         // If it turns out to be multiple numbers, try parsing it as list of skeleton IDs.
         let cleaned = command.replace(/[\[\]\|\(\){}]/g, '');
         let parts = cleaned.split(',').map(c => c.trim());
         let skeletonIds = parts.map(Number);
-        WindowMaker.create('selection-table').widget.addSkeletons(skeletonIds);
+        if (!dry_run) {
+          WindowMaker.create('selection-table').widget.addSkeletons(skeletonIds);
+        }
+        return true;
+      } else if (dry_run) {
         return true;
       } else {
         // Ask back-end for location coordinates
@@ -130,9 +145,12 @@
   // user input as ID.
   CATMAID.registerCommandParser({
     name: 'location-id',
-    handle: (command) => {
+    handle: (command, dry_run=false) => {
       let value = Number(command);
       if (!Number.isNaN(value)) {
+        if (dry_run) {
+          return true;
+        }
         // Ask back-end for location coordinates
         return CATMAID.Nodes.getLocation(value)
           .then(result => {
@@ -153,9 +171,12 @@
   // Try to find the root node of a skeleton with the user input as ID.
   CATMAID.registerCommandParser({
     name: 'neuron-id',
-    handle: (command) => {
+    handle: (command, dry_run=false) => {
       let value = Number(command);
       if (!Number.isNaN(value)) {
+        if (dry_run) {
+          return true;
+        }
         // Ask back-end for skeleton IDs of neuron
         return CATMAID.Neurons.getSkeletons(project.id, value)
           .then(result => {
@@ -177,11 +198,14 @@
   // Try to find a bookmark with the command text as name.
   CATMAID.registerCommandParser({
     name: 'bookmark',
-    handle: command => {
+    handle: (command, dry_run=false) => {
       // The bookmark system only allows single letter bookmarks, becasue it
       // stores the keycode rather than the characters.
       if (command.length !== 1) {
         return false;
+      }
+      if (dry_run) {
+        return true;
       }
       let keyCode = command.charCodeAt(0);
       if (CATMAID.Bookmarks.has(keyCode, CATMAID.Bookmarks.MODES.SKELETON)) {
@@ -200,13 +224,16 @@
   // Try to parse URL coordinate components from the passed in command.
   CATMAID.registerCommandParser({
     name: 'url',
-    handle: (command) => {
+    handle: (command, dry_run=false) => {
       var urlParams = CATMAID.tools.parseQuery(command);
       if (urlParams && urlParams['xp'] !== undefined &&
           urlParams['yp'] !== undefined && urlParams['zp'] !== undefined) {
         let [xp, yp, zp] = [Number(urlParams['xp']), Number(urlParams['yp']), Number(urlParams['zp'])];
         if (Number.isNaN(xp) || Number.isNaN(yp) || Number.isNaN(zp)) {
           return false;
+        }
+        if (dry_run) {
+          return true;
         }
         CATMAID.msg("URL location", "Moving view to project location from URL");
         return SkeletonAnnotations.staticMoveTo(zp, yp, xp);
@@ -249,20 +276,35 @@
       }
     }
 
-    let handle = Promise.resolve().then(() => {
-        return CATMAID.RegisteredCommandParsers[i].handle(command);
-      });
-
-    return handle
-      .then(handled => {
-        if (handled) {
-          return true;
-        }
-        if (CATMAID.RegisteredCommandParsers.length > (i + 1)) {
-          return CATMAID.handleTextCommand(command, i+1);
-        }
-        return false;
-      });
+    return new Promise((resolve, reject) => {
+      let validParsers = CATMAID.RegisteredCommandParsers.filter(pp => pp.test(command));
+      if (validParsers.length === 1) {
+        resolve(validParsers[0].handle(command));
+      } else if (validParsers.length > 1) {
+        let dialog = new CATMAID.OptionsDialog("Select command handler", {
+          'Close': CATMAID.noop,
+        });
+        dialog.appendMessage("The provided command can be handled in multiple " +
+            "ways. Please select your preferred option!");
+        let optionList = document.createElement('ul');
+        optionList.classList.add('resultTags');
+        validParsers.forEach((p, i) => {
+          let li = optionList.appendChild(document.createElement('li'));
+          li.appendChild(document.createTextNode(p.name));
+          li.dataset.index = i;
+        });
+        $(optionList).on('click', 'li', e => {
+          let parser = validParsers[parseInt(e.target.dataset.index, 10)];
+          if (parser) resolve(parser.handle(command));
+          else resolve(false);
+          dialog.close();
+        });
+        dialog.appendChild(optionList);
+        dialog.show('400', 'auto');
+      } else {
+        resolve(false);
+      }
+    });
   };
 
 })(CATMAID);

@@ -99,6 +99,10 @@
     });
   };
 
+  OptionsDialog.prototype.close = function() {
+    $(this.dialog).dialog("destroy");
+  };
+
   OptionsDialog.prototype.appendChild = function(element) {
     var container = document.createElement('p');
     container.appendChild(element);

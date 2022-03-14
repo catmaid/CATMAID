@@ -53,7 +53,7 @@
       } else if (parts.length === 2) {
         let coords = parts.map(Number);
         if (coords.every(c => !Number.isNaN(c))) {
-          project.moveTo(project.coorinates.z, c[1], c[0]);
+          project.moveTo(project.coordinates.z, c[1], c[0]);
           return true;
         }
       }
@@ -88,7 +88,7 @@
         if (coords.every(c => !Number.isNaN(c))) {
           let xp = ps.stackToProjectX(coords[2], coords[1], coords[0]);
           let yp = ps.stackToProjectY(coords[2], coords[1], coords[0]);
-          project.moveTo(project.coorinates.z, yp, xp);
+          project.moveTo(project.coordinates.z, yp, xp);
           return true;
         }
       }

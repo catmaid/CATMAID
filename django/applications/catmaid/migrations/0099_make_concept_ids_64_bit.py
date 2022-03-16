@@ -291,11 +291,7 @@ forward = """
         edition_time timestamp with time zone DEFAULT now() NOT NULL,
         txid bigint DEFAULT txid_current() NOT NULL,
 
-        CONSTRAINT concept_id_pkey PRIMARY KEY (id),
-        CONSTRAINT concept_user_id_fkey FOREIGN KEY (user_id)
-            REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT concept_project_id_fkey FOREIGN KEY (project_id)
-            REFERENCES project(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
+        CONSTRAINT concept_id_pkey PRIMARY KEY (id)
     );
 
     -- The sequence already works with bigint, just make sure it is owned by the
@@ -315,11 +311,7 @@ forward = """
         class_name text NOT NULL,
         description text,
 
-        CONSTRAINT class_id_pkey PRIMARY KEY (id) INCLUDE (project_id, class_name),
-        CONSTRAINT class_user_id_fkey FOREIGN KEY (user_id)
-            REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT class_project_id_fkey FOREIGN KEY (project_id)
-            REFERENCES project(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
+        CONSTRAINT class_id_pkey PRIMARY KEY (id) INCLUDE (project_id, class_name)
     )
     INHERITS (concept);
     ALTER TABLE ONLY class ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
@@ -329,11 +321,7 @@ forward = """
         location float3d,
         freetext text,
 
-        CONSTRAINT log_id_pkey PRIMARY KEY (id),
-        CONSTRAINT log_user_id_fkey FOREIGN KEY (user_id)
-            REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT log_project_id_fkey FOREIGN KEY (project_id)
-            REFERENCES project(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
+        CONSTRAINT log_id_pkey PRIMARY KEY (id)
     )
     INHERITS (concept);
     ALTER TABLE ONLY log ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
@@ -344,11 +332,7 @@ forward = """
         description text,
         isreciprocal boolean DEFAULT false NOT NULL,
 
-        CONSTRAINT relation_id_pkey PRIMARY KEY (id) INCLUDE (project_id, relation_name),
-        CONSTRAINT relation_user_id_fkey FOREIGN KEY (user_id)
-            REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT relation_project_id_fkey FOREIGN KEY (project_id)
-            REFERENCES project(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
+        CONSTRAINT relation_id_pkey PRIMARY KEY (id) INCLUDE (project_id, relation_name)
     )
     INHERITS (concept);
     ALTER TABLE ONLY relation ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
@@ -356,13 +340,7 @@ forward = """
     CREATE TABLE relation_instance (
         relation_id bigint NOT NULL,
 
-        CONSTRAINT relation_instance_id_pkey PRIMARY KEY (id),
-        CONSTRAINT relation_instance_user_id_fkey FOREIGN KEY (user_id)
-            REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT relation_instance_project_id_fkey FOREIGN KEY (project_id)
-            REFERENCES project(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT relation_instance_relation_id_fkey FOREIGN KEY (relation_id)
-            REFERENCES relation(id) DEFERRABLE INITIALLY DEFERRED
+        CONSTRAINT relation_instance_id_pkey PRIMARY KEY (id)
     )
     INHERITS (concept);
     ALTER TABLE ONLY relation_instance ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
@@ -371,17 +349,7 @@ forward = """
         class_a bigint NOT NULL,
         class_b bigint NOT NULL,
 
-        CONSTRAINT class_class_id_pkey PRIMARY KEY (id),
-        CONSTRAINT class_class_user_id_fkey FOREIGN KEY (user_id)
-            REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT class_class_project_id_fkey FOREIGN KEY (project_id)
-            REFERENCES project(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT class_class_relation_id_fkey FOREIGN KEY (relation_id)
-            REFERENCES relation(id) DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT class_class_class_a_fkey FOREIGN KEY (class_a)
-            REFERENCES class(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT class_class_class_b_fkey FOREIGN KEY (class_b)
-            REFERENCES class(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
+        CONSTRAINT class_class_id_pkey PRIMARY KEY (id)
     )
     INHERITS (relation_instance);
     ALTER TABLE ONLY class_class ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
@@ -390,13 +358,7 @@ forward = """
         enabled boolean DEFAULT true NOT NULL,
         restricted_link_id bigint NOT NULL,
 
-        CONSTRAINT restriction_id_pkey PRIMARY KEY (id),
-        CONSTRAINT restriction_user_id_fkey FOREIGN KEY (user_id)
-            REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT restriction_project_id_fkey FOREIGN KEY (project_id)
-            REFERENCES project(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT restriction_restricted_link_id_fkey FOREIGN KEY (restricted_link_id)
-            REFERENCES class_class(id)
+        CONSTRAINT restriction_id_pkey PRIMARY KEY (id)
     )
     INHERITS (concept);
     ALTER TABLE ONLY restriction ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
@@ -405,13 +367,7 @@ forward = """
         class_id bigint NOT NULL,
         name character varying(255) NOT NULL,
 
-        CONSTRAINT class_instance_id_pkey PRIMARY KEY (id) INCLUDE (class_id, project_id),
-        CONSTRAINT class_instance_user_id_fkey FOREIGN KEY (user_id)
-            REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT class_instance_project_id_fkey FOREIGN KEY (project_id)
-            REFERENCES project(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT class_instance_class_id_fkey FOREIGN KEY (class_id)
-            REFERENCES class(id) DEFERRABLE INITIALLY DEFERRED
+        CONSTRAINT class_instance_id_pkey PRIMARY KEY (id) INCLUDE (class_id, project_id)
     )
     INHERITS (concept);
     ALTER TABLE ONLY class_instance ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
@@ -420,17 +376,7 @@ forward = """
         class_instance_a bigint NOT NULL,
         class_instance_b bigint NOT NULL,
 
-        CONSTRAINT class_instance_class_instance_id_pkey PRIMARY KEY (id),
-        CONSTRAINT class_instance_class_instance_user_id_fkey FOREIGN KEY (user_id)
-            REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT class_instance_class_instance_project_id_fkey FOREIGN KEY (project_id)
-            REFERENCES project(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT class_instance_class_instance_relation_id_fkey FOREIGN KEY (relation_id)
-            REFERENCES relation(id) DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT class_instance_class_instance_class_instance_a_fkey FOREIGN KEY (class_instance_a)
-            REFERENCES class_instance(id) DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT class_instance_class_instance_class_instance_b_fkey FOREIGN KEY (class_instance_b)
-            REFERENCES class_instance(id) DEFERRABLE INITIALLY DEFERRED
+        CONSTRAINT class_instance_class_instance_id_pkey PRIMARY KEY (id)
     )
     INHERITS (relation_instance);
     ALTER TABLE ONLY class_instance_class_instance ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
@@ -439,17 +385,7 @@ forward = """
         connector_id bigint NOT NULL,
         class_instance_id bigint NOT NULL,
 
-        CONSTRAINT connector_class_instance_id_pkey PRIMARY KEY (id),
-        CONSTRAINT connector_class_instance_user_id_fkey FOREIGN KEY (user_id)
-            REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT connector_class_instance_project_id_fkey FOREIGN KEY (project_id)
-            REFERENCES project(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT connector_class_instance_relation_id_fkey FOREIGN KEY (relation_id)
-            REFERENCES relation(id) DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT connector_class_instance_connector_id_fkey FOREIGN KEY (connector_id)
-            REFERENCES connector(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT connector_class_instance_class_instance_id_fkey FOREIGN KEY (class_instance_id)
-            REFERENCES class_instance(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
+        CONSTRAINT connector_class_instance_id_pkey PRIMARY KEY (id)
     )
     INHERITS (relation_instance);
     ALTER TABLE ONLY connector_class_instance ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
@@ -458,17 +394,7 @@ forward = """
         point_id bigint NOT NULL,
         class_instance_id bigint NOT NULL,
 
-        CONSTRAINT point_class_instance_id_pkey PRIMARY KEY (id),
-        CONSTRAINT point_class_instance_user_id_fkey FOREIGN KEY (user_id)
-            REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT point_class_instance_project_id_fkey FOREIGN KEY (project_id)
-            REFERENCES project(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT point_class_instance_relation_id_fkey FOREIGN KEY (relation_id)
-            REFERENCES relation(id) DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT point_class_instance_point_id_fkey FOREIGN KEY (point_id)
-            REFERENCES point(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT point_class_instance_class_instance_id_fkey FOREIGN KEY (class_instance_id)
-            REFERENCES class_instance(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
+        CONSTRAINT point_class_instance_id_pkey PRIMARY KEY (id)
     )
     INHERITS (relation_instance);
     ALTER TABLE ONLY point_class_instance ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
@@ -478,19 +404,7 @@ forward = """
         connector_id bigint NOT NULL,
         confidence smallint DEFAULT 5 NOT NULL,
 
-        CONSTRAINT point_connector_id_pkey PRIMARY KEY (id),
-        CONSTRAINT point_connector_user_id_fkey FOREIGN KEY (user_id)
-            REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT point_connector_project_id_fkey FOREIGN KEY (project_id)
-            REFERENCES project(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT point_connector_relation_id_fkey FOREIGN KEY (relation_id)
-            REFERENCES relation(id) DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT point_connector_point_id_fkey FOREIGN KEY (point_id)
-            REFERENCES point(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT point_connector_connector_id_fkey FOREIGN KEY (connector_id)
-            REFERENCES connector(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT point_connector_project_id_point_id_connector_id_relation_id_uniq
-            UNIQUE (project_id, point_id, connector_id, relation_id)
+        CONSTRAINT point_connector_id_pkey PRIMARY KEY (id)
     )
     INHERITS (relation_instance);
     ALTER TABLE ONLY point_connector ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
@@ -499,17 +413,7 @@ forward = """
         region_of_interest_id bigint NOT NULL,
         class_instance_id bigint NOT NULL,
 
-        CONSTRAINT region_of_interest_class_instance_id_pkey PRIMARY KEY (id),
-        CONSTRAINT region_of_interest_class_instance_user_id_fkey FOREIGN KEY (user_id)
-            REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT region_of_interest_class_instance_project_id_fkey FOREIGN KEY (project_id)
-            REFERENCES project(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT region_of_interest_class_instance_relation_id_fkey FOREIGN KEY (relation_id)
-            REFERENCES relation(id) DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT region_of_interest_class_instance_region_of_interest_id_fkey FOREIGN KEY (region_of_interest_id)
-            REFERENCES region_of_interest(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT region_of_interest_class_instance_class_instance_id_fkey FOREIGN KEY (class_instance_id)
-            REFERENCES class_instance(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
+        CONSTRAINT region_of_interest_class_instance_id_pkey PRIMARY KEY (id)
     )
     INHERITS (relation_instance);
     ALTER TABLE ONLY region_of_interest_class_instance ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
@@ -531,17 +435,7 @@ forward = """
         class_instance_id bigint NOT NULL,
         stack_id integer NOT NULL,
 
-        CONSTRAINT stack_class_instance_pkey PRIMARY KEY (id),
-        CONSTRAINT stack_class_instance_user_id_fkey FOREIGN KEY (user_id)
-            REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT stack_class_instance_project_id_fkey FOREIGN KEY (project_id)
-            REFERENCES project(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT stack_class_instance_instance_relation_id_fkey FOREIGN KEY (relation_id)
-            REFERENCES relation(id) DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT stack_class_instance_stack_id_fkey FOREIGN KEY (stack_id)
-            REFERENCES stack(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT stack_class_instance_class_instance_id_fkey FOREIGN KEY (class_instance_id)
-            REFERENCES class_instance(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
+        CONSTRAINT stack_class_instance_pkey PRIMARY KEY (id)
     )
     INHERITS (relation_instance);
     ALTER TABLE ONLY stack_class_instance ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
@@ -550,17 +444,7 @@ forward = """
         class_instance_id bigint NOT NULL,
         stack_group_id integer NOT NULL,
 
-        CONSTRAINT stack_group_class_instance_id_pkey PRIMARY KEY (id),
-        CONSTRAINT stack_group_class_instance_user_id_fkey FOREIGN KEY (user_id)
-            REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT stack_group_class_instance_project_id_fkey FOREIGN KEY (project_id)
-            REFERENCES project(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT stack_group_class_instance_relation_id_fkey FOREIGN KEY (relation_id)
-            REFERENCES relation(id) DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT stack_group_class_instance_stack_group_id_fkey FOREIGN KEY (stack_group_id)
-            REFERENCES stack_group(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT stack_group_class_instance_class_instance_id_fkey FOREIGN KEY (class_instance_id)
-            REFERENCES class_instance(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
+        CONSTRAINT stack_group_class_instance_id_pkey PRIMARY KEY (id)
     )
     INHERITS (relation_instance);
     ALTER TABLE ONLY stack_group_class_instance ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
@@ -571,17 +455,7 @@ forward = """
         radius real DEFAULT 0 NOT NULL,
         confidence smallint DEFAULT 5 NOT NULL,
 
-        CONSTRAINT treenode_id_pkey PRIMARY KEY (id),
-        CONSTRAINT treenode_editor_id_fkey FOREIGN KEY (editor_id)
-            REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT treenode_user_id_fkey FOREIGN KEY (user_id)
-            REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT treenode_project_id_fkey FOREIGN KEY (project_id)
-            REFERENCES project(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT treenode_skeleton_id_fkey FOREIGN KEY (skeleton_id)
-            REFERENCES class_instance(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT treenode_parent_id_fkey FOREIGN KEY (parent_id)
-            REFERENCES treenode(id) DEFERRABLE INITIALLY DEFERRED
+        CONSTRAINT treenode_id_pkey PRIMARY KEY (id)
     )
     INHERITS (location);
     ALTER TABLE ONLY treenode ALTER COLUMN id SET DEFAULT nextval('location_id_seq'::regclass);
@@ -599,17 +473,7 @@ forward = """
         reject_action text NOT NULL,
         completion_time timestamp with time zone,
 
-        CONSTRAINT change_request_id_pkey PRIMARY KEY (id),
-        CONSTRAINT change_request_user_id_fkey FOREIGN KEY (user_id)
-            REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT change_request_project_id_fkey FOREIGN KEY (project_id)
-            REFERENCES project(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT change_request_connector_id_fkey FOREIGN KEY (connector_id)
-            REFERENCES connector(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT change_request_treenode_id_fkey FOREIGN KEY (treenode_id)
-            REFERENCES treenode(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT change_request_recipient_id_fkey FOREIGN KEY (recipient_id)
-            REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED
+        CONSTRAINT change_request_id_pkey PRIMARY KEY (id)
     )
     INHERITS (concept);
 
@@ -617,17 +481,7 @@ forward = """
         treenode_id bigint NOT NULL,
         class_instance_id bigint NOT NULL,
 
-        CONSTRAINT treenode_class_instance_id_pkey PRIMARY KEY (id),
-        CONSTRAINT treenode_class_instance_user_id_fkey FOREIGN KEY (user_id)
-            REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT treenode_class_instance_project_id_fkey FOREIGN KEY (project_id)
-            REFERENCES project(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT treenode_class_instance_relation_id_fkey FOREIGN KEY (relation_id)
-            REFERENCES relation(id) DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT treenode_class_instance_treenode_id_fkey FOREIGN KEY (treenode_id)
-            REFERENCES treenode(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT treenode_class_instance_class_instance_id_fkey FOREIGN KEY (class_instance_id)
-            REFERENCES class_instance(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
+        CONSTRAINT treenode_class_instance_id_pkey PRIMARY KEY (id)
     )
     INHERITS (relation_instance);
     ALTER TABLE ONLY treenode_class_instance ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
@@ -638,21 +492,7 @@ forward = """
         skeleton_id bigint NOT NULL,
         confidence smallint DEFAULT 5 NOT NULL,
 
-        CONSTRAINT treenode_connector_id_pkey PRIMARY KEY (id),
-        CONSTRAINT treenode_connector_user_id_fkey FOREIGN KEY (user_id)
-            REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT treenode_connector_project_id_fkey FOREIGN KEY (project_id)
-            REFERENCES project(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT treenode_connector_relation_id_fkey FOREIGN KEY (relation_id)
-            REFERENCES relation(id) DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT treenode_connector_treenode_id_fkey FOREIGN KEY (treenode_id)
-            REFERENCES treenode(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT treenode_connector_connector_id_fkey FOREIGN KEY (connector_id)
-            REFERENCES connector(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT treenode_connector_skeleton_id_fkey FOREIGN KEY (skeleton_id)
-            REFERENCES class_instance(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT treenode_connector_project_id_treenode_id_connector_id_relation_id
-            UNIQUE (project_id, treenode_id, connector_id, relation_id)
+        CONSTRAINT treenode_connector_id_pkey PRIMARY KEY (id)
     )
     INHERITS (relation_instance);
     ALTER TABLE ONLY treenode_connector ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
@@ -661,17 +501,7 @@ forward = """
         volume_id bigint NOT NULL,
         class_instance_id bigint NOT NULL,
 
-        CONSTRAINT volume_class_instance_id_pkey PRIMARY KEY (id),
-        CONSTRAINT volume_class_instance_user_id_fkey FOREIGN KEY (user_id)
-            REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT volume_class_instance_project_id_fkey FOREIGN KEY (project_id)
-            REFERENCES project(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT volume_class_instance_relation_id_fkey FOREIGN KEY (relation_id)
-            REFERENCES relation(id) DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT volume_class_instance_volume_id_fkey FOREIGN KEY (volume_id)
-            REFERENCES catmaid_volume(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT volume_class_instance_class_instance_id_fkey FOREIGN KEY (class_instance_id)
-            REFERENCES class_instance(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
+        CONSTRAINT volume_class_instance_id_pkey PRIMARY KEY (id)
     )
     INHERITS (relation_instance);
     ALTER TABLE ONLY volume_class_instance ALTER COLUMN id SET DEFAULT nextval('concept_id_seq'::regclass);
@@ -705,15 +535,7 @@ forward = """
         create_interval_boundaries boolean NOT NULL,
         leaf_segment_handling text NOT NULL,
 
-        CONSTRAINT catmaid_sampler_id_pkey PRIMARY KEY (id),
-        CONSTRAINT catmaid_sampler_project_id_fkey FOREIGN KEY (project_id)
-            REFERENCES project(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT catmaid_sampler_skeleton_id_fkey FOREIGN KEY (skeleton_id)
-            REFERENCES class_instance(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT catmaid_sampler_sampler_state_id_fkey FOREIGN KEY (sampler_state_id)
-            REFERENCES catmaid_samplerstate(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT catmaid_sampler_user_id_fkey FOREIGN KEY (user_id)
-            REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED
+        CONSTRAINT catmaid_sampler_id_pkey PRIMARY KEY (id)
     );
 
     -- The sequence already works with bigint, just make sure it is owned by the
@@ -739,13 +561,7 @@ forward = """
         last_editor_id integer NOT NULL,
         num_imported_nodes bigint DEFAULT 0 NOT NULL,
 
-        CONSTRAINT catmaid_skeleton_id_pkey PRIMARY KEY (skeleton_id) INCLUDE (num_nodes),
-        CONSTRAINT catmaid_skeleton_summary_project_id_fkey FOREIGN KEY (project_id)
-            REFERENCES project(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT catmaid_skeleton_summary_skeleton_id_fkey FOREIGN KEY (skeleton_id)
-            REFERENCES class_instance(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT catmaid_skeleton_summary_last_editor_id_fkey FOREIGN KEY (last_editor_id)
-            REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED
+        CONSTRAINT catmaid_skeleton_id_pkey PRIMARY KEY (skeleton_id) INCLUDE (num_nodes)
     );
 
     CREATE TABLE review (
@@ -757,15 +573,7 @@ forward = """
         treenode_id bigint NOT NULL,
         txid bigint DEFAULT txid_current() NOT NULL,
 
-        CONSTRAINT review_id_pkey PRIMARY KEY (id),
-        CONSTRAINT review_user_id_fkey FOREIGN KEY (reviewer_id)
-            REFERENCES auth_user(id) DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT review_project_id_fkey FOREIGN KEY (project_id)
-            REFERENCES project(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT review_treenode_id_fkey FOREIGN KEY (treenode_id)
-            REFERENCES treenode(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-        CONSTRAINT review_skeleton_id_fkey FOREIGN KEY (skeleton_id)
-            REFERENCES class_instance(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
+        CONSTRAINT review_id_pkey PRIMARY KEY (id)
     );
 
     -- The sequence already works with bigint, just make sure it is owned by the
@@ -1128,6 +936,296 @@ forward = """
         radius, confidence, parent_id
     FROM ONLY treenode__history_old;
 
+    -- Add foreign key constraints without checking current data (NOT VALID).
+    -- This is done to also support large tables which otherwise would fail due
+    -- to Postgres' limit on how many commands can be executed in a single
+    -- transaction. Each constraint check is a single command.
+    ALTER TABLE concept ADD CONSTRAINT concept_user_id_fkey
+        FOREIGN KEY (user_id) REFERENCES auth_user(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE concept ADD CONSTRAINT concept_project_id_fkey
+        FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE class ADD CONSTRAINT class_user_id_fkey
+        FOREIGN KEY (user_id) REFERENCES auth_user(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE class ADD CONSTRAINT class_project_id_fkey
+        FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE log ADD CONSTRAINT log_user_id_fkey
+        FOREIGN KEY (user_id) REFERENCES auth_user(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE log ADD CONSTRAINT log_project_id_fkey
+        FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE relation ADD CONSTRAINT relation_user_id_fkey
+        FOREIGN KEY (user_id) REFERENCES auth_user(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE relation ADD CONSTRAINT relation_project_id_fkey
+        FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE relation_instance ADD CONSTRAINT relation_instance_user_id_fkey
+        FOREIGN KEY (user_id) REFERENCES auth_user(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE relation_instance ADD CONSTRAINT relation_instance_project_id_fkey
+        FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE relation_instance ADD CONSTRAINT relation_instance_relation_id_fkey
+        FOREIGN KEY (relation_id) REFERENCES relation(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE class_class ADD CONSTRAINT class_class_user_id_fkey
+        FOREIGN KEY (user_id) REFERENCES auth_user(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE class_class ADD CONSTRAINT class_class_project_id_fkey
+        FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE class_class ADD CONSTRAINT class_class_relation_id_fkey
+        FOREIGN KEY (relation_id) REFERENCES relation(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE class_class ADD CONSTRAINT class_class_class_a_fkey
+        FOREIGN KEY (class_a) REFERENCES class(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE class_class ADD CONSTRAINT class_class_class_b_fkey
+        FOREIGN KEY (class_b) REFERENCES class(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE restriction ADD CONSTRAINT restriction_user_id_fkey
+        FOREIGN KEY (user_id) REFERENCES auth_user(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE restriction ADD CONSTRAINT restriction_project_id_fkey
+        FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE restriction ADD CONSTRAINT restriction_restricted_link_id_fkey
+        FOREIGN KEY (restricted_link_id) REFERENCES class_class(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE class_instance ADD CONSTRAINT class_instance_user_id_fkey
+        FOREIGN KEY (user_id) REFERENCES auth_user(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE class_instance ADD CONSTRAINT class_instance_project_id_fkey
+        FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE class_instance ADD CONSTRAINT class_instance_class_id_fkey
+        FOREIGN KEY (class_id) REFERENCES class(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE class_instance_class_instance ADD CONSTRAINT class_instance_class_instance_user_id_fkey
+        FOREIGN KEY (user_id) REFERENCES auth_user(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE class_instance_class_instance ADD CONSTRAINT class_instance_class_instance_project_id_fkey
+        FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE class_instance_class_instance ADD CONSTRAINT class_instance_class_instance_relation_id_fkey
+        FOREIGN KEY (relation_id) REFERENCES relation(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE class_instance_class_instance ADD CONSTRAINT class_instance_class_instance_class_instance_a_fkey
+        FOREIGN KEY (class_instance_a) REFERENCES class_instance(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE class_instance_class_instance ADD CONSTRAINT class_instance_class_instance_class_instance_b_fkey
+        FOREIGN KEY (class_instance_b) REFERENCES class_instance(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE connector_class_instance ADD CONSTRAINT connector_class_instance_user_id_fkey
+        FOREIGN KEY (user_id) REFERENCES auth_user(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE connector_class_instance ADD CONSTRAINT connector_class_instance_project_id_fkey
+        FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE connector_class_instance ADD CONSTRAINT connector_class_instance_relation_id_fkey
+        FOREIGN KEY (relation_id) REFERENCES relation(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE connector_class_instance ADD CONSTRAINT connector_class_instance_connector_id_fkey
+        FOREIGN KEY (connector_id) REFERENCES connector(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE connector_class_instance ADD CONSTRAINT connector_class_instance_class_instance_id_fkey
+        FOREIGN KEY (class_instance_id) REFERENCES class_instance(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE point_class_instance ADD CONSTRAINT point_class_instance_user_id_fkey
+        FOREIGN KEY (user_id) REFERENCES auth_user(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE point_class_instance ADD CONSTRAINT point_class_instance_project_id_fkey
+        FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE point_class_instance ADD CONSTRAINT point_class_instance_relation_id_fkey
+        FOREIGN KEY (relation_id) REFERENCES relation(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE point_class_instance ADD CONSTRAINT point_class_instance_point_id_fkey
+        FOREIGN KEY (point_id) REFERENCES point(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE point_class_instance ADD CONSTRAINT point_class_instance_class_instance_id_fkey
+        FOREIGN KEY (class_instance_id) REFERENCES class_instance(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE point_connector ADD CONSTRAINT point_connector_user_id_fkey
+        FOREIGN KEY (user_id) REFERENCES auth_user(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE point_connector ADD CONSTRAINT point_connector_project_id_fkey
+        FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE point_connector ADD CONSTRAINT point_connector_relation_id_fkey
+        FOREIGN KEY (relation_id) REFERENCES relation(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE point_connector ADD CONSTRAINT point_connector_point_id_fkey
+        FOREIGN KEY (point_id) REFERENCES point(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE point_connector ADD CONSTRAINT point_connector_connector_id_fkey
+        FOREIGN KEY (connector_id) REFERENCES connector(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE point_connector ADD CONSTRAINT point_connector_project_id_point_id_connector_id_relation_id_uniq
+        UNIQUE (project_id, point_id, connector_id, relation_id);
+    ALTER TABLE region_of_interest_class_instance ADD CONSTRAINT region_of_interest_class_instance_user_id_fkey
+        FOREIGN KEY (user_id) REFERENCES auth_user(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE region_of_interest_class_instance ADD CONSTRAINT region_of_interest_class_instance_project_id_fkey
+        FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE region_of_interest_class_instance ADD CONSTRAINT region_of_interest_class_instance_relation_id_fkey
+        FOREIGN KEY (relation_id) REFERENCES relation(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE region_of_interest_class_instance ADD CONSTRAINT region_of_interest_class_instance_region_of_interest_id_fkey
+        FOREIGN KEY (region_of_interest_id) REFERENCES region_of_interest(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE region_of_interest_class_instance ADD CONSTRAINT region_of_interest_class_instance_class_instance_id_fkey
+        FOREIGN KEY (class_instance_id) REFERENCES class_instance(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE stack_class_instance ADD CONSTRAINT stack_class_instance_user_id_fkey
+        FOREIGN KEY (user_id) REFERENCES auth_user(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE stack_class_instance ADD CONSTRAINT stack_class_instance_project_id_fkey
+        FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE stack_class_instance ADD CONSTRAINT stack_class_instance_instance_relation_id_fkey
+        FOREIGN KEY (relation_id) REFERENCES relation(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE stack_class_instance ADD CONSTRAINT stack_class_instance_stack_id_fkey
+        FOREIGN KEY (stack_id) REFERENCES stack(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE stack_class_instance ADD CONSTRAINT stack_class_instance_class_instance_id_fkey
+        FOREIGN KEY (class_instance_id) REFERENCES class_instance(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE stack_group_class_instance ADD CONSTRAINT stack_group_class_instance_user_id_fkey
+        FOREIGN KEY (user_id) REFERENCES auth_user(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE stack_group_class_instance ADD CONSTRAINT stack_group_class_instance_project_id_fkey
+        FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE stack_group_class_instance ADD CONSTRAINT stack_group_class_instance_relation_id_fkey
+        FOREIGN KEY (relation_id) REFERENCES relation(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE stack_group_class_instance ADD CONSTRAINT stack_group_class_instance_stack_group_id_fkey
+        FOREIGN KEY (stack_group_id) REFERENCES stack_group(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE stack_group_class_instance ADD CONSTRAINT stack_group_class_instance_class_instance_id_fkey
+        FOREIGN KEY (class_instance_id) REFERENCES class_instance(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE treenode ADD CONSTRAINT treenode_editor_id_fkey
+        FOREIGN KEY (editor_id) REFERENCES auth_user(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE treenode ADD CONSTRAINT treenode_user_id_fkey
+        FOREIGN KEY (user_id) REFERENCES auth_user(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE treenode ADD CONSTRAINT treenode_project_id_fkey
+        FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE treenode ADD CONSTRAINT treenode_skeleton_id_fkey
+        FOREIGN KEY (skeleton_id) REFERENCES class_instance(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE treenode ADD CONSTRAINT treenode_parent_id_fkey
+        FOREIGN KEY (parent_id) REFERENCES treenode(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE change_request ADD CONSTRAINT change_request_user_id_fkey
+        FOREIGN KEY (user_id) REFERENCES auth_user(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE change_request ADD CONSTRAINT change_request_project_id_fkey
+        FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE change_request ADD CONSTRAINT change_request_connector_id_fkey
+        FOREIGN KEY (connector_id) REFERENCES connector(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE change_request ADD CONSTRAINT change_request_treenode_id_fkey
+        FOREIGN KEY (treenode_id) REFERENCES treenode(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE change_request ADD CONSTRAINT change_request_recipient_id_fkey
+        FOREIGN KEY (recipient_id) REFERENCES auth_user(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE treenode_class_instance ADD CONSTRAINT treenode_class_instance_user_id_fkey
+        FOREIGN KEY (user_id) REFERENCES auth_user(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE treenode_class_instance ADD CONSTRAINT treenode_class_instance_project_id_fkey
+        FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE treenode_class_instance ADD CONSTRAINT treenode_class_instance_relation_id_fkey
+        FOREIGN KEY (relation_id) REFERENCES relation(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE treenode_class_instance ADD CONSTRAINT treenode_class_instance_treenode_id_fkey
+        FOREIGN KEY (treenode_id) REFERENCES treenode(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE treenode_class_instance ADD CONSTRAINT treenode_class_instance_class_instance_id_fkey
+        FOREIGN KEY (class_instance_id) REFERENCES class_instance(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE treenode_connector ADD CONSTRAINT treenode_connector_user_id_fkey
+        FOREIGN KEY (user_id) REFERENCES auth_user(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE treenode_connector ADD CONSTRAINT treenode_connector_project_id_fkey
+        FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE treenode_connector ADD CONSTRAINT treenode_connector_relation_id_fkey
+        FOREIGN KEY (relation_id) REFERENCES relation(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE treenode_connector ADD CONSTRAINT treenode_connector_treenode_id_fkey
+        FOREIGN KEY (treenode_id) REFERENCES treenode(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE treenode_connector ADD CONSTRAINT treenode_connector_connector_id_fkey
+        FOREIGN KEY (connector_id) REFERENCES connector(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE treenode_connector ADD CONSTRAINT treenode_connector_skeleton_id_fkey
+        FOREIGN KEY (skeleton_id) REFERENCES class_instance(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE treenode_connector ADD CONSTRAINT treenode_connector_project_id_treenode_id_connector_id_relation_id
+        UNIQUE (project_id, treenode_id, connector_id, relation_id);
+    ALTER TABLE volume_class_instance ADD CONSTRAINT volume_class_instance_user_id_fkey
+        FOREIGN KEY (user_id) REFERENCES auth_user(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE volume_class_instance ADD CONSTRAINT volume_class_instance_project_id_fkey
+        FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE volume_class_instance ADD CONSTRAINT volume_class_instance_relation_id_fkey
+        FOREIGN KEY (relation_id) REFERENCES relation(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE volume_class_instance ADD CONSTRAINT volume_class_instance_volume_id_fkey
+        FOREIGN KEY (volume_id) REFERENCES catmaid_volume(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE volume_class_instance ADD CONSTRAINT volume_class_instance_class_instance_id_fkey
+        FOREIGN KEY (class_instance_id) REFERENCES class_instance(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE catmaid_sampler ADD CONSTRAINT catmaid_sampler_project_id_fkey
+        FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE catmaid_sampler ADD CONSTRAINT catmaid_sampler_skeleton_id_fkey
+        FOREIGN KEY (skeleton_id) REFERENCES class_instance(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE catmaid_sampler ADD CONSTRAINT catmaid_sampler_sampler_state_id_fkey
+        FOREIGN KEY (sampler_state_id) REFERENCES catmaid_samplerstate(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE catmaid_sampler ADD CONSTRAINT catmaid_sampler_user_id_fkey
+        FOREIGN KEY (user_id) REFERENCES auth_user(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE catmaid_skeleton_summary ADD CONSTRAINT catmaid_skeleton_summary_project_id_fkey
+        FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE catmaid_skeleton_summary ADD CONSTRAINT catmaid_skeleton_summary_skeleton_id_fkey
+        FOREIGN KEY (skeleton_id) REFERENCES class_instance(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE catmaid_skeleton_summary ADD CONSTRAINT catmaid_skeleton_summary_last_editor_id_fkey
+        FOREIGN KEY (last_editor_id) REFERENCES auth_user(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE review ADD CONSTRAINT review_user_id_fkey
+        FOREIGN KEY (reviewer_id) REFERENCES auth_user(id)
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE review ADD CONSTRAINT review_project_id_fkey
+        FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE review ADD CONSTRAINT review_treenode_id_fkey
+        FOREIGN KEY (treenode_id) REFERENCES treenode(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
+    ALTER TABLE review ADD CONSTRAINT review_skeleton_id_fkey
+        FOREIGN KEY (skeleton_id) REFERENCES class_instance(id) ON DELETE CASCADE
+        DEFERRABLE INITIALLY DEFERRED NOT VALID;
 
     -- Update foreign keys to non-concept tables from non-concept tables (e.g.
     -- treenode).
@@ -1335,6 +1433,107 @@ forward = """
         FROM review;
     SELECT setval('catmaid_sampler_id_seq', coalesce(max("id"), 1), max("id") IS NOT null)
         FROM catmaid_sampler;
+
+    COMMIT;
+"""
+
+forward_validate_constraints = """
+    BEGIN;
+
+    ALTER TABLE concept VALIDATE CONSTRAINT concept_user_id_fkey;
+    ALTER TABLE concept VALIDATE CONSTRAINT concept_project_id_fkey;
+    ALTER TABLE class VALIDATE CONSTRAINT class_user_id_fkey;
+    ALTER TABLE class VALIDATE CONSTRAINT class_project_id_fkey;
+    ALTER TABLE log VALIDATE CONSTRAINT log_user_id_fkey;
+    ALTER TABLE log VALIDATE CONSTRAINT log_project_id_fkey;
+    ALTER TABLE relation VALIDATE CONSTRAINT relation_user_id_fkey;
+    ALTER TABLE relation VALIDATE CONSTRAINT relation_project_id_fkey;
+    ALTER TABLE relation_instance VALIDATE CONSTRAINT relation_instance_user_id_fkey;
+    ALTER TABLE relation_instance VALIDATE CONSTRAINT relation_instance_project_id_fkey;
+    ALTER TABLE relation_instance VALIDATE CONSTRAINT relation_instance_relation_id_fkey;
+    ALTER TABLE class_class VALIDATE CONSTRAINT class_class_user_id_fkey;
+    ALTER TABLE class_class VALIDATE CONSTRAINT class_class_project_id_fkey;
+    ALTER TABLE class_class VALIDATE CONSTRAINT class_class_relation_id_fkey;
+    ALTER TABLE class_class VALIDATE CONSTRAINT class_class_class_a_fkey;
+    ALTER TABLE class_class VALIDATE CONSTRAINT class_class_class_b_fkey;
+    ALTER TABLE restriction VALIDATE CONSTRAINT restriction_user_id_fkey;
+    ALTER TABLE restriction VALIDATE CONSTRAINT restriction_project_id_fkey;
+    ALTER TABLE restriction VALIDATE CONSTRAINT restriction_restricted_link_id_fkey;
+    ALTER TABLE class_instance VALIDATE CONSTRAINT class_instance_user_id_fkey;
+    ALTER TABLE class_instance VALIDATE CONSTRAINT class_instance_project_id_fkey;
+    ALTER TABLE class_instance VALIDATE CONSTRAINT class_instance_class_id_fkey;
+    ALTER TABLE class_instance_class_instance VALIDATE CONSTRAINT class_instance_class_instance_user_id_fkey;
+    ALTER TABLE class_instance_class_instance VALIDATE CONSTRAINT class_instance_class_instance_project_id_fkey;
+    ALTER TABLE class_instance_class_instance VALIDATE CONSTRAINT class_instance_class_instance_relation_id_fkey;
+    ALTER TABLE class_instance_class_instance VALIDATE CONSTRAINT class_instance_class_instance_class_instance_a_fkey;
+    ALTER TABLE class_instance_class_instance VALIDATE CONSTRAINT class_instance_class_instance_class_instance_b_fkey;
+    ALTER TABLE connector_class_instance VALIDATE CONSTRAINT connector_class_instance_user_id_fkey;
+    ALTER TABLE connector_class_instance VALIDATE CONSTRAINT connector_class_instance_project_id_fkey;
+    ALTER TABLE connector_class_instance VALIDATE CONSTRAINT connector_class_instance_relation_id_fkey;
+    ALTER TABLE connector_class_instance VALIDATE CONSTRAINT connector_class_instance_connector_id_fkey;
+    ALTER TABLE connector_class_instance VALIDATE CONSTRAINT connector_class_instance_class_instance_id_fkey;
+    ALTER TABLE point_class_instance VALIDATE CONSTRAINT point_class_instance_user_id_fkey;
+    ALTER TABLE point_class_instance VALIDATE CONSTRAINT point_class_instance_project_id_fkey;
+    ALTER TABLE point_class_instance VALIDATE CONSTRAINT point_class_instance_relation_id_fkey;
+    ALTER TABLE point_class_instance VALIDATE CONSTRAINT point_class_instance_point_id_fkey;
+    ALTER TABLE point_class_instance VALIDATE CONSTRAINT point_class_instance_class_instance_id_fkey;
+    ALTER TABLE point_connector VALIDATE CONSTRAINT point_connector_user_id_fkey;
+    ALTER TABLE point_connector VALIDATE CONSTRAINT point_connector_project_id_fkey;
+    ALTER TABLE point_connector VALIDATE CONSTRAINT point_connector_relation_id_fkey;
+    ALTER TABLE point_connector VALIDATE CONSTRAINT point_connector_point_id_fkey;
+    ALTER TABLE point_connector VALIDATE CONSTRAINT point_connector_connector_id_fkey;
+    ALTER TABLE region_of_interest_class_instance VALIDATE CONSTRAINT region_of_interest_class_instance_user_id_fkey;
+    ALTER TABLE region_of_interest_class_instance VALIDATE CONSTRAINT region_of_interest_class_instance_project_id_fkey;
+    ALTER TABLE region_of_interest_class_instance VALIDATE CONSTRAINT region_of_interest_class_instance_relation_id_fkey;
+    ALTER TABLE region_of_interest_class_instance VALIDATE CONSTRAINT region_of_interest_class_instance_region_of_interest_id_fkey;
+    ALTER TABLE region_of_interest_class_instance VALIDATE CONSTRAINT region_of_interest_class_instance_class_instance_id_fkey;
+    ALTER TABLE stack_class_instance VALIDATE CONSTRAINT stack_class_instance_user_id_fkey;
+    ALTER TABLE stack_class_instance VALIDATE CONSTRAINT stack_class_instance_project_id_fkey;
+    ALTER TABLE stack_class_instance VALIDATE CONSTRAINT stack_class_instance_instance_relation_id_fkey;
+    ALTER TABLE stack_class_instance VALIDATE CONSTRAINT stack_class_instance_stack_id_fkey;
+    ALTER TABLE stack_class_instance VALIDATE CONSTRAINT stack_class_instance_class_instance_id_fkey;
+    ALTER TABLE stack_group_class_instance VALIDATE CONSTRAINT stack_group_class_instance_user_id_fkey;
+    ALTER TABLE stack_group_class_instance VALIDATE CONSTRAINT stack_group_class_instance_project_id_fkey;
+    ALTER TABLE stack_group_class_instance VALIDATE CONSTRAINT stack_group_class_instance_relation_id_fkey;
+    ALTER TABLE stack_group_class_instance VALIDATE CONSTRAINT stack_group_class_instance_stack_group_id_fkey;
+    ALTER TABLE stack_group_class_instance VALIDATE CONSTRAINT stack_group_class_instance_class_instance_id_fkey;
+    ALTER TABLE treenode VALIDATE CONSTRAINT treenode_editor_id_fkey;
+    ALTER TABLE treenode VALIDATE CONSTRAINT treenode_user_id_fkey;
+    ALTER TABLE treenode VALIDATE CONSTRAINT treenode_project_id_fkey;
+    ALTER TABLE treenode VALIDATE CONSTRAINT treenode_skeleton_id_fkey;
+    ALTER TABLE treenode VALIDATE CONSTRAINT treenode_parent_id_fkey;
+    ALTER TABLE change_request VALIDATE CONSTRAINT change_request_user_id_fkey;
+    ALTER TABLE change_request VALIDATE CONSTRAINT change_request_project_id_fkey;
+    ALTER TABLE change_request VALIDATE CONSTRAINT change_request_connector_id_fkey;
+    ALTER TABLE change_request VALIDATE CONSTRAINT change_request_treenode_id_fkey;
+    ALTER TABLE change_request VALIDATE CONSTRAINT change_request_recipient_id_fkey;
+    ALTER TABLE treenode_class_instance VALIDATE CONSTRAINT treenode_class_instance_user_id_fkey;
+    ALTER TABLE treenode_class_instance VALIDATE CONSTRAINT treenode_class_instance_project_id_fkey;
+    ALTER TABLE treenode_class_instance VALIDATE CONSTRAINT treenode_class_instance_relation_id_fkey;
+    ALTER TABLE treenode_class_instance VALIDATE CONSTRAINT treenode_class_instance_treenode_id_fkey;
+    ALTER TABLE treenode_class_instance VALIDATE CONSTRAINT treenode_class_instance_class_instance_id_fkey;
+    ALTER TABLE treenode_connector VALIDATE CONSTRAINT treenode_connector_user_id_fkey;
+    ALTER TABLE treenode_connector VALIDATE CONSTRAINT treenode_connector_project_id_fkey;
+    ALTER TABLE treenode_connector VALIDATE CONSTRAINT treenode_connector_relation_id_fkey;
+    ALTER TABLE treenode_connector VALIDATE CONSTRAINT treenode_connector_treenode_id_fkey;
+    ALTER TABLE treenode_connector VALIDATE CONSTRAINT treenode_connector_connector_id_fkey;
+    ALTER TABLE treenode_connector VALIDATE CONSTRAINT treenode_connector_skeleton_id_fkey;
+    ALTER TABLE volume_class_instance VALIDATE CONSTRAINT volume_class_instance_user_id_fkey;
+    ALTER TABLE volume_class_instance VALIDATE CONSTRAINT volume_class_instance_project_id_fkey;
+    ALTER TABLE volume_class_instance VALIDATE CONSTRAINT volume_class_instance_relation_id_fkey;
+    ALTER TABLE volume_class_instance VALIDATE CONSTRAINT volume_class_instance_volume_id_fkey;
+    ALTER TABLE volume_class_instance VALIDATE CONSTRAINT volume_class_instance_class_instance_id_fkey;
+    ALTER TABLE catmaid_sampler VALIDATE CONSTRAINT catmaid_sampler_project_id_fkey;
+    ALTER TABLE catmaid_sampler VALIDATE CONSTRAINT catmaid_sampler_skeleton_id_fkey;
+    ALTER TABLE catmaid_sampler VALIDATE CONSTRAINT catmaid_sampler_sampler_state_id_fkey;
+    ALTER TABLE catmaid_sampler VALIDATE CONSTRAINT catmaid_sampler_user_id_fkey;
+    ALTER TABLE catmaid_skeleton_summary VALIDATE CONSTRAINT catmaid_skeleton_summary_project_id_fkey;
+    ALTER TABLE catmaid_skeleton_summary VALIDATE CONSTRAINT catmaid_skeleton_summary_skeleton_id_fkey;
+    ALTER TABLE catmaid_skeleton_summary VALIDATE CONSTRAINT catmaid_skeleton_summary_last_editor_id_fkey;
+    ALTER TABLE review VALIDATE CONSTRAINT review_user_id_fkey;
+    ALTER TABLE review VALIDATE CONSTRAINT review_project_id_fkey;
+    ALTER TABLE review VALIDATE CONSTRAINT review_treenode_id_fkey;
+    ALTER TABLE review VALIDATE CONSTRAINT review_skeleton_id_fkey;
 
     COMMIT;
 """
@@ -2738,6 +2937,7 @@ class Migration(migrations.Migration):
         migrations.RunSQL(migrations.RunSQL.noop, db_maintenance),
         migrations.RunSQL(migrations.RunSQL.noop, backward_create_indices),
         migrations.RunSQL(forward, backward),
+        migrations.RunSQL(forward_validate_constraints, migrations.RunSQL.noop),
         migrations.RunSQL(forward_create_indices, migrations.RunSQL.noop),
         migrations.RunSQL(db_maintenance, migrations.RunSQL.noop),
     ]

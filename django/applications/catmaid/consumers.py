@@ -60,7 +60,7 @@ class UpdateConsumer(WebsocketConsumer):
         self.send(text_data=event["data"])
 
 
-def msg_user(user_id, event_name, data:str="", data_type:str="text", is_raw_data:bool=False,
+async def msg_user(user_id, event_name, data:str="", data_type:str="text", is_raw_data:bool=False,
         ignore_missing:bool=True) -> None:
     """Send a message to a user. This message will contain a dictionary with the
     field <data_type> with content <data> if raw data is requested, otherwise
@@ -80,7 +80,7 @@ def msg_user(user_id, event_name, data:str="", data_type:str="text", is_raw_data
         # message.
         if not channel_layer:
             return
-        async_to_sync(channel_layer.group_send)(get_user_group_name(user_id), {
+        await channel_layer.group_send(get_user_group_name(user_id), {
             'type': 'user.message',
             'data': payload,
         })

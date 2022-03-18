@@ -219,6 +219,7 @@ grouped under the name "catmaid"::
   [program:catmaid-celery]
   command = /home/catmaid/catmaid-server/django/projects/mysite/run-celery.sh
   user = www-data
+  numprocs = 1
   stdout_logfile = /home/catmaid/catmaid-server/django/projects/mysite/celery.log
   redirect_stderr = true
 
@@ -436,6 +437,7 @@ this time including the ASGI server Daphne::
   directory = /home/catmaid/catmaid-server/django/projects/
   command = /home/catmaid/catmaid-server/django/env/bin/celery -A mysite worker -l info --pidfile=/var/run/catmaid/celery.pid
   user = www-data
+  numprocs = 1
   stdout_logfile = /var/log/catmaid/celery.log
   redirect_stderr = true
 
@@ -443,6 +445,7 @@ this time including the ASGI server Daphne::
   directory = /home/catmaid/catmaid-server/django/projects/
   command = /home/catmaid/catmaid-server/django/env/bin/celery -A mysite beat -l info --pidfile=/var/run/catmaid/celery-beat.pid --schedule=/var/run/catmaid/celery-beat-schedule-catmaid-server
   user = www-data
+  numprocs = 1
   stdout_logfile = /var/log/catmaid/celery-beat.log
   redirect_stderr = true
 

@@ -16,6 +16,10 @@
   the CATMAID database. This might take up to an hour, but can reduce the space
   and memory needs of CATMAID's database indexes by 30-50%.
 
+- Should you have ``supervisor`` configured to run ``Celery``, newer Celery
+  versions might show a DatabaseError about threads. To fix this, add the
+  ``numprocs = 1`` option to you supervisor config for Celery.
+
 ### Features and enhancements
 
 

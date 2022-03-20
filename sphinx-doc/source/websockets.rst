@@ -139,7 +139,7 @@ section and the ``[group:catmaid]`` section:
 
     [program:catmaid-daphe]
     directory = /opt/catmaid/django/projects/
-    command = /opt/catmaid/django/env/bin/daphne -b 127.0.0.1 -p 8001 mysite.asgi:application
+    command = /opt/catmaid/django/env/bin/daphne -b 127.0.0.1 -p 8001 --access-log - --proxy-headers mysite.asgi:application
     user = www-data
     stdout_logfile = /opt/catmaid/django/projects/mysite/daphne.log
     redirect_stderr = true

@@ -61,6 +61,8 @@ Miscellaneous:
 - Landmark widget: landmark edit buttons are now easier to read and single
   clicks on a landmark name take the view now to their location.
 
+- WebSockets: fix wbsocket message sending from Celery tasks
+
 ## 2021.12.21
 
 Contributors: Chris Barnes, Albert Cardona, Andrew Champion, Stephan Gerhard, Sanja Jasek, Tom Kazimiers

@@ -1,7 +1,9 @@
 import json
 import logging
+import msgpack
 
 from asgiref.sync import async_to_sync
+from celery import current_app
 
 from channels.generic.websocket import WebsocketConsumer
 from channels.layers import get_channel_layer
@@ -60,7 +62,12 @@ class UpdateConsumer(WebsocketConsumer):
         self.send(text_data=event["data"])
 
 
-async def msg_user(user_id, event_name, data:str="", data_type:str="text", is_raw_data:bool=False,
+def is_in_celery_task():
+    from celery import current_task
+    return bool(current_task)
+
+
+def msg_user(user_id, event_name, data:str="", data_type:str="text", is_raw_data:bool=False,
         ignore_missing:bool=True) -> None:
     """Send a message to a user. This message will contain a dictionary with the
     field <data_type> with content <data> if raw data is requested, otherwise
@@ -75,17 +82,46 @@ async def msg_user(user_id, event_name, data:str="", data_type:str="text", is_ra
         })
     # Broadcast to listening sockets
     try:
-        channel_layer = get_channel_layer()
-        # Without any channel layer, there is no point in trying to send a
-        # message.
-        if not channel_layer:
-            return
-        await channel_layer.group_send(get_user_group_name(user_id), {
-            'type': 'user.message',
-            'data': payload,
-        })
+        logger.info('attempting send msg')
+        if is_in_celery_task():
+            logger.info('sending msg from celery task')
+            publish_message_to_broker({
+                'type': 'user.message',
+                'data': payload,
+            }, get_user_group_name(user_id))
+        else:
+            channel_layer = get_channel_layer()
+            # Without any channel layer, there is no point in trying to send a
+            # message.
+            if not channel_layer:
+                return
+            logger.info('sending msg')
+            async_to_sync(channel_layer.group_send)(get_user_group_name(user_id), {
+                'type': 'user.message',
+                'data': payload,
+            })
     except KeyError as e:
         if ignore_missing:
             pass
         else:
             raise e
+
+
+def publish_message_to_broker(message, routing_key):
+    """Put a message into a rabbitmq broker, as suggested here:
+    https://github.com/CJWorkbench/channels_rabbitmq/issues/37
+    """
+    with current_app.producer_pool.acquire(block=True) as producer:
+        # The channel layer needs to read an __asgi_group__ member.
+        # Otherwise it will be ignored by the channels-rabbitmq
+        message.update({"__asgi_group__":  routing_key})
+
+        # `retry=False` because channels has at-most-once delivery semantics.
+        # `content_encoding='binary'` because msgpack-ed message will be raw bytes.
+        producer.publish(
+            msgpack.packb(message),
+            exchange="groups",
+            content_encoding='binary',
+            routing_key=routing_key,
+            retry=False,
+        )

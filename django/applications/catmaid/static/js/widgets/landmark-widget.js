@@ -2825,8 +2825,8 @@
         if (widget.showOtherProjectOptions) {
 
           // Remote select
-          let remoteSelect = CATMAID.Remote.createRemoteSelect('Source instance',
-              sourceRemote, true, e => {
+          let remoteSelect = CATMAID.Remote.createRemoteSelect(sourceRemote, true,
+              'Source remote', e => {
                 sourceRemote = e.target.value;
                 sourceProject = null;
                 // Try to get all projects from the selected remote and update the

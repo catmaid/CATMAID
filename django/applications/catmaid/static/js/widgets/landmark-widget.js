@@ -3494,6 +3494,12 @@
                     CATMAID.warn("Display target relations aren't yet supported for remote sources");
                     return;
                   }
+                  if (!sourceNeuronAnnotation || sourceNeuronAnnotation.trim().length === 0) {
+                    CATMAID.warn("No source annotation provided");
+                    if (!confirm('No source annotation was provided to limit the set of transformed skeletons. Are you sure you want to continue loading ALL remote skeletons?')) {
+                      return;
+                    }
+                  }
                   // If skeletons are loaded from a remote API, the skeleton
                   // source needs to load the remote objects first.
                   let remote;
@@ -3504,7 +3510,9 @@
                     }
                   }
                   let api = remote ? remote : null;
-                  CATMAID.Skeletons.byAnnotation(sourceProject, [sourceNeuronAnnotation], false, api)
+                  let annotations = sourceNeuronAnnotation && sourceNeuronAnnotation.trim().length > 0 ?
+                      [sourceNeuronAnnotation] : [];
+                  CATMAID.Skeletons.byAnnotation(sourceProject, annotations, false, api)
                     .then(skeletonIds => {
                       return CATMAID.NeuronNameService.getInstance(api).registerAllFromList(widget, skeletonIds, sourceProject)
                         .then(() => skeletonIds);

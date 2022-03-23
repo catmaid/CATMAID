@@ -1162,6 +1162,11 @@ def compare_skeletons(request:HttpRequest, project_id) -> JsonResponse:
         type: int
         required: false
         defaultValue: 0
+      - name: skip_execution
+        description: Whether or not to run the actual NBLAST computation
+        type: boolean
+        required: false
+        defaultValue: false
     """
     name = request.POST.get('name', None)
     if not name:
@@ -1178,6 +1183,7 @@ def compare_skeletons(request:HttpRequest, project_id) -> JsonResponse:
     simplify = get_request_bool(request.POST, 'simplify', True)
     required_branches = int(request.POST.get('required_branches', '10'))
     use_cache = get_request_bool(request.POST, 'use_cache', True)
+    skip_execution = get_request_bool(request.POST, 'skip_execution', False)
 
     valid_type_ids = ('skeleton', 'pointcloud', 'pointset')
 
@@ -1278,6 +1284,12 @@ def compare_skeletons(request:HttpRequest, project_id) -> JsonResponse:
                 normalized=normalized, reverse=reverse, use_alpha=use_alpha,
                 top_n=top_n)
         similarity.save()
+
+    if skip_execution:
+        return JsonResponse({
+            'task_id': -1,
+            'similarity': serialize_similarity(similarity),
+        })
 
     task = compute_nblast.delay(project_id, request.user.id, similarity.id,
             remove_target_duplicates, simplify, required_branches,

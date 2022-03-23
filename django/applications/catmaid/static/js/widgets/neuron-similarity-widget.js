@@ -687,7 +687,11 @@
         updateQueryVisibility();
         updateTargetVisibility();
 
-        let computeSimilarity = function() {
+        let computeSimilarity = function(skipExecution = false) {
+          if (configId === 'none') {
+            CATMAID.warn('No similarity configuration selected');
+            return;
+          }
           let prepare = Promise.resolve();
           // If transformed skeletons are used as query or target, we need to
           // get all available landmark groups. This can be two different
@@ -890,7 +894,8 @@
                     queryIds, targetIds, effectiveQueryType, effectiveTargetType,
                     newQueryName, normalizedScores, reverse, useAlpha,
                     queryMeta, targetMeta, removeTargetDuplicates, simplify,
-                    widget.requiredBranches, widget.useCache, topN, widget.storage);
+                    widget.requiredBranches, widget.useCache, topN, widget.storage,
+                    skipExecution);
               })
               .then(function(response) {
                 widget.lastSimilarityQuery = response;
@@ -1078,11 +1083,13 @@
           type: 'button',
           label: 'Compute similarity',
           onclick: function() {
-            if (configId === 'none') {
-              CATMAID.warn('No similarity configuration selected');
-              return;
-            }
             computeSimilarity();
+          }
+        }, {
+          type: 'button',
+          label: 'Add only (don\'t run)',
+          onclick: function() {
+            computeSimilarity(true);
           }
         }];
       },

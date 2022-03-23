@@ -152,13 +152,15 @@
    *                              cached data for computing the similarity.
    * @param storage {String}      (optional) Defines how to store similarity
    *                              scores. Either 'blob' or 'relation'.
+   * @param skipExecution {Boolean} (optional) Whether a similarity object should
+   *                              only be created, but not executed.
    *
    * @returns {Promise} Resolves once the similarity query is queued.
    */
   Similarity.computeSimilarity = function(projectId, configId, queryIds,
       targetIds, queryType, targetType, name, normalized, reverse, useAlpha,
       queryMeta, targetMeta, removeTargetDuplicates, simplify, requiredBranches,
-      useCache, topN = 0, storage = 'blob') {
+      useCache, topN = 0, storage = 'blob', skipExecution = false) {
     return CATMAID.fetch(projectId + '/similarity/queries/similarity', 'POST', {
       'query_ids': queryIds,
       'target_ids': targetIds,
@@ -177,6 +179,7 @@
       'use_cache': useCache,
       'top_n': topN,
       'storage_mode': storage,
+      'skip_execution': skipExecution,
     });
   };
 

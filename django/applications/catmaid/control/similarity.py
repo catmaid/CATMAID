@@ -920,7 +920,7 @@ def compare_skeletons(request:HttpRequest, project_id) -> JsonResponse:
     # Read potential query and target IDs. In case of skeletons and point
     # clouds, no IDs need to be provided, in which case all skeletons and point
     # clouds, respectively, will be used.
-    query_ids = get_request_list(request.POST, 'query_ids', [], map_fn=int)
+    query_ids = get_request_list(request.POST, 'query_ids', map_fn=int)
     if not query_ids and query_type_id not in ('skeleton', 'pointcloud'):
         raise ValueError("Need set of query objects (skeletons or point clouds) to compare")
 

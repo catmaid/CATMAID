@@ -946,14 +946,16 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
 
         nblast_params = {}
 
-        parallel = False
-        if settings.MAX_PARALLEL_ASYNC_WORKERS > 1:
+        parallel = parallel and settings.MAX_PARALLEL_ASYNC_WORKERS > 1
+        if parallel:
+            logger.info(f'Allowed number of separate processes: {settings.MAX_PARALLEL_ASYNC_WORKERS}')
             # Parallelise NBLASTing across a defined number of cores
             rdomc = importr('doMC')
             rdomc.registerDoMC(settings.MAX_PARALLEL_ASYNC_WORKERS)
             rdoparallel = importr('doParallel')
             rdoparallel.registerDoParallel(**{'cores': settings.MAX_PARALLEL_ASYNC_WORKERS})
-            parallel = True
+        else:
+            logger.info('No parallelization enabled')
 
         nblast_params['.parallel'] = parallel
 

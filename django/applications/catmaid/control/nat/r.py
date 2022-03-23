@@ -1808,7 +1808,7 @@ def neuronlist_for_skeletons(project_id, skeleton_ids, omit_failures=False,
 
     logger.info('Creating combined neuronlist')
     objects = concat_neurons_local(
-            rinterface.IntSexpVector(skeleton_ids),
+            rinterface.FloatSexpVector(skeleton_ids),
             robjects.ListVector(cs_r), **{
                 'pid': project_id,
                 '.progress': 'text' if progress else 'none',
@@ -1865,8 +1865,8 @@ def load_skeleton(project_id, skeleton_id, scale, omit_failures, progress, bar,
 
     # Nodes in Rpy2 format
     node_cols = [
-            ('id', rinterface.IntSexpVector, robjects.NA_Integer),
-            ('parent_id', rinterface.IntSexpVector, robjects.NA_Integer),
+            ('id', rinterface.FloatSexpVector, robjects.NA_Real),
+            ('parent_id', rinterface.FloatSexpVector, robjects.NA_Real),
             ('user_id', rinterface.IntSexpVector, robjects.NA_Integer),
             ('x', rinterface.FloatSexpVector, robjects.NA_Real),
             ('y', rinterface.FloatSexpVector, robjects.NA_Real),
@@ -1885,8 +1885,8 @@ def load_skeleton(project_id, skeleton_id, scale, omit_failures, progress, bar,
 
     # Connectors in Rpy2 format
     connector_cols = [
-            ('treenode_id', rinterface.IntSexpVector, robjects.NA_Integer),
-            ('connector_id', rinterface.IntSexpVector, robjects.NA_Integer),
+            ('treenode_id', rinterface.FloatSexpVector, robjects.NA_Real),
+            ('connector_id', rinterface.FloatSexpVector, robjects.NA_Real),
             ('prepost', rinterface.IntSexpVector, robjects.NA_Integer),
             ('x', rinterface.FloatSexpVector, robjects.NA_Real),
             ('y', rinterface.FloatSexpVector, robjects.NA_Real),

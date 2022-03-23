@@ -23,6 +23,13 @@
 ### Features and enhancements
 
 
+Neuron similarity widget:
+
+- The 'Create built-in matrix' button in the Configurations tab allows to create
+  a new configuration based on the one suggested for the adult fly brain in the
+  original NBLAST publication. The UI allows to adjust dot and distance breaks
+  as well as an easy way to add an optional scale factor.
+
 Miscellaneous:
 
 - The built-in API docs (/apis endpoint) now supports deep links, which allows

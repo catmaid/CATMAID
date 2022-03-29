@@ -142,8 +142,13 @@ def check_spatial_update_setup(app_configs, **kwargs) -> List[str]:
         run = spatial.enable_spatial_update_events(True)
         logger.info('Spatial update events enabled')
     else:
-        run = spatial.disable_spatial_update_events(True)
-        logger.info('Spatial update events disabled')
+        try:
+            run = spatial.disable_spatial_update_events(True)
+            logger.info('Spatial update events disabled')
+        except ProgrammingError as e:
+            run = False
+            logger.error('Could not disable spatial update events')
+            logger.error(e)
 
     if not run:
         messages.append(Warning(

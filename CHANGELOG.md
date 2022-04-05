@@ -68,7 +68,9 @@ Miscellaneous:
 - Landmark widget: landmark edit buttons are now easier to read and single
   clicks on a landmark name take the view now to their location.
 
-- WebSockets: fix wbsocket message sending from Celery tasks
+- WebSockets: fix websocket message sending from Celery tasks
+
+- Image cropping: using rotations for cropped images works now as expected again
 
 ## 2021.12.21
 

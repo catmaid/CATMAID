@@ -6,6 +6,7 @@ import logging
 from math import cos, sin, radians
 import os
 import os.path
+import math
 from PIL import Image as PILImage, TiffImagePlugin
 import requests
 from time import time
@@ -266,22 +267,17 @@ def extract_substack(job) -> List:
     rotation requests. A list of PIL images is returned -- one for each
     slice, starting on top.
     """
-    # Treat rotation requests special
-    if abs(job.rotation_cw) < 0.00001:
-        # No rotation, create the sub-stack
+    # A simple transposition is enough for right-angle rotations
+    if math.isclose(job.rotation_cw % 90, 0.0):
         cropped_stack = extract_substack_no_rotation( job )
-    elif abs(job.rotation_cw - 90.0) < 0.00001:
-        # 90 degree rotation, create the sub-stack and do a simple rotation
-        cropped_stack = extract_substack_no_rotation(job)
-        cropped_stack = [img.rotate(270) for img in cropped_stack]
-    elif abs(job.rotation_cw - 180.0) < 0.00001:
-        # 180 degree rotation, create the sub-stack and do a simple rotation
-        cropped_stack = extract_substack_no_rotation(job)
-        cropped_stack = [img.rotate(180) for img in cropped_stack]
-    elif abs(job.rotation_cw - 270.0) < 0.00001:
-        # 270 degree rotation, create the sub-stack and do a simple rotation
-        cropped_stack = extract_substack_no_rotation(job)
-        cropped_stack = [img.rotate(90) for img in cropped_stack]
+        if math.isclose(job.rotation_cw, 90.0):
+            cropped_stack = [img.transpose(PILImage.ROTATE_90) for img in cropped_stack]
+        elif math.isclose(job.rotation_cw, 180.0):
+            cropped_stack = [img.transpose(PILImage.ROTATE_180) for img in cropped_stack]
+        elif math.isclose(job.rotation_cw, 270.0):
+            cropped_stack = [img.transpose(PILImage.ROTATE_270) for img in cropped_stack]
+        elif not math.isclose(job.rotation_cw, 0.0):
+            raise ValueError(f'Please provide a rotation in range [0, 360], got {job.rotation_cw}')
     else:
         # Some methods do counter-clockwise rotation
         rotation_ccw = 360.0 - job.rotation_cw
@@ -312,9 +308,9 @@ def extract_substack(job) -> List:
         # Create the enlarged sub-stack
         cropped_stack = extract_substack_no_rotation( job )
 
-        # Next, rotate the whole result stack counterclockwise to have the
-        # actual ROI axis aligned.
-        cropped_stack = [img.rotate(rotation_ccw) for img in cropped_stack]
+        # Next, rotate the whole result stack to have the actual ROI axis
+        # aligned.
+        cropped_stack = [img.rotate(job.rotation_cw, expand=True) for img in cropped_stack]
 
         # Last, do a second crop to remove the not needed parts. The region
         # to crop is defined by the relative original crop-box coordinates to
@@ -654,7 +650,7 @@ def crop(request:HttpRequest, project_id=None) -> JsonResponse:
     z_max = float(request.POST['max_z'])
     zoom_level = float(request.POST['zoom_level'])
     single_channel = get_request_bool(request.POST, 'single_channel', False)
-    rotation_cw = float(request.GET.get('rotationcw', 0.0))
+    rotation_cw = float(request.POST.get('rotationcw', 0.0))
 
     # Make sure tmp dir exists and is writable
     if not os.path.exists( crop_output_path ) or not os.access( crop_output_path, os.W_OK ):

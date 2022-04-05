@@ -11,6 +11,7 @@ install_requires, extras_require = parse_requirement_files(
     HERE / "requirements.txt",
     asynch=HERE / "requirements-async.txt",
     dev=HERE / "requirements-dev.txt",
+    doc=HERE / "requirements-doc.txt",
     optional=HERE / "requirements-optional.txt",
     production=HERE / "requirements-production.txt",
     test=HERE / "requirements-test.txt",

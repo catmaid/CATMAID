@@ -9,15 +9,10 @@ from extreqs import parse_requirement_files
 HERE = Path(__file__).resolve().parent
 
 version = run_path(str(HERE / "projects/mysite/utils.py"))["get_version"]()
-
+extra_names = ["async", "dev", "doc", "optional", "production", "test"]
 install_requires, extras_require = parse_requirement_files(
     HERE / "requirements.txt",
-    asynch=HERE / "requirements-async.txt",
-    dev=HERE / "requirements-dev.txt",
-    doc=HERE / "requirements-doc.txt",
-    optional=HERE / "requirements-optional.txt",
-    production=HERE / "requirements-production.txt",
-    test=HERE / "requirements-test.txt",
+    **{extra: HERE / f"requirements-{extra}.txt" for extra in extra_names},
 )
 
 packages: tp.List[str] = []

@@ -45,7 +45,7 @@ The main way to interact with South is with the help of ``manage.py``
 commands. South adds multiple commands to it, the most often used will probably
 be ``schemamigration`` to create new migrations and ``migrate`` to run
 migrations (see below). To use ``manage.py``, you need to be in the
-*virtualenv* environment (activate it with ``workon catmaid``). The commands
+*virtualenv* environment (activate it with ``source /home/alice/catmaid/django/env/bin/activate``). The commands
 in other parts of this page assume you are in the *virtualenv* and the folder
 where the ``manage.py`` file lives.
 

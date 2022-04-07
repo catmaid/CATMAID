@@ -28,6 +28,8 @@
 - CATMAID's dependencies (including extras associated with optional features)
   can now be installed using pip: use ``pip install path/to/CATMAID/django[production,async,optional]``
 
+- virtualenvwrapper is no longer recommended, preferring the standard ``python -m venv``
+
 ### Features and enhancements
 
 

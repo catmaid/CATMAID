@@ -94,7 +94,7 @@ You can do this with the following command on Ubuntu
        :split: 75
        :splitend:  \
 
-Create a virtual environment:
+Create a virtual environment based on the python binary at /usr/bin/python3.8:
 
     /usr/bin/python3.8 -m venv --upgrade-deps --prompt catmaid /home/alice/catmaid/django/env
 
@@ -110,9 +110,7 @@ You can deactivate the environment with ``deactivate``.
    performance of back-end heavy endpoints. Most functionality is available,
    except for the following: Ontology clustering, Cropping, Synapse clustering,
    HDF 5 tiles and User analytics. To use PyPy, a new virtualenv using the PyPy
-   executable has to be created::
-
-       mkvirtualenv --no-site-packages -p /usr/bin/pypy catmaid
+   executable has to be created.
 
 .. note::
 

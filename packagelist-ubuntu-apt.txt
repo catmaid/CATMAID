@@ -8,7 +8,6 @@ postgresql-common
 libpq-dev
 libhdf5-serial-dev
 libboost-dev
-virtualenvwrapper
 libboost-python-dev
 libxml2-dev
 libxslt1-dev

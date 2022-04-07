@@ -38,10 +38,13 @@ def get_version():
             describe_info = version_file.read().rstrip().encode('utf-8').decode('utf-8')
         else:
             describe_info = out.rstrip().encode('utf-8').decode('utf-8')
-
-        return describe_info
     except:
-        return '{}-unknown'.format(BASE_VERSION)
+        describe_info = BASE_VERSION.split("-")[0] + "-0-unknown"
+
+    components = describe_info.split("-")
+    if len(components) == 1:
+        return components[0]
+    return "{}.dev{}+{}".format(*components)
 
 
 def relative(*path_components):

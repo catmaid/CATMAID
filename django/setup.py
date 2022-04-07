@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 from pathlib import Path
 import typing as tp
+from runpy import run_path
 
 from setuptools import setup
 from extreqs import parse_requirement_files
 
 HERE = Path(__file__).resolve().parent
+
+version = run_path(str(HERE / "projects/mysite/utils.py"))["get_version"]()
 
 install_requires, extras_require = parse_requirement_files(
     HERE / "requirements.txt",
@@ -33,7 +36,7 @@ setup(
     name="CATMAID",
     url="https://www.catmaid.org/",
     author="CATMAID development team",
-    version="0.0.1",
+    version=version,
     description="Collaborative Annotation Toolkit for Massive Amounts of Image Data",
     packages=packages,
     package_dir=package_dir,
@@ -42,7 +45,7 @@ setup(
     python_requires=">=3.8, <4.0",
     classifiers=[
         "Development Status :: 3 - Alpha",
-        "License :: OSI Approved :: MIT License",
+        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",

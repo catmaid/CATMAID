@@ -20,6 +20,14 @@
   versions might show a DatabaseError about threads. To fix this, add the
   ``numprocs = 1`` option to you supervisor config for Celery.
 
+- CATMAID's version is now reported slightly differently, in line with PEP440.
+  If you are using a release version, nothing will have changed.
+  Development versions are now reported as ``{release}.dev{commits}+g{hash}``,
+  where previously they were ``{release}-{commits}-g{hash}``.
+
+- CATMAID's dependencies (including extras associated with optional features)
+  can now be installed using pip: use ``pip install path/to/CATMAID/django[production,async,optional]``
+
 ### Features and enhancements
 
 

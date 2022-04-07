@@ -1,0 +1,14 @@
+
+on: [push, pull_request]
+name: docker image
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build-docker:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/checkout@v2
+      - run: docker build -t catmaid .

@@ -82,8 +82,7 @@ init_catmaid () {
   fi
 
   echo "Loading virtualenv"
-  source /usr/share/virtualenvwrapper/virtualenvwrapper.sh
-  workon catmaid
+  source /home/env/bin/activate
 
   if [ ! -f /home/django/projects/mysite/settings.py ] || ["$CM_FORCE_CONFIG_UPDATE" = true]; then
     echo "Setting up CATMAID"

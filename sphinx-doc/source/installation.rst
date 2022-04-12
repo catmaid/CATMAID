@@ -94,41 +94,15 @@ You can do this with the following command on Ubuntu
        :split: 75
        :splitend:  \
 
-Virtualenv Wrapper needs to source your environment. Start a new terminal
-or if you are using the bash::
+Create a virtual environment based on the python binary at /usr/bin/python3.8:
 
-    source ~/.bashrc
+    /usr/bin/python3.8 -m venv --upgrade-deps --prompt catmaid /home/alice/catmaid/django/env
 
-Please test if ``virtualenvwrapper`` is set up correctly, by executing::
+Whenever you are working with this environment in a new shell, you need to
 
-    mkvirtualenv --version
+    source /home/alice/catmaid/django/env/bin/activate
 
-If it gives you a version, everything is fine. Otherwise, e.g. if the command
-``mkvirtualenv`` is not found, add the following line to your ``~/.bashrc`` file
-and call ``source ~/.bashrc`` again::
-
-    source /usr/share/virtualenvwrapper/virtualenvwrapper.sh
-
-To create a new virtualenv for CATMAID's Python dependencies,
-you can do::
-
-    mkvirtualenv --no-site-packages -p /usr/bin/python3.8 catmaid
-
-That will create a virtualenv in ``~/.virtualenvs/catmaid/``, and
-while your virtualenv is activated, Python libraries will be
-imported from (and installed to) there. After creating the
-virtualenv as above, it will be activated for you, but in new
-shells, for example, you will need to activate it by running::
-
-    workon catmaid
-
-.. note::
-
-    Many distributions ship with an outdated version of Pip.
-    This is the tool we use to install Python packages within the virtualenv,
-    so let's update it first::
-
-        python -m pip install -U pip
+You can deactivate the environment with ``deactivate``.
 
 .. note::
 
@@ -136,9 +110,7 @@ shells, for example, you will need to activate it by running::
    performance of back-end heavy endpoints. Most functionality is available,
    except for the following: Ontology clustering, Cropping, Synapse clustering,
    HDF 5 tiles and User analytics. To use PyPy, a new virtualenv using the PyPy
-   executable has to be created::
-
-       mkvirtualenv --no-site-packages -p /usr/bin/pypy catmaid
+   executable has to be created.
 
 .. note::
 
@@ -148,19 +120,16 @@ shells, for example, you will need to activate it by running::
 Install all of the required Python packages with::
 
     cd /home/alice/catmaid/django
-    pip install -r requirements.txt
+    pip install .
 
 If that worked correctly, then the second-last line of output will begin
 ``Successfully installed``, and list the Python packages that have just been
 installed.
 
-If you set up a production environment, please also install the
-``requirements-production.txt`` file::
+CATMAID has a number of optional "extras".
+These extras are specified in the usual way:
 
-    pip install -r requirements-production.txt
-
-This will rebuild some dependencies from source. If asked whether existing
-packages should be replaced by the new version, answer with yes.
+    pip install '.[async,optional,production]'
 
 
 3. Install and configure PostgreSQL

@@ -33,9 +33,8 @@ RUN apt-get update -y  \
 COPY django/requirements.txt django/requirements-async.txt django/requirements-production.txt /home/django/
 ENV WORKON_HOME /opt/virtualenvs
 RUN mkdir -p /opt/virtualenvs \
-    && /bin/bash -c "source /usr/share/virtualenvwrapper/virtualenvwrapper.sh \
-    && mkvirtualenv catmaid -p /usr/bin/python3.8 \
-    && workon catmaid \
+    && /bin/bash -c "/usr/bin/python3.8 -m venv --upgrade-deps --prompt catmaid /home/env \
+    && source /home/env/bin/activate \
     && pip install -U pip setuptools \
     && pip install -r /home/django/requirements.txt \
     && pip install -r /home/django/requirements-async.txt \
@@ -53,8 +52,7 @@ COPY .git /home/.git
 RUN cd /home/ && git describe > /home/git-version && rm -r /home/.git
 
 # uWSGI setup
-RUN /bin/bash -c "source /usr/share/virtualenvwrapper/virtualenvwrapper.sh \
-    && workon catmaid \
+RUN /bin/bash -c "source /home/env/bin/activate \
     && pip install uwsgi" \
     && ln -s /home/scripts/docker/supervisor-catmaid.conf /etc/supervisor/conf.d/ \
     && mkdir -p /var/run/catmaid \

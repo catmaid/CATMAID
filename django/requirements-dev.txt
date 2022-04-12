@@ -1,4 +1,2 @@
--r requirements-test.txt
--r requirements-doc.txt
 django-devserver==0.8.0
 sh==1.11

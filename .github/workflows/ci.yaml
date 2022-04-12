@@ -53,22 +53,16 @@ jobs:
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-py_${{ matrix.python-version }}-${{ hashFiles('django/requirements*.txt') }}
-      - run: pip install -r django/requirements-test.txt coveralls
+      - run: pip install ./django[test] coveralls
       - run: bash scripts/travis/setup_database.sh
       - run: bash scripts/travis/configure_catmaid.sh
       - run: bash scripts/travis/configure_pypy_libs.sh
         if: ${{ matrix.python-version == 'pypy3' }}
-      - run: |
-          cd django/projects
-          python manage.py migrate --noinput
+      - run: django/projects/manage.py migrate --noinput
         name: Apply migrations
-      - run: |
-          cd django/projects
-          python manage.py makemigrations catmaid
+      - run: django/projects/manage.py makemigrations catmaid
         name: Check migrations are up to date
-      - run: |
-          cd django/projects
-          coverage run manage.py test catmaid.tests
+      - run: coverage run django/projects/manage.py test catmaid.tests
         name: Run tests
 
   test-frontend:
@@ -94,7 +88,7 @@ jobs:
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-py_${{ matrix.python-version }}-${{ hashFiles('django/requirements.txt') }}
-      - run: pip install -r django/requirements.txt
+      - run: pip install ./django
       - run: bash scripts/travis/setup_database.sh
       - run: bash scripts/travis/configure_catmaid.sh
       - run: python django/projects/manage.py migrate --noinput

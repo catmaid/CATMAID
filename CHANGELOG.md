@@ -82,6 +82,8 @@ Miscellaneous:
 
 - Image cropping: using rotations for cropped images works now as expected again
 
+- User registration: fix URL matching error
+
 ## 2021.12.21
 
 Contributors: Chris Barnes, Albert Cardona, Andrew Champion, Stephan Gerhard, Sanja Jasek, Tom Kazimiers

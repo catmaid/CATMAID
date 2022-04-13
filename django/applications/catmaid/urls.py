@@ -5,7 +5,7 @@ from django.conf.urls import include, url
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic import TemplateView
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, path
 
 from rest_framework.decorators import api_view
 
@@ -56,8 +56,7 @@ urlpatterns += [
     url(r'^permissions$', authentication.user_project_permissions),
     url(r'^classinstance/(?P<ci_id>\d+)/permissions$', authentication.get_object_permissions),
     url(r'^register$', authentication.register, name="register"),
-    url(r'^activate/(?P<uidb64>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]{1,20})/$',
-        authentication.activate, name='activate'),
+    path(r'^activate/<uidb64>/<token>/$', authentication.activate, name='activate'),
 ]
 
 # Users

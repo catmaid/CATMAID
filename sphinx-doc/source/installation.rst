@@ -96,7 +96,7 @@ You can do this with the following command on Ubuntu
 
 Create a virtual environment based on the python binary at /usr/bin/python3.8:
 
-    /usr/bin/python3.8 -m venv --upgrade-deps --prompt catmaid /home/alice/catmaid/django/env
+    /usr/bin/python3.8 -m venv --prompt catmaid /home/alice/catmaid/django/env
 
 Whenever you are working with this environment in a new shell, you need to
 

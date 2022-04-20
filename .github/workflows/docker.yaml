@@ -11,4 +11,5 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
+      - run: git fetch --unshallow --tags --prune
       - run: docker build -t catmaid .

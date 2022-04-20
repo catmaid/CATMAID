@@ -26,6 +26,8 @@
 
 - User registration: fix URL matching error
 
+- Project management widget: include all visible users in permission list
+
 ## 2021.12.21
 
 Contributors: Chris Barnes, Albert Cardona, Andrew Champion, Stephan Gerhard, Sanja Jasek, Tom Kazimiers

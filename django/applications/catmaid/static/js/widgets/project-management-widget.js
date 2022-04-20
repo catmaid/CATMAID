@@ -187,9 +187,13 @@
           ajax: (data, callback, settings) => {
             CATMAID.Project.getUserPermissions()
               .then(permissions => {
-                let data = Object.keys(permissions).map(userId => {
+                // The retrieved permissions include only users that have
+                // *already* a permission set up for this project. In order to
+                // also show (visible) users without any permissions in this
+                // project, we have to walk through all user IDs.
+                let userDetails = CATMAID.User.sortedIds().map(userId => {
                   let userData = permissions[userId];
-                  let userPerms = userData.permissions;
+                  let userPerms = userData ? userData.permissions : [];
                   let u = CATMAID.User.safe_get(userId);
                   return {
                     'id': u.id,
@@ -207,7 +211,7 @@
 
                 callback({
                   'draw': data.draw,
-                  'data': data,
+                  'data': userDetails,
                 });
               })
               .catch(CATMAID.handleError);

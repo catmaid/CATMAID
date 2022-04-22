@@ -182,17 +182,14 @@
               .then(access => [mirror.id, access]);
           }, this))
           .then((function (mirrorAccessible) {
-            var accessibility = Object.fromEntries(mirrorAccessible);
-            var mirror = Object.entries(accessibility).find(function (_mirror, accessible) {
-              return accessible.normal;
-            });
-
-            if (mirror) {
+            var mirrorEntry = mirrorAccessible.find(entry => entry[1].normal);
+            if (mirrorEntry) {
+              let mirror = this.stack.mirrors[mirrorEntry[0]];
               var oldMirrorTitle = this.stack.mirrors[this.mirrorId].title;
-              var newMirrorTitle = mirror[0].title;
+              var newMirrorTitle = mirror.title;
               CATMAID.warn('Stack mirror "' + oldMirrorTitle + '" is inaccessible. ' +
                            'Switching to mirror "' + newMirrorTitle + '".');
-              this.switchToMirror(mirror[0].id);
+              this.switchToMirror(mirror.id);
             } else {
               CATMAID.warn('No mirrors for this stack are accessible. Image data may not load.');
             }

@@ -103,3 +103,94 @@ files, Nginx needs execute permission on every directory in the path to those
 files. To check this, the ``namei`` command can be very helpful, because it can
 list permissions for each path component when called like this: ``namei -l
 /path/to/static/files``.
+
+Letsencrypt.org SSL certificate problems behind firewall
+--------------------------------------------------------
+
+There are usually two different ways firewalls attempt to block traffic related
+to SSL certificate creation/renewal: either outbound traffic from the server to
+letsencrypt.org is blocked or, 2. inbound traffic from letsencrypt.org to a
+server is bocked. Of course, both can happen at the same time. Both problems
+have different workarounds, each of which will be discussed below.
+
+1. Blocked outbound traffic will usually manifest itself as letsencrypt.org
+   being unreachable from the server, connections can't be established. To work
+   around this, a SOCKS proxy can be created using SSH and all HTTP requests can
+   be routed through this proxy. This proxy server needs to be reachable by SSH
+   and should be able to connect to letsencrypt.org::
+
+     # Make sure all dependencies are installed
+     pip3 install -U pysocks urllib3[socks] requests[socks]
+
+     # Create a tunnel on local port 7777 to the defined host
+     ssh -D 7777 -f -C -q -N user@example.com
+
+     # Define proxy through HTTP[S]_PROXY environment variables
+     export https_proxy=socks5://127.0.0.1:7777 http_proxy=socks5://127.0.0.1:7777
+
+     # Run certbot update
+     certbot renew --nginx -d my.server.org
+
+2. Inbound traffic blocks usually lead to 503 errors and can be replicated in
+   the browser for acme-protocol URLS. To circumvent this, a different challenge
+   type has to be used with certbot. Normally, there are only DNS based and HTTP
+   based challenges available. Inbound blocks seem to be implemented often by
+   blocking well known URLS from the ACME protocol. One workaround for this is
+   to install a new challenge method that uses HTTPS, and therefore hides URLS.
+   This can be done using the `certbot-ualpn
+   <https://github.com/ndilieto/certbot-ualpn>` plugin for ``certbot``. In order
+   to do this follow the directions given in the repository. Basically, a new
+   ``certbot`` plugin has to be compiled manually and the tool ``ualpn`` has to
+   be put in-between incoming requests on port 443 and the webserver, e.g. Nginx::
+
+     # Install uALPN
+     mkdir uacme
+     wget -O - https://github.com/ndilieto/uacme/archive/upstream/latest.tar.gz | tar zx -C uacme --strip-components=1
+     cd uacme
+     ./configure
+     make
+     sudo make install
+     cd ..
+
+   Update Nginx SSL configuration to listen on port 4443::
+
+     server {
+       listen 127.0.0.1:4443 ssl proxy_protocol;
+       set_real_ip_from 127.0.0.0/24;
+       real_ip_header proxy_protocol;
+       proxy_set_header X-Real-IP $proxy_protocol_addr;
+       proxy_set_header X-Forwarded-For $proxy_protocol_addr;
+       ...
+
+  Run ``ualpn`` to answer SSL requests::
+
+    sudo ualpn -v -d -u nobody:nogroup -c 127.0.0.1@4443 -S 666
+
+  Install ``certbot``::
+
+    git clone https://github.com/certbot/certbot
+    cd certbot
+    python tools/venv3.py
+    source venv3/bin/activate
+    cd ..
+
+  Install `certbot-ualpn``::
+
+    git clone https://github.com/ndilieto/certbot-ualpn
+    cd certbot-ualpn
+    python setup.py install
+    cd ..
+
+  Make sure to add the ``pref_challs`` parameter of your certbot renewal
+  file to include ``tls-alpn-01`` as ``pref_challs`` as possible challenge
+  method::
+
+    pref_challs = http-01, tls-alpn-01
+
+  Finally, use ``certbot`` in this environment like usual, e.g.::
+
+    certbot --agree-tos \
+      --register-unsafely-without-email \
+      --staging \
+      -a ualpn \
+      -d www.example.com renew

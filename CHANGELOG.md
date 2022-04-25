@@ -90,9 +90,6 @@ Miscellaneous:
 
 - Project management widget: include all visible users in permission list
 
-- Neuron Search: neurons that don't have any annotations are now returned as
-  well, when neurons NOT having an annotation are queried.
-
 ## 2021.12.21
 
 Contributors: Chris Barnes, Albert Cardona, Andrew Champion, Stephan Gerhard, Sanja Jasek, Tom Kazimiers

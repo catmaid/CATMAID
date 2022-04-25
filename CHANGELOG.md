@@ -57,6 +57,8 @@ Miscellaneous:
 
 ### Bug fixes
 
+- Neuron Search: neurons that don't have any annotations are now returned as
+  well, when neurons NOT having an annotation are queried.
 
 ## Maintenance updates
 

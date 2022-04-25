@@ -4,6 +4,8 @@
 
 - This version requires Python 3.8+.
 
+- Postgres 14 is now supported.
+
 - The version requires PostgreSQL 13+ and PostGIS 3.1+. If you need or want to
   upgrade Postgres, update PostGIS first and run ``ALTER EXTENSION postgis
   UPDATE;`` in every existing database in the cluster that should be upgraded.

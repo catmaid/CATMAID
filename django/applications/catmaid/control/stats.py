@@ -896,7 +896,7 @@ def select_import_cable_stats(cursor, project_id, start_date_utc, end_date_utc,
                     JOIN catmaid_transaction_info cti
                       ON t.txid = cti.transaction_id
                     WHERE cti.project_id = %(project_id)s
-                      AND ABS(EXTRACT(EPOCH FROM t.creation_time) - EXTRACT(EPOCH FROM cti.execution_time)) < 3600
+                      AND ABS(date_part('EPOCH', t.creation_time) - date_part('EPOCH', cti.execution_time)) < 3600
                       AND t.creation_time >= last_precomputation.max_date
                       AND label = 'skeletons.import'
                 ) child
@@ -1287,7 +1287,7 @@ def populate_import_nodecount_stats_summary(project_id, incremental:bool=True,
                 JOIN catmaid_transaction_info cti
                   ON t.txid = cti.transaction_id
                 WHERE cti.project_id = %(project_id)s
-                  AND ABS(EXTRACT(EPOCH FROM t.creation_time) - EXTRACT(EPOCH FROM cti.execution_time)) < 3600
+                  AND ABS(date_part('EPOCH', t.creation_time) - date_part('EPOCH', cti.execution_time)) < 3600
                   AND t.creation_time >= last_precomputation.max_date
                   AND label = 'skeletons.import'
             ) sorted_row_history
@@ -1327,7 +1327,7 @@ def populate_import_cable_stats_summary(project_id, incremental:bool=True, curso
             JOIN catmaid_transaction_info cti
               ON t.txid = cti.transaction_id
             WHERE cti.project_id = %(project_id)s
-              AND ABS(EXTRACT(EPOCH FROM t.creation_time) - EXTRACT(EPOCH FROM cti.execution_time)) < 3600
+              AND ABS(date_part('EPOCH', t.creation_time) - date_part('EPOCH', cti.execution_time)) < 3600
               AND t.creation_time >= last_precomputation.max_date
               AND t.creation_time < date_trunc('hour', CURRENT_TIMESTAMP)
               AND label = 'skeletons.import'
@@ -1430,7 +1430,7 @@ class ServerStats(APIView):
         cursor.execute("""
             SELECT checkpoints_timed, checkpoints_req, buffers_clean,
                 maxwritten_clean, buffers_backend_fsync,
-                extract(epoch from now() - pg_last_xact_replay_timestamp())
+                date_part('epoch', now() - pg_last_xact_replay_timestamp())
             FROM pg_stat_bgwriter
         """)
         bgwriter_stats = cursor.fetchone()

@@ -832,7 +832,7 @@ def _compact_detail_list(project_id, treenode_ids=None, label_ids=None,
     cursor.execute("""
         SELECT t.id, t.parent_id, t.location_x, t.location_y, t.location_z, t.confidence,
             t.radius, t.skeleton_id,
-            EXTRACT(EPOCH FROM t.edition_time), t.user_id
+            date_part('EPOCH', t.edition_time), t.user_id
         FROM treenode t
         {extra_joins}
         WHERE t.project_id=%(project_id)s
@@ -864,7 +864,7 @@ def _compact_detail(project_id, treenode_id):
     cursor = connection.cursor()
     cursor.execute("""
         SELECT id, parent_id, location_x, location_y, location_z, confidence,
-        radius, skeleton_id, EXTRACT(EPOCH FROM edition_time), user_id
+        radius, skeleton_id, date_part('EPOCH', edition_time), user_id
         FROM treenode
         WHERE id=%(treenode_id)s
         AND project_id=%(project_id)s

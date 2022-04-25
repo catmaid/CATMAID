@@ -353,8 +353,8 @@ def list_connectors(request:HttpRequest, project_id=None) -> JsonResponse:
     extra_where_lines = ("AND " + " AND ".join(extra_where)) if extra_where else ""
     cursor.execute(f'''
         SELECT DISTINCT ON (c.id) c.id, c.location_x, c.location_y, c.location_z, c.confidence,
-            c.user_id, c.editor_id, EXTRACT(EPOCH FROM c.creation_time),
-            EXTRACT(EPOCH FROM c.edition_time)
+            c.user_id, c.editor_id, date_part('EPOCH', c.creation_time),
+            date_part('EPOCH', c.edition_time)
         FROM connector c
         {constlines}
         WHERE c.project_id = %(project_id)s
@@ -392,8 +392,8 @@ def list_connectors(request:HttpRequest, project_id=None) -> JsonResponse:
         cursor.execute(f'''
             SELECT tc.connector_id, tc.id, tc.treenode_id, tc.skeleton_id,
                 tc.relation_id, tc.confidence, tc.user_id,
-                EXTRACT(EPOCH FROM tc.creation_time),
-                EXTRACT(EPOCH FROM tc.edition_time)
+                date_part('EPOCH', tc.creation_time),
+                date_part('EPOCH', tc.edition_time)
             FROM treenode_connector tc
             JOIN (VALUES {c_template}) c(id)
                 ON tc.connector_id = c.id

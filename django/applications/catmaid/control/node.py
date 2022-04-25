@@ -781,7 +781,7 @@ class Postgis3dNodeProvider(PostgisNodeProvider):
             t1.confidence,
             t1.radius,
             t1.skeleton_id,
-            EXTRACT(EPOCH FROM t1.edition_time),
+            date_part('EPOCH', t1.edition_time),
             t1.user_id
         FROM (
             SELECT id FROM bb_edge
@@ -802,12 +802,12 @@ class Postgis3dNodeProvider(PostgisNodeProvider):
           c.location_y,
           c.location_z,
           c.confidence,
-          EXTRACT(EPOCH FROM c.edition_time),
+          date_part('EPOCH', c.edition_time),
           c.user_id,
           tc.treenode_id,
           tc.relation_id,
           tc.confidence,
-          EXTRACT(EPOCH FROM tc.edition_time),
+          date_part('EPOCH', tc.edition_time),
           tc.id
       FROM (SELECT tce.id AS tce_id
             FROM treenode_connector_edge tce
@@ -836,7 +836,7 @@ class Postgis3dNodeProvider(PostgisNodeProvider):
           c.location_y,
           c.location_z,
           c.confidence,
-          EXTRACT(EPOCH FROM c.edition_time),
+          date_part('EPOCH', c.edition_time),
           c.user_id,
           NULL,
           NULL,
@@ -882,7 +882,7 @@ class Postgis3dMultiJoinNodeProvider(Postgis3dNodeProvider):
               t1.confidence,
               t1.radius,
               t1.skeleton_id,
-              EXTRACT(EPOCH FROM t1.edition_time),
+              date_part('EPOCH', t1.edition_time),
               t1.user_id
           FROM (
             SELECT DISTINCT ON (id) UNNEST(ARRAY[te.id, te.parent_id]) AS id
@@ -914,7 +914,7 @@ class Postgis3dMultiJoinNodeProvider(Postgis3dNodeProvider):
               t1.confidence,
               t1.radius,
               t1.skeleton_id,
-              EXTRACT(EPOCH FROM t1.edition_time),
+              date_part('EPOCH', t1.edition_time),
               t1.user_id
           FROM extra_nodes en
           JOIN treenode t1
@@ -951,7 +951,7 @@ class Postgis3dBlurryNodeProvider(PostgisNodeProvider):
             t1.confidence,
             t1.radius,
             t1.skeleton_id,
-            EXTRACT(EPOCH FROM t1.edition_time),
+            date_part('EPOCH', t1.edition_time),
             t1.user_id
         FROM (
             SELECT id from bb_edge
@@ -972,12 +972,12 @@ class Postgis3dBlurryNodeProvider(PostgisNodeProvider):
           c.location_y,
           c.location_z,
           c.confidence,
-          EXTRACT(EPOCH FROM c.edition_time),
+          date_part('EPOCH', c.edition_time),
           c.user_id,
           tc.treenode_id,
           tc.relation_id,
           tc.confidence,
-          EXTRACT(EPOCH FROM tc.edition_time),
+          date_part('EPOCH', tc.edition_time),
           tc.id
       FROM (SELECT tce.id AS tce_id
             FROM treenode_connector_edge tce
@@ -999,7 +999,7 @@ class Postgis3dBlurryNodeProvider(PostgisNodeProvider):
           c.location_y,
           c.location_z,
           c.confidence,
-          EXTRACT(EPOCH FROM c.edition_time),
+          date_part('EPOCH', c.edition_time),
           c.user_id,
           NULL,
           NULL,
@@ -1038,7 +1038,7 @@ class Postgis3dSpGistNodeProvider(Postgis3dNodeProvider):
               t1.confidence,
               t1.radius,
               t1.skeleton_id,
-              EXTRACT(EPOCH FROM t1.edition_time),
+              date_part('EPOCH', t1.edition_time),
               t1.user_id
           FROM (
             SELECT DISTINCT ON (id) UNNEST(ARRAY[te.id, te.parent_id]) AS id
@@ -1066,7 +1066,7 @@ class Postgis3dSpGistNodeProvider(Postgis3dNodeProvider):
               t1.confidence,
               t1.radius,
               t1.skeleton_id,
-              EXTRACT(EPOCH FROM t1.edition_time),
+              date_part('EPOCH', t1.edition_time),
               t1.user_id
           FROM extra_nodes en
           JOIN treenode t1
@@ -1124,7 +1124,7 @@ class Postgis2dNodeProvider(PostgisNodeProvider):
             t1.confidence,
             t1.radius,
             t1.skeleton_id,
-            EXTRACT(EPOCH FROM t1.edition_time),
+            date_part('EPOCH', t1.edition_time),
             t1.user_id
           FROM (
               SELECT id FROM bb_edge
@@ -1145,12 +1145,12 @@ class Postgis2dNodeProvider(PostgisNodeProvider):
             c.location_y,
             c.location_z,
             c.confidence,
-            EXTRACT(EPOCH FROM c.edition_time),
+            date_part('EPOCH', c.edition_time),
             c.user_id,
             tc.treenode_id,
             tc.relation_id,
             tc.confidence,
-            EXTRACT(EPOCH FROM tc.edition_time),
+            date_part('EPOCH', tc.edition_time),
             tc.id
         FROM (SELECT tce.id AS tce_id
              FROM treenode_connector_edge tce
@@ -1179,7 +1179,7 @@ class Postgis2dNodeProvider(PostgisNodeProvider):
             c.location_y,
             c.location_z,
             c.confidence,
-            EXTRACT(EPOCH FROM c.edition_time),
+            date_part('EPOCH', c.edition_time),
             c.user_id,
             NULL,
             NULL,
@@ -1225,7 +1225,7 @@ class Postgis2dMultiJoinNodeProvider(Postgis2dNodeProvider):
             t1.confidence,
             t1.radius,
             t1.skeleton_id,
-            EXTRACT(EPOCH FROM t1.edition_time),
+            date_part('EPOCH', t1.edition_time),
             t1.user_id
           FROM (
             SELECT DISTINCT ON (id) UNNEST(ARRAY[te.id, te.parent_id]) AS id
@@ -1257,7 +1257,7 @@ class Postgis2dMultiJoinNodeProvider(Postgis2dNodeProvider):
             t1.confidence,
             t1.radius,
             t1.skeleton_id,
-            EXTRACT(EPOCH FROM t1.edition_time),
+            date_part('EPOCH', t1.edition_time),
             t1.user_id
           FROM extra_nodes en
           JOIN treenode t1
@@ -1299,7 +1299,7 @@ class Postgis2dBlurryNodeProvider(PostgisNodeProvider):
             t1.confidence,
             t1.radius,
             t1.skeleton_id,
-            EXTRACT(EPOCH FROM t1.edition_time),
+            date_part('EPOCH', t1.edition_time),
             t1.user_id
           FROM (
               SELECT id FROM bb_edge
@@ -1320,12 +1320,12 @@ class Postgis2dBlurryNodeProvider(PostgisNodeProvider):
             c.location_y,
             c.location_z,
             c.confidence,
-            EXTRACT(EPOCH FROM c.edition_time),
+            date_part('EPOCH', c.edition_time),
             c.user_id,
             tc.treenode_id,
             tc.relation_id,
             tc.confidence,
-            EXTRACT(EPOCH FROM tc.edition_time),
+            date_part('EPOCH', tc.edition_time),
             tc.id
         FROM (SELECT tce.id AS tce_id
              FROM treenode_connector_edge tce
@@ -1347,7 +1347,7 @@ class Postgis2dBlurryNodeProvider(PostgisNodeProvider):
             c.location_y,
             c.location_z,
             c.confidence,
-            EXTRACT(EPOCH FROM c.edition_time),
+            date_part('EPOCH', c.edition_time),
             c.user_id,
             NULL,
             NULL,

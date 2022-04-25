@@ -883,7 +883,7 @@ def _compact_arbor(project_id=None, skeleton_id=None, with_nodes=None,
 
     if 0 != with_nodes:
         if with_time:
-            extra_fields = ', EXTRACT(EPOCH FROM creation_time), EXTRACT(EPOCH FROM edition_time)'
+            extra_fields = ", date_part('EPOCH', creation_time), date_part('EPOCH', edition_time)"
         else:
             extra_fields = ''
 
@@ -1969,7 +1969,7 @@ def treenode_overview(request:HttpRequest, project_id=None, skeleton_id=None) ->
     cursor.execute('''
         SELECT id, parent_id, confidence,
                location_x, location_y, location_z,
-               radius, user_id, floor(EXTRACT(epoch FROM edition_time))
+               radius, user_id, floor(date_part('epoch', edition_time))
         FROM treenode
         WHERE project_id = %(project_id)s
           AND skeleton_id = %(skeleton_id)s

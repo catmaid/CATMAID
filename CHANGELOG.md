@@ -31,6 +31,9 @@
 - Neuron Search: neurons that don't have any annotations are now returned as
   well, when neurons NOT having an annotation are queried.
 
+- Connectivity widget: fix repeated 'syn count' header label in partner tables
+  if 1000+ query skeletons are added to the widget.
+
 ## 2021.12.21
 
 Contributors: Chris Barnes, Albert Cardona, Andrew Champion, Stephan Gerhard, Sanja Jasek, Tom Kazimiers

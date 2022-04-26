@@ -879,10 +879,11 @@
       row.append( $('<th />').text(partnerSet.partnerTitle).attr('rowspan', headerRows));
       if (extraCols) {
         // The + 1 is needed to represent the first Sum column
+        const batchSize = 100;
         let nSynColumns = (skids.length + 1);
-        let nBatches = Math.ceil(nSynColumns/1000);
+        let nBatches = Math.ceil(nSynColumns/batchSize);
         for (let i=0; i<nBatches; ++i) {
-          let colSpan = Math.min((i+1)*1000, nSynColumns - (i*1000));
+          let colSpan = Math.min(batchSize, nSynColumns - (i*batchSize));
           row.append( $('<th />').text(`${partnerSet.connectorShort} count`).attr('colspan', colSpan));
         }
       } else {
@@ -893,8 +894,7 @@
       thead.append( row );
       if (extraCols) {
         row = $('<tr />');
-        row
-        .append( $('<th />').text("Sum"));
+        row.append( $('<th />').text("Sum"));
         skids.forEach(function(s, i) {
           let title = nameInHeader ? nns.getName(s) : ((i + 1) + '.');
           let headerContent = $('<span />').text(title);

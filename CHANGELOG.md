@@ -60,6 +60,9 @@ Miscellaneous:
 - Neuron Search: neurons that don't have any annotations are now returned as
   well, when neurons NOT having an annotation are queried.
 
+- Deep links: creating links to layouts with a loaded stack group (e.g. ortho
+  views or multi-channel images) won't raise an error anymore.
+
 ## Maintenance updates
 
 - Node distance measurements: computation of straight line distance has been

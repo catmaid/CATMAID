@@ -215,7 +215,7 @@ class DeepLinkList(APIView):
             sg_link = DeepLinkStackGroup(**{
                 'project_id': project_id,
                 'user_id': request.user.id,
-                'deeplink': deeplink,
+                'deep_link': deeplink,
                 'stack_group_id': sg_id,
                 'zoom_levels': sg_zoom_levels,
             })

@@ -93,6 +93,9 @@ Miscellaneous:
 
 - Project management widget: include all visible users in permission list
 
+- Connectivity widget: fix repeated 'syn count' header label in partner tables
+  if 1000+ query skeletons are added to the widget.
+
 ## 2021.12.21
 
 Contributors: Chris Barnes, Albert Cardona, Andrew Champion, Stephan Gerhard, Sanja Jasek, Tom Kazimiers

@@ -55,6 +55,10 @@ Miscellaneous:
   coordinate or a list of skeleton IDs), a small dialog is now shown that allows
   users to select which option to use.
 
+- The management command `catmaid_update_cache_tables` can now recompute grid
+  cache configurations as well that are defined in the `NODE_PROVIDERS`
+  setting.
+
 ### Bug fixes
 
 - Neuron Search: neurons that don't have any annotations are now returned as

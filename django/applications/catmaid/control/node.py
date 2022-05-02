@@ -1416,6 +1416,16 @@ CACHE_NODE_PROVIDER_DATA_TYPES = {
     'cached_json': 'json',
     'cached_json_text': 'json_text',
     'cached_msgpack': 'msgpack',
+    'cached_json_grid': 'json',
+    'cached_json_text_grid': 'json_text',
+    'cached_msgpack_grid': 'msgpack',
+}
+
+
+GRID_CACHE_NODE_PROVIDERS = {
+    'cached_json_grid': GridCachedJsonNodeProvider,
+    'cached_json_text_grid': GridCachedJsonTextNodeProvider,
+    'cached_msgpack_grid': GridCachedMsgpackNodeProvider,
 }
 
 
@@ -1487,6 +1497,8 @@ def update_node_query_cache(node_providers=None, log=print, force=False) -> None
         if not data_type:
             log(f"Skipping non-caching node provider: {key}")
             continue
+        if data_type not in ('json', 'json_text', 'msgpack'):
+            raise ValueError('Type must be one of: json, json_text, msgpack')
 
         enabled = options.get('enabled', True)
         if not enabled and not force:
@@ -1495,18 +1507,70 @@ def update_node_query_cache(node_providers=None, log=print, force=False) -> None
 
         for project_id in project_ids:
             log(f"Updating cache for project {project_id}")
+
             orientations = [options.get('orientation', 'xy')]
-            steps = [options.get('step')]
-            if not steps:
-                raise ValueError("Need 'step' parameter in node provider configuration")
-            node_limit = options.get('node_limit', None)
-            update_cache(project_id, data_type, orientations, steps,
-                    node_limit=node_limit,
-                    n_largest_skeletons_limit=n_largest_skeletons_limit,
-                    n_last_edited_skeletons_limit=n_last_edited_skeletons_limit,
-                    hidden_last_editor_id=hidden_last_editor_id, lod_levels=lod_levels,
-                    lod_bucket_size=lod_bucket_size, lod_strategy=lod_strategy,
-                    delete=clean_cache, log=log, ordering=ordering)
+
+            node_limit = options.get('node_limit')
+            if node_limit is not None:
+                node_limit = int(ode_limit)
+
+            if key in GRID_CACHE_NODE_PROVIDERS:
+                kwargs = {
+                    'node_limit': node_limit
+                }
+                if log:
+                    kwargs['log'] = log
+
+                if all(map(lambda x: x in options, ('min_x', 'min_y', 'min_z',
+                        'max_x', 'max_y', 'max_z'))):
+                    kwargs['bb_limits'] = [
+                        [float(options['min_x']), float(options['min_y']), float(options['min_z'])],
+                        [float(options['max_x']), float(options['max_y']), float(options['max_z'])]
+                    ]
+
+                if 'n_largest_skeletons_limit' in options:
+                    kwargs['n_largest_skeletons_limit'] = int(options['n_largest_skeletons_limit'])
+
+                if 'n_last_edited_skeletons_limit' in options:
+                    kwargs['n_last_edited_skeletons_limit'] = int(options['n_last_edited_skeletons_limit'])
+
+                if 'hidden_last_editor' in options:
+                    user = User.objects.get(username=options['hidden_last_editor'])
+                    kwargs['hidden_last_editor_id'] = user.id
+
+                for cell_key in ('cell_width', 'cell_height', 'cell_depth'):
+                    if cell_key in options:
+                        kwargs[cell_key] = float(options[cell_key])
+
+                lod_levels = options.get('lod_levels')
+                if lod_levels is not None:
+                    kwargs['lod_levels'] = int(lod_levels)
+
+                lod_bucket_size = options.get('lod_bucket_size')
+                if lod_bucket_size is not None:
+                    kwargs['lod_bucket_size'] = int(lod_bucket_size)
+
+                lod_strategy = options.get('lod_strategy')
+                if lod_strategy not in ('linear', 'quadratic', 'exponential'):
+                    raise ValueError(f"Unknown LOD strategy: {lod_strategy}")
+
+                for other_key in ('allow_empty', 'job', 'depth_steps', 'chunk_size',
+                        'ordering', 'progress'):
+                    if other_key in options:
+                        kwargs[other_key] = options[other_key]
+
+                update_grid_cache(project_id, data_type, orientations, **kwargs)
+            else:
+                steps = [options.get('step')]
+                if not steps:
+                    raise ValueError("Need 'step' parameter in node provider configuration")
+                update_cache(project_id, data_type, orientations, steps,
+                        node_limit=node_limit,
+                        n_largest_skeletons_limit=n_largest_skeletons_limit,
+                        n_last_edited_skeletons_limit=n_last_edited_skeletons_limit,
+                        hidden_last_editor_id=hidden_last_editor_id, lod_levels=lod_levels,
+                        lod_bucket_size=lod_bucket_size, lod_strategy=lod_strategy,
+                        delete=clean_cache, log=log, ordering=ordering)
 
 
 def get_tracing_bounding_box(project_id, cursor=None, bb_limits=None):

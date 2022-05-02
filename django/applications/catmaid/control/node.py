@@ -1554,7 +1554,7 @@ def update_node_query_cache(node_providers=None, log=print, force=False) -> None
                 if lod_strategy not in ('linear', 'quadratic', 'exponential'):
                     raise ValueError(f"Unknown LOD strategy: {lod_strategy}")
 
-                for other_key in ('allow_empty', 'job', 'depth_steps', 'chunk_size',
+                for other_key in ('allow_empty', 'jobs', 'depth_steps', 'chunk_size',
                         'ordering', 'progress'):
                     if other_key in options:
                         kwargs[other_key] = options[other_key]

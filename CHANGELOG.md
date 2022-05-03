@@ -67,6 +67,9 @@ Miscellaneous:
 - Deep links: creating links to layouts with a loaded stack group (e.g. ortho
   views or multi-channel images) won't raise an error anymore.
 
+- Volume manager: exported volumes now uses the volume name as default file
+  name, not showing "undefined" anymore.
+
 ## Maintenance updates
 
 - Node distance measurements: computation of straight line distance has been

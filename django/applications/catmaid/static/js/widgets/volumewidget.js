@@ -1214,7 +1214,7 @@
           CATMAID.fetch("/" + project.id + "/volumes/" + volume.id + "/export.stl", "GET", undefined, true, undefined, undefined, undefined, headers)
             .then(function(volume_file) {
               var blob = new Blob([volume_file], {type: 'model/x.stl-ascii'});
-              saveAs(blob, volume.name + '.stl');
+              saveAs(blob, volume.title + '.stl');
             })
             .catch(CATMAID.handleError);
 
@@ -1933,7 +1933,7 @@
               "GET", undefined, true, undefined, undefined, undefined, headers)
             .then(function(volume_file) {
               var blob = new Blob([volume_file], {type: 'model/x.stl-ascii'});
-              saveAs(blob, volume.name + '.stl');
+              saveAs(blob, volume.title + '.stl');
             })
             .catch(CATMAID.handleError);
 

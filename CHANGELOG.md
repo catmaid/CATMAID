@@ -70,6 +70,8 @@ Miscellaneous:
 - Volume manager: exported volumes now uses the volume name as default file
   name, not showing "undefined" anymore.
 
+- Node cache updated work now also for node deletions.
+
 ## Maintenance updates
 
 - Node distance measurements: computation of straight line distance has been

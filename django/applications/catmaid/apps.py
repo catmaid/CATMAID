@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
 
+import atexit
 import logging
 import json
 import ujson
 import os
+import shutil
 from typing import List
+from pathlib import Path
 
 from catmaid import history, spatial
 
@@ -230,6 +233,28 @@ def check_media_path(app_configs, **kwargs) -> List[str]:
 
     return messages
 
+
+def setup_matplotib_env():
+    tmpdir = os.path.join(settings.MEDIA_ROOT, 'tmp/matplotlib')
+    if os.path.exists(settings.MEDIA_ROOT) and os.access(settings.MEDIA_ROOT, os.W_OK):
+        Path(tmpdir).mkdir(parents=True, exist_ok=True)
+        os.environ['MPLCONFIGDIR'] = tmpdir
+        # Optionally, rRemove folder on exit
+        if hasattr(settings, 'REMOVE_MPLCONFIGDIR_ON_EXIT') and settings.REMOVE_MPLCONFIGDIR_ON_EXIT:
+            def clean_tmp_dir(path):
+                try:
+                    if os.path.exists(path):
+                        shutil.rmtree(path)
+                        logger.info(f'Removed matplotlib tmp dir: {path}')
+                except Exception as e:
+                    logger.info(f'Could not remove matplotlib tmp dir: {path}')
+                    logger.info(e)
+            atexit.register(clean_tmp_dir, tmpdir)
+        logger.info(f'Matplotlib tmp dir is set to: {tmpdir}')
+    else:
+        logger.info(f'Could not set Matplotlib tmp dir to: {tmpdir}')
+
+
 class CATMAIDConfig(AppConfig):
     default_auto_field = 'django.db.models.AutoField'
     name = 'catmaid'
@@ -271,6 +296,9 @@ class CATMAIDConfig(AppConfig):
 
         # Test if output paths are accessible
         register(check_media_path)
+
+        # Initialize additional environment variables
+        setup_matplotib_env()
 
         # Init R interface, which is used by some parts of CATMAID
         if r_available:

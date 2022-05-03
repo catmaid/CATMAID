@@ -130,3 +130,8 @@ overridden in ``settings.py``. Below is an explanation of all available settings
   ``PROJECT_TOKEN_USER_VISIBILITY``
       If enabled, logged in users will only see other users when they share a
       project token. Disabled by default.
+
+.. glossary::
+  ``REMOVE_MPLCONFIGDIR_ON_EXIT``:
+      If enabled, the config directory created by matplotlib will be removed
+      automatically when CATMAID exits. Disabled by default.

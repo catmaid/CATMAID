@@ -403,7 +403,7 @@ def batches(iterable, size):
     while True:
         chunk = [val for _, val in zip(range(size), source)]
         if not chunk:
-            raise StopIteration
+            return
         yield chunk
 
 

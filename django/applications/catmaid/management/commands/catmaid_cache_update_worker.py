@@ -28,9 +28,10 @@ class GridWorker():
         pass
 
     def update(self, updates, cursor):
-        """Pop the oldest item from the diry cell table, compute the respective
+        """Pop the oldest item from the dirty cell table, compute the respective
         FOV and update the cache cell.
         """
+        updates = [u for u in updates if 'grid_id' in updates]
         # Get all referenced grids along with their project IDs and node
         # constraints: n_last_edited_skeletons_limit,
         # n_last_edited_skeletons_limit, hidden_last_editor_id

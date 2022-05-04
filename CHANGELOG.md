@@ -78,7 +78,8 @@ Miscellaneous:
   name, not showing "undefined" anymore.
 
 - Node cache updated work now also for node deletions and is now only queued for
-  the cache objects in the referenced project (rather than all).
+  the cache objects in the referenced project (rather than all). Various other
+  problems where fixed as well with the worker classes.
 
 ## Maintenance updates
 

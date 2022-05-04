@@ -77,7 +77,8 @@ Miscellaneous:
 - Volume manager: exported volumes now uses the volume name as default file
   name, not showing "undefined" anymore.
 
-- Node cache updated work now also for node deletions.
+- Node cache updated work now also for node deletions and is now only queued for
+  the cache objects in the referenced project (rather than all).
 
 ## Maintenance updates
 

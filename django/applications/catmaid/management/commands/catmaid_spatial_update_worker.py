@@ -140,8 +140,10 @@ class GridWorker():
             return
 
         data_type = data['type']
-        # Find all cells to update in each enabled grid
+        # Find all cells to update in each enabled grid within the update's project
         for grid_cache in self.grid_caches:
+            if grid_cache.project_id != project_id:
+                continue
             grid_id = grid_cache.id
             coords_to_update = grid_coords_to_update.get(grid_id)
             if not coords_to_update:

@@ -26,7 +26,7 @@ from rest_framework.decorators import api_view
 
 from catmaid import state
 from catmaid.models import (ClassInstance, UserRole, Treenode,
-        ClassInstanceClassInstance, Review, Project)
+        ClassInstanceClassInstance, Review, Projecti, User)
 from catmaid.control.authentication import requires_user_role, \
         can_edit_all_or_fail
 from catmaid.control.common import (batches, get_relation_to_id_map,

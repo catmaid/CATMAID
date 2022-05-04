@@ -1517,7 +1517,7 @@ def update_node_query_cache(node_providers=None, log=print, force=False,
 
             node_limit = options.get('node_limit')
             if node_limit is not None:
-                node_limit = int(ode_limit)
+                node_limit = int(node_limit)
 
             if key in GRID_CACHE_NODE_PROVIDERS:
                 kwargs = {

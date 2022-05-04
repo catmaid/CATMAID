@@ -1917,7 +1917,6 @@ def update_grid_cache(project_id, data_type, orientations,
                 DELETE FROM node_grid_cache
                 WHERE project_id = %(project_id)s
                 AND orientation = %(orientation)s
-                CASCADE
             """, {
                 'project_id': project_id,
                 'orientation': orientation_id

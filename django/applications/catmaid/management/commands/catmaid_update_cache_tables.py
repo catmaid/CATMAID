@@ -11,12 +11,13 @@ from catmaid.control.node import (_node_list_tuples_query, update_cache,
         update_grid_cache)
 from catmaid.models import Project, User
 
+
 class Command(BaseCommand):
     help = "Update node query cache tables of all or individual projects."
 
     def add_arguments(self, parser):
         parser.add_argument('--clean', action='store_true', dest='clean',
-            default=False, help='Remove all existing cache data before update'),
+            default=False, help='Remove all existing cache data before update. Can be used with --from-config.'),
         parser.add_argument('--project_id', dest='project_id', nargs='+',
             default=False, help='Compute only statistics for these projects only (otherwise all)'),
         parser.add_argument('--cache', dest='cache_type', default="section",
@@ -87,7 +88,14 @@ class Command(BaseCommand):
         self.stdout.write('Done')
 
     def update_from_config(self, options):
-        update_node_query_cache(log=lambda x: self.stdout.write(x))
+        override_options = None
+        if options.get('clean'):
+            override_options = {
+                'clean': True,
+            }
+
+        update_node_query_cache(log=lambda x: self.stdout.write(x),
+            override_options=override_options)
 
     def update_from_options(self, options):
         cursor = connection.cursor()

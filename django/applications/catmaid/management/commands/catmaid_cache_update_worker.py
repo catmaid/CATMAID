@@ -44,6 +44,7 @@ class GridWorker():
 
         # Batch of grids to update during one run
         updated_cells = 0
+        updated_grids = set()
         for update in updates:
             g = grid_map[update['grid_id']]
             w_i, h_i, d_i = update['x'], update['y'], update['z']
@@ -64,16 +65,18 @@ class GridWorker():
                     g.cell_width, g.cell_height, g.cell_depth,
                     params, g.allow_empty, g.n_lod_levels, g.lod_min_bucket_size,
                     g.lod_strategy, g.has_json_data, g.has_json_text_data,
-                    g.has_msgpack_data, provider=provider, cursor=cursor)
+                    g.has_msgpack_data, provider=provider, cursor=cursor,
+                    delete_empty=True)
 
             if added:
                 updated_cells += 1
+                updated_grids.add(g.id)
 
                 # TODO: delete in batches
                 DirtyNodeGridCacheCell.objects.filter(grid_id=g.id, x_index=w_i,
                         y_index=h_i, z_index=d_i).delete()
 
-        logger.debug(f'Updated {updated_cells} grid cell(s) in {len(referenced_grid_ids)} grid cache(s)')
+        logger.debug(f'Updated {updated_cells} grid cell(s) in {len(updated_grids)} grid cache(s)')
 
 
 class Command(BaseCommand):

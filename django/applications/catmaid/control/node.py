@@ -1464,7 +1464,8 @@ def get_configured_node_providers(provider_entries, connection=None,
     return node_providers
 
 
-def update_node_query_cache(node_providers=None, log=print, force=False) -> None:
+def update_node_query_cache(node_providers=None, log=print, force=False,
+        override_options=None) -> None:
     if not node_providers:
         node_providers = get_node_provider_configs()
 
@@ -1476,6 +1477,10 @@ def update_node_query_cache(node_providers=None, log=print, force=False) -> None
         else:
             key = np
             options = {}
+
+        # Create final set of options in a shallow copy that respects override options
+        if override_options:
+            options = {**options, **override_options}
 
         project_id = options.get('project_id')
         if project_id:
@@ -1516,7 +1521,8 @@ def update_node_query_cache(node_providers=None, log=print, force=False) -> None
 
             if key in GRID_CACHE_NODE_PROVIDERS:
                 kwargs = {
-                    'node_limit': node_limit
+                    'node_limit': node_limit,
+                    'delete': clean_cache,
                 }
                 if log:
                     kwargs['log'] = log
@@ -2149,7 +2155,8 @@ def update_grid_cache(project_id, data_type, orientations,
 def update_grid_cell(project_id, grid_id, w_i, h_i, d_i, cell_width,
         cell_height, cell_depth, params, allow_empty, lod_levels,
         lod_bucket_size, lod_strategy, update_json_cache,
-        update_json_text_cache, update_msgpack_cache, provider=None, cursor=None) -> bool:
+        update_json_text_cache, update_msgpack_cache, provider=None,
+        cursor=None, delete_empty=True) -> bool:
     params['left'] = w_i * cell_width
     params['right'] = (w_i + 1) * cell_width
     params['top'] = h_i * cell_height
@@ -2167,7 +2174,20 @@ def update_grid_cell(project_id, grid_id, w_i, h_i, d_i, cell_width,
             include_labels=True)
 
     if not (allow_empty or result_tuple[0] or result_tuple[1]):
-        return False
+        if delete_empty:
+            cursor.execute("""
+                DELETE FROM node_grid_cache_cell
+                WHERE grid_id = %(grid_id)s AND x_index = %(x_index)s AND
+                    y_index = %(y_index)s AND z_index = %(z_index)s
+            """, {
+                'grid_id': grid_id,
+                'x_index': w_i,
+                'y_index': h_i,
+                'z_index': d_i,
+            })
+            return True
+        else:
+            return False
 
     result_buckets = get_lod_buckets(result_tuple, lod_levels,
             lod_bucket_size, lod_strategy)

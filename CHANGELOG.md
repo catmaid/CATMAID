@@ -42,6 +42,13 @@ Neuron similarity widget:
   original NBLAST publication. The UI allows to adjust dot and distance breaks
   as well as an easy way to add an optional scale factor.
 
+
+Tracing data cache:
+
+- The management command `catmaid_update_cache_tables` can now remove existing
+  caching data when updating the cache from the `settings.py` configuration. To
+  do so, pass both the `--from-cache` and the `--clean` parameter in.
+
 Miscellaneous:
 
 - The built-in API docs (/apis endpoint) now supports deep links, which allows

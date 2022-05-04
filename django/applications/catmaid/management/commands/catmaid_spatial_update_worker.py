@@ -57,6 +57,7 @@ class GridWorker():
                 enabled_grid_caches = list(NodeGridCache.objects.filter(enabled=True))
                 self.grid_caches.extend(enabled_grid_caches)
         self.cache_project_ids = set([c.project_id for c in self.grid_caches])
+        logger.info(f'Found caches in projects: {", ".join(map(str, self.cache_project_ids))}')
 
     def update(self, updates, cursor):
         """ We want regular node queries to be able to tell whether a particular

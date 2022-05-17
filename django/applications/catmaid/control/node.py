@@ -1498,6 +1498,9 @@ def update_node_query_cache(node_providers=None, log=print, force=False,
         lod_strategy = options.get('lod_strategy')
         ordering = options.get('ordering')
 
+        if lod_strategy not in (None, 'linear', 'quadratic', 'exponential'):
+            raise ValueError(f"Unknown LOD strategy: {lod_strategy}")
+
         data_type = CACHE_NODE_PROVIDER_DATA_TYPES.get(key)
         if not data_type:
             log(f"Skipping non-caching node provider: {key}")
@@ -1556,9 +1559,8 @@ def update_node_query_cache(node_providers=None, log=print, force=False,
                 if lod_bucket_size is not None:
                     kwargs['lod_bucket_size'] = int(lod_bucket_size)
 
-                lod_strategy = options.get('lod_strategy')
-                if lod_strategy not in ('linear', 'quadratic', 'exponential'):
-                    raise ValueError(f"Unknown LOD strategy: {lod_strategy}")
+                if lod_strategy is not None:
+                    kwargs['lod_strategy'] = lod_strategy
 
                 for other_key in ('allow_empty', 'jobs', 'depth_steps', 'chunk_size',
                         'ordering', 'progress'):

@@ -21,7 +21,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--project-id', dest='project_ids', nargs='+', required=True,
             default=[], help='Compute cache files only for these projects (otherwise all)'),
-        parser.add_argument('--tangeht-neighbors', dest='tangent_neighbors', type=int,
+        parser.add_argument('--tangent-neighbors', dest='tangent_neighbors', type=int,
             default=20, help='The number of neighbors to include for tangent estimation.'),
         parser.add_argument('--detail', dest='detail', type=int,
             default=10, help='The number of branching levels to keep.'),

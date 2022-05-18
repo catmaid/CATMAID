@@ -72,6 +72,7 @@ class Command(BaseCommand):
                     progress=options['progress'],
                     max_length=options['max_length'],
                     cache_path=options['cache_path'],
+                    skip_existing_files=options['skip_existing_files'],
                     only_add_missing=options['only_add_missing'],
                     update_cache=options['update_cache'])
         logger.info('Done')

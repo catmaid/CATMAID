@@ -751,7 +751,7 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
         use_http=False, progress=False, max_nodes=None, bb=None,
         max_length=None, max_length_exclusive=False, update_cache=False,
         batch_length=None, cache_path=None, object_ids=None,
-        skip_existing_files=True) -> None:
+        skip_existing_files=True, only_add_missing=False) -> None:
     """Create a new cache file for a particular project object type and
     detail level. All objects of a type in a project are prepared.
     """
@@ -765,7 +765,8 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
             create_dps_data_cache(project_id, object_type, tangent_neighbors,
                     parallel, detail, omit_failures, batch_start,
                     min_soma_length, soma_tags, resample_by, use_http, progress,
-                    max_nodes, bb, batch_end, excl_end, update_cache, None)
+                    max_nodes, bb, batch_end, excl_end, update_cache, None,
+                    only_add_missing=only_add_missing)
         return
 
     # A circular dependency would be the result of a top level import
@@ -810,6 +811,15 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
         if not object_ids:
             logger.info("No skeletons found to populate cache from")
             return
+
+        if only_add_missing:
+            logger.info("Skipping objects that are already part of the cache")
+            cache_data = get_cached_dps_data_from_file(cache_path)
+            if cache_data:
+                cached_object_ids = set(map(int, cache_data.names))
+                object_ids = set(map(int, object_ids)) - cached_object_ids
+                logger.info(f'Found existing cache data ({len(cache_data)} entries), '
+                        f'attempting to add {len(object_ids)} objects')
 
         conn = get_catmaid_connection(user.id) if use_http else None
 

@@ -46,6 +46,9 @@ class Command(BaseCommand):
             help='Whether or not to skip over failed skeletons.'),
         parser.add_argument('--cache-path', dest='cache_path',
             default=None, help='File path to a target file'),
+        parser.add_argument('--only-add-missing', dest='only_add_missing',
+            type=str2bool, default=False, const=True, nargs='?',
+            help='Only add skeletons to the cache that aren\'t part of it yet.')
 
     def handle(self, *args, **options):
         cursor = connection.cursor()
@@ -65,5 +68,6 @@ class Command(BaseCommand):
                     resample_by=options['resample_by'],
                     progress=options['progress'],
                     max_length=options['max_length'],
-                    cache_path=options['cache_path'])
+                    cache_path=options['cache_path'],
+                    only_add_missing=options['only_add_missing'])
         logger.info('Done')

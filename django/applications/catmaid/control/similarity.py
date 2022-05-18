@@ -728,7 +728,7 @@ def compute_nblast_config(config_id, user_id, use_cache=True) -> str:
 
 def get_all_object_ids(project_id, user_id, object_type, min_length=15000,
         min_soma_length=1000, soma_tags=('soma'), limit=None, max_length=None,
-        bb=None, max_length_exclusive=False) -> List:
+        bb=None, max_length_exclusive=False, min_nodes=None, max_nodes=None) -> List:
     """Return all IDs of objects that fit the query parameters. A bounding box
     can optionally be provided with a dictionary having the keys minx, miny,
     minz, maxx, maxy, maxz.
@@ -741,6 +741,18 @@ def get_all_object_ids(project_id, user_id, object_type, min_length=15000,
             'project_id': project_id,
             'limit': limit,
         }
+
+        if min_nodes:
+            extra_where.append("""
+                css.num_nodes >= %(min_nodes)s
+            """)
+            params['min_nodes'] = min_nodes
+
+        if max_nodes:
+            extra_where.append("""
+                css.num_nodes <= %(max_nodes)s
+            """)
+            params['max_nodes'] = max_nodes
 
         if min_length:
             extra_where.append("""

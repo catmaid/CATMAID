@@ -807,8 +807,10 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
         logger.info('Finding matching skeletons')
         if not object_ids:
             object_ids = get_all_object_ids(project_id, user.id, object_type, min_length,
-                    min_soma_length, soma_tags, max_nodes, bb=bb,
-                    max_length=max_length, max_length_exclusive=max_length_exclusive)
+                    min_soma_length, soma_tags, bb=bb,
+                    max_length=max_length,
+                    max_length_exclusive=max_length_exclusive,
+                    min_nodes=tangent_neighbors, max_nodes=max_nodes)
         if not object_ids:
             logger.info("No skeletons found to populate cache from")
             return

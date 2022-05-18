@@ -49,6 +49,8 @@ class Command(BaseCommand):
         parser.add_argument('--only-add-missing', dest='only_add_missing',
             type=str2bool, default=False, const=True, nargs='?',
             help='Only add skeletons to the cache that aren\'t part of it yet.')
+        parser.add_argument('--extra-storage-path', dest='extra_storage_path',
+            default=None, help='File path to store missing skeletons, if --only-add-missing is used'),
         parser.add_argument('--update-cache', dest='update_cache',
             type=str2bool, default=False, const=True, nargs='?',
             help='Update existing cache rather than replacing it.')
@@ -74,5 +76,6 @@ class Command(BaseCommand):
                     cache_path=options['cache_path'],
                     skip_existing_files=options['skip_existing_files'],
                     only_add_missing=options['only_add_missing'],
-                    update_cache=options['update_cache'])
+                    update_cache=options['update_cache'],
+                    extra_storage_path=options['extra_storage_path'])
         logger.info('Done')

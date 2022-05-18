@@ -751,7 +751,8 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
         use_http=False, progress=False, max_nodes=None, bb=None,
         max_length=None, max_length_exclusive=False, update_cache=False,
         batch_length=None, cache_path=None, object_ids=None,
-        skip_existing_files=True, only_add_missing=False) -> None:
+        skip_existing_files=True, only_add_missing=False,
+        extra_storage_path=None) -> None:
     """Create a new cache file for a particular project object type and
     detail level. All objects of a type in a project are prepared.
     """
@@ -890,6 +891,11 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
     if update_cache:
         cache_data = get_cached_dps_data_from_file(cache_path)
         if cache_data:
+            if extra_storage_path:
+                logger.info(f'Storing partial result in separate file: {extra_storage_path}')
+                base.saveRDS(objects_dps, **{
+                    'file': extra_storage_path,
+                })
             logger.info(f'Found existing cache data ({len(cache_data)} entries), attempting to merge cache file: {cache_path}')
             objects_dps = robjects.r.c(cache_data, objects_dps)
         else:

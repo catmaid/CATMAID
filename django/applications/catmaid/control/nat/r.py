@@ -892,11 +892,11 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
         cache_data = get_cached_dps_data_from_file(cache_path)
         if cache_data:
             if extra_storage_path:
-                logger.info(f'Storing partial result in separate file: {extra_storage_path}')
+                logger.info(f'Storing partial result in separate file ({len(objects_dps.names)}): {extra_storage_path}')
                 base.saveRDS(objects_dps, **{
                     'file': extra_storage_path,
                 })
-            logger.info(f'Found existing cache data ({len(cache_data)} entries), attempting to merge cache file: {cache_path}')
+            logger.info(f'Found existing cache data ({len(cache_data)} entries), attempting to merge new cache data ({len(objects_dps.names)}): {cache_path}')
             objects_dps = robjects.r.c(cache_data, objects_dps)
         else:
             logger.info(f'No existing cache data found, writing new cache file: {cache_path}')

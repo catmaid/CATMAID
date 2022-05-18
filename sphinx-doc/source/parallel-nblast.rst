@@ -119,7 +119,10 @@ like geometric mean (how forward and backward score are combined into a final
 score). As storage mode, a relational storage is required for large result sets.
 Smaller computations (<1000 skeletons) can be done in BLOB mode. As a central
 option, a similarity configuration has to be selected (e.g. the one created
-above).
+above). Since we don't want to run this NBLAST computation right away (but
+e.g. rather run it on a cluster), click on the button "Apply only (don't run)".
+This will only add the similarity object and we can find its ID in the table of
+similarity objects below.
 
 For running the parallel NBLAST management command, the ID of an NBLAST
 object is needed. It is provided to the command using the
@@ -405,8 +408,31 @@ looks like this::
   INFO 2022-03-30 11:12:20,652 Writing 24303 objects to cache file: /users/tkazimiers/catmaid/django/files/cache/r-dps-cache-project-52-skeleton-simple-10.rda
   INFO 2022-03-30 11:13:02,127 Done
 
-This can be run on any machine and doesn't benefit from a cluster a lot. If
-computed on a separate machine, make sure to copy the resulting cache file to
+This can be run on any machine and doesn't benefit from a cluster a lot. In case
+there are much more or bigger neurons to create a cache for, it might makse
+sense to parallelize this cache generation as well, again either on a cluster or
+on a single machine. In order to do this, use the mamagement command
+``catmaid_parallel_nblast_cache`` to first create a set of task Shell scripts::
+
+  $ python manage.py catmaid_parallel_nblast_cache --project-id <project-id> --n-jobs 50 --prefix 'nblast-cache-job' --venv /path/to/pip/env --working-dir /path/to/catmaid/django/projects --cache-dir nblast-tmp --create-tasks --target-dir nblast-cache-jobs
+
+If on a computer with many cores, these scripts could then be executed with e.g.
+GNU ``parallel``::
+
+  $ parallel -j50 --bar --eta 'sh nblast-cache-jobs/nblast-cache-job-{}.sh' ::: {0..99}
+
+The ``catmaid_parallel_nblast_cache`` command also offers options to be run on a
+cluster. The resulting ``<prefix>.rda.<index>`` then need to be combined into a
+single file::
+
+  $ python manage.py catmaid_parallel_nblast_cache --project-id <project-id> --n-jobs 50 --prefix 'nblast-cache-job' --venv /path/to/pip/env --working-dir /path/to/catmaid/django/projects --cache-dir nblast-tmp --target-dir nblast-cache-jobs --combine-cache-files --combined-cache-path /path/to/catmaid/media-dir/cache/r-dps-cache-project-<project-id>-skeleton-simple-10.rda
+
+This will create the cache file
+``r-dps-cache-project-<project-id>-skeleton-simple-10.rda`` at the respective
+``MEDIA_DIR`` path for cache files. The ``10`` in the name reflects the level of
+simplication and ``10`` is the default.
+
+If computed on a separate machine, make sure to copy the resulting cache file to
 the cluster CATMAID instance, so that it can be picked up there. The file has to
 be put in the cache location CATMAID expects. Even for only 25,000 skeletons,
 this can reduce the required loading and computation time significantly::
@@ -433,7 +459,7 @@ this can reduce the required loading and computation time significantly::
   INFO 2022-03-30 11:32:59,517 Storing 912 non-zero and non-self scores (out of 365175)
   INFO 2022-03-30 11:32:59,566 Stored non-zero results
 
-The whole computation takes now only two minutes.
+The whole computation takes now only two minutes now.
 
 Optimization: precompute possible target options for each task
 --------------------------------------------------------------

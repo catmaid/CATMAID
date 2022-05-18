@@ -69,6 +69,7 @@ job_template = """
 PROJECT_ID={project_id}
 BIN_IDX={bin}
 MIN_LENGTH={min_length}
+MIN_SOMA_LENGTH={min_soma_length}
 INITIAL_WORKING_DIR="{working_dir}"
 N_JOBS={n_jobs}
 SIMPLIFICATION={simplification}
@@ -79,7 +80,7 @@ CACHE_DIR={cache_dir}
 
 # Do work
 cd "$INITIAL_WORKING_DIR"
-python manage.py catmaid_parallel_nblast_cache --project-id $PROJECT_ID --n-jobs $N_JOBS --min-length $MIN_LENGTH --compute-bin $BIN_IDX --simplification $SIMPLIFICATION --tangent-neighbors $TANGENT_NEIGHBORS --cache-dir $CACHE_DIR
+python manage.py catmaid_parallel_nblast_cache --project-id $PROJECT_ID --n-jobs $N_JOBS --min-length $MIN_LENGTH --min-soma-length $MIN_SOMA_LENGTH --compute-bin $BIN_IDX --simplification $SIMPLIFICATION --tangent-neighbors $TANGENT_NEIGHBORS --cache-dir $CACHE_DIR
 
 {post_matter}
 
@@ -95,6 +96,8 @@ class Command(BaseCommand):
                 help='The project to generate a NBLAST cache for')
         parser.add_argument('--min-length', dest='min_length', type=float,
                 default=None, help='An optional minimum length for skeletons looked at')
+        parser.add_argument('--min-soma-length', dest='min_soma_length', type=float,
+                default=None, help='Only include skeletons with a cable length of at least this, in case there is a soma node.'),
         parser.add_argument('--simplification', dest='simplification', type=int,
                 default=10, help='The number of branching levels to keep'),
         parser.add_argument('--tangent-neighbors', dest='tangent_neighbors', type=int,
@@ -142,6 +145,7 @@ class Command(BaseCommand):
         run_combine_cache_files = options['combine_cache_files']
         job_index = options['bin']
         min_length = options['min_length'] or 0
+        min_soma_length = options['min_soma_length'] or 0
         simplification = options['simplification'] or 10
         tangent_neighbors = options['simplification']
         working_dir = options['working_dir']
@@ -209,8 +213,7 @@ class Command(BaseCommand):
         skeleton_groups = list([r[0] for r in cursor.fetchall()])
         avg_skeleton_count = np.mean([len(l) for l in skeleton_groups])
 
-        if min_length:
-            logger.info(f'Minimum skeleton length: {min_length}')
+        logger.info(f'Minimum skeleton length: {min_length} (with soma tag: {min_soma_length}')
 
         if create_tasks:
             logger.info(f'Generating {len(skeleton_groups)} jobs with a cumulative '
@@ -243,6 +246,7 @@ class Command(BaseCommand):
                     'bin': n,
                     'n_jobs': n_jobs,
                     'min_length': min_length,
+                    'min_soma_length': min_soma_length,
                     'pre_matter': '\n'.join(pre),
                     'post_matter': '\n'.join(post),
                     'simplification': simplification,
@@ -266,10 +270,19 @@ class Command(BaseCommand):
 
                 cache_name = get_cache_file_name(project.id, 'skeleton', simplification)
                 cache_path = os.path.join(cache_dir, f'{cache_name}.{job_index}')
-                create_dps_data_cache(project.id, 'skeleton',
-                        tangent_neighbors=tangent_neighbors, detail=simplification,
-                        progress=True, parallel=True, update_cache=True,
-                        cache_path=cache_path, object_ids=query_skeletons)
+
+                cache_params = {
+                    'update_cache': True,
+                    'progress': False,
+                    'parallel': True,
+                    'cache_path': cache_path,
+                    'min_length': min_length,
+                    'min_soma_length': min_soma_length,
+                    'detail': simplification,
+                    'tangent_neighbors': tangent_neighbors,
+                    'object_ids': query_skeletons,
+                }
+                create_dps_data_cache(project.id, 'skeleton', **cache_params)
             else:
                 logger.info(f'Nothing to compute for project {project.id}, '
                         f'bin {job_index} ({job_index+1}/{len(skeleton_groups)}), '

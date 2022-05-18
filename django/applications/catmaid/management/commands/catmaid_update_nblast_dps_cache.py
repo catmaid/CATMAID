@@ -32,7 +32,7 @@ class Command(BaseCommand):
         parser.add_argument('--max-length', dest='max_length', type=float,
             default=None, help='Only include skeletons with a cable length of at max this.'),
         parser.add_argument('--min-soma-length', dest='min_soma_length', type=float,
-            default=1000, help='Only include skeletons with a cable length of at least this, in case there is a soma node.'),
+            default=0, help='Only include skeletons with a cable length of at least this, in case there is a soma node.'),
         parser.add_argument('--soma-tags', dest='soma_tags', nargs='+',
             default=['soma'], help='Tags that identify soma nodes.'),
         parser.add_argument('--progress', dest='progress',

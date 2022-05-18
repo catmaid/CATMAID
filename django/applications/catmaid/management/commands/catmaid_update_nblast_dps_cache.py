@@ -49,6 +49,9 @@ class Command(BaseCommand):
         parser.add_argument('--only-add-missing', dest='only_add_missing',
             type=str2bool, default=False, const=True, nargs='?',
             help='Only add skeletons to the cache that aren\'t part of it yet.')
+        parser.add_argument('--update-cache', dest='update_cache',
+            type=str2bool, default=False, const=True, nargs='?',
+            help='Update existing cache rather than replacing it.')
 
     def handle(self, *args, **options):
         cursor = connection.cursor()
@@ -69,5 +72,6 @@ class Command(BaseCommand):
                     progress=options['progress'],
                     max_length=options['max_length'],
                     cache_path=options['cache_path'],
-                    only_add_missing=options['only_add_missing'])
+                    only_add_missing=options['only_add_missing'],
+                    update_cache=options['update_cache'])
         logger.info('Done')

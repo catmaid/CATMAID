@@ -391,7 +391,7 @@ class Command(BaseCommand):
             logger.info(f'Done. Saved all jobs in folder {target_dir}')
         else:
             if job_index < 0 or job_index >= len(skeleton_groups):
-                raise ValueError('Invalid job index: {job_index}')
+                raise ValueError(f'Invalid job index: {job_index} (# skeleton groups: {len(skeleton_groups)})')
             query_skeletons = skeleton_groups[job_index]
 
             if query_skeletons:
@@ -414,7 +414,7 @@ class Command(BaseCommand):
                         if not max_distance:
                             max_distance = similarity.config.distance_breaks[-1]
 
-                        logger.info('Finding skeletons close by')
+                        logger.info(f'Finding skeletons close by to {len(query_skeletons)}')
                         cursor.execute("""
                             WITH query_skeleton AS (
                                 SELECT id FROM UNNEST(%(query_object_ids)s::bigint[]) query(id)

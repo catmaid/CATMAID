@@ -464,6 +464,32 @@ The whole computation takes now only two minutes now.
 Optimization: precompute possible target options for each task
 --------------------------------------------------------------
 
+Larger sets of skeletons can take quite a while to compute. While this can be
+mitigated with paralellization, this usually doesn't make a big difference
+cost-wise if run on a compute cluster. A way to drastically lower the time
+requirements is to reduce the number of comparisons. In a batch-wise setup it is
+usually enough to compare all skeletons in a batch with all skeletons that have
+their closest point no farther away than a certain distance.
+
+The ``catmaid_parallel_nblast`` management command can limit the set of
+potential partners with the help of the ``--ignore-impossible-targets``. It will --max-cluster-size 5000 --max-partner-distance 30000
+
+In order to use this feature, the Postgres database needs to have Python
+installed as a possible processing language. This can be done by logging in to
+the database and installing the ``plpython3u`` extension::
+
+  sudo -u postgres psql
+  \c <catmaid-db>
+  CREATE EXTENSION plpython3u;
+
+Additionally, it requires unfortunately to mark this language as trusted to let
+regular users use it (needs to be done as a Postgres superuser as well)::
+
+
+
+that the CATMAID user (or optionally a dedicated
+NBLAST user)
+
 Optimization: store scoring results in file
 -------------------------------------------
 

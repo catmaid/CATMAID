@@ -20,7 +20,7 @@ Introduction
 
 The most fundamental dependencies of CATMAID are:
 
-1. PostgreSQL 13+ and PostGIS 3.1 (PostgreSQL 14 and PostGIS 3.2 is recommended)
+1. PostgreSQL 13+ and PostGIS 3.2 (PostgreSQL 14 is recommended)
 2. CPython 3.8, 3.9 or PyPy3.8 (CPython 3.8 is recommended)
 
 To get the required PostgreSQL version for Debian-based systems, such as

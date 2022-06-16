@@ -89,7 +89,7 @@ init_catmaid () {
 
     cp /home/django/configuration.py.example /home/django/configuration.py
     sed -i -e "s?^\(abs_catmaid_path = \).*?\1'/home'?g" /home/django/configuration.py
-    sed -i -e "s?^\(abs_virtualenv_python_library_path = \).*?\1'/opt/virtualenvs/catmaid/local/lib/python3.6/site-packages'?g" /home/django/configuration.py
+    sed -i -e "s?^\(abs_virtualenv_python_library_path = \).*?\1'/home/env/local/lib/python3.6/site-packages'?g" /home/django/configuration.py
     sed -i -e "s?^\(catmaid_database_host = \).*?\1'${DB_HOST}'?g" /home/django/configuration.py
     sed -i -e "s?^\(catmaid_database_port = \).*?\1'${DB_PORT}'?g" /home/django/configuration.py
     sed -i -e "s?^\(catmaid_database_name = \).*?\1'${DB_NAME}'?g" /home/django/configuration.py

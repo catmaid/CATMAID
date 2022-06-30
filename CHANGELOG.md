@@ -114,6 +114,8 @@ Miscellaneous:
 - Connectivity widget: fix repeated 'syn count' header label in partner tables
   if 1000+ query skeletons are added to the widget.
 
+- Morphology plot: fix radial density of output synapses.
+
 ## 2021.12.21
 
 Contributors: Chris Barnes, Albert Cardona, Andrew Champion, Stephan Gerhard, Sanja Jasek, Tom Kazimiers

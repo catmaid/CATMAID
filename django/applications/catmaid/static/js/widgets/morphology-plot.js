@@ -349,6 +349,11 @@
           o[node] = positions[node];
           return o;
         }, {});
+      } else if (endsWith(this.mode, 'output synapses')) {
+        ps = line.connectors.reduce(function(o, row) {
+          if (0 === row[2]) o[row[0]] = positions[row[0]];
+          return o;
+        }, {});
       } else if (endsWith(this.mode, 'input synapses')) {
         ps = line.connectors.reduce(function(o, row) {
           if (1 === row[2]) o[row[0]] = positions[row[0]];

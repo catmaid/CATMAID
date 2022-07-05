@@ -29,4 +29,4 @@ PyYAML==5.4.1
 requests==2.22.0
 scipy==1.5.4
 trimesh==3.9.10
-ujson==1.35
+ujson==5.4.0

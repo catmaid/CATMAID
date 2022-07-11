@@ -1803,6 +1803,11 @@ def skeleton_info_raw(request:HttpRequest, project_id=None) -> JsonResponse:
     and a list of reviewers for each partner set. Confidence distributions for
     each synapse count are included. Optionally find only those partners
     that are common between the source skeleton set.
+
+    The returned confidence distribution is a histogram with 5 entries, each one
+    representing a confidence value in the range [1,5], with 5 being the most
+    confident. A confidence distribution like [0,0,0,3,9] states that there are
+    3 links with confidence 4 and 9 links with confidence 5.
     ---
     parameters:
         - name: source_skeleton_ids

@@ -1014,6 +1014,15 @@ def connector_user_info(request:HttpRequest, project_id) -> JsonResponse:
 @requires_user_role([UserRole.Browse])
 def connector_detail(request:HttpRequest, project_id, connector_id:Union[str,int]) -> JsonResponse:
     """Get detailed information on a connector and its partners
+
+    Apart from the connector ID, the physical X/Y/Z location and the confidence
+    value (a 5-star rating, -1 means not rated), the returned object also
+    contains an array of all partner nodes the connector links to. Each partner
+    entry in this list is an object with more details on this particular partner
+    link. Each partner object contains the ID of the link between connector and
+    treenode (link_id), its confidence (5-star rating), the relation ID and name
+    of the link (e.g. presynaptic_to) as well as the ID of the linked treenode
+    (partner_id) and the skeleton it belongs to (skeleton_id).
     ---
     models:
       connector_partner_element:

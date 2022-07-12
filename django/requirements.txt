@@ -17,7 +17,7 @@ matplotlib==3.5.2; platform_python_implementation != 'PyPy'
 mock==4.0.3
 msgpack==1.0.4; platform_python_implementation != 'PyPy'
 msgpack_python==0.5.6
-networkx==2.6.2; platform_python_implementation != 'PyPy'
+networkx==2.8.4; platform_python_implementation != 'PyPy'
 networkx==2.5.1; platform_python_implementation == 'PyPy'
 numpy==1.19.5
 pillow==9.0.1

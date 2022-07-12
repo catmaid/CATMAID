@@ -1,1 +1,1 @@
-psycopg2==2.8.6; platform_python_implementation != 'PyPy'
+psycopg2==2.9.3; platform_python_implementation != 'PyPy'

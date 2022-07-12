@@ -22,7 +22,7 @@ networkx==2.5.1; platform_python_implementation == 'PyPy'
 numpy==1.19.5
 pillow==9.2.0
 progressbar2==4.0.0
-psycopg2-binary==2.9.2; platform_python_implementation != 'PyPy'
+psycopg2-binary==2.9.3; platform_python_implementation != 'PyPy'
 psycopg2cffi==2.9.0;  platform_python_implementation == 'PyPy'
 python-dateutil==2.8.2
 pytz==2021.3

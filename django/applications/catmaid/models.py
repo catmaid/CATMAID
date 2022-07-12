@@ -1704,8 +1704,9 @@ class UserOptionProxy():
 
 class ReducedInfoUser(models.Model):
     """
-    This abstract model is only used during export of users with minimal
-    information. It doesn't seem to be possible to use Django's serializer with
+    This unmanaged model is only used during export of users with minimal
+    information, it doesn't change the database (even though a migration is
+    created). It doesn't seem to be possible to use Django's serializer with
     subsets of fields if not all fields are of the same type. This behavior is
     however needed during export, and the only way so to do this it seems, is
     using a custom proxxy model.
@@ -1724,13 +1725,13 @@ class ReducedInfoUser(models.Model):
 
     class Meta:
         managed = False
-        abstract = True
 
 
 class ExportUser(models.Model):
     """
-    This abstract model is only used during export of users with most relevant
-    information. It doesn't seem to be possible to use Django's serializer with
+    This unmanaged model is only used during export of users with most relevant
+    information, it doesn't change the database (even though a migration is
+    created). It doesn't seem to be possible to use Django's serializer with
     subsets of fields if not all fields are of the same type. This behavior is
     however needed during export, and the only way so to do this it seems, is
     using a custom proxxy model.
@@ -1753,7 +1754,6 @@ class ExportUser(models.Model):
 
     class Meta:
         managed = False
-        abstract = True
 
 
 class GroupInactivityPeriod(models.Model):

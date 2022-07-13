@@ -34,7 +34,7 @@ Projects will be organized by owners.
 DVID
 ----
 
-A setup similar to the Janelia Render Serivce can be used with DVID. To do so
+A setup similar to the Janelia Render Service can be used with DVID. To do so
 add the following to your `settings.py` file and adjust to your setup::
 
   MIDDLEWARE += ('catmaid.middleware.DVIDMiddleware',)

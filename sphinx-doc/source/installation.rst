@@ -24,7 +24,7 @@ The most fundamental dependencies of CATMAID are:
 2. CPython 3.8, 3.9 or PyPy3.8 (CPython 3.8 is recommended)
 
 To get the required PostgreSQL version for Debian-based systems, such as
-Ubuntu, you have to add the officical Postgres repository as an
+Ubuntu, you have to add the official Postgres repository as an
 `extra Apt repository <https://wiki.postgresql.org/wiki/Apt>`_ (if you haven't
 done so already)::
 
@@ -85,7 +85,7 @@ virtualenv, so that they are isolated from the system-wide installed packages
 and can be upgraded easily. Some of these Python packages depend on system-wide
 libraries that you will need to install in advance, however.
 You can do this with the following command on Ubuntu
-(you may need additional PPAs, such as ubuntugis and postgresql):
+(you may need additional PPAs, such as ``ubuntugis`` and ``postgresql``):
 
     .. fileinclude:: ../../packagelist-ubuntu-apt.txt
        :removelinebreaks:

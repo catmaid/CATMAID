@@ -3,7 +3,7 @@
 Postgres administration
 =======================
 
-This is a collection of some common and uncommen database administration tasks.
+This is a collection of some common and uncommon database administration tasks.
 
 Create a read-only database user
 --------------------------------
@@ -25,8 +25,8 @@ Copy data from other (CATMAID) database
 ---------------------------------------
 
 Postgres makes it possible to work with other databases directly using its
-foreign data wrappers. This alles for instance to copy user accounts or tracing
-data from one CATMAID intance to another on the database level. In order to
+foreign data wrappers. This allows for instance to copy user accounts or tracing
+data from one CATMAID instance to another on the database level. In order to
 use data from other databases, one has to create a foreign data wrapper first::
 
    CREATE EXTENSION postgres_fdw;
@@ -166,7 +166,7 @@ If this matches the expectation, this can now be imported::
     WHERE ggop.id IS NULL;
 
 In case such imports are performed, it is important to reset the ID sequence
-coutners for all modified tables if they haven't been set manually to something
+counters for all modified tables if they haven't been set manually to something
 else already::
 
     SELECT setval('auth_user_id_seq', coalesce(max("id"), 1), max("id") IS NOT null) FROM auth_user;
@@ -176,6 +176,6 @@ else already::
     SELECT setval('guardian_userobjectpermission_id_seq', coalesce(max("id"), 1), max("id") IS NOT null) FROM guardian_userobjectpermission;
     SELECT setval('guardian_groupobjectpermission_id_seq', coalesce(max("id"), 1), max("id") IS NOT null) FROM guardian_groupobjectpermission;
 
-Alterantively, if such a sync operation is happening repeatedly, it can be
+Alternatively, if such a sync operation is happening repeatedly, it can be
 convenient to set the ID sequences of the target database to a different range,
 e.g. to start new IDs only with enough headroom to the repeated imports.

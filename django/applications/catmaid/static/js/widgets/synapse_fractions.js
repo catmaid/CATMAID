@@ -22,7 +22,7 @@
     // Neurons receiving less than this number of synapses get stashed into the 'others' heap.
     this.threshold = 5;
 
-    // Restrict partners to only these, stash all others to 'others' 
+    // Restrict partners to only these, stash all others to 'others'
     this.only = null;
 
     // Whether to show the 'others' heap
@@ -1530,11 +1530,22 @@
 
       // Register the skeletons and parse the JSON
       reader.onload = (function(e) {
-        var json = JSON.parse(e.target.result);
-        var pseudomodels = json.items.reduce(function(o, item) {
-          $.extend(o, item.models);
-          return o;
-        }, {});
+        try {
+          var json = JSON.parse(e.target.result);
+        } catch (error) {
+          CATMAID.warn(`Unable to parse JSON file: ${error}`);
+          return;
+        }
+        try {
+          var pseudomodels = json.items.reduce(function(o, item) {
+            $.extend(o, item.models);
+            return o;
+          }, {});
+        } catch (error) {
+          CATMAID.warn(`JSON data in unexpected format: ${error}`);
+          return;
+        }
+
         CATMAID.NeuronNameService.getInstance().registerAll(this, pseudomodels,
             (function() { this.populateFrom(json); }).bind(this));
       }).bind(this);

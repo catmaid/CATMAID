@@ -1453,9 +1453,9 @@
       var widget = e.data;
       widget.pageLength = parseInt(this.value, 10);
       // Update page length of all tables and update review information
-      $(".partner_table", "#connectivity_widget" + widget.widgetID)
-        .dataTable().api().page.len(widget.pageLength).draw();
-      widget.updateReviewColors();
+      let datatable = $(".partner_table", "#connectivity_widget" + widget.widgetID).dataTable().api();
+      datatable.page.len(widget.pageLength).draw();
+      widget.updateReviewColors(datatable);
     });
 
     var paginationContainer = $('<label />')

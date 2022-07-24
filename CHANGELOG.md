@@ -81,6 +81,8 @@ Miscellaneous:
   the cache objects in the referenced project (rather than all). Various other
   problems where fixed as well with the worker classes.
 
+- Connectivity widget: fix error when changing page length
+
 ## Maintenance updates
 
 - Node distance measurements: computation of straight line distance has been

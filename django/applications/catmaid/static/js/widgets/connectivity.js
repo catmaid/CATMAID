@@ -788,7 +788,7 @@
   };
 
   SkeletonConnectivity.prototype.updateReviewColors = function(datatable) {
-    if (this.reviews) {
+    if (this.reviews && datatable) {
       datatable.rows((idx, data, node) => {
         if (node) {
           let td = node.childNodes[node.childNodes.length - 2];

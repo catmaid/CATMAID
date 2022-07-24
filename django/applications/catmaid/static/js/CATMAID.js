@@ -70,9 +70,15 @@
 
     event.promise.catch(e => {
       let reason = typeof(event.reason) === 'string' ? {message: event.reason} : event.reason;
+      let message, stacktrace;
+      if (reason) {
+        message = reason.message;
+        stacktrace = reason.stack;
+      } else {
+        message = stacktrace = 'N/A';
+      }
       let userAgent = navigator ? navigator.userAgent : 'N/A';
-      let detail = 'Error: ' + reason.message + ' User agent: ' + userAgent +
-          ' Stacktrace: ' + reason.stack;
+      let detail = `Error: ${message} User agent: ${userAgent} Stacktrace: ${stacktrace}`;
       handleUnhandledError(e, detail);
     });
 

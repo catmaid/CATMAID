@@ -278,13 +278,13 @@ IMPORTED_SKELETON_FILE_MAXIMUM_SIZE = 5242880
 # The maximum allowed image size for imported images. The default is 3MB.
 IMPORTED_IMAGE_FILE_MAXIMUM_SIZE = 3145728
 
-# The maximum allowd body data size, default is 10 MB.
+# The maximum allowed body data size, default is 10 MB.
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 8 * 1024**2
 
 # Specifies if user registration is allowed
 USER_REGISTRATION_ALLOWED = False
 
-# If newly registered useres need to confirm their email address.
+# If newly registered users need to confirm their email address.
 USER_REGISTRATION_EMAIL_CONFIRMATION_REQUIRED = False
 USER_REGISTRATION_EMAIL_WELCOME_EMAIL = True
 USER_REGISTRATION_EMAIL_REPLY_TO = None
@@ -298,7 +298,7 @@ https://{{ domain }}{% url 'catmaid:activate' uidb64=uid token=token %}
 USER_REGISTRATION_EMAIL_WELCOME_EMAIL_TEXT = """Hi {{ user.first_name }},
 
 here I send you the details about your new CATMAID login. You can find
-the training website here:
+the CATMAID website here:
 
 https://{{ domain }}{% url 'catmaid:home' %}
 

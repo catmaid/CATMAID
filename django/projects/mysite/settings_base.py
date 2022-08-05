@@ -297,18 +297,19 @@ https://{{ domain }}{% url 'catmaid:activate' uidb64=uid token=token %}
 """
 USER_REGISTRATION_EMAIL_WELCOME_EMAIL_TEXT = """Hi {{ user.first_name }},
 
-here I send you the details about your new CATMAID login. You can find
-the CATMAID website here:
+here are some details on your new CATMAID login. The address of this
+CATMAID server is the following:
 
 https://{{ domain }}{% url 'catmaid:home' %}
 
-CATMAID support the Chrome and Firefox browsers, other browsers might or
-might not work. Once the actual website is loaded and you see the
-CATMAID logo, you can sign in using your CATMAID username and password
-you provided at the registration.
+CATMAID supports both Chrome and Firefox as browsers, other browsers
+might or might not work. Once the website above is loaded and you see
+the CATMAID logo, you can sign-in in the upper right corner, using your
+CATMAID username "{{user.username}}" and the password you provided at
+the registration.
 
-Right next to your name there is a question mark icon, which you can use
-to toggle some context specific help to get you started.
+In the upper right corner there is also a question mark icon, which you
+can use to toggle context specific help information to get you started.
 
 You should also see the visible projects listed in the main part of the
 page. Clicking on either an image or link will open main viewer at some
@@ -321,6 +322,10 @@ you click on neurons in the 2D view, but you won't create and modify
 data. If you want to trace neurons or change existing data, you would
 need to switch to tracing mode, which you can do by clicking the left
 most icon in the second toolbar from the top (the one connecting dots).
+
+All available tools (also referred to as widgets) can be searched and
+opened by starting the Open-Widget dialog, either by clicking the first
+icon button in the top toolbar, or by pressing Ctrl/Cmd+Space.
 
 Don't hesitate to ask, if you run into problems or have questions and
 comments.

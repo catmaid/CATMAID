@@ -3,7 +3,7 @@
   "use strict";
 
   /**
-   * Ask the user for confirmation before attemting to remove a set of
+   * Ask the user for confirmation before attempting to remove a set of
    * annotations from a set of target objects. An error handler is attached to
    * the returned promise.
    */
@@ -117,7 +117,7 @@
       // Call continuation
       continuation();
     };
-    // Add toggle functionalty to text and hide meta input box
+    // Add toggle functionality to text and hide meta input box
     $meta_toggle.click(add_meta_annotation_fields.bind(this,
         $meta_toggle.hide.bind($meta_toggle)));
 

@@ -37,7 +37,7 @@
     },
 
     /**
-     * Getinformation on the neuron a skeleton is linked to.
+     * Get information on the neuron a skeleton is linked to.
      */
     getNeuronDetails: function(projectId, skeletonId, api = undefined) {
       return CATMAID.fetch({

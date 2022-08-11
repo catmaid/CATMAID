@@ -66,6 +66,9 @@ Miscellaneous:
   cache configurations as well that are defined in the `NODE_PROVIDERS`
   setting.
 
+- The dialog to add new annotations now shows the names of all target neurons.
+  This will usually be a single neuron, but sometimes can be multiple as well.
+
 ### Bug fixes
 
 - Neuron Search: neurons that don't have any annotations are now returned as

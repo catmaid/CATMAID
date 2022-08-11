@@ -25,6 +25,7 @@
   clear: both;
 }
 
-.annotation-container ul {
+.annotation-container ul,
+.annotation-target-container ul {
   display: inline;
 }

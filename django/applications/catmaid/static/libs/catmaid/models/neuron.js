@@ -93,6 +93,15 @@
       },
 
       /**
+       * Return all skeletons linked to all input neurons.
+       */
+      getAllSkeletons: function(projectId, neuronIds) {
+        return CATMAID.fetch(`${projectId}/neurons/all-skeletons`, 'POST', {
+          'neuron_ids': neuronIds,
+        });
+      },
+
+      /**
        * Import from an SWC file and a name.
        *
        * @param {numer}  projectId The current project ID.

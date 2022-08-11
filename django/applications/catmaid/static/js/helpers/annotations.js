@@ -97,6 +97,32 @@
         "include a literal comma, write backslash-comma (\\,).");
     helpMsg.classList.add('help');
 
+    let targetList = dialog.appendMessage("Target neuron(s): ");
+    targetList.style.display = 'none';
+    targetList.classList.add('annotation-target-container');
+
+    // Get names of all skeletons and show them in dialog.
+    CATMAID.Neurons.getAllSkeletons(projectId, entityIds)
+      .then(skeletonInfo => {
+        let mappedSkeletonIds = Object.values(skeletonInfo).reduce((o, skids) => {
+          o.addAll(skids);
+          return o;
+        }, new Set());
+        let allSkeletonIds = Array.from(new Set(skeletonIds || []).union(mappedSkeletonIds));
+        let ul = allSkeletonIds.reduce((o, skid) => {
+          let li = document.createElement('li');
+          li.appendChild(document.createTextNode(CATMAID.NeuronNameService.getInstance().getName(skid)));
+          o.appendChild(li);
+          return o;
+        }, document.createElement('ul'));
+        ul.classList.add('resultTags');
+        if (ul.childElementCount > 0) {
+          targetList.appendChild(ul);
+          targetList.style.display = '';
+        }
+      })
+      .catch(CATMAID.handle);
+
     // Add button to toggle display of meta annotation input field
     var $meta_toggle = $(dialog.appendMessage(
         "Click here to also add a meta annotation"));

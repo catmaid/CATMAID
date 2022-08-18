@@ -295,7 +295,7 @@ div#logout_box {
 }
 
 div#session_box {
-  display: none;
+  display: block;
 }
 
 div#message_box {
@@ -308,10 +308,6 @@ div#message_box {
 }
 
 .catmaid.authenticated div#logout_box {
-  display: block;
-}
-
-.catmaid.authenticated div#session_box {
   display: block;
 }
 

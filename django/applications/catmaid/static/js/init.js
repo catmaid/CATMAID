@@ -539,6 +539,12 @@ var project;
       }
     });
 
+    // Init all toolbar menus
+    ['dataview', 'project', 'layout', 'stack', 'message', 'user', 'login'].forEach(name => {
+      menus[name] = new Menu();
+      document.getElementById(name + '_menu').appendChild(menus[name].getView());
+    });
+
     // Assume an unauthenticated session by default
     this.setAuthenticated(false);
     CATMAID.Client.Settings
@@ -569,10 +575,6 @@ var project;
     document.getElementById( "account" ).onkeydown = login_oninputreturn;
     document.getElementById( "password" ).onkeydown = login_oninputreturn;
 
-    ['dataview', 'project', 'layout', 'stack', 'message', 'user', 'login'].forEach(name => {
-      menus[name] = new Menu();
-      document.getElementById(name + '_menu').appendChild(menus[name].getView());
-    });
     CATMAID.DataViews.list().then(dataviews => {
       this._knownDataViews = dataviews;
       this._updateDataViewMenu();
@@ -1133,16 +1135,20 @@ var project;
       document.getElementById("session_longname").replaceChild(
           document.createTextNode(CATMAID.session.longname),
           document.getElementById("session_longname").firstChild);
-
-      // Update user menu
-      CATMAID._updateUserMenu();
-      // Update login menu
-      CATMAID._updateLoginMenu();
     } else {
       if (this._container) {
         this._container.classList.remove('authenticated');
       }
+      document.getElementById("session_longname").replaceChild(
+          document.createTextNode("not logged in"),
+          document.getElementById("session_longname").firstChild);
     }
+
+    // Update login menu
+    CATMAID._updateLoginMenu();
+
+    // Update user menu
+    CATMAID._updateUserMenu();
   };
 
   Client.prototype._updateLoginControls = function() {
@@ -1191,7 +1197,11 @@ var project;
     }));
   };
 
+  /**
+   * Create/update anonymous user menu.
+   */
   CATMAID._updateUserMenu = function() {
+    if (CATMAID.session && CATMAID.session.is_authenticated) {
       let userMenuItems = [{
           action: CATMAID.makeURL("user/password_change/"),
           title: "Change password",
@@ -1247,6 +1257,32 @@ var project;
       }
 
       menus.user.update(userMenuItems);
+    } else {
+      let userMenuItems = [
+        {
+          action: CATMAID.showAnonymousUserAuthenticationToken,
+          title: "Get API token (anonymous access)",
+          note: ""
+        },
+        {
+          action: () => {
+            let dialog = new CATMAID.UserInfoDialog();
+            dialog.show();
+          },
+          title: "User info",
+          note: ""
+        },
+        {
+          action: () => {
+            CATMAID.tools.copyToClipBoard(CATMAID.CLIENT_VERSION);
+            CATMAID.msg('Copied to clipboard', `Version: ${CATMAID.CLIENT_VERSION}`);
+          },
+          title: "Copy CATMAID version",
+          note: ""
+        }];
+
+      menus.user.update(userMenuItems);
+    }
   };
 
   CATMAID.askForLogin = function(message) {
@@ -2713,6 +2749,49 @@ var project;
       return stackViewer;
     }
   }
+
+  CATMAID.showAnonymousUserAuthenticationToken = function() {
+    CATMAID.fetch('/accounts/anonymous-api-token')
+      .then(function (json) {
+        var resultDialog = new CATMAID.OptionsDialog('API Authentication Token', {
+          'OK': CATMAID.noop
+        });
+        resultDialog.appendHTML('The API token for anonymous access is');
+        var container = document.createElement('p');
+        var token = document.createElement('input');
+        token.setAttribute('value', json.token);
+        token.setAttribute('readonly', true);
+        token.setAttribute('size', 40);
+        var copyButton = $('<button />')
+            .button({
+              icons: {primary: "ui-icon-clipboard"},
+              label: 'Copy to clipboard',
+              text: false
+            })
+            .click(function () {
+              token.select();
+              document.execCommand('copy');
+            });
+        container.appendChild(token);
+        container.appendChild(copyButton.get(0));
+        resultDialog.dialog.appendChild(container);
+        resultDialog.appendHTML(
+            'This token is tied to the anonymous user account and shares its ' +
+            'permissions. ' +
+            'Requests using this token can do anything this account can ' +
+            'do, so <b>do not distribute this token or check it into ' +
+            'source control.</b>');
+        resultDialog.appendHTML(
+            'For help using your API token, see the ' +
+            '<a target="_blank" href="' +
+            CATMAID.makeDocURL('api.html#api-token') + '">' +
+            'API use documentation</a> and ' +
+            '<a target="_blank" href="' + CATMAID.makeURL('/apis/') + '">' +
+            'this server\'s API documentation</a>.');
+        resultDialog.show(460, 280, true);
+      })
+      .catch(CATMAID.handleError);
+  };
 
   CATMAID.getAuthenticationToken = function() {
     var dialog = new CATMAID.OptionsDialog('API Authentication Token', undefined, true);

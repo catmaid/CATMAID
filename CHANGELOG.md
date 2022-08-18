@@ -69,6 +69,10 @@ Miscellaneous:
 - The dialog to add new annotations now shows the names of all target neurons.
   This will usually be a single neuron, but sometimes can be multiple as well.
 
+- The API authentication token for anonymous access can now be displayed from
+  the UI through the new user menu, accessible through the text left to the
+  login text fields.
+
 ### Bug fixes
 
 - Neuron Search: neurons that don't have any annotations are now returned as

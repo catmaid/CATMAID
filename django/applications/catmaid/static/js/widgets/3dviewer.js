@@ -301,17 +301,18 @@
 
     if (!checkbox.checked) return;
 
-    // Clear checkbox, since it should only be checked once a device is found.
+    // Clear checkbox, since it should only be checked if VR is supported.
     checkbox.checked = false;
     checkbox.disabled = true;
 
-    if ('getVRDisplays' in navigator) {
-      navigator.getVRDisplays()
-        .then(displays => {
+    if ('xr' in navigator) {
+      navigator.xr.isSessionSupported("immersive-vr")
+        .then((isSupported) => {
+          button.disabled = !isSupported;
+          checkbox.checked = isSupported;
 
-          if (displays.length > 0) {
-            let device = displays[0];
-            this.vrInterface = new CATMAID.WebVRInterface(this.space.view, device);
+          if (isSupported) {
+            this.vrInterface = new CATMAID.WebVRInterface(this.space.view);
 
             this.vrInterface.on(
                 CATMAID.WebVRInterface.EVENT_VR_START,
@@ -327,17 +328,17 @@
                 });
 
             button.onclick = this.vrInterface.start.bind(this.vrInterface);
-            button.disabled = false;
-            checkbox.checked = true;
           } else {
-            CATMAID.warn("No VR device found");
+            CATMAID.warn("Immersive VR session not supported");
           }
-
           checkbox.disabled = false;
         })
-        .catch(() => { checkbox.disabled = false; });
+        .catch(() => {
+          CATMAID.warn("WebXR failed to query session support");
+          checkbox.disabled = false;
+        });
     } else {
-      CATMAID.warn("WebVR is not supported on your system");
+      CATMAID.warn("WebXR is not supported on your system");
       checkbox.disabled = false;
     }
   };

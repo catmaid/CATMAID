@@ -10098,7 +10098,7 @@
       if (0 === reference.selectedIndex && 1 === mode.selectedIndex) {
         // Use active node as reference for all skeletons
         var p = SkeletonAnnotations.getActiveNodePositionW();
-        origin = new THREE.Vector3d(p.x, p.y, p.z);
+        origin = new THREE.Vector3(p.x, p.y, p.z);
       }
 
       var exporter = CATMAID.FileExporter.export('"Skeleton ID", "Name", "Count"\n',

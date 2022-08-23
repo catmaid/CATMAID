@@ -2503,12 +2503,12 @@
    * Show or hide a stored volume with a given Id.
    *
    * @param {number} volumeId The volume to show or hide.
-   * @param {bool}   visibke  Whether or not the volume should be visible
+   * @param {boolean} visible  Whether or not the volume should be visible
    * @param {string} color    Color of the referenced volume
    * @param {number} opacity  Opacity of the referenced volume in [0,1]
-   * @param {bool}   faces    Whether to show faces or a wireframe
+   * @param {boolean} faces    Whether to show faces or a wireframe
    * @param {number} subdivisions (optional) Number of smoothing subdivisions
-   * @param {bool}   bb       (optional) Whether to show the bounding box of the volume
+   * @param {boolean} bb       (optional) Whether to show the bounding box of the volume
    * @param {API}    api      (optional) A remote API to load the volume from
    * @param {number} projectId (optional) The project to load the volume from
    */

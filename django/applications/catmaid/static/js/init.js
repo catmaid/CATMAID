@@ -1854,7 +1854,7 @@ var project;
   /**
    * Load a particular data view.
    *
-   * @param background {bool} Optional, if the data view should only be loaded,
+   * @param background {boolean} Optional, if the data view should only be loaded,
    *                          not activated.
    */
   Client.prototype.switch_dataview = function(dataview, background) {
@@ -1884,7 +1884,7 @@ var project;
   /**
    * Load the default data view.
    *
-   * @param background {bool} Optional, if the data view should only be loaded,
+   * @param background {boolean} Optional, if the data view should only be loaded,
    *                          not activated.
    */
   Client.prototype.load_default_dataview = function(background) {

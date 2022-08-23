@@ -3072,7 +3072,7 @@
    * Set color and alpha of a loaded landmark group. Color and alpha will only
    * be adjusted if the respective value is not null. Otherwise it is ignored.
    *
-   * @param {Number} volumeId The ID of the landmark group to adjust.
+   * @param {Number} landmarkGroupId The ID of the landmark group to adjust.
    * @param {String} color    The new color as hex string of the group or null.
    * @param {Number} alpha    The new alpha of the landmark group or null.
    */
@@ -3103,7 +3103,7 @@
   /**
    * Set landmark group render style properties.
    *
-   * @param {Boolean} faces    Whether mesh faces should be rendered.
+   * @param {Boolean} value    Whether mesh faces should be rendered.
    */
   WebGLApplication.prototype.setLandmarkGroupStyle = function(landmarkGroupsId, property, value) {
     value = !!value;
@@ -3244,7 +3244,7 @@
    * Set color and alpha of a loaded point cloud. Color and alpha will only
    * be adjusted if the respective value is not null. Otherwise it is ignored.
    *
-   * @param {Number} volumeId The ID of the point cloud to adjust.
+   * @param {Number} pointCloudId The ID of the point cloud to adjust.
    * @param {String} color    The new color as hex string or null.
    * @param {Number} alpha    The new alpha or null.
    */
@@ -3273,7 +3273,7 @@
   /**
    * Set point cloud render style properties.
    *
-   * @param {Boolean} faces    Whether mesh faces should be rendered.
+   * @param {Boolean} value    Whether mesh faces should be rendered.
    */
   WebGLApplication.prototype.setPointCloudStyle = function(pointCloudId, property, value) {
     value = !!value;

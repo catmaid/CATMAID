@@ -43,7 +43,7 @@ GitHub
   step.
 
 3. Create a Site object in the CATMAID admin view with ``ID = 1``, or if you
-   have configured your own ``SIDE_ID`` in ``settings.py`` use this one.
+   have configured your own ``SITE_ID`` in ``settings.py`` use this one.
 
 4. Create *Social application* using the GitHub provider in CATMAID's admin
    view. Use *Client ID* and *Client Secret* created in step 2.

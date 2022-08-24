@@ -319,7 +319,7 @@ var project;
       if ( options[ "s" ] ) s = parseFloat( options[ "s" ] );
       if ( isNaN( s ) ) s = undefined;
       if ( options[ "active_skeleton_id" ] ) init_active_skeleton_id = parseInt( options[ "active_skeleton_id" ] );
-      // The active node ID isn't necessazrily a number, since it can also
+      // The active node ID isn't necessarily a number, since it can also
       // reference virtual nodes.
       if ( options[ "active_node_id" ] ) init_active_node_id = options[ "active_node_id" ];
 
@@ -444,7 +444,7 @@ var project;
     });
     a_url.onclick = function( e )
     {
-      // In case a deep link is created, the click is canceled to asyncronously
+      // In case a deep link is created, the click is canceled to asynchronously
       // create the deep link and reissued afterwards. For this second click we
       // want to avoid to update the URL or create a new deep link. This is why
       // we use this toggle variable here.
@@ -1183,7 +1183,7 @@ var project;
   CATMAID.session = null;
 
   /**
-   * If there OAuth2 login providers enabled, they are dispalyed in a login
+   * If there OAuth2 login providers enabled, they are displayed in a login
    * menu.
    */
   CATMAID._updateLoginMenu = function() {
@@ -1246,7 +1246,7 @@ var project;
         });
       }
 
-      // Super-users also habe button to open the instance settings dialog.
+      // Super-users also have a button to open the instance settings dialog.
       let isSuperUser = s.is_authenticated && s.is_superuser;
       if (isSuperUser) {
           userMenuItems.push({

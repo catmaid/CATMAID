@@ -2750,6 +2750,9 @@ var project;
     }
   }
 
+  /**
+   * Show a dialog displaying the access token of the anonymous user.
+   */
   CATMAID.showAnonymousUserAuthenticationToken = function() {
     CATMAID.fetch('/accounts/anonymous-api-token')
       .then(function (json) {
@@ -2794,66 +2797,118 @@ var project;
   };
 
   CATMAID.getAuthenticationToken = function() {
-    var dialog = new CATMAID.OptionsDialog('API Authentication Token', undefined, true);
-    dialog.appendMessage('To retrieve your API authentication token, you must ' +
-                         're-enter your password.');
-    var password = dialog.appendField('Password:', 'password', '', true);
-    password.setAttribute('type', 'password');
-    dialog.onCancel = function() {
-      $(this.dialog).dialog("destroy");
+    let customErrorHandler = (error) => {
+      if (error instanceof CATMAID.PermissionError) {
+        CATMAID.warn(error.message);
+      } else {
+        CATMAID.handleError(error);
+      }
     };
-    dialog.onOK = function () {
-      CATMAID.fetch('/api-token-auth/',
-                    'POST',
-                    {username: CATMAID.session.username,
-                     password: password.value})
-          .then(function (json) {
-            $(dialog.dialog).dialog("destroy");
-            var resultDialog = new CATMAID.OptionsDialog('API Authentication Token');
-            resultDialog.appendHTML('Your API token is');
-            var container = document.createElement('p');
-            var token = document.createElement('input');
-            token.setAttribute('value', json.token);
-            token.setAttribute('readonly', true);
-            token.setAttribute('size', 40);
-            var copyButton = $('<button />')
-                .button({
-                  icons: {primary: "ui-icon-clipboard"},
-                  label: 'Copy to clipboard',
-                  text: false
+    CATMAID.fetch('/accounts/is-remote-login')
+      .then(response => {
+        if (response.is_remote_login) {
+          CATMAID.fetch('/accounts/remote-login-api-token')
+            .then(response => {
+              var resultDialog = new CATMAID.OptionsDialog('API Authentication Token');
+              resultDialog.appendHTML('Remote logins like ORCiD don\'t need further authentication. Your API token is');
+              var container = document.createElement('p');
+              var token = document.createElement('input');
+              token.setAttribute('value', response.token);
+              token.setAttribute('readonly', true);
+              token.setAttribute('size', 40);
+              var copyButton = $('<button />')
+                  .button({
+                    icons: {primary: "ui-icon-clipboard"},
+                    label: 'Copy to clipboard',
+                    text: false
+                  })
+                  .click(function () {
+                    token.select();
+                    document.execCommand('copy');
+                  });
+              container.appendChild(token);
+              container.appendChild(copyButton.get(0));
+              resultDialog.dialog.appendChild(container);
+              resultDialog.appendHTML(
+                  'This token is tied to your account and shares your ' +
+                  'permissions. ' +
+                  'Requests using this token can do anything your account can ' +
+                  'do, so <b>do not distribute this token or check it into ' +
+                  'source control.</b>');
+              resultDialog.appendHTML(
+                  'For help using your API token, see the ' +
+                  '<a target="_blank" href="' +
+                  CATMAID.makeDocURL('api.html#api-token') + '">' +
+                  'API use documentation</a> and ' +
+                  '<a target="_blank" href="' + CATMAID.makeURL('/apis/') + '">' +
+                  'this server\'s API documentation</a>.');
+              resultDialog.show(460, 280, true);
+            })
+            .catch(customErrorHandler);
+        } else {
+          var dialog = new CATMAID.OptionsDialog('API Authentication Token', undefined, true);
+          dialog.appendMessage('To retrieve your API authentication token, you must ' +
+                              're-enter your password.');
+          var password = dialog.appendField('Password:', 'password', '', true);
+          password.setAttribute('type', 'password');
+          dialog.onCancel = function() {
+            $(this.dialog).dialog("destroy");
+          };
+          dialog.onOK = function () {
+            CATMAID.fetch('/api-token-auth/',
+                          'POST',
+                          {username: CATMAID.session.username,
+                          password: password.value})
+                .then(function (json) {
+                  $(dialog.dialog).dialog("destroy");
+                  var resultDialog = new CATMAID.OptionsDialog('API Authentication Token');
+                  resultDialog.appendHTML('Your API token is');
+                  var container = document.createElement('p');
+                  var token = document.createElement('input');
+                  token.setAttribute('value', json.token);
+                  token.setAttribute('readonly', true);
+                  token.setAttribute('size', 40);
+                  var copyButton = $('<button />')
+                      .button({
+                        icons: {primary: "ui-icon-clipboard"},
+                        label: 'Copy to clipboard',
+                        text: false
+                      })
+                      .click(function () {
+                        token.select();
+                        document.execCommand('copy');
+                      });
+                  container.appendChild(token);
+                  container.appendChild(copyButton.get(0));
+                  resultDialog.dialog.appendChild(container);
+                  resultDialog.appendHTML(
+                      'This token is tied to your account and shares your ' +
+                      'permissions. ' +
+                      'Requests using this token can do anything your account can ' +
+                      'do, so <b>do not distribute this token or check it into ' +
+                      'source control.</b>');
+                  resultDialog.appendHTML(
+                      'For help using your API token, see the ' +
+                      '<a target="_blank" href="' +
+                      CATMAID.makeDocURL('api.html#api-token') + '">' +
+                      'API use documentation</a> and ' +
+                      '<a target="_blank" href="' + CATMAID.makeURL('/apis/') + '">' +
+                      'this server\'s API documentation</a>.');
+                  resultDialog.show(460, 280, true);
                 })
-                .click(function () {
-                  token.select();
-                  document.execCommand('copy');
+                .catch(function(error) {
+                  if (error.statusCode === 400) {
+                    CATMAID.warn("Wrong password");
+                  } else {
+                    CATMAID.handleError(error);
+                  }
                 });
-            container.appendChild(token);
-            container.appendChild(copyButton.get(0));
-            resultDialog.dialog.appendChild(container);
-            resultDialog.appendHTML(
-                'This token is tied to your account and shares your ' +
-                'permissions. ' +
-                'Requests using this token can do anything your account can ' +
-                'do, so <b>do not distribute this token or check it into ' +
-                'source control.</b>');
-            resultDialog.appendHTML(
-                'For help using your API token, see the ' +
-                '<a target="_blank" href="' +
-                CATMAID.makeDocURL('api.html#api-token') + '">' +
-                'API use documentation</a> and ' +
-                '<a target="_blank" href="' + CATMAID.makeURL('/apis/') + '">' +
-                'this server\'s API documentation</a>.');
-            resultDialog.show(460, 280, true);
-          })
-          .catch(function(error) {
-            if (error.statusCode === 400) {
-              CATMAID.warn("Wrong password");
-            } else {
-              CATMAID.handleError(error);
-            }
-          });
-    };
+          };
 
-    dialog.show(460, 200, true);
+          dialog.show(460, 200, true);
+        }
+      })
+      .catch(customErrorHandler);
   };
 
 

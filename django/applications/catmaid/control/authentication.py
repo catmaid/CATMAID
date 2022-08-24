@@ -31,6 +31,7 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.core.mail import EmailMessage
 
 from allauth.account.adapter import get_adapter
+from allauth.socialaccount.models import SocialAccount
 
 from rest_framework.authtoken import views as auth_views
 from rest_framework.authtoken.models import Token
@@ -949,6 +950,36 @@ def get_anonymous_token(request:HttpRequest) -> JsonResponse:
     token, created = Token.objects.get_or_create(user=anon_user)
     return JsonResponse({
         "token": token.key
+    })
+
+
+def get_remote_login_token(request:HttpRequest) -> JsonResponse:
+    """Get the API token for accounts that are linked to a social account
+    (remote login) through e.g. OAuth2. Will raise error on "regular" accounts.
+    This isn't ideal, but for now a way to get the API token for accounts users
+    don't know the password to.
+    """
+    # Check if the user is logged in.
+    if not request.user.is_authenticated:
+        raise PermissionError("Please log-in through a remote service like ORCiD")
+
+    soc_acc_exists = SocialAccount.objects.filter(user_id=request.user.id).exists()
+    if not soc_acc_exists:
+        raise PermissionError("Please log-in through a remote service like ORCiD")
+
+    token, created = Token.objects.get_or_create(user=request.user.id)
+    return JsonResponse({
+        "token": token.key
+    })
+
+
+def is_remote_login(request:HttpRequest) -> JsonResponse:
+    """Returns whether the logged in user is logged in through a remote service
+    like OAuth2.
+    """
+    soc_acc_exists = SocialAccount.objects.filter(user_id=request.user.id).exists()
+    return JsonResponse({
+        'is_remote_login': soc_acc_exists
     })
 
 

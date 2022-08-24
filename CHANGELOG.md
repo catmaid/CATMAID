@@ -73,6 +73,9 @@ Miscellaneous:
   the UI through the new user menu, accessible through the text left to the
   login text fields.
 
+- For remote logins the API token is shown without password confirmation,
+  because users usually don't know the local user's password.
+
 ### Bug fixes
 
 - Neuron Search: neurons that don't have any annotations are now returned as

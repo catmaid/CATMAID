@@ -687,7 +687,7 @@ annotations, neuron name, connectors or partner neurons.
                 return l;
               }, []);
 
-              widget.importRemoteSkeletons(skeletonIds, getEffectiveAnnotations());
+              widget.importRemoteSkeletons(skeletonIds, widget.getEffectiveAnnotations());
             },
           },
         ];

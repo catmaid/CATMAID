@@ -93,6 +93,9 @@ Miscellaneous:
 
 - Connectivity widget: fix error when changing page length
 
+- Import/export widget: importing skeletons from a remote CATMAID server using
+  annotations doesn't raise an error about a missing function anymore.
+
 ## Maintenance updates
 
 - Node distance measurements: computation of straight line distance has been

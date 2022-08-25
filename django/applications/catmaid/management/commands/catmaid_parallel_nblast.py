@@ -18,6 +18,7 @@ from catmaid.models import NblastSimilarity
 from catmaid.util import str2bool
 
 from psycopg2.extras import execute_batch
+from typing import Any, Dict, IO
 
 
 logger = logging.getLogger(__name__)
@@ -252,15 +253,17 @@ class Command(BaseCommand):
         remote_dps_port = options['remote_dps_port']
         if remote_dps_host and remote_dps_port:
             remote_dps_source = (remote_dps_host, remote_dps_port)
+            remote_dps_source_valid = True
         else:
-            remote_dps_source = None
+            remote_dps_source = (None, None)
+            remote_dps_source_valid = False
 
         # If only an import is asked for, attempt to do it.
         if import_scores_from:
             import_file = import_scores_from.format(bin_index=('' if job_index is None else job_index))
             logger.info(f'Importing precomputed scores from file {import_file}')
-            with open(import_file, 'rb') as f:
-                scores_to_import = pickle.load(f)
+            with open(import_file, 'rb') as import_f:
+                scores_to_import = pickle.load(import_f)
             cursor = connection.cursor()
             execute_batch(cursor, f"""
                 INSERT INTO nblast_similarity_score (similarity_id, query_object_id, target_object_id, score)
@@ -385,8 +388,8 @@ class Command(BaseCommand):
                     'pre_matter': '\n'.join(pre),
                     'post_matter': '\n'.join(post),
                 })
-                with open(os.path.join(target_dir, f'{job_prefix}-{n}.sh'), 'w') as f:
-                    f.write(job_sh)
+                with open(os.path.join(target_dir, f'{job_prefix}-{n}.sh'), 'w') as output_f: # type: IO[Any]
+                    output_f.write(job_sh)
 
             logger.info(f'Done. Saved all jobs in folder {target_dir}')
         else:
@@ -400,8 +403,8 @@ class Command(BaseCommand):
                     if load_targets_from:
                         target_file = load_targets_from.format(bin_index=('' if job_index is None else job_index))
                         logger.info(f'Loading target candidates from {target_file}')
-                        with open(target_file, 'rb') as f:
-                            target_skeletons = pickle.load(f)
+                        with open(target_file, 'rb') as target_f:
+                            target_skeletons = pickle.load(target_f)
                         logger.info(f'Loaded {len(target_skeletons)} target candidates')
                     else:
                         # Find a set of potential target objects to avoid having to fetch
@@ -490,8 +493,8 @@ class Command(BaseCommand):
 
                         if compute_targets_and_stop:
                             target_file = compute_targets_and_stop.format(bin_index=('' if job_index is None else job_index))
-                            with open(target_file, 'wb') as f:
-                                pickle.dump(target_skeletons, f, protocol=pickle.HIGHEST_PROTOCOL)
+                            with open(target_file, 'wb') as target_f:
+                                pickle.dump(target_skeletons, target_f, protocol=pickle.HIGHEST_PROTOCOL)
                             logger.info(f'Wrote target set to {target_file}')
                             logger.info('Stopping')
                             return
@@ -501,19 +504,21 @@ class Command(BaseCommand):
                     import lzma
                     dotprops_file = load_dotprops_from.format(bin_index=('' if job_index is None else job_index))
                     logger.info(f'Loading dotprops cache from file {dotprops_file}')
-                    with lzma.open(dotprops_file, 'rb') as f:
-                        skeleton_cache = pickle.load(f)
+                    with lzma.open(dotprops_file, 'rb') as lzma_f: # type: IO[Any]
+                        skeleton_cache = pickle.load(lzma_f)
                     logger.info(f'Loaded dotprops cache with {len(skeleton_cache.names)} entries')
 
                 if preload_cache:
                     def update(_):
                         logger.info('Done filtering cache file')
+
                     def err(e):
                         logger.error(f'Error filtering cache file: {e}')
+
                     # This is done in a separate process to clean up Python memory more easily
                     object_ids = list(set(query_skeletons + target_skeletons))
                     manager = multiprocessing.Manager()
-                    shared_result = manager.dict()
+                    shared_result: Dict[Any, Any] = manager.dict()
                     p = multiprocessing.Pool(processes=1)
                     p.apply_async(load_and_filter_cache,
                             args=(similarity.project_id, 'skeleton',
@@ -528,14 +533,16 @@ class Command(BaseCommand):
                     import lzma
                     dotprops_file = compute_dotprops_and_stop.format(bin_index=('' if job_index is None else job_index))
                     if query_skeletons or target_skeletons:
-                        logger.info(f'Computing dotprops for {len(query_skeletons)} query objects and {len(target_skeletons)} target objects')
+                        n_qs = str(len(query_skeletons)) if query_skeletons else 'all'
+                        n_ts = str(len(target_skeletons)) if target_skeletons else 'all'
+                        logger.info(f'Computing dotprops for {n_qs} query objects and {n_ts} target objects')
                         object_ids = list(set(query_skeletons + target_skeletons))
                         import rpy2.rinterface as rinterface
                         from rpy2.robjects.packages import importr
                         import rpy2.robjects as robjects
                         base = importr('base')
                         rnat = importr('nat')
-                        if remote_dps_source:
+                        if remote_dps_source_valid:
                             logger.info(f'Using remote DPS source: {remote_dps_source}')
                             query_cache_objects_dps = get_remote_dps_data(object_ids,
                                     remote_dps_source[0], remote_dps_source[1])
@@ -555,8 +562,8 @@ class Command(BaseCommand):
                                     query_cache_objects_dps, rinterface.StrSexpVector(non_na_ids))
 
                         logger.info(f'Storing {len(query_cache_objects_dps)} cache objects')
-                        with lzma.open(dotprops_file, 'wb') as f:
-                            pickle.dump(query_cache_objects_dps, f, protocol=pickle.HIGHEST_PROTOCOL)
+                        with lzma.open(dotprops_file, 'wb') as lzma_output_f: # type: IO[Any]
+                            pickle.dump(query_cache_objects_dps, lzma_output_f, protocol=pickle.HIGHEST_PROTOCOL)
                         logger.info(f'Wrote cache to {dotprops_file}')
                     else:
                         logger.info('Was asked to compute dotprops, but found neither query objects nor target objects.')
@@ -577,7 +584,7 @@ class Command(BaseCommand):
                         relational_results=True, query_object_ids=query_skeletons,
                         target_object_ids=target_skeletons, notify_user=False,
                         write_scores_only=True, clear_results=False,
-                        parallel=True, remote_dps_source=remote_dps_source,
+                        parallel=True, remote_dps_source=remote_dps_source if remote_dps_source_valid else None,
                         target_cache=target_cache,
                         skeleton_cache=skeleton_cache, score_file=score_file,
                         relational_storage_page_size=score_write_batch_size)

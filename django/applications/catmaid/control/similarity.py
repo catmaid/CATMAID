@@ -1794,7 +1794,8 @@ class SkeletonDetail(APIView):
                 indexes_to_remove = [
                     similarity.target_objects.index(tskid)
                     for (tskid,) in cursor.fetchall()
-                ].sort(reverse=True)
+                ]
+                indexes_to_remove.sort(reverse=True)
                 for _, target_object_ids in scores.items():
                     for idx in indexes_to_remove:
                         del target_object_ids[idx]
@@ -1804,18 +1805,18 @@ class SkeletonDetail(APIView):
             # Remove all scores that are too small
             if min_similarity_score:
                 return JsonResponse([
-                        [skeleton_id, [
-                            [tskid, ts] for (tskid, ts)
-                            in zip(target_skids, target_scores)
-                            if ts > min_similarity_score
-                        ]]
-                        for skeleton_id, target_scores in scores.items()
-                    ], safe=False)
+                    [skeleton_id, [
+                        [tskid, ts] for (tskid, ts)
+                        in zip(target_skids, target_scores)
+                        if ts > min_similarity_score
+                    ]]
+                    for skeleton_id, target_scores in scores.items()
+                ], safe=False)
             else:
                 return JsonResponse([
-                        [skeleton_id, list(zip(target_skids, target_scores))]
-                        for skeleton_id, target_scores in scores.items()
-                    ], safe=False)
+                    [skeleton_id, list(zip(target_skids, target_scores))]
+                    for skeleton_id, target_scores in scores.items()
+                ], safe=False)
         else:
             if has_bb:
                 if skeleton_ids:

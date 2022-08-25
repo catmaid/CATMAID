@@ -287,4 +287,3 @@ class Command(BaseCommand):
                 logger.info(f'Nothing to compute for project {project.id}, '
                         f'bin {job_index} ({job_index+1}/{len(skeleton_groups)}), '
                         f'containing no skeletons')
-

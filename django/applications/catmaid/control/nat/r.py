@@ -658,38 +658,38 @@ def recvall(sock, count):
 
 
 def recv_timeout(the_socket, timeout=2):
-    #make socket non blocking
+    # make socket non blocking
     the_socket.setblocking(0)
 
-    #total data partwise in an array
-    total_data=[];
-    data='';
+    # total data partwise in an array
+    total_data: List[Any] = []
+    data = ''
 
-    #beginning time
-    begin=time.time()
+    # beginning time
+    begin = time.time()
     while 1:
-        #if you got some data, then break after timeout
+        # if you got some data, then break after timeout
         if total_data and time.time()-begin > timeout:
             break
 
-        #if you got no data at all, wait a little longer, twice the timeout
+        # if you got no data at all, wait a little longer, twice the timeout
         elif time.time()-begin > timeout*2:
             break
 
-        #recv something
+        # recv something
         try:
             data = the_socket.recv(8192)
             if data:
                 total_data.append(data)
-                #change the beginning time for measurement
+                # change the beginning time for measurement
                 begin = time.time()
             else:
-                #sleep for sometime to indicate a gap
+                # sleep for sometime to indicate a gap
                 time.sleep(0.1)
         except:
             pass
 
-    #join all parts to make final string
+    # join all parts to make final string
     return b''.join(total_data)
 
 
@@ -1791,16 +1791,18 @@ def neuronlist_for_skeletons(project_id, skeleton_ids, omit_failures=False,
 
     if progress:
         bar = tqdm(total=len(skeleton_ids))
+
         def update(x):
             bar.update(1)
     else:
         bar = None
+
         def update(x):
             pass
 
     if parallel:
         manager = multiprocessing.Manager()
-        shared_cs_r = manager.dict()
+        shared_cs_r: Dict[Any, Any] = manager.dict()
 
         def err(e):
             logger.error(e)

@@ -301,17 +301,18 @@
 
     if (!checkbox.checked) return;
 
-    // Clear checkbox, since it should only be checked once a device is found.
+    // Clear checkbox, since it should only be checked if VR is supported.
     checkbox.checked = false;
     checkbox.disabled = true;
 
-    if ('getVRDisplays' in navigator) {
-      navigator.getVRDisplays()
-        .then(displays => {
+    if ('xr' in navigator) {
+      navigator.xr.isSessionSupported("immersive-vr")
+        .then((isSupported) => {
+          button.disabled = !isSupported;
+          checkbox.checked = isSupported;
 
-          if (displays.length > 0) {
-            let device = displays[0];
-            this.vrInterface = new CATMAID.WebVRInterface(this.space.view, device);
+          if (isSupported) {
+            this.vrInterface = new CATMAID.WebVRInterface(this.space.view);
 
             this.vrInterface.on(
                 CATMAID.WebVRInterface.EVENT_VR_START,
@@ -327,17 +328,17 @@
                 });
 
             button.onclick = this.vrInterface.start.bind(this.vrInterface);
-            button.disabled = false;
-            checkbox.checked = true;
           } else {
-            CATMAID.warn("No VR device found");
+            CATMAID.warn("Immersive VR session not supported");
           }
-
           checkbox.disabled = false;
         })
-        .catch(() => { checkbox.disabled = false; });
+        .catch(() => {
+          CATMAID.warn("WebXR failed to query session support");
+          checkbox.disabled = false;
+        });
     } else {
-      CATMAID.warn("WebVR is not supported on your system");
+      CATMAID.warn("WebXR is not supported on your system");
       checkbox.disabled = false;
     }
   };
@@ -2503,12 +2504,12 @@
    * Show or hide a stored volume with a given Id.
    *
    * @param {number} volumeId The volume to show or hide.
-   * @param {bool}   visibke  Whether or not the volume should be visible
+   * @param {boolean} visible  Whether or not the volume should be visible
    * @param {string} color    Color of the referenced volume
    * @param {number} opacity  Opacity of the referenced volume in [0,1]
-   * @param {bool}   faces    Whether to show faces or a wireframe
+   * @param {boolean} faces    Whether to show faces or a wireframe
    * @param {number} subdivisions (optional) Number of smoothing subdivisions
-   * @param {bool}   bb       (optional) Whether to show the bounding box of the volume
+   * @param {boolean} bb       (optional) Whether to show the bounding box of the volume
    * @param {API}    api      (optional) A remote API to load the volume from
    * @param {number} projectId (optional) The project to load the volume from
    */
@@ -3072,7 +3073,7 @@
    * Set color and alpha of a loaded landmark group. Color and alpha will only
    * be adjusted if the respective value is not null. Otherwise it is ignored.
    *
-   * @param {Number} volumeId The ID of the landmark group to adjust.
+   * @param {Number} landmarkGroupId The ID of the landmark group to adjust.
    * @param {String} color    The new color as hex string of the group or null.
    * @param {Number} alpha    The new alpha of the landmark group or null.
    */
@@ -3103,7 +3104,7 @@
   /**
    * Set landmark group render style properties.
    *
-   * @param {Boolean} faces    Whether mesh faces should be rendered.
+   * @param {Boolean} value    Whether mesh faces should be rendered.
    */
   WebGLApplication.prototype.setLandmarkGroupStyle = function(landmarkGroupsId, property, value) {
     value = !!value;
@@ -3244,7 +3245,7 @@
    * Set color and alpha of a loaded point cloud. Color and alpha will only
    * be adjusted if the respective value is not null. Otherwise it is ignored.
    *
-   * @param {Number} volumeId The ID of the point cloud to adjust.
+   * @param {Number} pointCloudId The ID of the point cloud to adjust.
    * @param {String} color    The new color as hex string or null.
    * @param {Number} alpha    The new alpha or null.
    */
@@ -3273,7 +3274,7 @@
   /**
    * Set point cloud render style properties.
    *
-   * @param {Boolean} faces    Whether mesh faces should be rendered.
+   * @param {Boolean} value    Whether mesh faces should be rendered.
    */
   WebGLApplication.prototype.setPointCloudStyle = function(pointCloudId, property, value) {
     value = !!value;
@@ -10098,7 +10099,7 @@
       if (0 === reference.selectedIndex && 1 === mode.selectedIndex) {
         // Use active node as reference for all skeletons
         var p = SkeletonAnnotations.getActiveNodePositionW();
-        origin = new THREE.Vector3d(p.x, p.y, p.z);
+        origin = new THREE.Vector3(p.x, p.y, p.z);
       }
 
       var exporter = CATMAID.FileExporter.export('"Skeleton ID", "Name", "Count"\n',

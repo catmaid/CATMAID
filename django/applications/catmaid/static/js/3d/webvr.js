@@ -3,20 +3,21 @@
   "use strict";
 
   class WebVRInterface {
-    constructor(view, device) {
+    constructor(view) {
       this.view = view;
-      this.device = device;
+      this.session = null;
       this.controllers = [];
       this.meshColorOff = 0xBBBBBB;
       this.meshColorOn = 0xF4C20D;
       this.boundSelectStart = this.selectStart.bind(this);
       this.boundSelectStop = this.selectStop.bind(this);
+      this.boundHandleSessionEnd = this.handleSessionEnd.bind(this);
 
       CATMAID.asEventSource(this);
     }
 
     start() {
-      if (!this.device) return false;
+      if (this.session) return false;
 
       let renderer = this.view.renderer;
       renderer.setAnimationLoop(this.render.bind(this));
@@ -39,17 +40,21 @@
       this.view.space.scene.add(this.rig);
       this.view.camera.near = 1e-3;
 
-      renderer.vr.enabled = true;
-      renderer.vr.setDevice(this.device);
-      this.device.requestPresent([{source: renderer.domElement}])
-          .then(() => this.trigger(WebVRInterface.EVENT_VR_START))
-          .catch((e) => {
-            CATMAID.warn('Could not request VR device');
-            this.stop();
-          });
+      const sessionInit = {optionalFeatures: ['local-floor', 'bounded-floor', 'hand-tracking', 'layers']};
+      navigator.xr.requestSession('immersive-vr', sessionInit)
+        .then((session) => this.handleSessionStart(session));
+    }
+
+    handleSessionStart(session) {
+      this.session = session;
+      this.session.addEventListener('end', this.boundHandleSessionEnd);
+      let renderer = this.view.renderer;
+      renderer.xr.setSession(this.session);
+      renderer.xr.enabled = true;
+      this.trigger(WebVRInterface.EVENT_VR_START);
 
       for (let i = 0; i < 2; i++) {
-        let controller = renderer.vr.getController(i);
+        let controller = renderer.xr.getController(i);
         controller.userData.isSelecting = false;
         controller.addEventListener('selectstart', this.boundSelectStart);
         controller.addEventListener('selectend', this.boundSelectStop);
@@ -81,8 +86,12 @@
     }
 
     stop() {
-      if (!this.device) return;
+      if (!this.session) return;
 
+      this.session.end();
+    }
+
+    handleSessionEnd() {
       // Copy the position and orientation of the rig to assign to the camera
       // after exiting VR. This is better than copying the camera position
       // because (a) it makes turning VR on and off idempotent on the rig/normal
@@ -97,34 +106,32 @@
       let copyCam = new THREE.Object3D();
       this.rig.getWorldPosition(copyCam.position);
       this.rig.getWorldQuaternion(copyCam.quaternion);
+      this.session.removeEventListener('end', this.boundHandleSessionEnd);
+      this.session = null;
+      this.view.renderer.xr.enabled = false;
+      // According to docs one should do this, but with Three.js r95 it
+      // causes an error (because this promise is called before
+      // VRManager's teardown event):
+      // this.view.renderer.xr.setAnimationLoop(null);
 
-      this.device.exitPresent()
-          .then(() => {
-            this.view.renderer.vr.enabled = false;
-            // According to docs one should do this, but with Three.js r95 it
-            // causes an error (because this promise is called before
-            // VRManager's teardown event):
-            // this.view.renderer.vr.setAnimationLoop(null);
+      this.rig.remove(this.view.camera);
+      this.view.camera.position.copy(copyCam.position);
+      this.view.camera.quaternion.copy(copyCam.quaternion);
+      this.view.camera.updateMatrix();
+      this.view.camera.updateMatrixWorld();
+      this.view.space.scene.remove(this.rig);
 
-            this.rig.remove(this.view.camera);
-            this.view.camera.position.copy(copyCam.position);
-            this.view.camera.quaternion.copy(copyCam.quaternion);
-            this.view.camera.updateMatrix();
-            this.view.camera.updateMatrixWorld();
-            this.view.space.scene.remove(this.rig);
+      for (let controller of this.controllers) {
+        controller.removeEventListener('selectstart', this.boundSelectStart);
+        controller.removeEventListener('selectstop', this.boundSelectStop);
+        controller.userData = {};
+      }
+      this.controllers = [];
 
-            for (let controller of this.controllers) {
-              controller.removeEventListener('selectstart', this.boundSelectStart);
-              controller.removeEventListener('selectstop', this.boundSelectStop);
-              controller.userData = {};
-            }
-            this.controllers = [];
+      // this.view.initRenderer();
+      this.view.space.render();
 
-            this.view.initRenderer();
-            this.view.space.render();
-
-            this.trigger(WebVRInterface.EVENT_VR_END);
-          });
+      this.trigger(WebVRInterface.EVENT_VR_END);
     }
 
     selectStart(event) {
@@ -218,7 +225,7 @@
           // Scaling sometimes feels underfit at small scales. One could square
           // the scaling rate:
           // let scale = mat.getMaxScaleOnAxis();
-          // this.vr.rig.scale.multiplyScalar(scale);
+          // this.xr.rig.scale.multiplyScalar(scale);
 
           this.rig.matrix.decompose(
             this.rig.position,

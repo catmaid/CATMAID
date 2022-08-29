@@ -27,6 +27,7 @@
   DataPlot.prototype.constructor = DataPlot;
 
   $.extend(DataPlot.prototype, new InstanceRegistry());
+  CATMAID.asColorizer(DataPlot.prototype);
 
   DataPlot.prototype.getName = function() {
     return "Data Plot " + this.widgetID;
@@ -87,6 +88,19 @@
         deselect.setAttribute("value", "Deselect all");
         deselect.onclick = this.clearSelection.bind(this);
         controls.appendChild(deselect);
+
+        var c = CATMAID.DOM.appendSelect(controls, null, 'Color scheme ',
+            ['CATMAID',
+             'category10',
+             'category20',
+             'category20b',
+             'category20c'].concat(Object.keys(colorbrewer)));
+
+        var colorize = document.createElement('input');
+        colorize.setAttribute("type", "button");
+        colorize.setAttribute("value", "Colorize");
+        colorize.onclick = function() { self.colorizeWith(c.options[c.selectedIndex].text); };
+        controls.appendChild(colorize);
 
         controls.appendChild(document.createTextNode(" Names:"));
         var toggle = document.createElement('input');
@@ -235,8 +249,6 @@
 			});
 		};
 		reader.readAsText(files[0]);
-
-		console.log(Object.keys(this.data), $.extend({}, this.data));
 
 		// Clear
 		evt.target.value = '';
@@ -490,6 +502,49 @@
   DataPlot.prototype.clearSelection = function() {
     this.selected = {};
     this.redraw();
+  };
+
+  DataPlot.prototype.colorizeWith = function(scheme) {
+		var skeletons = Object.keys(this.selected).map(function(skid) { return this.data[skid].model; }, this),
+        colorFn;
+
+		if (0 == skeletons.length) {
+			alert("Select some first or all with 'Select all'");
+			return;
+		}
+
+    if ('CATMAID' === scheme) {
+			skeletons.forEach(function(model) { model.color = this.pickColor(); }, this);
+			this.redraw();
+			return;
+		}
+
+    if (0 === scheme.indexOf('category') && d3.scale.hasOwnProperty(scheme)) {
+      colorFn = d3.scale[scheme]();
+    } else if (colorbrewer.hasOwnProperty(scheme)) {
+      var sets = colorbrewer[scheme];
+      if (skeletons.size <= 3) {
+        colorFn = function(i) { return sets[3][i]; };
+      } else if (sets.hasOwnProperty(skeletons.size)) {
+        colorFn = function(i) { return sets[skeletons.size][i]; };
+      } else {
+        // circular indexing
+        var keys = Object.keys(sets),
+            largest = sets[keys.sort(function(a, b) { return a < b ? 1 : -1; })[0]];
+        colorFn = function(i) { return largest[i % largest.length]; };
+      }
+    }
+
+    if (colorFn) {
+      skeletons.forEach(function(sk, i) {
+        sk.color.setStyle(colorFn(i));
+      }, this);
+      if (skeletons.length > 0) {
+        this.triggerChange(this.getSelectedSkeletonModels()); // pass on model clones
+        // Update UI
+        this.redraw();
+      }
+    }
   };
 
   // Export data plot

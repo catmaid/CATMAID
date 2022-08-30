@@ -191,7 +191,6 @@
 
   DataPlot.prototype.removeSkeletons = function(skeletonIds) {
     var removed = {};
-		var data = this.data;
 		for (var i=0; i<skeletonIds.length; ++i) {
 			var skid = skeletonIds[i];
 			if (null != this.data[skid]) removed[skid] = this.data[skid].model;
@@ -222,7 +221,7 @@
 			e.target.result.split(/\r?\n/).forEach(function(line, i) {
 				// Ignore comments
 				if ('#' == line[0]) return;
-				var cells = line.split(',')
+				var cells = line.split(',');
 				if (cells.length < 3) {
 					console.log("Ignoring line with less than 3 columns: " + line);
 					return;

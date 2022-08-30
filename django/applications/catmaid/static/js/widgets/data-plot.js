@@ -257,7 +257,7 @@
 		CATMAID.fetch({
 	    url: project.id + "/skeleton/neuronnames",
 	    method: "POST",
-	    data: {skids: [2611805,7527710,40045]},
+	    data: {skids: Object.keys(this.data)},
 	    responseType: undefined,
 	    decoder: 'json',
 	    api: undefined,

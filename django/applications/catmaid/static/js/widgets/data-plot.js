@@ -1,7 +1,7 @@
 /* global
   CATMAID,
   InstanceRegistry,
-	THREE
+  THREE
 */
 
 (function(CATMAID) {
@@ -12,16 +12,16 @@
     this.widgetID = this.registerInstance();
     CATMAID.SkeletonSource.call(this, true);
 
-		this.x_label = "X";
-		this.y_label = "Y";
+    this.x_label = "X";
+    this.y_label = "Y";
     this.names_visible = true;
 
-		// skeleton_id vs {x, y, model}
-		this.data = {};
+    // skeleton_id vs {x, y, model}
+    this.data = {};
 
-		// Node ID vs true. Never false, unselected nodes aren't included
-		this.selected = {};
-	};
+    // Node ID vs true. Never false, unselected nodes aren't included
+    this.selected = {};
+  };
 
   DataPlot.prototype = Object.create(CATMAID.SkeletonSource.prototype);
   DataPlot.prototype.constructor = DataPlot;
@@ -38,15 +38,15 @@
       contentID: "data_plot_div" + this.widgetID,
       createControls: function(controls) {
 
-				var self = this;
-				var fileButton = controls.appendChild(CATMAID.DOM.createFileButton(
-					'dp-file-dialog-' + this.widgetID, false, this.importCSV.bind(this)
-					));
+        var self = this;
+        var fileButton = controls.appendChild(CATMAID.DOM.createFileButton(
+          'dp-file-dialog-' + this.widgetID, false, this.importCSV.bind(this)
+          ));
 
         var csv = document.createElement('input');
         csv.setAttribute("type", "button");
         csv.setAttribute("value", "Import CSV");
-				csv.onclick = function() { fileButton.click(); };
+        csv.onclick = function() { fileButton.click(); };
         controls.appendChild(csv);
 
         var clear = document.createElement('input');
@@ -131,11 +131,11 @@
   };
 
   DataPlot.prototype.updateModels = function(models) {
-		models.forEach(function(model) {
-			var entry = this.data[model.id];
-			if (null != entry) entry.model = model;
-		}.bind(this));
-		this.redraw();
+    models.forEach(function(model) {
+      var entry = this.data[model.id];
+      if (null != entry) entry.model = model;
+    }.bind(this));
+    this.redraw();
   };
 
   /** Returns a clone of all skeleton models, keyed by skeleton ID. */
@@ -143,44 +143,44 @@
     if (!this.svg) return {};
     var data = this.data;
     return Object.keys(this.selected).reduce(function(o, id) {
-			o[id] = data[id].model.clone();
+      o[id] = data[id].model.clone();
       return o;
     }, {});
   };
 
   DataPlot.prototype.getSelectedSkeletons = function() {
     if (!this.svg) return [];
-		return Object.keys(this.selected);
+    return Object.keys(this.selected);
   };
 
   DataPlot.prototype.getSkeletons = function() {
     if (!this.data) return [];
-		return Object.keys(this.data);
+    return Object.keys(this.data);
   };
 
   DataPlot.prototype.getSkeletonModels = function() {
     if (!this.data) return {};
-		var data = this.data;
+    var data = this.data;
     return Object.keys(this.data).reduce(function(o, skeleton_id) {
-			o[skeleton_id] = data[skeleton_id].model.clone();
-			return o;
+      o[skeleton_id] = data[skeleton_id].model.clone();
+      return o;
     }, {});
   };
 
   DataPlot.prototype.getSkeletonModel = function(skeleton_id) {
-		if (!this.data) return null;
-		return this.data[skeleton_id].model.clone();
+    if (!this.data) return null;
+    return this.data[skeleton_id].model.clone();
   };
 
   DataPlot.prototype.hasSkeleton = function(skeleton_id) {
-		return null != this.data[skeleton_id];
+    return null != this.data[skeleton_id];
   };
 
   DataPlot.prototype.clear = function() {
-		this.data = [];
+    this.data = [];
     this.selected = {};
-		this.x_label = "X";
-		this.y_label = "Y";
+    this.x_label = "X";
+    this.y_label = "Y";
     this.clearGUI();
   };
 
@@ -191,12 +191,12 @@
 
   DataPlot.prototype.removeSkeletons = function(skeletonIds) {
     var removed = {};
-		for (var i=0; i<skeletonIds.length; ++i) {
-			var skid = skeletonIds[i];
-			if (null != this.data[skid]) removed[skid] = this.data[skid].model;
-			delete this.data[skid];
-			delete this.selected[skid];
-		}
+    for (var i=0; i<skeletonIds.length; ++i) {
+      var skid = skeletonIds[i];
+      if (null != this.data[skid]) removed[skid] = this.data[skid].model;
+      delete this.data[skid];
+      delete this.selected[skid];
+    }
 
     if (!CATMAID.tools.isEmpty(removed)) {
       this.trigger(this.EVENT_MODELS_REMOVED, removed);
@@ -204,91 +204,91 @@
     }
   };
 
-	/** Expects a CSV file with at least 3 columns:
-	 *  1. skeleton ID
-	 *  2. value for X axis
-	 *  3. value for Y axis
-	 *  All values must be numeric or the row will be ignored.
-	 *  Any additional columns will be ignored. */
-	DataPlot.prototype.importCSV = function(evt) {
-		var files = evt.target.files;
+  /** Expects a CSV file with at least 3 columns:
+   *  1. skeleton ID
+   *  2. value for X axis
+   *  3. value for Y axis
+   *  All values must be numeric or the row will be ignored.
+   *  Any additional columns will be ignored. */
+  DataPlot.prototype.importCSV = function(evt) {
+    var files = evt.target.files;
     if (!CATMAID.containsSingleValidFile(files, 'csv')) {
       return Promise.reject();
     }
-		var self = this;
-		var trim = function(s) {
-			s = s.trim();
-			if ('"' === s[0]) s = s.substring(1);
-			if ('"' === s[s.length-1]) s = s.substring(0, s.length -1);
-			return s;
-		};
-		var reader = new FileReader();
-		reader.onload = function(e) {
-			e.target.result.split(/\r?\n/).forEach(function(line, i) {
-				// Ignore comments
-				if ('#' == line[0]) return;
-				var cells = line.split(',');
-				if (cells.length < 3) {
-					console.log("Ignoring line with less than 3 columns: " + line);
-					return;
-				}
-				// Check whether first line consists of text for axis labels
-				if (0 === i) {
-					var x = parseFloat(cells[1]);
-					if (isNaN(x)) self.x_label = trim(cells[1]);
-					var y = parseFloat(cells[2]);
-					if (isNaN(y)) self.y_label = trim(cells[2]);
-					return;
-				}
-				var skid = parseInt(cells[0], 10);
-				var x = parseFloat(cells[1]);
-				if (!isNaN(x) && isFinite(cells[1])) {} else { console.log("bad line: " + line); return; } // check if it's numeric
-				var y = parseFloat(cells[2]);
-				if (!isNaN(y) && isFinite(cells[2])) {} else { console.log("bad line: " + line); return; }
-				// All good:
-				self.data[skid] = {
-					x: x,
-					y: y,
-					model: new CATMAID.SkeletonModel(skid, skid + "", new THREE.Color(1.0, 0.0, 1.0))
-				};
-			});
-		};
-		reader.readAsText(files[0]);
+    var self = this;
+    var trim = function(s) {
+      s = s.trim();
+      if ('"' === s[0]) s = s.substring(1);
+      if ('"' === s[s.length-1]) s = s.substring(0, s.length -1);
+      return s;
+    };
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      e.target.result.split(/\r?\n/).forEach(function(line, i) {
+        // Ignore comments
+        if ('#' == line[0]) return;
+        var cells = line.split(',');
+        if (cells.length < 3) {
+          console.log("Ignoring line with less than 3 columns: " + line);
+          return;
+        }
+        // Check whether first line consists of text for axis labels
+        if (0 === i) {
+          var x = parseFloat(cells[1]);
+          if (isNaN(x)) self.x_label = trim(cells[1]);
+          var y = parseFloat(cells[2]);
+          if (isNaN(y)) self.y_label = trim(cells[2]);
+          return;
+        }
+        var skid = parseInt(cells[0], 10);
+        var x = parseFloat(cells[1]);
+        if (!isNaN(x) && isFinite(cells[1])) {} else { console.log("bad line: " + line); return; } // check if it's numeric
+        var y = parseFloat(cells[2]);
+        if (!isNaN(y) && isFinite(cells[2])) {} else { console.log("bad line: " + line); return; }
+        // All good:
+        self.data[skid] = {
+          x: x,
+          y: y,
+          model: new CATMAID.SkeletonModel(skid, skid + "", new THREE.Color(1.0, 0.0, 1.0))
+        };
+      });
+    };
+    reader.readAsText(files[0]);
 
-		// Clear
-		evt.target.value = '';
+    // Clear
+    evt.target.value = '';
 
-		// Check skeletons exist
-		CATMAID.fetch({
-	    url: project.id + "/skeleton/neuronnames",
-	    method: "POST",
-	    data: {skids: Object.keys(this.data)},
-	    responseType: undefined,
-	    decoder: 'json',
-	    api: undefined,
-	  }).then(function(json) {
-			Object.keys(self.data).forEach(function(skid) {
-				if (null == json[skid]) {
-					console.log("Skeleton " + skid + " doesn't exist.");
-					delete self.data[skid];
-				}
-			});
-			// Register newly loaded skeletons with the NeuronNameService
-			// and only then redraw, as a continuation
-			CATMAID.NeuronNameService.getInstance()
-				.registerAll(self, self.getSkeletonModels(), function() { self.redraw(); });
-		}).catch(CATMAID.handleError);
+    // Check skeletons exist
+    CATMAID.fetch({
+      url: project.id + "/skeleton/neuronnames",
+      method: "POST",
+      data: {skids: Object.keys(this.data)},
+      responseType: undefined,
+      decoder: 'json',
+      api: undefined,
+    }).then(function(json) {
+      Object.keys(self.data).forEach(function(skid) {
+        if (null == json[skid]) {
+          console.log("Skeleton " + skid + " doesn't exist.");
+          delete self.data[skid];
+        }
+      });
+      // Register newly loaded skeletons with the NeuronNameService
+      // and only then redraw, as a continuation
+      CATMAID.NeuronNameService.getInstance()
+        .registerAll(self, self.getSkeletonModels(), function() { self.redraw(); });
+    }).catch(CATMAID.handleError);
 
-		// TODO if there is an error, this.data should be cleared
-	};
+    // TODO if there is an error, this.data should be cleared
+  };
 
-	DataPlot.prototype.redraw = function() {
-		if (!this.data || 0 == Object.keys(this.data).length) return;
+  DataPlot.prototype.redraw = function() {
+    if (!this.data || 0 == Object.keys(this.data).length) return;
 
-		this.draw();
-	};
+    this.draw();
+  };
 
-	DataPlot.prototype.draw = function() {
+  DataPlot.prototype.draw = function() {
     var containerID = '#data_plot_div' + this.widgetID,
         container = $(containerID);
 
@@ -301,26 +301,26 @@
         height = container.height() - margin.top - margin.bottom;
 
     // Package data
-		var getName = CATMAID.NeuronNameService.getInstance().getName;
-		var skids = Object.keys(this.data);
-		var xVector = [];
-		var yVector = [];
-		var entries = [];
-		for (var i=0; i<skids.length; ++i) {
-			var entry = this.data[skids[i]];
-			entries.push({
-				id: skids[i],
-				x: entry.x,
-				y: entry.y,
-				hex: '#' + entry.model.color.getHexString(),
-				name: getName(skids[i])
-			});
-			xVector.push(entry.x);
-			yVector.push(entry.y);
-		}
+    var getName = CATMAID.NeuronNameService.getInstance().getName;
+    var skids = Object.keys(this.data);
+    var xVector = [];
+    var yVector = [];
+    var entries = [];
+    for (var i=0; i<skids.length; ++i) {
+      var entry = this.data[skids[i]];
+      entries.push({
+        id: skids[i],
+        x: entry.x,
+        y: entry.y,
+        hex: '#' + entry.model.color.getHexString(),
+        name: getName(skids[i])
+      });
+      xVector.push(entry.x);
+      yVector.push(entry.y);
+    }
 
-		var xTitle = this.x_label;
-		var yTitle = this.y_label;
+    var xTitle = this.x_label;
+    var yTitle = this.y_label;
 
     // Define the ranges of the axes
     var xR = d3.scale.linear().domain(d3.extent(xVector)).nice().range([0, width]);
@@ -490,19 +490,19 @@
   };
 
   DataPlot.prototype.exportCSV = function() {
-		var getName = CATMAID.NeuronNameService.getInstance().getName;
-		var csv = Object.keys(this.data).map(function(skid) {
-			var entry = this.data[skid];
-			return [skid, entry.x, entry.y, getName(skid)].join(",");
-		}.bind(this)).join("\n");
+    var getName = CATMAID.NeuronNameService.getInstance().getName;
+    var csv = Object.keys(this.data).map(function(skid) {
+      var entry = this.data[skid];
+      return [skid, entry.x, entry.y, getName(skid)].join(",");
+    }.bind(this)).join("\n");
     var blob = new Blob(["skeleton_id," + this.x_label + "," + this.y_label + ",neuron\n", csv], {type :'text/plain'});
     saveAs(blob, "data_plot.csv");
   };
 
-	DataPlot.prototype.selectAll = function() {
-		this.selected = Object.keys(this.data).reduce(function(o, skid) { o[skid] = true; return o; }, {});
-		this.redraw();
-	};
+  DataPlot.prototype.selectAll = function() {
+    this.selected = Object.keys(this.data).reduce(function(o, skid) { o[skid] = true; return o; }, {});
+    this.redraw();
+  };
 
   DataPlot.prototype.clearSelection = function() {
     this.selected = {};
@@ -510,19 +510,19 @@
   };
 
   DataPlot.prototype.colorizeWith = function(scheme) {
-		var skeletons = Object.keys(this.selected).map(function(skid) { return this.data[skid].model; }, this),
+    var skeletons = Object.keys(this.selected).map(function(skid) { return this.data[skid].model; }, this),
         colorFn;
 
-		if (0 == skeletons.length) {
-			alert("Select some first or all with 'Select all'");
-			return;
-		}
+    if (0 == skeletons.length) {
+      alert("Select some first or all with 'Select all'");
+      return;
+    }
 
     if ('CATMAID' === scheme) {
-			skeletons.forEach(function(model) { model.color = this.pickColor(); }, this);
-			this.redraw();
-			return;
-		}
+      skeletons.forEach(function(model) { model.color = this.pickColor(); }, this);
+      this.redraw();
+      return;
+    }
 
     if (0 === scheme.indexOf('category') && d3.scale.hasOwnProperty(scheme)) {
       colorFn = d3.scale[scheme]();

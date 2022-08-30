@@ -216,6 +216,12 @@
       return Promise.reject();
     }
 		var self = this;
+		var trim = function(s) {
+			s = s.trim();
+			if ('"' === s[0]) s = s.substring(1);
+			if ('"' === s[s.length-1]) s = s.substring(0, s.length -1);
+			return s;
+		};
 		var reader = new FileReader();
 		reader.onload = function(e) {
 			e.target.result.split(/\r?\n/).forEach(function(line, i) {
@@ -229,9 +235,9 @@
 				// Check whether first line consists of text for axis labels
 				if (0 === i) {
 					var x = parseFloat(cells[1]);
-					if (isNaN(x)) self.x_label = cells[1];
+					if (isNaN(x)) self.x_label = trim(cells[1]);
 					var y = parseFloat(cells[2]);
-					if (isNaN(y)) self.y_label = cells[2];
+					if (isNaN(y)) self.y_label = trim(cells[2]);
 					return;
 				}
 				var skid = parseInt(cells[0], 10);

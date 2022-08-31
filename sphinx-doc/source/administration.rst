@@ -288,8 +288,8 @@ Database management system
 
     jit_above_cost = 1000000
 
-* Postgre before v15: make sure ``stats_temp_directory`` is set to an in-memory
-  location (e.g. under ``/var/run/``).;
+* Postgres before v15: make sure ``stats_temp_directory`` is set to an in-memory
+  location (e.g. under ``/var/run/``).
 
 CATMAID
 ^^^^^^^

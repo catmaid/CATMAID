@@ -104,7 +104,7 @@ def transaction_collection(request:Request, project_id) -> Response:
 
         cursor = connection.cursor()
         cursor.execute(f"""
-            SELECT row_to_json(cti), COUNT(*) OVER() AS full_count
+            SELECT row_to_json(cti)::text, COUNT(*) OVER() AS full_count
             FROM catmaid_transaction_info cti
             WHERE {' AND '.join(where)}
             ORDER BY execution_time DESC {" ".join(constraints)}

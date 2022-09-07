@@ -230,6 +230,8 @@ init_catmaid () {
 
   if [[ "$CM_RUN_CELERY" = true || "$CM_RUN_ASGI" = true ]]; then
     echo "Starting RabbitMQ"
+    mkdir -p /var/run/rabbitmq
+    chown rabbitmq /var/run/rabbitmq
     service rabbitmq-server start
     until wget --spider -t1 -T1 -O /dev/null -q 127.0.0.1:5672; do
       sleep 0.1

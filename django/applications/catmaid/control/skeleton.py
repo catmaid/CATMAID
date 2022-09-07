@@ -3470,6 +3470,12 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
                 d['edition_time'], d['confidence']
             ] for n, d in arborescence.nodes(data=True)
         ))
+        # In case the root node is first, we need to specify a type cast to
+        # bigint. Otherwise, Postgres will treat the NULL as text. This is more
+        # performant than adding a type case to every parent. At index 12, the
+        # placeholder for the first parent ID ends.
+        if treenode_values:
+            treenode_template = f'{treenode_template[:15]}::bigint{treenode_template[15:]}'
         # Include skeleton ID for index performance.
         cursor.execute(f"""
             UPDATE treenode SET
@@ -3493,6 +3499,12 @@ def _import_skeleton(user, project_id, arborescence, neuron_id=None,
         treenode_template = '(' + '),('.join('%s,%s,%s,%s,%s,%s' for _ in arborescence.nodes) + ')'
         treenode_values = list(chain.from_iterable([d['id'], d['x'], d['y'], d['z'], d['parent_id'], d['radius']] \
                 for n, d in arborescence.nodes(data=True)))
+        # In case the root node is first, we need to specify a type cast to
+        # bigint. Otherwise, Postgres will treat the NULL as text. This is more
+        # performant than adding a type case to every parent. At index 12, the
+        # placeholder for the first parent ID ends.
+        if treenode_values:
+            treenode_template = f'{treenode_template[:15]}::bigint{treenode_template[15:]}'
         # Include skeleton ID for index performance.
         cursor.execute(f"""
             UPDATE treenode SET

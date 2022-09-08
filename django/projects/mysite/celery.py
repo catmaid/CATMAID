@@ -1,5 +1,6 @@
 import os
 import django
+import kombu
 from celery import Celery
 from celery.signals import setup_logging, worker_process_init
 from django.conf import settings
@@ -17,6 +18,16 @@ app.config_from_object('mysite.settings', namespace='CELERY')
 
 # Load task modules from all registered Django app configs.
 app.autodiscover_tasks()
+
+# Declare a general group Exchange, used for client messages
+with app.pool.acquire(block=True) as connection:
+    exchange = kombu.Exchange(
+        name='groups',
+        type='direct',
+        durable=True,
+        channel=connection,
+    )
+    exchange.declare()
 
 
 @worker_process_init.connect

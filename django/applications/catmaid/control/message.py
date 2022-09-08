@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import json
+import json, logging
 from typing import Optional, Union
 
 from django.http import HttpRequest, HttpResponseRedirect, JsonResponse
@@ -10,6 +10,8 @@ from django.shortcuts import get_object_or_404, render
 from catmaid.models import Message, ChangeRequest
 from catmaid.consumers import msg_user
 from catmaid.control.common import makeJSON_legacy_list
+
+logger = logging.getLogger(__name__)
 
 
 @login_required
@@ -69,7 +71,11 @@ def read_message(request:HttpRequest, message_id) -> Union[HttpResponseRedirect,
 
 def notify_user(user_id, message_id, message_title) -> None:
     """Send a ASGI message to the user, if a channel is available."""
-    msg_user(user_id, "new-message", {
-        "message_id": message_id,
-        "message_title": message_title
-    })
+    try:
+        msg_user(user_id, "new-message", {
+            "message_id": message_id,
+            "message_title": message_title
+        })
+    except Exception as e:
+        logger.error('Could not send async message to user')
+        logger.exception(e)

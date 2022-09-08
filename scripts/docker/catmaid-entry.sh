@@ -176,6 +176,10 @@ init_catmaid () {
   echo "Updating static files"
   python manage.py collectstatic --clear --noinput
 
+  # Various output directory have been created during startup, make sure they
+  # are owned by the correct user.
+  chown -R www-data "${CM_WRITEABLE_PATH}"
+
   # The additional new lines are needed to end the input stream. This will try
   # to read the environment variables CM_INITIAL_ADMIN_USER,
   # CM_INITIAL_ADMIN_PASS and CM_INITIAL_ADMIN_EMAIL,

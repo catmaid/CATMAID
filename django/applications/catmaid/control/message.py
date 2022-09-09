@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-import json, logging
+import json
+import logging
 from typing import Optional, Union
 
 from django.http import HttpRequest, HttpResponseRedirect, JsonResponse

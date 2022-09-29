@@ -2809,7 +2809,9 @@ var project;
         if (response.is_remote_login) {
           CATMAID.fetch('/accounts/remote-login-api-token')
             .then(response => {
-              var resultDialog = new CATMAID.OptionsDialog('API Authentication Token');
+              var resultDialog = new CATMAID.OptionsDialog('API Authentication Token', {
+                'OK': CATMAID.noop
+              });
               resultDialog.appendHTML('Remote logins like ORCiD don\'t need further authentication. Your API token is');
               var container = document.createElement('p');
               var token = document.createElement('input');
@@ -2861,7 +2863,9 @@ var project;
                           password: password.value})
                 .then(function (json) {
                   $(dialog.dialog).dialog("destroy");
-                  var resultDialog = new CATMAID.OptionsDialog('API Authentication Token');
+                  var resultDialog = new CATMAID.OptionsDialog('API Authentication Token', {
+                    'OK': CATMAID.noop
+                  });
                   resultDialog.appendHTML('Your API token is');
                   var container = document.createElement('p');
                   var token = document.createElement('input');

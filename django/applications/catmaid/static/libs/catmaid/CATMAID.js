@@ -493,7 +493,7 @@ var requestQueue = new CATMAID.RequestQueue();
     } else if (statusCode === 403) {
       return new CATMAID.PermissionError("Insufficient permissions", error);
     } else {
-      return new CATMAID.Error("Unsuccessful request: " + error.error,
+      return new CATMAID.Error("Unsuccessful request: " + (error.error || JSON.stringify(error)),
           error.detail, error.type);
     }
   };

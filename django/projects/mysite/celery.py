@@ -1,12 +1,15 @@
 import os
 import django
 import kombu
+import logging
 from celery import Celery
 from celery.signals import setup_logging, worker_process_init
 from django.conf import settings
 
 # Set the default Django settings module for the 'celery' program.
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'mysite.settings')
+
+logger = logging.getLogger(__name__)
 
 app = Celery('mysite')
 
@@ -24,10 +27,14 @@ with app.pool.acquire(block=True) as connection:
     exchange = kombu.Exchange(
         name='groups',
         type='direct',
-        durable=True,
+        durable=False,
         channel=connection,
     )
-    exchange.declare()
+    try:
+        exchange.declare()
+    except Exception as e:
+        logger.error('Could not start group exchange for async messages')
+        logger.exception(e)
 
 
 @worker_process_init.connect

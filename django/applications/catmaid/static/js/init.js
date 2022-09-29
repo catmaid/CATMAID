@@ -2857,6 +2857,9 @@ var project;
             $(this.dialog).dialog("destroy");
           };
           dialog.onOK = function () {
+            if (password.value.length === 0) {
+              throw new CATMAID.Warning('Password can\'t be empty');
+            }
             CATMAID.fetch('/api-token-auth/',
                           'POST',
                           {username: CATMAID.session.username,

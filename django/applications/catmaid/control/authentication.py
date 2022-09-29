@@ -967,7 +967,7 @@ def get_remote_login_token(request:HttpRequest) -> JsonResponse:
     if not soc_acc_exists:
         raise PermissionError("Please log-in through a remote service like ORCiD")
 
-    token, created = Token.objects.get_or_create(user=request.user.id)
+    token, created = Token.objects.get_or_create(user=request.user)
     return JsonResponse({
         "token": token.key
     })

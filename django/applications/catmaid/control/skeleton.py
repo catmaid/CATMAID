@@ -3603,12 +3603,23 @@ def get_annotation_info(project_id, skeleton_ids, with_annotation_names, metaann
             # change. We need to look at the history to see annotation removals
             # too.
             meta_join = """
-            JOIN class_instance_class_instance__with_history cici_meta_ann
-                ON cici_meta_ann.class_instance_a = cici_ann.class_instance_b
+            LEFT JOIN LATERAL (
+                SELECT 1 AS match
+                FROM class_instance_class_instance__with_history cici_meta_ann
+                JOIN class_instance ci_meta_ann
+                    ON ci_meta_ann.id = cici_meta_ann.class_instance_b
+                JOIN class_instance_class_instance cici_ann
+                    ON cici_ann.class_instance_a = cici.class_instance_b
+                WHERE cici_meta_ann.class_instance_a = cici_ann.class_instance_b
+                AND cici_meta_ann.relation_id = %(annotated_with)s
+                AND cici_ann.relation_id = %(annotated_with)s
+                AND (cici_meta_ann.edition_time > %(cond_skeleton_modified_since)s
+                    OR ci_meta_ann.edition_time > %(cond_skeleton_modified_since)s)
+                LIMIT 1
+            ) meta ON TRUE
             """
             meta_where = """
-                  AND cici_meta_ann.relation_id = %(annotated_with)s
-                  AND cici_meta_ann.edition_time > %(cond_skeleton_modified_since)s
+                  OR meta.match IS NOT NULL
             """
         else:
             meta_join = ''
@@ -3617,22 +3628,35 @@ def get_annotation_info(project_id, skeleton_ids, with_annotation_names, metaann
         # Look at current data and history to see if there has been a recent
         # change. We need to look at the history to see annotation removals too.
         extra_skeletons = f"""
-            UNION ALL
+            UNION
             SELECT cici.class_instance_a, cici.class_instance_b
             FROM class_instance_class_instance cici
 
-            JOIN class_instance_class_instance__with_history cici_ann
-                ON cici_ann.class_instance_a = cici.class_instance_b
+            JOIN class_instance ci_b
+                ON ci_b.id = cici.class_instance_b
+
+            LEFT JOIN LATERAL (
+                SELECT 1 AS match
+                FROM class_instance_class_instance__with_history cici_ann
+                JOIN class_instance ci_ann
+                    ON ci_ann.id = cici_ann.class_instance_b
+                WHERE cici_ann.class_instance_a = cici.class_instance_b
+                AND cici_ann.relation_id = %(annotated_with)s
+                AND (cici_ann.edition_time > %(cond_skeleton_modified_since)s
+                  OR cici_ann.edition_time > %(cond_skeleton_modified_since)s)
+                LIMIT 1
+            ) ann ON TRUE
 
             {meta_join}
 
             WHERE cici.project_id = %(project_id)s AND
                   cici.relation_id = %(model_of)s AND
                   cici.class_instance_a = ANY(%(cond_skeleton_ids)s::bigint[]) AND
-                  cici_ann.relation_id = %(annotated_with)s AND
-                  cici_ann.edition_time > %(cond_skeleton_modified_since)s
-
-            {meta_where}
+                  (
+                    ci_b.edition_time > %(cond_skeleton_modified_since)s
+                    OR ann.match IS NOT NULL
+                    {meta_where}
+                  )
         """
     else:
         extra_skeletons = ''

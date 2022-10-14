@@ -22,20 +22,23 @@ app.config_from_object('mysite.settings', namespace='CELERY')
 # Load task modules from all registered Django app configs.
 app.autodiscover_tasks()
 
-# Declare a general group Exchange, used for client messages
-with app.pool.acquire(block=True) as connection:
-    exchange = kombu.Exchange(
-        name='groups',
-        type='direct',
-        durable=False,
-        channel=connection,
-    )
-    try:
-        exchange.declare()
-    except Exception as e:
-        logger.error('Could not start group exchange for async messages')
-        logger.exception(e)
-
+# Declare a general group Exchange, used for client messages, but only if a
+# Celery broker is defined.
+if getattr(settings, 'CELERY_BROKER_URL', None):
+    with app.pool.acquire(block=True) as connection:
+        exchange = kombu.Exchange(
+            name='groups',
+            type='direct',
+            durable=False,
+            channel=connection,
+        )
+        try:
+            exchange.declare()
+        except Exception as e:
+            logger.error('Could not start group exchange for async messages')
+            logger.exception(e)
+else:
+    logger.info('No Celery broker configured, therefore no Kombu broker is created')
 
 @worker_process_init.connect
 def fix_django_db(**kwargs):

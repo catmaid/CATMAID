@@ -3599,8 +3599,11 @@ def get_annotation_info(project_id, skeleton_ids, with_annotation_names, metaann
 
     if cond_skeleton_ids:
         if metaannotations:
+            # Look at current data and history to see if there has been a recent
+            # change. We need to look at the history to see annotation removals
+            # too.
             meta_join = """
-            JOIN class_instance_class_instance cici_meta_ann
+            JOIN class_instance_class_instance__with_history cici_meta_ann
                 ON cici_meta_ann.class_instance_a = cici_ann.class_instance_b
             """
             meta_where = """
@@ -3611,12 +3614,14 @@ def get_annotation_info(project_id, skeleton_ids, with_annotation_names, metaann
             meta_join = ''
             meta_where = ''
 
+        # Look at current data and history to see if there has been a recent
+        # change. We need to look at the history to see annotation removals too.
         extra_skeletons = f"""
             UNION ALL
             SELECT cici.class_instance_a, cici.class_instance_b
             FROM class_instance_class_instance cici
 
-            JOIN class_instance_class_instance cici_ann
+            JOIN class_instance_class_instance__with_history cici_ann
                 ON cici_ann.class_instance_a = cici.class_instance_b
 
             {meta_join}

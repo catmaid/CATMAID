@@ -833,7 +833,7 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
 
         # Simplify
         if detail > 0:
-            logger.info(f'Simplifying {len(objects)} skeletons')
+            logger.info(f'Simplifying {len(objects)} skeletons to detail level {detail}')
             simplified_objects = robjects.r.nlapply(objects, rnat.simplify_neuron, **{
                 'n': detail,
                 '.parallel': parallel,
@@ -917,7 +917,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
         soma_tags=('soma', ), use_cache=True, reverse=False, top_n=0,
         resample_by=1e3, use_http=False, bb=None, parallel=False,
         remote_dps_source=None, target_cache=False, skeleton_cache=None,
-        pointcloud_cache=None, pointset_cache=None) -> Dict[str, Any]:
+        pointcloud_cache=None, pointset_cache=None, prune_bb=False) -> Dict[str, Any]:
     """Create NBLAST score for forward similarity from query objects to target
     objects. Objects can either be pointclouds or skeletons, which has to be
     reflected in the respective type parameter. This is executing essentially
@@ -937,6 +937,8 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
     neurons.similarity = nblast_allbyall.neuronlist(neurons.dps, smat, FALSE, 'raw')
 
     remote_dps_source: a (host, port) tuple.
+    prune_bb: if a bounding box is provided using the `bb` parameter,
+    the NBLAST computation can be limited to the nodes in the bounding box.
     """
     # TODO: Break up this function
     timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
@@ -1085,6 +1087,24 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                         effective_query_object_ids, omit_failures,
                         scale=nm_to_um, conn=conn, parallel=parallel)
 
+                if prune_bb and bb:
+                    logger.info(f'Pruning skeletons to bounding box: {bb}')
+                    rrgl = importr('rgl')
+                    rbb = rnat.as_mesh3d_boundingbox(rnat.makeboundingbox(robjects.r.c(
+                            bb['minx']*nm_to_um, bb['maxx']*nm_to_um,
+                            bb['miny']*nm_to_um, bb['maxy']*nm_to_um,
+                            bb['minz']*nm_to_um, bb['maxz']*nm_to_um)))
+                    try:
+                        initial_neuron_count = len(query_objects)
+                        query_objects = rnat.prune_in_volume(query_objects,
+                                                             rrgl.as_triangles3d_mesh3d(rbb),
+                                                             OmitFailures=omit_failures)
+                        logger.info(f'- Original query set: {initial_neuron_count}, Pruned query set: {len(query_objects)}')
+                    except Exception as e:
+                        logger.info('No points left after pruning')
+                        logger.exception(e)
+                        raise ValueError('No points are left after pruning skeletons to bounding box')
+
                 if simplify:
                     logger.info(f"Simplifying fetched query neurons, removing parts below branch level {required_branches}")
                     query_objects = robjects.r.nlapply(query_objects,
@@ -1093,6 +1113,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                                 'OmitFailures': omit_failures,
                                 '.parallel': parallel,
                             })
+
                 logger.info(f'Computing fetched query skeleton stats, resampling and using {config.tangent_neighbors} neighbors for tangents')
                 query_dps = rnat.dotprops(query_objects, **{
                             'k': config.tangent_neighbors,
@@ -1267,6 +1288,23 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                     target_objects = neuronlist_for_skeletons(project_id,
                             effective_target_object_ids, omit_failures,
                             scale=nm_to_um, conn=conn, parallel=parallel)
+
+                    if prune_bb and bb:
+                        logger.info(f'Pruning skeletons to bounding box: {bb}')
+                        rrgl = importr('rgl')
+                        rbb = rnat.as_mesh3d_boundingbox(rnat.makeboundingbox(robjects.r.c(
+                                bb['minx']*nm_to_um, bb['maxx']*nm_to_um,
+                                bb['miny']*nm_to_um, bb['maxy']*nm_to_um,
+                                bb['minz']*nm_to_um, bb['maxz']*nm_to_um)))
+                        try:
+                            initial_neuron_count = len(target_objects)
+                            target_objects = rnat.prune_in_volume(target_objects,
+                                    rrgl.as_triangles3d_mesh3d(rbb), OmitFailures=omit_failures)
+                            logger.info(f'- Original target set: {initial_neuron_count}, Pruned target set: {len(target_objects)}')
+                        except Exception as e:
+                            logger.info('No points left after pruning')
+                            logger.exception(e)
+                            raise ValueError('No points are left after pruning skeletons to bounding box')
 
                     if simplify:
                         logger.info(f"Simplifying fetched target neurons, removing parts below branch level {required_branches}")

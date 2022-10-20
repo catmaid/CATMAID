@@ -738,8 +738,8 @@ def get_all_object_ids(project_id, user_id, object_type, min_length=15000,
     if object_type == 'skeleton':
         extra_where = []
         params = {
-            'project_id': project_id,
-            'limit': limit,
+            'project_id': int(project_id),
+            'limit': int(limit) if limit else limit
         }
 
         if min_nodes:
@@ -847,7 +847,7 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
         clear_results=True, force_objects=False, bb=None, parallel=False,
         remote_dps_source=None, target_cache=False, skeleton_cache=None,
         pointcloud_cache=None, pointset_cache=None,
-        relational_storage_page_size=100, score_file=None) -> str:
+        relational_storage_page_size=100, score_file=None, prune_bb=False) -> str:
     start_time = timer()
     write_non_scores = not write_scores_only
     try:
@@ -874,7 +874,8 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
             logger.info(f'Fetched {len(query_object_ids)} query object IDs of type '
                     f'{similarity.target_type_id} with min length {min_length}, min '
                     f'length if soma found {min_soma_length}, soma tags {soma_tags}, '
-                    f'max length {max_length}, and the bounding box {bb}')
+                    f'max length {max_length}, and the '
+                    f'{"pruning" if prune_bb else "non-pruning"} bounding box {bb}')
         if not target_object_ids and not target_cache:
             logger.info('Getting target object IDs')
             target_object_ids = get_all_object_ids(project_id, user_id,
@@ -883,7 +884,8 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
             logger.info(f'Fetched {len(target_object_ids)} target object IDs of type '
                     f'{similarity.target_type_id} with min length {min_length}, min '
                     f'length if soma found {min_soma_length}, soma tags {soma_tags}, '
-                    f'max length {max_length}, and the bounding box {bb}')
+                    f'max length {max_length}, and the '
+                    f'{"pruning" if prune_bb else "non-pruning"} bounding box {bb}')
 
         if write_non_scores:
             similarity.target_objects = target_object_ids
@@ -911,7 +913,8 @@ def compute_nblast(project_id, user_id, similarity_id, remove_target_duplicates,
                 top_n=similarity.top_n, use_http=use_http, bb=bb,
                 parallel=parallel, remote_dps_source=remote_dps_source,
                 target_cache=target_cache, skeleton_cache=skeleton_cache,
-                pointcloud_cache=pointcloud_cache, pointset_cache=pointset_cache)
+                pointcloud_cache=pointcloud_cache, pointset_cache=pointset_cache,
+                prune_bb=prune_bb)
 
         duration = timer() - start_time
 
@@ -1179,6 +1182,19 @@ def compare_skeletons(request:HttpRequest, project_id) -> JsonResponse:
         type: boolean
         required: false
         defaultValue: false
+      - name: prune_bb
+        description: Whether or not to prune all query and target skeletons to the passed in bounding box
+        type: boolean
+        required: false
+        defaultValue: false
+      - name: bb
+        description: |
+            A bounding box to constrain similarity tests too, optionally by
+            pruning skeletons. The list format is [minx, miny, minz, maxx, maxy,
+            maxz].
+        type: boolean
+        required: false
+        defaultValue: false
     """
     name = request.POST.get('name', None)
     if not name:
@@ -1253,6 +1269,15 @@ def compare_skeletons(request:HttpRequest, project_id) -> JsonResponse:
     if storage_mode not in ('blob', 'relation'):
         raise ValueError(f'Unknown storage mode "{storage_mode}"')
     relational_results = storage_mode == 'relation'
+    raw_bb = get_request_list(request.POST, 'bb', map_fn=float)
+    prune_bb = get_request_bool(request.POST, 'prune_bb', False)
+
+    bb = None
+    if raw_bb:
+        bb = {
+            'minx': raw_bb[0], 'miny': raw_bb[1], 'minz': raw_bb[2],
+            'maxx': raw_bb[3], 'maxy': raw_bb[4], 'maxz': raw_bb[5]
+        }
 
     get_request_bool(request.POST, 'relational_results', False)
 
@@ -1307,7 +1332,7 @@ def compare_skeletons(request:HttpRequest, project_id) -> JsonResponse:
             remove_target_duplicates, simplify, required_branches,
             use_cache=use_cache, min_length=min_length,
             min_soma_length=min_soma_length, soma_tags=soma_tags,
-            relational_results=relational_results)
+            relational_results=relational_results, bb=bb, prune_bb=prune_bb)
 
     return JsonResponse({
         'task_id': task.task_id,
@@ -1644,6 +1669,19 @@ def recompute_similarity(request:HttpRequest, project_id, similarity_id) -> Json
             type: string
             paramType: form
             required: true
+          - name: prune_bb
+              description: Whether or not to prune all query and target skeletons to the passed in bounding box
+              type: boolean
+              required: false
+              defaultValue: false
+          - name: bb
+              description: |
+                  A bounding box to constrain similarity tests too, optionally by
+                  pruning skeletons. The list format is [minx, miny, minz, maxx, maxy,
+                  maxz].
+              type: boolean
+              required: false
+              defaultValue: false
     """
     simplify = get_request_bool(request.GET, 'simplify', True)
     required_branches = int(request.GET.get('required_branches', '10'))
@@ -1653,10 +1691,22 @@ def recompute_similarity(request:HttpRequest, project_id, similarity_id) -> Json
     if storage_mode not in ('blob', 'relation'):
         raise ValueError('Storage mode needs to be "blob" or "relation"')
     relational_results = storage_mode == 'relation'
+    raw_bb = get_request_list(request.GET, 'bb', map_fn=float)
+    prune_bb = get_request_bool(request.GET, 'prune_bb', False)
+
+    bb = None
+    if raw_bb:
+        bb = {
+            'minx': raw_bb[0], 'miny': raw_bb[1], 'minz': raw_bb[2],
+            'maxx': raw_bb[3], 'maxy': raw_bb[4], 'maxz': raw_bb[5]
+        }
+
+    print(raw_bb, bb, prune_bb)
+
     task = compute_nblast.delay(project_id, request.user.id, similarity_id,
             remove_target_duplicates=True, simplify=simplify,
             required_branches=required_branches, use_cache=use_cache,
-            relational_results=relational_results)
+            relational_results=relational_results, bb=bb, prune_bb=prune_bb)
 
     return JsonResponse({
         'status': 'queued',

@@ -154,13 +154,20 @@
    *                              scores. Either 'blob' or 'relation'.
    * @param skipExecution {Boolean} (optional) Whether a similarity object should
    *                              only be created, but not executed.
+   * @param bb {List}             (optional) a six component list of min-x,
+   *                              min-y, min-z, max-x, max-y, max-z of a
+   *                              bounding box to constrain NBLAST to.
+   * @param pruneBb {Boolean}     (optional) Whether a defined bounding box
+   *                              should be used to also prune the compared
+   *                              skeletons.
    *
    * @returns {Promise} Resolves once the similarity query is queued.
    */
   Similarity.computeSimilarity = function(projectId, configId, queryIds,
       targetIds, queryType, targetType, name, normalized, reverse, useAlpha,
       queryMeta, targetMeta, removeTargetDuplicates, simplify, requiredBranches,
-      useCache, topN = 0, storage = 'blob', skipExecution = false) {
+      useCache, topN = 0, storage = 'blob', skipExecution = false, bb = null,
+      pruneBb = false) {
     return CATMAID.fetch(projectId + '/similarity/queries/similarity', 'POST', {
       'query_ids': queryIds,
       'target_ids': targetIds,
@@ -180,6 +187,8 @@
       'top_n': topN,
       'storage_mode': storage,
       'skip_execution': skipExecution,
+      'bb': bb,
+      'prune_bb': pruneBb,
     });
   };
 
@@ -187,12 +196,14 @@
    * Queue recomputation of a similarity configuration.
    */
   Similarity.recomputeSimilarity = function(projectId, similarityId, simplify,
-      requiredBranches, useCache, storage = 'blob') {
+      requiredBranches, useCache, storage = 'blob', bb = null, pruneBb = false) {
     return CATMAID.fetch(projectId + '/similarity/queries/' + similarityId + '/recompute', 'GET', {
       'simplify': simplify,
       'required_branches': requiredBranches,
       'use_cache': useCache,
       'storage_mode': storage,
+      'bb': bb,
+      'prune_bb': pruneBb,
     });
   };
 

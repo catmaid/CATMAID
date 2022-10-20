@@ -25,6 +25,8 @@
     this.resultMode = 'window';
     this.displayTransformationCache = {};
     this.storage = 'blob';
+    this.boundingBox = null;
+    this.pruneBb = false;
 
     // A currently displayed import job in the point cloud tab.
     this.importJob = null;
@@ -895,7 +897,7 @@
                     newQueryName, normalizedScores, reverse, useAlpha,
                     queryMeta, targetMeta, removeTargetDuplicates, simplify,
                     widget.requiredBranches, widget.useCache, topN, widget.storage,
-                    skipExecution);
+                    skipExecution, widget.boundingBox, widget.pruneBb);
               })
               .then(function(response) {
                 widget.lastSimilarityQuery = response;
@@ -1075,6 +1077,68 @@
           ],
           onchange: function() {
             widget.storage = this.value;
+          },
+        }, {
+          type: 'checkbox',
+          label: 'Use BB',
+          id: widget.idPrefix + 'use-bb',
+          title: 'Whether or not to constrain the NBLAST run to a bounding box (will be defined if enabled)',
+          value: widget.useBb,
+          onclick: function(e) {
+            let pruneElement = document.getElementById(widget.idPrefix + 'prune-bb');
+            if (this.checked) {
+              let min, max;
+              let dialog = new CATMAID.OptionsDialog("Define bounding box");
+              dialog.appendMessage("Please enter bounding box coordinates in the following format: X, Y, Z");
+              let minField = dialog.appendField('BB Min', 'bb-min', 'X, Y, Z');
+              minField.style.width = '25em';
+              minField.onchange = function(e) {
+                let coords = e.target.value.split(',').map(v => Number(v.trim()));
+                if (coords.some(v => v === undefined || Number.isNaN(v))) {
+                  CATMAID.warn('Can\'t parse list of coordinate components');
+                  return;
+                }
+                min = coords;
+              };
+              let maxField = dialog.appendField('BB max', 'bb-max', 'X, Y, Z');
+              maxField.style.width = '25em';
+              maxField.onchange = function(e) {
+                let coords = e.target.value.split(',').map(v => Number(v.trim()));
+                if (coords.some(v => v === undefined || Number.isNaN(v))) {
+                  CATMAID.warn('Can\'t parse list coordinate components');
+                  return;
+                }
+                max = coords;
+              };
+              dialog.onOK = () => {
+                if (!min || min.length != 3) {
+                  throw new CATMAID.Warning("Need 3 coordinate components for bounding box min");
+                }
+                if (!max || max.length != 3) {
+                  throw new CATMAID.Warning("Need 3 coordinate components for bounding box max");
+                }
+                widget.boundingBox = [...min, ...max];
+                if (pruneElement) pruneElement.disabled = false;
+              };
+              dialog.onCancel = () => {
+                e.target.checked = false;
+                if (pruneElement) pruneElement.disabled = true;
+              };
+              dialog.show(400, 'auto');
+            } else {
+              widget.boundingBox = null;
+              if (pruneElement) pruneElement.disabled = true;
+            }
+          },
+        }, {
+          type: 'checkbox',
+          label: 'Prune BB',
+          id: widget.idPrefix + 'prune-bb',
+          title: 'Whether or not to prune all skeletons to the defined bounding box',
+          disabled: true,
+          value: widget.pruneBb,
+          onclick: function() {
+            widget.pruneBb = this.checked;
           },
         }, {
           type: 'child',
@@ -1313,7 +1377,8 @@
           }
           let simplify = $('#' + widget.idPrefix + 'simplify-skeletons').prop('checked');
           CATMAID.Similarity.recomputeSimilarity(project.id, data.id, simplify,
-              widget.requiredBranches, widget.useCache, widget.storage)
+              widget.requiredBranches, widget.useCache, widget.storage,
+              widget.boundingBox, widget.pruneBb)
             .then(function() {
               CATMAID.msg('Success', 'NBLAST similarity recomputation queued');
               widget.refresh();

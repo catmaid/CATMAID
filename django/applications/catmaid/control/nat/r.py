@@ -1114,7 +1114,8 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                                 '.parallel': parallel,
                             })
 
-                logger.info(f'Computing fetched query skeleton stats, resampling and using {config.tangent_neighbors} neighbors for tangents')
+                logger.info(f'Computing {len(query_objects)} fetched query skeleton stats,'
+                            f' resampling and using {config.tangent_neighbors} neighbors for tangents')
                 query_dps = rnat.dotprops(query_objects, **{
                             'k': config.tangent_neighbors,
                             'resample': resample_by * nm_to_um,
@@ -1238,6 +1239,9 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
             typed_query_object_ids = list(base.names(query_dps))
         else:
             raise ValueError(f"Unknown query type: {query_type}")
+
+        if len(query_dps) == 0:
+            raise ValueError("No valid query objects found")
 
         # Target objects, only needed if no all-by-all computation is done
         if all_by_all:
@@ -1436,9 +1440,6 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
             else:
                 raise ValueError(f"Unknown target type: {target_type}")
 
-        if len(query_dps) == 0:
-            raise ValueError("No valid query objects found")
-
         if len(target_dps) == 0:
             raise ValueError("No valid target objects found")
 
@@ -1463,11 +1464,12 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
         smat.do_slot_assign('distbreaks', rdistbreaks)
         smat.do_slot_assign('dotprodbreaks', rdotbreaks)
 
-        logger.info('Computing score (alpha: {a}, noramlized: {n}, reverse: {r}, top N: {tn})'.format(**{
+        logger.info('Computing score for {size} objects (alpha: {a}, noramlized: {n}, reverse: {r}, top N: {tn})'.format(**{
             'a': 'Yes' if use_alpha else 'No',
             'n': 'No' if normalized == 'raw' else f'Yes ({normalized})',
             'r': 'Yes' if reverse else 'No',
             'tn': top_n if top_n else '-',
+            'size': f'{len(query_objects)}x{len(target_objects)}',
         }))
 
         # Use defaults also used in nat.nblast.

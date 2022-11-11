@@ -148,7 +148,7 @@ overview for section 0::
 
 To run this for the whole image stack, a small Bash loop can be used::
 
-  for f in (ls /data/tiles/); do convert /data/tiles/f/9/0_0.jpg -resize 745x -gravity NorthWest -extent 192x170 /data/tiles/$f/small.jpg; done
+  for f in (ls /data/tiles/); do convert /data/tiles/$f/9/0_0.jpg -resize 745x -gravity NorthWest -extent 192x170 /data/tiles/$f/small.jpg; done
 
 Note that the 170px height of the the overview image can be computed by
 scaling the original data so that its width fits into 192px. If the data was

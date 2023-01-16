@@ -1166,7 +1166,7 @@ def compare_skeletons(request:HttpRequest, project_id) -> JsonResponse:
         required: false
         defaultValue: true
       - name: storage_mode
-        description: How the scoring should be stored: blob or relation
+        description: Whether scoring information should be stored as blob or as relation
         type: string
         required: false
         defaultValue: blob
@@ -1665,7 +1665,7 @@ def recompute_similarity(request:HttpRequest, project_id, similarity_id) -> Json
             paramType: path
             required: true
           - name: storage_mode
-            description: The storage mode to use: "blob" or "relation"
+            description: The storage mode to use, can be "blob" or "relation"
             type: string
             paramType: form
             required: true

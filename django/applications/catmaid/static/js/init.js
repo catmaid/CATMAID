@@ -1328,7 +1328,7 @@ var project;
                     .catch(CATMAID.handleError);
                 },
               });
-              newProjectDialog.appendHTML(`You now have access to project #${result.project_id} with the following permissions: <em>${result.permissions.sort().join(', ')}</em>, it's name is <strong>${result.project_name}</strong>. You will be able to see this project in the projet menu, front-pages that show all available projects and the "My projects" view in the Home menu. Do you want to switch to the new project?`);
+              newProjectDialog.appendHTML(`You now have access to project #${result.project_id} with the following permissions: <em>${result.permissions.sort().join(', ')}</em>, its name is <strong>${result.project_name}</strong>. You will be able to see this project in the projet menu, front-pages that show all available projects and the "My projects" view in the Home menu. Do you want to switch to the new project?`);
               newProjectDialog.show(400, 'auto');
               CATMAID.msg('Success', 'Added token');
             }

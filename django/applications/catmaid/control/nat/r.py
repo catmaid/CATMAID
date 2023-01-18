@@ -1114,6 +1114,9 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                                 '.parallel': parallel,
                             })
 
+                    if not omit_failures:
+                        query_objects = query_objects.dotprops
+
                 logger.info(f'Computing {len(query_objects)} fetched query skeleton stats,'
                             f' resampling and using {config.tangent_neighbors} neighbors for tangents')
                 query_dps = rnat.dotprops(query_objects, **{
@@ -1121,9 +1124,11 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                             'resample': resample_by * nm_to_um,
                             '.progress': 'none',
                             '.parallel': parallel,
-                            'OmitFailures': omit_failures,
+                            'OmitFailures': False #omit_failures,
                         })
                 non_cache_typed_query_object_ids = list(base.names(query_dps)) if query_dps else []
+
+
             else:
                 query_dps = []
                 non_cache_typed_query_object_ids = []
@@ -1318,6 +1323,8 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                                     'OmitFailures': omit_failures,
                                     '.parallel': parallel,
                                 })
+                        if not omit_failures:
+                            target_objects = target_objects.dotprops
 
                     logger.info('Computing fetched target skeleton stats')
                     target_dps = rnat.dotprops(target_objects, **{

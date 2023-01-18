@@ -1523,6 +1523,19 @@ class SimilarityClusterDetail(APIView):
             type: integer
             paramType: form
             required: true
+          - name: recompute_similarity
+              description: Whether or not to force recomputation of NBLAST
+              values, rather than relying on cached scores.
+              type: boolean
+              required: false
+              defaultValue: false
+          - name: bb_pruned_similarity
+              description: |
+                    When recomputing NBLAST scores, whether or not to prune all
+                    query and target skeletons to the passed in bounding box.
+              type: boolean
+              required: false
+              defaultValue: false
           - name: min_x
             description: The min X of the query bounding box
             type: float
@@ -1586,9 +1599,89 @@ class SimilarityClusterDetail(APIView):
         max_norm_dist = float(request.query_params.get('max_norm_dist', 0.5))
         min_cluster_size = float(request.query_params.get('min_cluster_size', 1))
         with_unclustered = get_request_bool(request.query_params, 'with_unclustered', False)
+        recompute_similarity = get_request_bool(request.query_params, 'recompute_similarity', False)
+        bb_pruned_similarity = get_request_bool(request.query_params, 'bb_pruned_similarity', False)
+
+        query_params = {
+            'project_id': project_id,
+            'similarity_id': similarity_id,
+            'min_x': min_x,
+            'min_y': min_y,
+            'min_z': min_z,
+            'max_x': max_x,
+            'max_y': max_y,
+            'max_z': max_z,
+            'half_z': (max_z + min_z) * 0.5,
+            'min_cable_length': min_cable_length,
+            'max_norm_dist': max_norm_dist,
+            'min_cluster_size': min_cluster_size,
+            'with_unclustered': with_unclustered,
+        }
+
+        # If no pre-computed NBLAST scores should be assumed/used, the scores
+        # need to be computed first. Otherwise, we can use the existing scores
+        # directly.
+        if recompute_similarity:
+            similarity = NblastSimilarity.objects.get(id=similarity_id)
+            bb = {
+                'minx': min_x, 'miny': min_y, 'minz': min_z,
+                'maxx': max_x, 'maxy': max_y, 'maxz': max_z
+            }
+            query_object_ids = get_all_object_ids(similarity.project_id, similarity.user_id,
+                    similarity.query_type_id, min_cable_length, min_cable_length,
+                    similarity.soma_tags, bb=bb)
+            if similarity.query_type_id == similarity.target_type_id:
+                target_object_ids = query_object_ids
+            else:
+                target_object_ids = get_all_object_ids(similarity.project_id, similarity.user_id,
+                        similarity.target_type_id, min_cable_length, min_cable_length,
+                        similarity.soma_tags, bb=bb)
+            if similarity.initial_query_objects:
+                query_object_ids = list(set(similarity.initial_query_objects) - set(query_object_ids))
+            if similarity.initial_target_objects:
+                target_object_ids = list(set(similarity.initial_target_objects) - set(target_object_ids))
+            scoring_info = nblast(similarity.project_id, similarity.user_id, similarity.config_id,
+                    query_object_ids, target_object_ids, similarity.query_type_id,
+                    similarity.target_type_id, remove_target_duplicates=False,
+                    min_length=min_cable_length, min_soma_length=min_cable_length,
+                    normalized=similarity.normalized, use_alpha=similarity.use_alpha,
+                    reverse=similarity.reverse, bb=bb, prune_bb=bb_pruned_similarity)
+            if scoring_info.get('errors'):
+                raise ValueError("Errors during computation: {}".format(
+                        ', '.join(str(i) for i in scoring_info['errors'])))
+            # We only want positive scores
+            non_zero_idx = np.where(scoring_info['similarity'] > 0.01)
+            # Find all non-zero matches that aren't self-matches
+            def to_row(x):
+                query_obj_src = scoring_info['query_object_ids'] or similarity.query_objects
+                target_obj_src = scoring_info['target_object_ids'] or similarity.target_objects
+                return (query_obj_src[x[0]], target_obj_src[x[1]], float(scoring_info['similarity'][x[0], x[1]]))
+            non_zero_results = tuple(filter(lambda x: x[0] != x[1], map(to_row, zip(non_zero_idx[0], non_zero_idx[1]))))
+
+            query_params['query_ids'] = list(map(lambda r: r[0], non_zero_results))
+            query_params['target_ids'] = list(map(lambda r: r[1], non_zero_results))
+            query_params['scores'] = list(map(lambda r: r[2], non_zero_results))
+
+            score_query = """
+                SELECT query_ids, target_ids, scores
+                FROM (VALUES (
+                    %(query_ids)s::bigint[],
+                    %(target_ids)s::bigint[],
+                    %(scores)s::float[]
+                )) AS similarity (query_ids, target_ids, scores)
+            """
+        else:
+            score_query = """
+                SELECT array_agg(query_id) AS query_ids, array_agg(target_id) AS target_ids,
+                    array_agg(score) AS scores FROM query_targets
+                JOIN nblast_similarity_score as nblast
+                ON nblast.query_object_id = query_targets.query_id AND
+                   nblast.target_object_id = query_targets.target_id
+                WHERE nblast.similarity_id = %(similarity_id)s
+            """
 
         cursor = connection.cursor()
-        cursor.execute("""
+        cursor.execute(f"""
             WITH skeleton_ids AS MATERIALIZED (
             SELECT DISTINCT t.skeleton_id
             FROM (
@@ -1617,12 +1710,7 @@ class SimilarityClusterDetail(APIView):
                 FROM skeleton_ids t, skeleton_ids q
             ),
             score AS (
-                SELECT array_agg(query_id) AS query_ids, array_agg(target_id) AS target_ids,
-                    array_agg(score) AS scores FROM query_targets
-                JOIN nblast_similarity_score as nblast
-                ON nblast.query_object_id = query_targets.query_id AND
-                   nblast.target_object_id = query_targets.target_id
-                WHERE nblast.similarity_id = %(similarity_id)s
+                {score_query}
             )
             SELECT c.cluster_id, array_agg(c.object_id)
             FROM score,
@@ -1630,21 +1718,7 @@ class SimilarityClusterDetail(APIView):
                     %(max_norm_dist)s::real, %(min_cluster_size)s::int,
                     %(with_unclustered)s::bool) AS c
             GROUP BY c.cluster_id;
-        """, {
-            'project_id': project_id,
-            'similarity_id': similarity_id,
-            'min_x': min_x,
-            'min_y': min_y,
-            'min_z': min_z,
-            'max_x': max_x,
-            'max_y': max_y,
-            'max_z': max_z,
-            'half_z': (max_z + min_z) * 0.5,
-            'min_cable_length': min_cable_length,
-            'max_norm_dist': max_norm_dist,
-            'min_cluster_size': min_cluster_size,
-            'with_unclustered': with_unclustered,
-        })
+        """, query_params)
 
         return JsonResponse(sorted(cursor.fetchall(), reverse=True, key=lambda x: len(x[1])), safe=False)
 
@@ -1700,8 +1774,6 @@ def recompute_similarity(request:HttpRequest, project_id, similarity_id) -> Json
             'minx': raw_bb[0], 'miny': raw_bb[1], 'minz': raw_bb[2],
             'maxx': raw_bb[3], 'maxy': raw_bb[4], 'maxz': raw_bb[5]
         }
-
-    print(raw_bb, bb, prune_bb)
 
     task = compute_nblast.delay(project_id, request.user.id, similarity_id,
             remove_target_duplicates=True, simplify=simplify,

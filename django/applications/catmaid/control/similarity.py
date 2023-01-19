@@ -1536,6 +1536,16 @@ class SimilarityClusterDetail(APIView):
               type: boolean
               required: false
               defaultValue: false
+          - name: similarity_use_cache
+              description: Whether or not to use cached skeletons when recomputing similarities.
+              type: boolean
+              required: false
+              defaultValue: true
+          - name: similarity_simplify
+              description: Whether or not to simplify skeletons when recomputing similarities.
+              type: boolean
+              required: false
+              defaultValue: true
           - name: min_x
             description: The min X of the query bounding box
             type: float
@@ -1601,6 +1611,8 @@ class SimilarityClusterDetail(APIView):
         with_unclustered = get_request_bool(request.query_params, 'with_unclustered', False)
         recompute_similarity = get_request_bool(request.query_params, 'recompute_similarity', False)
         bb_pruned_similarity = get_request_bool(request.query_params, 'bb_pruned_similarity', False)
+        similarity_use_cache = get_request_bool(request.query_params, 'similarity_use_cache', True)
+        similarity_simplify = get_request_bool(request.query_params, 'similarity_simplify', True)
 
         query_params = {
             'project_id': project_id,
@@ -1644,6 +1656,7 @@ class SimilarityClusterDetail(APIView):
                     query_object_ids, target_object_ids, similarity.query_type_id,
                     similarity.target_type_id, remove_target_duplicates=False,
                     min_length=min_cable_length, min_soma_length=min_cable_length,
+                    use_cache=similarity_use_cache, simplify=similarity_simplify,
                     normalized=similarity.normalized, use_alpha=similarity.use_alpha,
                     reverse=similarity.reverse, bb=bb, prune_bb=bb_pruned_similarity)
             if scoring_info.get('errors'):

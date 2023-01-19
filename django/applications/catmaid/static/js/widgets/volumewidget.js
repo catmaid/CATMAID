@@ -694,7 +694,7 @@
     CATMAID.fetch(project.id + '/volumes/entities/', 'POST', {
         volume_ids: selectedVolumeIds
       })
-      .then(ciMredraw => CATMAID.annotate(Object.values(ciMapping)))
+      .then(ciMapping => CATMAID.annotate(Object.values(ciMapping)))
       .then(() => {
         CATMAID.msg("Success", "Annotations added");
         this.redraw();

@@ -49,6 +49,17 @@ Tracing data cache:
   caching data when updating the cache from the `settings.py` configuration. To
   do so, pass both the `--from-cache` and the `--clean` parameter in.
 
+Landmark widget:
+
+- The list of transformed skeletons in the landmark widget is now shown in a
+  short form that only shows how many skeletons are in the transformed set.
+  Clicking the skeleton set entry will open a Selection Table with all skeletons
+  in the set.
+
+- It is now possible to edit the list of transformed skeletons with the help of
+  the new edit button right next to the skeleton set entry. A dialog will ask
+  for a skeleton source to pull neurons from.
+
 Miscellaneous:
 
 - The built-in API docs (/apis endpoint) now supports deep links, which allows

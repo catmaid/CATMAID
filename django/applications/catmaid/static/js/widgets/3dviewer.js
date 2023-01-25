@@ -2880,12 +2880,18 @@
   /**
    * Show or hide a stored landmark transformations.
    */
-  WebGLApplication.prototype.showLandmarkTransform = function(landmarkTransform, visible) {
+  WebGLApplication.prototype.showLandmarkTransform = function(landmarkTransform, visible, force = false) {
     let landmarkTransformId = landmarkTransform.id;
     var existingLandmarkTransform = this.loadedLandmarkTransforms[landmarkTransformId];
     if (visible) {
       // Bail out if the landmarkTransform in question is already visible
-      if (existingLandmarkTransform) {
+      if (force) {
+        // Remove landmarkTransform
+        existingLandmarkTransform.forEach(entry => {
+          this.space.scene.project.remove(...entry.meshes);
+        });
+        delete this.loadedLandmarkTransforms[landmarkTransformId];
+      } else if (existingLandmarkTransform) {
         return;
       }
 

@@ -852,7 +852,7 @@
   /**
    * Create skeleton models for the skeletons to transform
    */
-  LandmarkWidget.prototype.updateDisplay = function() {
+  LandmarkWidget.prototype.updateDisplay = function(force = false) {
     let target3dViewers = Array.from(this.targeted3dViewerNames.keys()).map(function(m) {
       return CATMAID.skeletonListSources.getSource(m);
     });
@@ -868,7 +868,7 @@
         for (let j=0; j<target3dViewers.length; ++j) {
           let widget = target3dViewers[j];
           let selected = this.targeted3dViewerNames.get(widget.getName());
-          widget.showLandmarkTransform(transformation, selected);
+          widget.showLandmarkTransform(transformation, selected, force);
         }
       }
     }
@@ -2719,7 +2719,7 @@
             type: 'button',
             label: 'Refresh display',
             onclick: function() {
-              target.updateDisplay();
+              target.updateDisplay(true);
             }
           },
           {
@@ -2949,13 +2949,23 @@
               title: 'Skeletons',
               orderable: false,
               render: function(data, type, row, meta) {
+                // Show skeleton list like this: 123 skeletons (remote)
                 if (type === 'display') {
-                  return data.map(m => {
-                    let nns = CATMAID.NeuronNameService.getInstance(m.api);
-                    return `<a href="#" data-action="select-skeleton" data-id="${m.id}" data-api="${m.api || ''}">${(m.api ? `${nns.getName(m.id)} (${m.api.name})` : nns.getName(m.id))}</a>`;
-                  }).join(', ');
+                  const nRemoteSkeletons = data.reduce((n, sk) => {
+                    return sk.api ? n + 1 : n;
+                  }, 0);
+                  const apis = Array.from(data.reduce((o, sk) => {
+                    if (sk.api) o.add(sk.api);
+                    return o;
+                  }, new Set())).join(', ');
+                  if (nRemoteSkeletons > 0) {
+                    return `<a href="#" data-action="select-all-skeletons">${data.length} skeleton${data.length > 1 ? 's' : ''} (${nRemoteSkeletons} remote from ${apis})</a> <ul class="resultTags" style="display: inline"><li><a href="#" data-action="edit-skeletons">edit</a></li></ul>`;
+                  } else {
+                    return `<a href="#" data-action="select-all-skeletons">${data.length} skeleton${data.length > 1 ? 's' : ''}</a> <ul class="resultTags" style="display: inline"><li><a href="#" data-action="edit-skeletons">edit</a></li></ul>`;
+                  }
+                } else {
+                  return data;
                 }
-                return data;
               }
             },
 
@@ -3023,6 +3033,28 @@
             return;
           }
           CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeletonId);
+        }).on('click', 'a[data-action=select-all-skeletons]', function() {
+          const tr = $(this).closest('tr');
+          const dt = existingDTDataTable.row(tr).data();
+          var ST = new CATMAID.SelectionTable();
+          // Create a new window, based on the newly created table and add
+          // skeletons.
+          WindowMaker.create('selection-table', ST, true);
+          ST.addSkeletons(dt.skeletons.map(o => o.id));
+        }).on('click', 'a[data-action=edit-skeletons]', function() {
+          // Show a dialog to select a skeleton source to update the skeletons from.
+          let dialog = new CATMAID.SkeletonSourceDialog("Select a skeleton source to update transformed skeletons from",
+              "Once you press OK the set of transformed skeletons will be updated to the skeletons from the selected source.",
+              source => {
+                const models = Object.values(source.getSelectedSkeletonModels());
+                const tr = $(this).closest('tr');
+                let dt = existingDTDataTable.row(tr).data();
+                dt.skeletons = models;
+                widget.updateDisplay(true);
+                widget.update();
+                CATMAID.msg('Success', 'Skeletons updated');
+              });
+          dialog.show();
         }).on('click', 'a[data-action=delete-transformation]', function() {
           let tr = $(this).closest('tr');
           let row = existingDTDataTable.row(tr);

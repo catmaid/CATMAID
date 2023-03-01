@@ -354,10 +354,10 @@
       return this.baseURL + this.tileWidth + '_' + this.tileHeight + '/' + col * this.tileWidth + '_' +
           row * this.tileHeight + '_' + slicePixelPosition[0] + '/' + this.fileExtension;
     } else if (stack.orientation === CATMAID.Stack.ORIENTATION_XZ) {
-      return baseURL + this.tileWidth + '_' + this.tileHeight + '/' + col * this.tileWidth + '_' +
+      return this.baseURL + this.tileWidth + '_' + this.tileHeight + '/' + col * this.tileWidth + '_' +
           slicePixelPosition[0] + '_' + row * this.tileHeight + '/' + this.fileExtension;
     } else if (stack.orientation === CATMAID.Stack.ORIENTATION_ZY) {
-      return baseURL + this.tileWidth + '_' + this.tileHeight + '/' + slicePixelPosition[0] + '_' +
+      return this.baseURL + this.tileWidth + '_' + this.tileHeight + '/' + slicePixelPosition[0] + '_' +
           row * this.tileHeight + '_' + col * this.tileWidth + '/' + this.fileExtension;
     }
   };

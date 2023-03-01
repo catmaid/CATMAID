@@ -368,7 +368,7 @@ Tile source types are listed by the enumeration integer ID referenced by
 
   Currently, only HTTPS mode is supported (i.e. no explicit credentials).
 
-14. Neuroglander precomputed image blocks
+14. Neuroglancer precomputed image blocks
 *****************************************
 
    This type supports loading **image blocks** from

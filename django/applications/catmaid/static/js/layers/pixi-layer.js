@@ -606,6 +606,10 @@
         {displayName: "'Foreground' alpha", name: 'foregroundAlpha', type: 'slider', range: [0, 1]},
         {displayName: 'Map Seed', name: 'seed', type: 'slider', range: [0, 1]},
       ], this),
+      'CLAHE (Local Contrast)': PixiLayer.FilterWrapper.bind(null, 'CLAHE (Local Contrast)', PixiLayer.Filters.CLAHE, [
+        {displayName: "Contrast limit", name: 'contrastLimit', type: 'integerLabel'},
+        {displayName: "Window size", name: 'windowSize', type: 'integerLabel'},
+      ], this),
     };
   };
 
@@ -1146,6 +1150,62 @@
 
   ['unknownLabel', 'unknownColor', 'backgroundLabel', 'backgroundColor', 'foregroundAlpha', 'seed'].forEach(function (prop) {
     Object.defineProperty(PixiLayer.Filters.ObjectLabelColorMap.prototype, prop, {
+      get: function () {
+        return this.uniforms[prop];
+      },
+      set: function (value) {
+        this.uniforms[prop] = value;
+      }
+    });
+  });
+
+  /**
+   * A CLAHE filter to improve local contrast.
+   *
+   * @constructor
+   */
+  PixiLayer.Filters.CLAHE = function () {
+    var uniforms = {
+      // A value between [0,1], the higher the value, the more contrast. 0 means
+      // original data.
+      contrastLimit: {type: 'f', value: 1},
+      windowSize: {type: 'i', value: 64}
+    };
+
+    var fragmentSrc = `
+      uniform float contrastLimit;
+      uniform int windowSize;
+
+      varying vec2 vTextureCoord;
+      uniform sampler2D uSampler;
+
+      void main(void) {
+       vec4 frag = texture2D(uSampler, vTextureCoord);
+       vec3 color = frag.rgb;
+
+       // 1. Compute histogram
+
+       // 2. Clip contrast
+
+       // 3. Compute cumulative histograms
+
+       // 4. For each histogram, compute the equalization LUT
+
+       // 5. Apply transformation based on LUTs
+
+       frag.rgb = color;
+       gl_FragColor = frag;
+      }
+    `;
+
+    PIXI.Filter.call(this, null, fragmentSrc, uniforms);
+  };
+
+  PixiLayer.Filters.CLAHE.prototype = Object.create(PIXI.Filter.prototype);
+  PixiLayer.Filters.CLAHE.prototype.constructor = PixiLayer.Filters.CLAHE;
+
+  ['contrastLimit', 'windowSize'].forEach(function (prop) {
+    Object.defineProperty(PixiLayer.Filters.CLAHE.prototype, prop, {
       get: function () {
         return this.uniforms[prop];
       },

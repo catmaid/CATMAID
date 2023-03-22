@@ -24,7 +24,7 @@
     // Environments
     "browser"       : true,     // Web Browser (window, document, etc)
     "devel"         : true,     // Development/debugging (alert, confirm, etc)
-    "esversion"     : 6,
+    "esversion"     : 8,
     "jquery"        : true,     // jQuery
     "qunit"         : true,     // QUnit
 

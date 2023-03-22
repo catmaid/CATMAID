@@ -11,10 +11,10 @@ importScripts('nblast_js.js');
 //     .default('ngpre_wasm_bg.wasm')
 //     .then(() => ngprewasm));
 
-let nblastWasmPromise;
-let arenaPromise;
+// let nblastWasmPromise;
+// let arenaPromise;
 
-const { NblastArena, makeFlatPointsTangentsAlphas } = wasm_bindgen;
+const { NblastArena } = wasm_bindgen;
 
 let arena;
 
@@ -114,7 +114,7 @@ onmessage = async function(e) {
       r = new Error("Unknown method " + methodName);
   }
 
-  postMessage([messageId, r])
+  postMessage([messageId, r]);
 
   // if (message.length == 2) {
   //   // Initialization

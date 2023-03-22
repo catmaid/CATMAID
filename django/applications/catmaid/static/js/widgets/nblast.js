@@ -36,12 +36,16 @@
     async queriesTargets(queryIdxs, targetIdxs, normalize, symmetry, useAlpha, maxCentroidDist) {
       return this.worker.postMessage(["queriesTargets", {
         queryIdxs, targetIdxs, normalize, symmetry, useAlpha, maxCentroidDist
-      }])
+      }]);
     }
 
     async allVAll(normalize, symmetry, useAlpha, maxCentroidDist) {
-      normalize, symmetry, useAlpha, maxCentroidDist
+      return this.worker.postMessage(["allVAll", {
+          normalize, symmetry, useAlpha, maxCentroidDist
+      }]);
     }
   }
+
+  CATMAID.Nblaster = Nblaster;
 
 })(CATMAID);

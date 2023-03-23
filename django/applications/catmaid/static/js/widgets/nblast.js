@@ -4,24 +4,18 @@
   "use strict";
 
   class Nblaster {
-    constructor(distThresholds, dotThresholds, cells, k) {
-      this.distThresholds = distThresholds;
-      this.dotThresholds = dotThresholds;
-      this.cells = cells;
-      this.k = k;
-
-      this.worker = null;
-    }
-
-    async init() {
+    constructor() {
       this.worker = new CATMAID.PromiseWorker(
         new Worker(CATMAID.makeStaticURL('libs/nblast-wasm/nblast_wasm_worker.js'))
       );
+    }
+
+    async init(distThresholds, dotThresholds, cells, k) {
       return this.worker.postMessage(["new", {
-        distThresholds: this.distThresholds,
-        dotThresholds: this.dotThresholds,
-        cells: this.cells,
-        k: this.k,
+        distThresholds,
+        dotThresholds,
+        cells,
+        k,
       }]);
     }
 
@@ -46,6 +40,128 @@
     }
   }
 
+  class NblastWidget extends InstanceRegistry {
+    constructor() {
+      this.widgetID = this.registerInstance();
+      this.idPrefix = `nblast${this.widgetID}-`;
+
+      this.qSkelSrc = new CATMAID.BasicSkeletonSource(this.getName() + " Query", {owner: this});
+      this.tSkelSrc = new CATMAID.BasicSkeletonSource(this.getName() + " Target", {owner: this});
+
+      this.content = null;
+
+      this.nblaster = new Nblaster();
+    }
+
+    getName() {
+      return "NBLAST " + this.widgetID;
+    }
+
+    getElId(suffix) {
+      return `nblast${this.widgetID}-${suffix}`;
+    }
+
+    getElement(suffix) {
+      document.getElementById(this.getElId(suffix));
+    }
+
+    destroy() {
+      this.unregisterInstance();
+      CATMAID.NeuronNameService.getInstance().unregister(this);
+      this.qSkelSrc.destroy();
+      this.tSkelSrc.destroy();
+    }
+
+    getK() {
+      let el = this.getElement("k");
+      return parseInt(el.value);
+    }
+
+    getNormalize() {
+      let el = this.getElement("normalize");
+      return el.checked;
+    }
+
+    getSymmetry() {
+      let el = this.getElement("symmetry");
+      return el.value;
+    }
+
+    getUseAlpha() {
+      let el = this.getElement("alpha");
+      return el.checked;
+    }
+
+    getWidgetConfiguration() {
+      return {
+        controlsID: this.getElId("controls"),
+        createControls: (controls) => {
+
+          // k number
+          CATMAID.DOM.appendElement(controls, {
+            id: this.getElId("k"),
+            type: "numeric",
+            label: "k:",
+            title: "k",
+            value: 5,
+            step: 1,
+            min: 2
+          });
+
+          // symmetry drop-down
+          CATMAID.DOM.appendElement(controls, {
+            id: this.getElId("symmetry"),
+            type: "select",
+            label: "Symmetry:",
+            title: "Symmetry",
+            vale: null,
+            entries: [
+              {title: "None", value: null},
+              {title: "Arithmetic mean", value: "arithmetic_mean"},
+              {title: "Geometric mean", value: "geometric_mean"},
+              {title: "Harmonic mean", value: "harmonic_mean"},
+              {title: "Mininum", value: "min"},
+              {title: "Maximum", value: "max"}
+            ]
+          });
+
+          // normalize checkbox
+          CATMAID.DOM.appendElement(controls, {
+            id: this.getElId("normalize"),
+            type: "checkbox",
+            label: "Normalize:",
+            title: "Normalize",
+            value: false,
+          });
+
+          // alpha checkbox
+          CATMAID.DOM.appendElement(controls, {
+            id: this.getElId("alpha"),
+            type: "checkbox",
+            label: "Use alpha:",
+            title: "Use alpha",
+            value: false
+          });
+
+        },
+        contentID: this.getElId("content"),
+        createContent: (content) => { this.content = content; },
+        init: () => {
+
+        }
+      };
+    }
+
+    clear() {
+      this.nblaster = new Nblaster();
+      this.qSkelSrc.clear();
+      this.tSkelSrc.clear();
+    }
+
+
+  }
+
   CATMAID.Nblaster = Nblaster;
+  CATMAID.NblastWidget = NblastWidget;
 
 })(CATMAID);

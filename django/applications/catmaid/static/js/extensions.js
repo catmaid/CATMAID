@@ -360,4 +360,61 @@ jQuery.expr[":"].icontainsnot = jQuery.expr.createPseudo(function(arg) {
     }
   };
 
+  /**
+   * Add extra blend modes
+   */
+  CATMAID.ExtraBlendModes = {
+    'MIN': {
+      'pixiBlendParams': [1, 1],
+      'pixiConstant': 20,
+      'glConstant': 'MIN'
+    },
+    'MAX': {
+      'pixiBlendParams': [1, 1],
+      'pixiConstant': 21,
+      'glConstant': 'MAX'
+    },
+    'REVERSE_SUBTRACT': {
+      'pixiBlendParams': [1, 1],
+      'pixiConstant': 22,
+      'glConstant': 'FUNC_REVERSE_SUBTRACT'
+    }
+  };
+  CATMAID.ExtraBlendModesPerPixiConstant = Object.keys(CATMAID.ExtraBlendModes).reduce((o, m) => {
+    const mode = CATMAID.ExtraBlendModes[m];
+    o[mode.pixiConstant] = mode;
+    return o;
+  }, {});
+  Object.keys(CATMAID.ExtraBlendModes).forEach(key => {
+    const modeKey = key.replace(/ /, '_').toUpperCase();
+    PIXI.BLEND_MODES[modeKey] = CATMAID.ExtraBlendModes[key].pixiConstant;
+  });
+  CATMAID.addExtraBlendModes = target => {
+    // Inject new blend modes
+    Object.keys(CATMAID.ExtraBlendModes).forEach(key => {
+      const mode = CATMAID.ExtraBlendModes[key];
+      target.state.blendModes[mode.pixiConstant] = mode.pixiBlendParams;
+    });
+
+    // Override setBlendMode()
+    const originalSetter = target.state.setBlendMode;
+    target.state.setBlendMode = function(value) {
+      // 4 = BLEND_FUNC
+      const notChanged = value === this.activeState[4];
+
+      originalSetter.call(this, value);
+
+      if (notChanged) {
+        return;
+      }
+
+      const extraBlendMode = CATMAID.ExtraBlendModesPerPixiConstant[value];
+      if (extraBlendMode) {
+        this.gl.blendEquation(this.gl[extraBlendMode.glConstant]);
+      } else {
+        this.gl.blendEquation(this.gl.FUNC_ADD);
+      }
+    };
+  };
+
 })(CATMAID);

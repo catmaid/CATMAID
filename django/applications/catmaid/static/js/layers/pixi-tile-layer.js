@@ -131,6 +131,8 @@
   /** @inheritdoc */
   PixiTileLayer.prototype.redraw = function (completionCallback, blocking) {
     var scaledStackPosition = this.stackViewer.scaledPositionInStack(this.stack);
+    scaledStackPosition.z += this.getTranslation();
+
     var tileInfo = this.tilesForLocation(
         scaledStackPosition.xc,
         scaledStackPosition.yc,

@@ -61,6 +61,9 @@
     this.stage = new PIXI.Container();
     this.layersRegistered = new Set();
 
+    // Add extra blend modes to state
+    CATMAID.addExtraBlendModes(this.renderer);
+
     // Disable the renderer's accessibility plugin (if available), because it
     // requires the renderer view to be part of the DOM at all times (which we
     // cannot guarantee).
@@ -519,9 +522,15 @@
     var normBlendFuncs = glBlendModes[PIXI.BLEND_MODES.NORMAL];
     return Object.keys(PIXI.BLEND_MODES)
         .filter(function (modeKey) { // Filter modes that are not different from normal.
-          var glBlendFuncs = glBlendModes[PIXI.BLEND_MODES[modeKey]];
-          return modeKey == 'NORMAL' ||
-              !CATMAID.tools.arraysEqual(glBlendFuncs, normBlendFuncs); })
+          if (modeKey in CATMAID.ExtraBlendModes) {
+            return false;
+          } else {
+            var glBlendFuncs = glBlendModes[PIXI.BLEND_MODES[modeKey]];
+            return modeKey == 'NORMAL' ||
+                !CATMAID.tools.arraysEqual(glBlendFuncs, normBlendFuncs);
+          }
+        })
+        .concat(Object.keys(CATMAID.ExtraBlendModes))
         .map(function (modeKey) {
           return modeKey.toLowerCase().replace(/_/, ' '); });
   };

@@ -94,6 +94,8 @@
      */
     this._interpolationMode = interpolatonMode;
 
+    this._translation = 0;
+
     this.tileSource.checkCanary(project, this.stack)
         .then(this._handleCanaryCheck.bind(this));
   }
@@ -204,6 +206,14 @@
    */
   StackLayer.prototype.setInterpolationMode = function (mode) {
     this._interpolationMode = mode;
+  };
+
+  StackLayer.prototype.setTranslation = function (translation) {
+    this._translation = Number(translation);
+  };
+
+  StackLayer.prototype.getTranslation = function () {
+    return this._translation;
   };
 
   /**
@@ -396,6 +406,13 @@
       type: 'select',
       value: this._interpolationMode,
       options: Object.values(CATMAID.StackLayer.INTERPOLATION_MODES).map(mode => [mode, mode]),
+    }, {
+      name: 'translation',
+      displayName: 'Z offset',
+      type: 'number',
+      step: 1,
+      value: this._translation,
+      help: 'A virtul Z offset for this stack in stack space coordinates'
     }]);
 
     settings.set('Mirrors', [{
@@ -491,6 +508,8 @@
       }
     } else if ('interpolationMode' === name) {
       this.setInterpolationMode(value);
+    } else if ('translation' === name) {
+      this.setTranslation(value);
     } else if (this.tileSource && CATMAID.tools.isFn(this.tileSource.setSetting)) {
       return this.tileSource.setSetting(name, value);
     }

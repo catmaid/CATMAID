@@ -1659,6 +1659,7 @@ def get_lod_buckets(result_tuple, lod_levels, lod_bucket_size, lod_strategy) -> 
     connector_slice_end = 0
     node_slice_end = 0
     n_total_imported_nodes = 0
+    offset = 0
     for lod_level in range(0, lod_levels):
         node_slice_start = node_slice_end
         connector_slice_start = connector_slice_end

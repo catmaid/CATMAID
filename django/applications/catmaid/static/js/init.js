@@ -1168,7 +1168,11 @@ var project;
           let c = CATMAID.extraAuthConfig[cId];
           let loginElement = document.createElement('a');
           loginElement.append(`Login with ${c.name}`);
-          loginElement.href =c.login_url;
+          let client = this;
+          loginElement.onclick = () => {
+            client.extraAuthConfig(c);
+            return false;
+          };
           loginElement.classList.add('external-login-option');
           return loginElement;
         });
@@ -1177,6 +1181,33 @@ var project;
         this._container.classList.add('no_external_login');
       }
     }
+  };
+
+  Client.prototype.extraAuthLogin = function (extraAuthConfig) {
+    const popup = window.open(extraAuthConfig.login_url, 'popup',
+        'width=500,height=350,scrollbars=yes,resizable=yes');
+    const initialTimestamp = popup.performance.timeOrigin;
+    var checkConnect = setInterval(() => {
+      if (!popup) return;
+      if (popup.closed) {
+        clearInterval(checkConnect);
+      }
+      try {
+        if (initialTimestamp === popup.performance.timeOrigin) {
+          return;
+        }
+      } catch (e ) {
+        if (e instanceof DOMException && e.name === 'SecurityError') {
+          // Silently ignore this error, because it is expected
+          // during a remote login.
+          return;
+        }
+        CATMAID.handleError(e);
+      }
+      popup.close();
+      clearInterval(checkConnect);
+      this.login();
+    }, 100);
   };
 
   // Publicly accessible session
@@ -1190,7 +1221,7 @@ var project;
     menus.login.update(Object.keys(CATMAID.extraAuthConfig).sort().map(cId => {
       let c = CATMAID.extraAuthConfig[cId];
       return {
-          action: c.login_url,
+          action: () => CATMAID.client.extraAuthLogin(c),
           title: `Login with ${c.name}`,
           note: "",
       };

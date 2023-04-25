@@ -196,6 +196,11 @@
       var layer = stackViewer.getLayer(key);
       var self = this;
 
+      if (layer.internal) {
+        layer.setOpacity(layer.getOpacity());
+        continue;
+      }
+
       var container = $('<li/>');
       container.data('key', key);
       container.addClass('layerControl');
@@ -383,6 +388,58 @@
         });
       }
 
+      if (layer.getAvailableBlendModes && layer.getLayerWindow) {
+        container.append($('<h5 />').append('Blending window'));
+
+        var layerWindow = layer.getLayerWindow();
+
+        const layerWindowSizeLabel = $('<label/>')
+            .append('Window size (layers)');
+        const layerWindowSize = CATMAID.DOM.createNumericField(undefined, undefined,
+            'Size of window as a number of layers', layerWindow.size, undefined,
+            event => {
+              const value = Number(event.srcElement.value);
+              if (!Number.isNaN(value)) {
+                var key = $(event.srcElement).parents('.layerControl').data('key');
+                stackViewer.getLayer(key).setLayerWindowSize(value);
+                stackViewer.redraw();
+              }
+            }, undefined, undefined, false, 1, 0);
+        const layerWindowPosLabel = $('<label/>')
+            .append('Window alignment');
+        const layerWindowPosSelect = CATMAID.DOM.createSelect(undefined, [
+            {title: 'Window before current Z', value: 'pre'},
+            {title: 'Window centered on current Z', value: 'center'},
+            {title: 'Window after current Z', value: 'post'}],
+            layerWindow.windowPos,
+            event => {
+              var key = $(event.srcElement).parents('.layerControl').data('key');
+              stackViewer.getLayer(key).setLayerWindowPosition(event.srcElement.value);
+              stackViewer.redraw();
+            });
+
+        container.append($('<div class="setting"/>').append(layerWindowSizeLabel).append(layerWindowSize))
+            .append($('<div class="setting"/>').append(layerWindowPosLabel).append(layerWindowPosSelect));
+
+        try {
+          var blendModes = layer.getAvailableBlendModes();
+          var activeMode = layerWindow.blendMode;
+
+          var blendLabel = $('<label/>')
+              .append('Blend mode');
+          var blendSelect = CATMAID.DOM.createSelect(undefined, blendModes, activeMode, event => {
+            var key = $(event.srcElement).parents('.layerControl').data('key');
+            stackViewer.getLayer(key).setLayerWindowBlendMode(event.srcElement.value);
+            stackViewer.redraw();
+          });
+
+          container.append($('<div class="setting"/>').append(blendLabel).append(blendSelect));
+        } catch (error) {
+          CATMAID.warn('Could not access WebGL blend modes, this indicates problems with graphics card driver.');
+          console.log(error);
+        }
+      }
+
       // Source specific settings storage - stores as settings of the stack
       // viewer.
       if (CATMAID.tools.isFn(layer.getSourceSpec)) {
@@ -391,7 +448,6 @@
           var layer = stackViewer.getLayer(key);
           let sourceSpec = layer.getSourceSpec();
           let scope = 'session';
-
           let settings = Array.from(layer.getLayerSettings().values()).reduce((o,s) => {
             for (let entry of s) {
               o[entry.name] = entry.value;

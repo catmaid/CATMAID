@@ -406,6 +406,10 @@
     this.blendMode = 'normal';
     this.filters = [];
     this.readyForRender = false;
+    this.layerWindowSize = 0;
+    this.layerWindowPosition = 'post';
+    this.layerWindowBlendMode = 'min';
+    this.layerWindowLayers = [];
   }
 
   /**
@@ -498,7 +502,7 @@
     // PixiLayers can only reorder around other PixiLayers, since their ordering
     // is independent of the DOM. Use batchContainer to check for PixiLayers,
     // since instanceof does not work with MI/mixin inheritance.
-    if (!(beforeLayer === null || beforeLayer.batchContainer)) return;
+    if (!(beforeLayer === null || beforeLayer.batchContainer !== undefined)) return;
 
     // Internal reordering requires an initialized batch container. To support
     // reordering before tiles are initialized, make sure the batch container is
@@ -616,6 +620,93 @@
         {displayName: 'Map Seed', name: 'seed', type: 'slider', range: [0, 1]},
       ], this),
     };
+  };
+
+  /**
+   * Retrieve an optional set of layers that form a window around this layer.
+   */
+  PixiLayer.prototype.getLayerWindow = function() {
+    return {
+      'size': this.layerWindowSize,
+      'windowPos': this.layerWindowPosition,
+      'blendMode': this.layerWindowBlendMode,
+    };
+  };
+
+  PixiLayer.prototype.refreshLayerWindow = function() {
+    // Make sure the array of window layers has the correct size
+    while (this.layerWindowLayers.length < this.layerWindowSize) {
+      const wrapper = {
+        'layer': this.constructCopy(),
+        'key': `window-layer-${this.layerWindowLayers.length}`,
+      };
+      wrapper.layer.internal = true; // Hide layer from layer controls
+      this.layerWindowLayers.push(wrapper);
+      this.stackViewer.addLayer(wrapper.key, wrapper.layer);
+    }
+    while (this.layerWindowLayers.length > this.layerWindowSize) {
+      const wrapper = this.layerWindowLayers.pop();
+      this.stackViewer.removeLayer(wrapper.key);
+    }
+
+    let offset = 0;
+    if (this.layerWindowPosition === 'pre') {
+      offset = -1 * this.layerWindowSize;
+    } else if (this.layerWindowPosition === 'center') {
+      offset = -1 * Math.floor(this.layerWindowSize / 2);
+    } else if (this.layerWindowPosition === 'post') {
+      offset = 0;
+    }
+
+    // Set layer offsets (relative to main layer)
+    const layerOffsets = [...Array(this.layerWindowSize + 1)].map((v,i) => offset + i);
+    var targetLayerIndex = 0;
+    layerOffsets.forEach(layerOffset => {
+      if (layerOffset != 0) {
+        const layer = this.layerWindowLayers[targetLayerIndex].layer;
+        layer.setTranslation(layerOffset);
+
+        targetLayerIndex++;
+      }
+    });
+
+    // Add all window layers to stack viewer again and move all layers right
+    // behind the main layer.
+    const layerKey = this.stackViewer.getLayerKey(this);
+    const layerOrder = this.stackViewer.getLayerOrder();
+    const nextLayerIndex = layerOrder.indexOf(layerKey) + 1;
+    const nextLayerKey = nextLayerIndex < layerOrder.length ? layerOrder[nextLayerIndex] : null;
+    this.layerWindowLayers.forEach(layer => {
+      this.stackViewer.moveLayer(layer.key, nextLayerKey);
+      layer.layer.setBlendMode(this.layerWindowBlendMode);
+    });
+
+    this.stackViewer.redraw();
+    this.stackViewer.refreshControls();
+  };
+
+  PixiLayer.prototype.setLayerWindowSize = function(newSize) {
+    const value = Number(newSize);
+    if (!Number.isNaN(value)) {
+      this.layerWindowSize = value;
+      this.refreshLayerWindow();
+    }
+  };
+
+  PixiLayer.prototype.setLayerWindowPosition = function(newPosition) {
+    if (['pre', 'center', 'post'].indexOf(newPosition) != -1) {
+      this.layerWindowPosition = newPosition;
+      this.refreshLayerWindow();
+    }
+  };
+
+  PixiLayer.prototype.setLayerWindowBlendMode = function(newMode) {
+    if (this.getAvailableBlendModes().indexOf(newMode) === -1) {
+      throw new CATMAID.ValueError(`Unknown blend mode: ${newMode}`);
+    }
+
+    this.layerWindowBlendMode = newMode;
+    this.refreshLayerWindow();
   };
 
   /**

@@ -382,7 +382,7 @@ Tile source types are listed by the enumeration integer ID referenced by
    ``%SCALE_DATASET%`` (optional)
       Where to insert the dataset name for different scale levels. Currently
       these are ``s0``, ``s1``, etc., but in the future may be read from the
-      N5 attributes of the parent dataset of where this substitution string
+      attributes of the parent dataset of where this substitution string
       appears.
 
    Further, and also like the N5 source, ``sourceBaseUrl`` has special path

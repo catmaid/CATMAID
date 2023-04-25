@@ -45,6 +45,8 @@
         project.id + '-' + stack.id;
     this.customMirrorStorageName = 'catmaid-custom-mirror-' +
         project.id + '-' + stack.id;
+    // Internal layers are by default hidden in the layer controls.
+    this.internal = false;
 
     if (readState) {
       var serializedCustomMirrorData = readStateItem(this.customMirrorStorageName);

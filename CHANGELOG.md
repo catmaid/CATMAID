@@ -60,6 +60,13 @@ Landmark widget:
   the new edit button right next to the skeleton set entry. A dialog will ask
   for a skeleton source to pull neurons from.
 
+Stack viewer:
+
+- WebGL layers can now define a so called blending window through the layer
+  settings. It allows to define a window in terms of layers around the current
+  section for which a blending operation can be selected. This makes it possible
+  to have e.g. minimum intensity projection of the next 10 layers.
+
 Miscellaneous:
 
 - The built-in API docs (/apis endpoint) now supports deep links, which allows

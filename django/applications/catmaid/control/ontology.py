@@ -724,7 +724,7 @@ def get_by_graphs_instantiated_features(graphs, features) -> List:
     # Needs to be imported locally to avoid circular dependencies
     # TODO Fix this issue somehow
     from catmaid.control.classification import graphs_instantiate_features
-    matrix = np.zeros((len(graphs),len(features)), dtype=np.int)
+    matrix = np.zeros((len(graphs),len(features)), dtype=int)
     graphs_instantiate_features(graphs, features, matrix)
     # Find features that are instantiated
     used_features = set()

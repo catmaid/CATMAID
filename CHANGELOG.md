@@ -73,6 +73,10 @@ Stack viewer:
   transparent sphere at the active node location. It is update when the value is
   changed.
 
+- The View tab now contains an input field for the focal length of the camera.
+  It can be used to estimate the field of view, assuming a film gauge of 35mm
+  (currently not adjustable).
+
 Miscellaneous:
 
 - The built-in API docs (/apis endpoint) now supports deep links, which allows

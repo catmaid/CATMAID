@@ -611,6 +611,22 @@ var WindowMaker = new function()
               }
             }
           },
+          {
+            type: 'numeric',
+            min: 0,
+            step: 1,
+            value: '',
+            length: 6,
+            label: 'Focal length',
+            title: 'The focal length can be used to estimate the field of view, based on the film gauge, which we set fixed to 35mm here.',
+            onchange: e => {
+              let val = Number(e.target.value);
+              if (val && !Number.isNaN(val)) {
+                WA.space.view.camera.setLens(val, 35);
+                WA.render();
+              }
+            }
+          },
           ['Orthographic mode', o.camera_view === 'orthographic', function() { WA.updateCameraView(this.checked); }, false],
           ['Lock view', o.lock_view, function() { WA.options.lock_view = this.checked;  }, false],
         ]);

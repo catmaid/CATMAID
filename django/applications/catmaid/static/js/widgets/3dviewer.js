@@ -1097,6 +1097,28 @@
         skeletons = this.space.content.skeletons;
     if (!active_skid) return alert("No active skeleton!");
     if (!skeletons[active_skid]) return alert("Active skeleton is not present in the 3D view!");
+
+    // A visual selection radius representation in the 3D Viewer
+    let radiusSphere = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 8),
+        new THREE.MeshBasicMaterial({ color: 0x00ff00, opacity:0.6, transparent:true } ) );
+    this.space.scene.project.add(radiusSphere);
+
+    let newRadius = this.options.distance_to_active_node;
+    const updateSelectionSphere = () => {
+      CATMAID.tools.setXYZ(radiusSphere.scale, newRadius);
+      const pos = SkeletonAnnotations.getActiveNodePositionW();
+      radiusSphere.position.set(pos.x, pos.y, pos.z);
+      this.space.render();
+    };
+
+    const removeSelectionSphere = () => {
+      this.space.scene.project.remove(radiusSphere);
+      this.space.render();
+    };
+
+    // Initial update of sphere
+    updateSelectionSphere();
+
     var od = new CATMAID.OptionsDialog("Spatial select"),
         choice = od.appendChoice("Select neurons ", "spatial-mode",
             ["in nearby space",
@@ -1117,9 +1139,22 @@
             [0, 1, 2], 0),
         checkbox = od.appendCheckbox("Only among loaded in 3D view", "spatial-loaded", false);
 
+    const handleChangedRadius = value => {
+      value = Number(value);
+      if (Number.isNaN(value)) return false;
+      newRadius = value;
+      updateSelectionSphere();
+      return false;
+    };
+
+    field.addEventListener('change', event => handleChangedRadius(event.srcElement.value));
+    field.addEventListener('keyup', event => handleChangedRadius(event.srcElement.value));
+
+    od.onCancel = () => removeSelectionSphere();
     od.onOK = (function() {
       var distance = CATMAID.tools.validateNumber(field.value, "Invalid distance value", 1);
       if (!distance) return;
+      removeSelectionSphere();
       var mode = Number(choice.value),
           distanceSq = distance * distance,
           synapse_mode = Number(choice2.value),

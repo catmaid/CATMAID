@@ -67,6 +67,12 @@ Stack viewer:
   section for which a blending operation can be selected. This makes it possible
   to have e.g. minimum intensity projection of the next 10 layers.
 
+3D viewer:
+
+- Spatial select now visualizes the currently set selection radius by placing a
+  transparent sphere at the active node location. It is update when the value is
+  changed.
+
 Miscellaneous:
 
 - The built-in API docs (/apis endpoint) now supports deep links, which allows

@@ -792,9 +792,9 @@ var WindowMaker = new function()
           {
             type: 'text',
             label: 'Light pos.',
-            title: 'Position of the hemisphere light source. If empty, the light will be positioned centered "below" the image data (default).',
+            title: 'Position of the hemisphere light source as an "X, Y, Z" coordinate. The coordinate system is right-handed (X to right, Y down, Z in to match 2D view). If empty, the light will be positioned centered "below" the image data (default).',
             value: o.light_dir && o.light_dir.length > 0 ? o.light_dir.join(', ') : '',
-            placeholder: '(Default)',
+            placeholder: 'X, Y, Z',
             length: 6,
             onchange: (e) => {
               if (e.target.value.trim().length === 0) {

@@ -1068,7 +1068,7 @@ class TrakEM2ToCATMAIDTransformer():
             # Remove faces that aren't connected to two other faces
             n_old_faces = len(mesh.faces)
             cc = trimesh.graph.connected_components(mesh.face_adjacency, min_len=2)
-            mask = np.zeros(n_old_faces, dtype=np.bool)
+            mask = np.zeros(n_old_faces, dtype=bool)
             mask[np.concatenate(cc)] = True
             mesh.update_faces(mask)
             n_faces = len(mesh.faces)

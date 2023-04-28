@@ -1,0 +1,62 @@
+{% extends "catmaid/base.html" %}
+{% load i18n %}
+{% load common %}
+{% load static %}
+
+{% block title %}{% trans "Sign In" %}{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'css/remote-login.css' %}">
+<style>
+.header {
+  margin: 0.5em 0.5 0.5 20px;
+}
+.header h1 {
+  float: left;
+  margin: 0;
+}
+.header img {
+  float: left;
+  height: 2em;
+  margin-top: 0.2em;
+  margin-left: 1em;
+}
+
+.content h1 {
+  margin: 0.5em 0.5em 0.5em 20px;
+  font-size: 20px;
+}
+
+.content form {
+  margin: 1.5em 0.5em 0.5em 20px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+    <div class="header">
+      <h1 title="Version: {% catmaid_version %}">CATMAID</h1>
+      <img src="{{ STATIC_URL }}images/catmaidlogo.svg"
+           onerror="this.onerror=null; this.src='{{ STATIC_URL }}/images/catmaidlogo.png';"
+           title="Skelly, the CATMAID mascot"
+      />
+    </div>
+    <div class="clear"></div>
+<div class="content">
+{% if process == "connect" %}
+<h1>{% blocktrans with provider.name as provider %}Connect {{ provider }}{% endblocktrans %}</h1>
+
+<p>{% blocktrans with provider.name as provider %}You are about to connect a new third party account from {{ provider }}.{% endblocktrans %}</p>
+{% else %}
+<h1>{% blocktrans with provider.name as provider %}Sign In Via {{ provider }}{% endblocktrans %}</h1>
+
+<p>{% blocktrans with provider.name as provider %}You are about to sign in using a third party account from {{ provider }}.{% endblocktrans %}</p>
+{% endif %}
+
+<form method="post">
+  {% csrf_token %}
+  <button type="submit">{% trans "Continue" %}</button>
+</form>
+</div>
+{% endblock %}
+

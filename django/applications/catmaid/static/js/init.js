@@ -1168,9 +1168,8 @@ var project;
           let c = CATMAID.extraAuthConfig[cId];
           let loginElement = document.createElement('a');
           loginElement.append(`Login with ${c.name}`);
-          let client = this;
           loginElement.onclick = () => {
-            client.extraAuthConfig(c);
+            CATMAID.client.extraAuthLogin(c);
             return false;
           };
           loginElement.classList.add('external-login-option');

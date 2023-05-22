@@ -21,12 +21,15 @@ needed_classes = {
     'neuron': "A neuron representation",
     'root': "The root node for the tracing system",
     'skeleton': "The representation of a skeleton",
-    'sampler-created': "Nodes that are created by the reconstruction sampler"
+    'sampler-created': "Nodes that are created by the reconstruction sampler",
+    'landmark': 'A landmark',
+    'landmarkgroup': 'A Collection of landmarks',
 }
 
 # All relations needed by the tracing system alongside their
 # descriptions.
 needed_relations = {
+    'model_of': "Something is a model of sth. else.",
     'labeled_as': "Something is labeled by sth. else.",
     'element_of': "A generic element-of relationship",
     'presynaptic_to': "Something is presynaptic to something else.",
@@ -39,6 +42,7 @@ needed_relations = {
     'adjacent_to': { 'description': "Next to each other", 'isreciprocal': True },
     'mirror_of': { 'description': "A mirror configuration to each other", 'isreciprocal': True },
     'annotated_with': "Something is annotated with sth. else.",
+    'part_of': "Something is a part of sth. else.",
 }
 
 # Expected sampler states, sampler interval sates and sampler domain types

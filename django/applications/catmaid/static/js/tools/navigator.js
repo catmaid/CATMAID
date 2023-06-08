@@ -444,7 +444,7 @@
     };
 
     var handleCopyPosRequest = function(e) {
-      if (e.altKey) {
+      if (e.altKey || e.metaKey) {
         let stack = project.focusedStackViewer;
         let stackTitle = stack.primaryStack.title;
         let stackLocation = `${stack.x.toFixed(2)}, ${stack.y.toFixed(2)}, ${stack.z.toFixed(2)}`;

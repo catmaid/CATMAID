@@ -77,6 +77,17 @@ Stack viewer:
   It can be used to estimate the field of view, assuming a film gauge of 35mm
   (currently not adjustable).
 
+Data views:
+
+- Back-end rendered data views like "Project table with images" can now render
+  preview images for stacks with tile source type 5.
+
+- For the "Spaces and resources" view, the stack used for the sample image can
+  now be configured using the "sample_stack_index" parameter.
+
+- Stacks are now explicitly returned and rendered in order they are linked to
+  projects (projects/ API).
+
 Miscellaneous:
 
 - The built-in API docs (/apis endpoint) now supports deep links, which allows
@@ -106,12 +117,6 @@ Miscellaneous:
 
 - Loading of skeleton morphology, e.g. when appending data to the 3D Viewer, can
   now be canceled.
-
-- Data views: back-end rendered data views like "Project table with images" can
-  now render preview images for stacks with tile source type 5.
-
-- Data views: For the "Spaces and resources" view, the stack used for the sample
-  image can now be configured using the "sample_stack_index" parameter.
 
 ### Bug fixes
 

@@ -280,8 +280,9 @@ def projects(request:HttpRequest) -> JsonResponse:
     project_stack_mapping:Dict = dict()
     if with_mirrors:
         cursor.execute("""
+            SELECT * FROM (
             SELECT DISTINCT ON (ps.project_id, ps.stack_id) ps.project_id,
-                ps.stack_id, s.title, s.comment, s.dimension, sm.mirrors
+                ps.stack_id, s.title, s.comment, s.dimension, sm.mirrors, ps.id
             FROM project_stack ps
             JOIN UNNEST(%(user_project_ids)s::integer[]) user_project(id)
                 ON ps.project_id = user_project.id
@@ -292,19 +293,24 @@ def projects(request:HttpRequest) -> JsonResponse:
                 FROM stack_mirror
                 WHERE stack_id = s.id
             ) sm
-              ON TRUE;
+              ON TRUE
+            ) sub
+            ORDER BY id
         """, {
             'user_project_ids': visible_project_ids,
         })
     else:
         cursor.execute("""
+            SELECT * FROM (
             SELECT DISTINCT ON (ps.project_id, ps.stack_id) ps.project_id,
-                ps.stack_id, s.title, s.comment, s.dimension
+                ps.stack_id, s.title, s.comment, s.dimension, ps.id
             FROM project_stack ps
             JOIN UNNEST(%(user_project_ids)s::integer[]) user_project(id)
                 ON ps.project_id = user_project.id
             JOIN stack s
                 ON ps.stack_id = s.id
+            ) sub
+            ORDER BY id
         """, {
             'user_project_ids': visible_project_ids,
         })

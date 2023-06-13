@@ -110,6 +110,9 @@ Miscellaneous:
 - Data views: back-end rendered data views like "Project table with images" can
   now render preview images for stacks with tile source type 5.
 
+- Data views: For the "Spaces and resources" view, the stack used for the sample
+  image can now be configured using the "sample_stack_index" parameter.
+
 ### Bug fixes
 
 - Neuron Search: neurons that don't have any annotations are now returned as

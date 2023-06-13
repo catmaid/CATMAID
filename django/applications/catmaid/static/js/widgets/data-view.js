@@ -211,6 +211,7 @@
     this.sample_images = CATMAID.tools.getDefined(options.config.sample_images, false);
     this.sample_mirror_index = CATMAID.tools.getDefined(options.config.sample_mirror_index, 0);
     this.sample_slice = CATMAID.tools.getDefined(options.config.sample_slice, 0);
+    this.sample_stack_index = CATMAID.tools.getDefined(options.config.sample_stack_index, 0);
     this.only_favorite = CATMAID.tools.getDefined(options.config.only_favorite, false);
     this.favorites_first = CATMAID.tools.getDefined(options.config.favorites_first, true);
     this.initial_tool = CATMAID.tools.getDefined(options.config.initial_tool);
@@ -406,7 +407,7 @@
         rowSpan.classList.add('image-entry');
         let imgSpan = rowSpan.appendChild(document.createElement('span'));
         if (p.stacks && p.stacks.length > 0) {
-          let stack = p.stacks[0];
+          let stack = p.stacks[this.sample_stack_index];
           // Sort mirror objects by priority without creating a full Stack instance.
           let mirror = stack.mirrors.sort(compareMirrors)[this.sample_mirror_index];
           if (mirror) {

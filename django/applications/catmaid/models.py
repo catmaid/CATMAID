@@ -215,7 +215,7 @@ class StackMirror(models.Model):
         EMPTY_IMAGE = '//:0'
         if self.tile_source_type in (TileSourceTypes.N5, TileSourceTypes.NEUROGLANCER_PRECOMPUTED):
             return EMPTY_IMAGE
-        if self.tile_source_type == TileSourceTypes.H2N5:
+        elif self.tile_source_type == TileSourceTypes.H2N5:
             # Note this does not produce the preferred 192px image, but simply
             # one fitting in one tile.
             slice_size = max(self.tile_width, self.tile_height)
@@ -228,6 +228,8 @@ class StackMirror(models.Model):
                 .replace('%AXIS_0%', '0').replace('%AXIS_1%', '0')\
                 .replace('%AXIS_2%', str(zoom_slice_position)) + '.' + self.file_extension
             return url
+        elif self.tile_source_type == TileSourceTypes.DIRECTORY_BASED_STACK:
+            return f"{self.image_base}small/{slice_position}.{self.file_extension}"
 
         # Default case is only correct for tile source 4.
         return f"{self.image_base}{slice_position}/small.{self.file_extension}"

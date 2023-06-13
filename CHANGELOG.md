@@ -107,6 +107,9 @@ Miscellaneous:
 - Loading of skeleton morphology, e.g. when appending data to the 3D Viewer, can
   now be canceled.
 
+- Data views: back-end rendered data views like "Project table with images" can
+  now render preview images for stacks with tile source type 5.
+
 ### Bug fixes
 
 - Neuron Search: neurons that don't have any annotations are now returned as

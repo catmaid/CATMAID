@@ -220,6 +220,7 @@
     this.initial_layout = CATMAID.tools.getDefined(options.config.initial_layout);
     this.projectFilterPlaceholder = CATMAID.tools.getDefined(options.config.project_filter_placeholder);
     this.stackFilterPlaceholder = CATMAID.tools.getDefined(options.config.stack_filter_placeholder);
+    this.content = options.config.content;
 
     this.cacheLoadingTimeout = null;
   };
@@ -248,6 +249,11 @@
 
   ProjectListDataView.prototype.createContent = function(content) {
     DataView.prototype.createContent.call(this, content);
+
+    if (this.content) {
+      content.innerHTML = this.content;
+      return Promise.resolve();
+    }
 
     var header = document.createElement('div');
     header.setAttribute('data-role', 'header');
@@ -345,6 +351,10 @@
    */
   ProjectListDataView.prototype.refresh = function(content) {
     DataView.prototype.refresh.call(this, content);
+
+    if (this.content) {
+      return;
+    }
 
     this.projectFilterTerm = $('input[data-role=project-filter]', this.container).val() || '';
     var projectRegEx = this.projectFilterTerm.length > 0 ? new RegExp(this.projectFilterTerm, "i") : null;

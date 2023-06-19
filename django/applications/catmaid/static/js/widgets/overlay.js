@@ -2938,6 +2938,13 @@ var SkeletonAnnotations = {};
    * @returns {Bool} Whether or not a render call has already been queued.
    */
   CATMAID.TracingOverlay.prototype.refreshNodesFromTuples = function (jso, extraNodes) {
+    // Due to delayed execution, e.g. after waiting for nodes to be returned
+    // from the server, it might happen that a user closes a stack viewer and
+    // the tracing overlay. In such a situation both the graphics object and the
+    // stack viewer can turn out to be null. Handle this gracefully by early exit.
+    if (!this.graphics || this.stackViewer) {
+      return;
+    }
     // Due to possible performance implications, the tracing layer won't signal
     // visible node set changes if there are no listeners.
     var triggerEvents = this.hasListeners();

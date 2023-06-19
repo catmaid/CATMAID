@@ -593,7 +593,7 @@
     }
   };
 
-  ProjectListDataView.prototype.prototype.initView = () => {
+  ProjectListDataView.prototype.initView = () => {
     let tools = {
       navigator: CATMAID.Navigator,
       tracingtool: CATMAID.TracingTool,

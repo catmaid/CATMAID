@@ -2942,7 +2942,7 @@ var SkeletonAnnotations = {};
     // from the server, it might happen that a user closes a stack viewer and
     // the tracing overlay. In such a situation both the graphics object and the
     // stack viewer can turn out to be null. Handle this gracefully by early exit.
-    if (!this.graphics || this.stackViewer) {
+    if (!this.graphics || !this.stackViewer) {
       return;
     }
     // Due to possible performance implications, the tracing layer won't signal

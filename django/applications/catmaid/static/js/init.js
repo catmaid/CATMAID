@@ -1118,6 +1118,10 @@ var project;
         });
   };
 
+  Client.prototype.openDeepLink = function(projectId, linkName) {
+    return CATMAID.client.init({'pid': projectId, 'link': linkName});
+  };
+
   /**
    * Update the internal state and UI elements for an authenticated context.
    * This doesn't check the validity of the updated state and mainly

@@ -568,43 +568,11 @@
       }
     };
 
-    let tools = {
-      navigator: CATMAID.Navigator,
-      tracingtool: CATMAID.TracingTool,
-    };
-
-    let initView = () => {
-      return Promise.resolve()
-        .then(() => {
-          if (this.initial_location) {
-            return project.moveTo(this.initial_location[2],
-              this.initial_location[1], this.initial_location[0],
-              this.initial_zoom);
-          } else if (this.initial_zoom !== undefined) {
-            return project.moveTo(project.coordinates.z, project.coordinates.y,
-              project.coordinates.x, this.initial_zoom);
-          }
-        })
-        .then(() => {
-          if (this.initial_tool && tools[this.initial_tool]) {
-            return project.setTool(new tools[this.initial_tool]());
-          }
-        })
-        .then(() => {
-          if (this.initial_layout) {
-            let layout = new CATMAID.Layout(this.initial_layout);
-            if (!CATMAID.switchToLayout(layout, true)) {
-              CATMAID.warn(`Layout ${this.initial_layout} could not be loaded`);
-            }
-          }
-        });
-    };
-
     $(pp).on('click', 'a[data-type=stack]', e => {
       let pid = parseInt(e.currentTarget.dataset.pid, 10);
       let sid = parseInt(e.currentTarget.dataset.sid, 10);
       CATMAID.openProjectStack(pid, sid, false, undefined, true, true)
-        .then(initView)
+        .then(() => this.initView())
         .catch(CATMAID.handleError);
     });
 
@@ -612,7 +580,7 @@
       let pid = parseInt(e.currentTarget.dataset.pid, 10);
       let sid = parseInt(e.currentTarget.dataset.sid, 10);
       CATMAID.openStackGroup(pid, sid, true)
-        .then(initView)
+        .then(() => this.initView())
         .catch(CATMAID.handleError);
     });
 
@@ -623,6 +591,37 @@
     } else if (matchingProjects === 0) {
       $('[data-role=filter-message]', this.container).text('No projects matched "' + this.projectFilterTerm + '"');
     }
+  };
+
+  ProjectListDataView.prototype.prototype.initView = () => {
+    let tools = {
+      navigator: CATMAID.Navigator,
+      tracingtool: CATMAID.TracingTool,
+    };
+    return Promise.resolve()
+      .then(() => {
+        if (this.initial_location) {
+          return project.moveTo(this.initial_location[2],
+            this.initial_location[1], this.initial_location[0],
+            this.initial_zoom);
+        } else if (this.initial_zoom !== undefined) {
+          return project.moveTo(project.coordinates.z, project.coordinates.y,
+            project.coordinates.x, this.initial_zoom);
+        }
+      })
+      .then(() => {
+        if (this.initial_tool && tools[this.initial_tool]) {
+          return project.setTool(new tools[this.initial_tool]());
+        }
+      })
+      .then(() => {
+        if (this.initial_layout) {
+          let layout = new CATMAID.Layout(this.initial_layout);
+          if (!CATMAID.switchToLayout(layout, true)) {
+            CATMAID.warn(`Layout ${this.initial_layout} could not be loaded`);
+          }
+        }
+      });
   };
 
   /**

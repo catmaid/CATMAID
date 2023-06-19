@@ -654,8 +654,8 @@ var project;
                 }
                 if (help === undefined && linkInfo.show_help) {
                   help = true;
-                  this.setContextHelpVisibility(help);
-                  this.contextHelpVisibilityEnforced = true;
+                  self.setContextHelpVisibility(help);
+                  self.contextHelpVisibilityEnforced = true;
                 }
                 if (!initialLayout && linkInfo.layout) initialLayout = linkInfo.layout;
                 if (!message && linkInfo.message) message = linkInfo.message;

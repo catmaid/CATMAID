@@ -118,6 +118,10 @@ Miscellaneous:
 - Loading of skeleton morphology, e.g. when appending data to the 3D Viewer, can
   now be canceled.
 
+- The warning shown when closing the browser tab is now only shown if a project
+  is loaded. It won't be displayed anymore when simply the front page is opened
+  without a project being loaded.
+
 ### Bug fixes
 
 - Neuron Search: neurons that don't have any annotations are now returned as

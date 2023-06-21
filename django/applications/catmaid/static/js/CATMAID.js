@@ -85,11 +85,6 @@
     return true;
   });
 
-  // Let user cancel going back in browser history
-  window.onbeforeunload = function() {
-    return "CATMAID's window arrangement and content won't be saved if you continue.";
-  };
-
 })();
 
 (function(CATMAID) {

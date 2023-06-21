@@ -231,6 +231,8 @@ var project;
     // Update window title bar
     document.title = `CATMAID - ${project.title}`;
 
+    CATMAID.client.setShowPageCloseWarning(true);
+
     // Load user settings
     CATMAID.Client.Settings
         .load()
@@ -1977,6 +1979,15 @@ var project;
     document.title = 'CATMAID';
     CATMAID._updateUserMenu();
     this.showVersionInStatusBar();
+    this.setShowPageCloseWarning(false);
+  };
+
+  Client.prototype.setShowPageCloseWarning = function (enable) {
+    if (enable) {
+      addEventListener("beforeunload", beforeUnloadListener, { capture: true });
+    } else {
+      removeEventListener("beforeunload", beforeUnloadListener, { capture: true, });
+    }
   };
 
   Client.prototype.showVersionInStatusBar = function() {
@@ -2655,6 +2666,11 @@ var project;
 
     menus.layout.update(layoutMenuContent);
   }
+
+  const beforeUnloadListener = (event) => {
+    event.preventDefault();
+    return (event.returnValue = "");
+  };
 
   /**
    * Open a stack from a stack info API JSON response. Open the project or, if

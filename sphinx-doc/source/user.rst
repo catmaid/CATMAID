@@ -15,6 +15,7 @@ User Documentation
    api-doc
    volumes
    workflows
+   spaces
    user_faq
    importing_data
    data_views

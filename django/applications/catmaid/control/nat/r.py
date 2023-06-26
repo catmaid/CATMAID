@@ -871,7 +871,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                             '.progress': 'none',
                             'OmitFailures': omit_failures,
                         })
-                non_cache_typed_query_object_ids = list(base.names(query_dps))
+                non_cache_typed_query_object_ids = list(base.names(query_dps)) if query_dps else []
             else:
                 query_dps = []
                 non_cache_typed_query_object_ids = []
@@ -939,7 +939,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                             '.progress': 'none',
                             'OmitFailures': omit_failures,
                         })
-                non_cache_typed_query_object_ids = list(base.names(query_dps))
+                non_cache_typed_query_object_ids = list(base.names(query_dps)) if query_dps else []
             else:
                 non_cache_typed_query_object_ids = []
                 query_dps = []
@@ -1036,7 +1036,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                                 '.progress': 'none',
                                 'OmitFailures': omit_failures,
                             })
-                    non_cache_typed_target_object_ids = list(base.names(target_dps))
+                    non_cache_typed_target_object_ids = list(base.names(target_dps)) if target_dps else []
                 else:
                     target_dps = []
                     non_cache_typed_target_object_ids = []
@@ -1104,7 +1104,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                                 '.progress': 'none',
                                 'OmitFailures': omit_failures,
                             })
-                    non_cache_typed_target_object_ids = list(base.names(target_dps))
+                    non_cache_typed_target_object_ids = list(base.names(target_dps)) if target_dps else []
                 else:
                     non_cache_typed_target_object_ids = []
                     target_dps = []

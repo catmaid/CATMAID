@@ -142,6 +142,9 @@ Miscellaneous:
 - Import/export widget: importing skeletons from a remote CATMAID server using
   annotations doesn't raise an error about a missing function anymore.
 
+- NBLAST computation: avoid crash when set of not cached target DPS objects is
+  None.
+
 ## Maintenance updates
 
 - Node distance measurements: computation of straight line distance has been

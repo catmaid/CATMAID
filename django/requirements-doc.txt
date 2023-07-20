@@ -2,7 +2,7 @@ coreapi==2.3.3
 coreapi-cli==1.0.9
 docutils==0.13.1
 Markdown==2.6.9
-Pygments==2.7.4
+Pygments==2.15.0
 Sphinx==2.4.2
 sphinxcontrib-images==0.9.1
 watchdog[watchmedo]==0.10.2

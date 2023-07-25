@@ -98,6 +98,11 @@ Miscellaneous:
 - The built-in API docs (/apis endpoint) now supports deep links, which allows
   linking to individual APIs.
 
+- Deep links can now optionally be created by users/groups without
+  Annotate/Write permissions. In order to allow this give this user/group the
+  new CreateDeepLinks permission. This can be used to e.g. give anonymous users
+  the ability to create deep links.
+
 - Pasting a list with more than three entries into the quick find text box in
   the upper right corner of the Tracing Tool will now open a Selection Table and
   attempt to load all entries as skeleton IDs.

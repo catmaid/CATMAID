@@ -23,8 +23,8 @@ from rest_framework.views import APIView
 from catmaid.control.common import get_request_bool, get_request_list
 from catmaid.control.authentication import (check_user_role, can_edit_or_fail,
                                            requires_user_role_for_any_project,
-                                           PermissionError)
-from catmaid.models import DeepLink, DeepLinkStack, DeepLinkStackGroup, UserRole
+                                           requires_user_role, PermissionError)
+from catmaid.models import DeepLink, DeepLinkStack, DeepLinkStackGroup, Project, UserRole
 
 
 def make_unique_id():
@@ -88,7 +88,7 @@ class SimpleDeepLinkSerializer(ModelSerializer):
 
 class DeepLinkList(APIView):
 
-    @method_decorator(requires_user_role_for_any_project([UserRole.Browse]))
+    @method_decorator(requires_user_role([UserRole.Browse]))
     @never_cache
     def get(self, request:Request, project_id) -> Response:
         """List deep-links available to the client.
@@ -110,7 +110,7 @@ class DeepLinkList(APIView):
         serializer = SimpleDeepLinkSerializer(deep_links, many=True)
         return Response(serializer.data)
 
-    @method_decorator(requires_user_role_for_any_project([UserRole.Annotate]))
+    @method_decorator(requires_user_role([UserRole.Annotate, UserRole.CreateDeepLinks]))
     def post(self, request:Request, project_id) -> Response:
         """Create a deep-link.
 
@@ -119,11 +119,12 @@ class DeepLinkList(APIView):
         ---
         serializer: DeepLinkSerializer
         """
-        if request.user == get_anonymous_user() or not request.user.is_authenticated:
+        project_id = int(project_id)
+
+        if (request.user == get_anonymous_user() or not request.user.is_authenticated) and \
+                not check_user_role(request.user, Project.objects.get(pk=project_id), [UserRole.CreateDeepLinks]):
             raise PermissionError('Unauthenticated or anonymous users ' \
                                    'can not create persistent deep links.')
-
-        project_id = int(project_id)
 
         alias = request.POST.get('alias')
         if alias:

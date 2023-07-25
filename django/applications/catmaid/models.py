@@ -58,6 +58,12 @@ class UserRole(object):
     # settings.py.
     AnnotateWithToken = 'AnnotateWithToken'
 
+    # Every user/group having the Annotate/Write permission can create deep
+    # links. If the CreateDeepLinks permission is set for a user/group, they can
+    # create deep links also without the Annotate permission. This is mainly
+    # useful for allowing anonymous users to create deep links.
+    CreateDeepLinks = 'CreateDeepLinks'
+
 class Project(models.Model):
     title = models.TextField()
     comment = models.TextField(blank=True, null=True)
@@ -76,6 +82,7 @@ class Project(models.Model):
             ("can_queue_compute_task", "Can queue resource-intensive tasks"),
             ("can_annotate_with_token", "Can annotate project using API token"),
             ("can_fork", "Can create personal copies of projects (only stacks)"),
+            ("can_create_deep_links", "Can create deep links without Annotate"),
         )
 
     def __str__(self):

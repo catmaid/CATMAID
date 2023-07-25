@@ -19,6 +19,8 @@
     // Basic functionality of this widget works with remote skeletons.
     this.supportsRemoteSkeletons = true;
 
+    this.mouseWheelSensitivity = 0.1;
+
     this.label_valign = 'top';
     this.label_halign = 'center';
     this.show_node_labels = true;
@@ -329,7 +331,7 @@
       controlsID: 'compartment_graph_window_buttons' + this.widgetID,
       createControls: function(controls) {
         var GG = this;
-        var tabs = CATMAID.DOM.addTabGroup(controls, GG.widgetID, ['Main', 'Grow', 'Nodes',
+        var tabs = CATMAID.DOM.addTabGroup(controls, GG.widgetID, ['Main', 'View', 'Grow', 'Nodes',
             'Edges', 'Selection', 'Selections', 'Subgraphs', 'Align', 'Export']);
 
         CATMAID.DOM.appendToTab(tabs['Main'],
@@ -348,6 +350,17 @@
              ['Clone', GG.cloneWidget.bind(GG)],
              ['Save', GG.saveJSON.bind(GG)],
              ['Open...', function() { document.querySelector('#gg-file-dialog-' + GG.widgetID).click(); }]]);
+
+        CATMAID.DOM.appendToTab(tabs['View'], [
+             [CATMAID.DOM.createNumericField(`gg_mousewheel_factor${GG.widgetID}`, 'Mouse wheel sensitivity:',
+                'Lower values allow to zoom in smaller steps', GG.mouseWheelSensitivity, '', e => {
+                  const parsedValue = Number(e.srcElement.value);
+                  if (!Number.isNaN(parsedValue)) {
+                    GG.mouseWheelSensitivity = parsedValue;
+                    GG.cy._private.renderer.wheelSensitivity = GG.mouseWheelSensitivity;
+                  }
+                }, 5, '', false, 0.01, 0, undefined)],
+             ]);
 
         tabs['Export'].appendChild(CATMAID.DOM.createFileButton(
               'gg-file-dialog-' + GG.widgetID, false, function(evt) {
@@ -727,7 +740,7 @@
     // In case shift is pressed, the mousewheel sensitivity will be changed so
     // that zooming happens in smaller steps.
     if (event.key === 'Shift' && this.cy) {
-      this.cy._private.renderer.wheelSensitivity = 0.5;
+      this.cy._private.renderer.wheelSensitivity = 0.5 * this.mouseWheelSensitivity;
     } else if (event.key === 'Delete') {
       this.removeSelected();
       return true;
@@ -738,7 +751,7 @@
     // In case shift is pressed, the mousewheel sensitivity will be set back to
     // normal.
     if (event.key === 'Shift' && this.cy) {
-      this.cy._private.renderer.wheelSensitivity = 1;
+      this.cy._private.renderer.wheelSensitivity = this.mouseWheelSensitivity;
     } else if (event.key === 'j') {
       // Letter 'J' (would prefer shift+G)
       this.group();
@@ -962,6 +975,8 @@
     var sel = $("#cyelement" + this.widgetID);
     sel.cytoscape(options).css('background', 'white');
     this.cy = sel.cytoscape("get");
+
+    this.cy._private.renderer.wheelSensitivity = this.mouseWheelSensitivity;
 
     // this.cy.nodes().bind("mouseover", function(e) {
     //   // console.log('node mouseover', e);

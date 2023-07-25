@@ -77,6 +77,11 @@ Stack viewer:
   It can be used to estimate the field of view, assuming a film gauge of 35mm
   (currently not adjustable).
 
+Graph widget:
+
+- A new view tab contains now settings related to the graph display and
+  interaction with it. It contains settings like mouse wheel sensitivity.
+
 Data views:
 
 - Back-end rendered data views like "Project table with images" can now render

@@ -45,7 +45,7 @@
     let labels = ['Neuron', 'Skeleton',
       'Raw cable (nm)', 'Smooth cable (nm)', 'Lower-bound cable (nm)',
       'N inputs', 'N outputs', 'N presynaptic sites', 'N nodes',
-      'N branch nodes', 'N end nodes'];
+      'N branch nodes', 'N end nodes', 'Est. radius volume (nm^3)'];
 
     if (forceAll || (this.applyFilterRules && this.filterRules.length > 0)) {
       labels.splice(2, 0, 'Fragment start', 'Fragment');
@@ -229,6 +229,7 @@
           let ap = new CATMAID.ArborParser().init('compact-arbor', json),
               arbor = ap.arbor,
               positions = ap.positions,
+              radii = ap.radii,
               api = models[skid].api,
               name = CATMAID.NeuronNameService.getInstance(api).getName(skid);
 
@@ -244,6 +245,7 @@
               let fractionArborParser = new CATMAID.ArborParser();
               fractionArborParser.arbor = fractionArbor;
               fractionArborParser.positions = positions;
+              fractionArborParser.radii = radii;
               fractionArborParser.synapses(json[1], true);
 
               let raw_cable = Math.round(fractionArbor.cableLength(positions)) | 0,
@@ -255,12 +257,14 @@
                   n_nodes = fractionArbor.countNodes(),
                   be = fractionArbor.findBranchAndEndNodes(),
                   n_branching = be.n_branches,
-                  n_ends = be.ends.length;
+                  n_ends = be.ends.length,
+                  radius_volume = fractionArbor.estimateRadiusVolume(positions, radii),
+                  radius_ratio = Math.floor(100.0 * fractionArbor.radiusRatio(radii));
 
               let fragmentRow = [SkeletonMeasurementsTable.prototype._makeStringLink(name, skid),
                   skid, fractionArbor.root, `${i+1}/${fractions.length}`,
                   raw_cable, smooth_cable, lower_bound_cable, n_inputs, n_outputs,
-                  n_presynaptic_sites, n_nodes, n_branching, n_ends];
+                  n_presynaptic_sites, n_nodes, n_branching, n_ends, {volume: radius_volume, ratio: radius_ratio}];
               if (self.aggregateFragments) {
                   if (aggRow) {
                     aggRow[2].push(fragmentRow[2]);
@@ -301,11 +305,14 @@
                   n_nodes = arbor.countNodes(),
                   be = arbor.findBranchAndEndNodes(),
                   n_branching = be.n_branches,
-                  n_ends = be.ends.length;
+                  n_ends = be.ends.length,
+                  radius_volume = arbor.estimateRadiusVolume(positions, radii),
+                  radius_ratio = Math.floor(100.0 * arbor.radiusRatio(radii));
 
               rows.push([SkeletonMeasurementsTable.prototype._makeStringLink(name, skid),
                     skid, arbor.root, '1/1', raw_cable, smooth_cable, lower_bound_cable,
-                    n_inputs, n_outputs, n_presynaptic_sites, n_nodes, n_branching, n_ends]);
+                    n_inputs, n_outputs, n_presynaptic_sites, n_nodes,
+                    n_branching, n_ends, {volume: radius_volume, ratio: radius_ratio}]);
             }
           }
         },
@@ -439,7 +446,8 @@
     let labels = this.getLabels(true);
     let self = this;
 
-    this.table = $('table#skeleton_measurements_table' + this.widgetID).DataTable({
+    const tableId = 'table#skeleton_measurements_table' + this.widgetID;
+    this.table = $(tableId).DataTable({
         destroy: true,
         dom: '<"H"lr>t<"F"ip>',
         processing: true,
@@ -470,10 +478,21 @@
               return `<a href="#" data-role="select-node" data-node-id="${data}">${data}</a>`;
             }
           },
+        }, {
+          targets: -1,
+          render: function(data, type, row, meta) {
+            return `${Math.round(data.volume)} (${data.ratio}%)`;
+          },
         }],
         createdRow: function(row, data, index) {
           row.dataset.skeletonId = data[1];
-        }
+        },
+        initComplete: function(settings) {
+          let headers = $(tableId).find('thead th');
+          headers[headers.length - 1].title = 'The estimated volume in nm^3 based on the sum of all ' +
+              'cylinders/cones formed by all skeleton edges with their node radii. The percentage shows how ' +
+              'many nodes have a radius attached';
+        },
     })
     .on('draw.dt', (function() {
       this.highlightActiveSkeleton();

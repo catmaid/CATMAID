@@ -2334,3 +2334,33 @@ Arbor.prototype.collapseArtifactualBranches = function(tags, callback) {
       }
   }
 };
+
+/**
+ * Sum the volume of all cylinders/cones between nodes of an arbor.
+ */
+Arbor.prototype.estimateRadiusVolume = function(positions, radii) {
+  var children = this.childrenArray(),
+      sum = 0;
+  for (var i=0; i<children.length; ++i) {
+    const node = children[i];
+    const dist = positions[node].distanceTo(positions[this.edges[node]]);
+    const r1 = Math.max(0, radii[node] || 0);
+    const r2 = Math.max(0, radii[this.edges[node]] || 0);
+    const vol = (1/3) * dist * Math.PI * (r1 * r1 + r1 * r2 + r2 * r2);
+    sum += vol;
+  }
+  return sum;
+};
+
+/**
+ * The ratio of nodes with radius versus those without.
+ */
+Arbor.prototype.radiusRatio = function(radii) {
+  var children = this.childrenArray(),
+      radiusCount = radii[this.root] && radii[this.root] > 0 ? 1 : 0;
+  for (var i=0; i<children.length; ++i) {
+    const node = children[i];
+    radiusCount += radii[node] && radii[node] > 0 ? 1 : 0;
+  }
+  return radiusCount / (1 + children.length);
+};

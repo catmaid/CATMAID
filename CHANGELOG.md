@@ -93,6 +93,14 @@ Data views:
 - Stacks are now explicitly returned and rendered in order they are linked to
   projects (projects/ API).
 
+Measurement widget:
+
+- A new column is added, which shows the estimated volume based on the available
+  radius information. The volume is computed by simply adding all volumes of the
+  cylinders and cones formed around each edge. To make interpretation of that
+  number easier, a percentage is shown as well for each entry that reflects how
+  many nodes of the respective skeleton have a radius assigned.
+
 Miscellaneous:
 
 - The built-in API docs (/apis endpoint) now supports deep links, which allows

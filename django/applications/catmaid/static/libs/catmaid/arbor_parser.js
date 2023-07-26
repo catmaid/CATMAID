@@ -37,7 +37,8 @@
 
   ArborParser.prototype.tree = function(rows) {
     var arbor = new Arbor(),
-        positions = {};
+        positions = {},
+        radii = {};
     for (var i=0; i<rows.length; ++i) {
       var row = rows[i],
           node = row[0],
@@ -45,10 +46,12 @@
       if (paren) arbor.edges[node] = paren;
       else arbor.root = node;
       positions[node] = new THREE.Vector3(row[3], row[4], row[5]);
+      radii[node] = row[6];
     }
 
     this.arbor = arbor;
     this.positions = positions;
+    this.radii = radii;
     return this;
   };
 

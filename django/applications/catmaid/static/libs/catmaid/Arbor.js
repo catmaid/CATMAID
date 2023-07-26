@@ -1308,9 +1308,8 @@ Arbor.prototype._resampleSlab = function(slab, positions, S, delta, sqDelta, min
         // are too far apart.
 
         // Collect all nodes before and after k with a weight under 0.01, as
-        // precomputed in gw: only weights > 0.01 exist
-        var pivot = slab[k],
-            points = [k],
+        // precomputed in gw: only weights > 0.01 exist. The pivot is available as slab[k].
+        var points = [k],
             weights = [1],
             j = k - 1;
         while (j > 0) {
@@ -1900,8 +1899,7 @@ Arbor.prototype.simplify = function(keepers) {
   var edges = copy.edges,
       branches = copy.findBranchNodes(),
       seen = {},
-      paths = [],
-      root = null;
+      paths = [];
 
   for (var k=0; k<pins.length; ++k) {
     var node = pins[k],

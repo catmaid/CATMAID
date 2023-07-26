@@ -826,6 +826,7 @@
       var stackViewer = stackViewerMapping.get(node);
       if (stackViewer) {
         let orientation = orientationToKeyword(stackViewer.primaryStack.orientation);
+        let navigateWithProject = stackViewer.primaryStack.navigateWithProject;
         // Check if there are subscriptions on any tracing layer shown in this
         // viewer. If so, return an extended version of this stack reference to
         // include this information.
@@ -848,6 +849,10 @@
             }
           }
         }
+        let extraComponents = [];
+        if (navigateWithProject) {
+          extraComponents.push(`, navigateWithProject: ${navigateWithProject ? 'true' : 'false'}`);
+        }
         if (subscriptionComponents.length > 0) {
           var components = [`{ type: "stackviewer", orientation: ${orientation}`];
           var isSubscriptionSource = subscriptionInfo.idIndex.has(stackViewer);
@@ -862,8 +867,13 @@
                 subscriptionInfo.idIndex.get(s.target), '" }');
           }
           components.push(']');
+          extraComponents.forEach(e => components.push(e));
           components.push(' }');
           return components.join('');
+        } else if (extraComponents.length > 0) {
+          var components = [`{ type: "stackviewer", orientation: ${orientation}`];
+          extraComponents.forEach(e => components.push(e));
+          components.push(' }');
         } else {
           return orientation;
         }

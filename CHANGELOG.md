@@ -163,6 +163,9 @@ Miscellaneous:
 - NBLAST computation: avoid crash when set of not cached target DPS objects is
   None.
 
+- The navigate-with-project setting of a stack viewer is now respected in
+  stored layouts.
+
 ## Maintenance updates
 
 - Node distance measurements: computation of straight line distance has been

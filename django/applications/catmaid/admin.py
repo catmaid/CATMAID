@@ -25,7 +25,8 @@ from django_typing import admin_property_decorator
 from catmaid.models import (Project, DataView, Stack, InterpolatableSection,
         ProjectStack, UserProfile, BrokenSlice, StackClassInstance, Relation,
         ClassInstance, Class, StackGroup, StackStackGroup, StackMirror,
-        PointCloud, GroupInactivityPeriod, GroupInactivityPeriodContact)
+        PointCloud, GroupInactivityPeriod, GroupInactivityPeriodContact,
+        WritableStack)
 from catmaid.control.importer import importer_admin_view
 from catmaid.control.classificationadmin import classification_admin_view
 from catmaid.control.annotationadmin import ImportingWizard
@@ -349,6 +350,12 @@ class PointCloudAdmin(GuardedModelAdmin):
     save_as = True
 
 
+class WritableStackAdmin(GuardedModelAdmin):
+    search_fields = ['name','path']
+    list_display = ('user', 'name', 'stack', 'path')
+    save_as = True
+
+
 class StackAdmin(GuardedModelAdmin):
     list_display = ('title', 'dimension', 'resolution',)
     search_fields = ['title', 'comment']
@@ -540,6 +547,7 @@ admin.site.register(StackGroup, StackGroupAdmin)
 admin.site.register(ProjectStack, ProjectStackAdmin)
 admin.site.register(StackMirror, StackMirrorAdmin)
 admin.site.register(PointCloud, PointCloudAdmin)
+admin.site.register(WritableStack, WritableStackAdmin)
 
 # Replace the user admin view with custom view
 admin.site.register(User, CustomUserAdmin)

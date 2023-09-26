@@ -155,6 +155,11 @@ urlpatterns += [
     re_path(r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/put_tile$', tile.put_tile),
 ]
 
+# Writing stack data
+urlpatterns += [
+    url(r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/write-block$', stack.write_block),
+]
+
 # Tracing general
 urlpatterns += [
     re_path(r'^(?P<project_id>\d+)/tracing/setup/rebuild$', tracing.rebuild_tracing_setup_view),

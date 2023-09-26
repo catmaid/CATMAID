@@ -259,6 +259,25 @@ class ProjectStack(models.Model):
         return self.project.title + " -- " + self.stack.title
 
 
+class WritableStack(models.Model):
+    """A stack reference tied to a user, which can be modified by that user.
+    """
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    creation_time = DbDefaultDateTimeField()
+    edition_time = DbDefaultDateTimeField()
+
+    name = models.TextField()
+    stack = models.ForeignKey(Stack, on_delete=models.CASCADE)
+    path = models.TextField()
+    filetype = models.TextField(default='n5')
+    metadata = models.JSONField(default=dict)
+
+    class Meta:
+        db_table = "catmaid_writable_stack"
+
+
 class Concept(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)

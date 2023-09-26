@@ -1,6 +1,13 @@
 # -*- coding: utf-8 -*-
 
+import datetime
 import json
+import tempfile
+import os
+import numpy as np
+import pyn5
+
+from catmaid.models import WritableStack
 
 from .common import CatmaidApiTestCase
 
@@ -68,3 +75,52 @@ class StacksApiTests(CatmaidApiTestCase):
         }
 
         self.assertEqual(expected_result, parsed_response)
+
+    def test_writable_n5_stack(self):
+        self.fake_authentication()
+        test_stack_id = 3
+        test_dtype = 'uint32'
+        test_time = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
+
+        with tempfile.TemporaryDirectory() as tempdir:
+            temp_path = os.path.join(tempdir, 'test.n5')
+            dataset_size = [3, 3, 3]
+
+            writable_stack = WritableStack.objects.create(
+                user_id=self.test_user_id, project_id=self.test_project_id,
+                name="Test writable stack", stack_id=test_stack_id,
+                path=temp_path, metadata={
+                    'dataset': 'volumes/test-dataset',
+                    'block_size': [1, 1, 1],
+                    'dataset_size': dataset_size,
+                    'dtype': test_dtype,
+                    'last_update_time': test_time,
+                })
+
+            test_data_raw = np.random.randint(0, 256, (3, 3, 3), test_dtype)
+            test_data = json.dumps(test_data_raw.tolist())
+            test_bounds = [[0, 0, 0], [3, 3, 3]]
+
+            response = self.client.post(f'/{self.test_project_id}/stack/{test_stack_id}/write-block',
+                             {
+                                 'data': test_data,
+                                 'data_bounds': json.dumps(test_bounds),
+                                 'compression': 'GZIP',
+                                 'compression_opts': -1,
+                            })
+            self.assertStatus(response)
+            parsed_response = json.loads(response.content.decode('utf-8'))
+
+            self.assertEqual(True, parsed_response.get('update'))
+            self.assertEqual(test_bounds, parsed_response.get('last_update_bounds'))
+            self.assertNotEqual(test_time, parsed_response.get('last_update_time'))
+
+            # Open written file directly and compare the data
+            n5 = pyn5.open(writable_stack.path, 'volumes/test-dataset', test_dtype.upper(), True)
+
+            self.assertTrue(
+                np.array_equal(
+                    pyn5.read(n5, (np.array(test_bounds[0]), np.array(test_bounds[1])), test_dtype),
+                    test_data_raw,
+                )
+            )

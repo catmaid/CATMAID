@@ -238,3 +238,23 @@ def write_block(request:HttpRequest, project_id=None, stack_id=None) -> JsonResp
         'last_update_time': writable_stack.metadata.get('last_update_time'),
         'last_update_bounds': writable_stack.metadata.get('last_update_bounds'),
     })
+
+
+def export_stack_to_n5(project_id, stack_id, stack_mirror_id, name=None, block_size=(512,512,16), bounds=None):
+    """Export an existing stack mirror data set to a local N5 dataset,
+    optionally limitted to a certain volume.
+    """
+    stack = Stack.objects.get(id=stack_id)
+
+    export_name = name or f'stack-{stack_id}-{"cutout" if bounds else "full"}.n5'
+    export_path = os.path.join(settings.MEDIA_ROOT,
+        settings.MEDIA_EXPORT_SUBDIRECTORY, export_name)
+
+    dataset = None
+    dataset_size = None
+    dtype = None
+
+    pyn5.create_dataset(export_path, dataset, dataset_size,
+                        block_size, dtype.upper())
+    n5 = pyn5.open(export_path, dataset, dtype.upper(), False)
+    pyn5.write(n5, (np.array(data_bounds[0]), np.array(data_bounds[1])), data, dtype)

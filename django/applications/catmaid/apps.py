@@ -317,6 +317,7 @@ class CATMAIDConfig(AppConfig):
         "PROFILE_SHOW_CROPPING_TOOL": bool,
         "PROFILE_SHOW_SEGMENTATION_TOOL": bool,
         "PROFILE_SHOW_TRACING_TOOL": bool,
+        "PROFILE_SHOW_PAINTING_TOOL": bool,
         "PROFILE_SHOW_ONTOLOGY_TOOL": bool,
         "PROFILE_SHOW_ROI_TOOL": bool,
         "ROI_AUTO_CREATE_IMAGE": bool,

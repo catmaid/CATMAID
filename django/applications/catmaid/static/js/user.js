@@ -183,6 +183,7 @@
       show_tagging_tool: false,
       show_cropping_tool: false,
       show_tracing_tool: false,
+      show_painting_tool: false,
       show_ontology_tool: false,
       show_roi_tool: false,
       primary_group_id: false,

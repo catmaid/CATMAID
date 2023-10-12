@@ -73,6 +73,18 @@
         }));
     }
 
+    if (CATMAID.userprofile.show_painting_tool) {
+      editToolActions.push(
+        new CATMAID.Action({
+          helpText: "Painting tool",
+          buttonID: 'edit_button_paint',
+          buttonName: 'paint',
+          run: function (e) {
+            project.setTool( new CATMAID.PaintingTool() );
+          }
+        }));
+    }
+
     if (CATMAID.userprofile.show_ontology_tool) {
       editToolActions.push(
         new CATMAID.Action({

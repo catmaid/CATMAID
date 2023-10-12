@@ -32,6 +32,7 @@ class Command(BaseCommand):
             up.show_tagging_tool = settings.PROFILE_SHOW_TAGGING_TOOL
             up.show_cropping_tool = settings.PROFILE_SHOW_CROPPING_TOOL
             up.show_tracing_tool = settings.PROFILE_SHOW_TRACING_TOOL
+            up.show_painting_tool = settings.PROFILE_SHOW_PAINTING_TOOL
             up.show_ontology_tool = settings.PROFILE_SHOW_ONTOLOGY_TOOL
             # Save the changes
             up.save()

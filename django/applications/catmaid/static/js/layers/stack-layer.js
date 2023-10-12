@@ -95,7 +95,11 @@
     this._readState = readState;
 
     this.mirrorId = mirrorId || this.stack.mirrorsByPriority()[0].id;
-    this.tileSource = stack.createTileSourceForMirror(this.mirrorId);
+    if (this.mirrorId !== -1) {
+      this.tileSource = stack.createTileSourceForMirror(this.mirrorId);
+    } else {
+
+    }
 
     /* Whether mirros should be changed automatically if image data is
      * unavailable.

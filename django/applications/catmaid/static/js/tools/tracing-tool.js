@@ -12,7 +12,7 @@
     var activeTracingLayer = null;
     // Currently focused stack viewer
     var activeStackViewer = null;
-    // Map stacks to its mouse handlers
+    // Map stacks to their mouse handlers
     var bindings = new Map();
     // Update caches every 60min
     this.autoCacheUpdateIntervalLength = 60*60*1000;

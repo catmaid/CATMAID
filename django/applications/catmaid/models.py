@@ -1635,6 +1635,7 @@ class UserProfile(models.Model):
     show_tagging_tool = models.BooleanField(default=False)
     show_cropping_tool = models.BooleanField(default=False)
     show_tracing_tool = models.BooleanField(default=False)
+    show_painting_tool = models.BooleanField(default=False)
     show_ontology_tool = models.BooleanField(default=False)
     show_roi_tool = models.BooleanField(default=False)
     color = RGBAField(default=distinct_user_color)
@@ -1668,6 +1669,7 @@ class UserProfile(models.Model):
         pdict['show_tagging_tool'] = self.show_tagging_tool
         pdict['show_cropping_tool'] = self.show_cropping_tool
         pdict['show_tracing_tool'] = self.show_tracing_tool
+        pdict['show_painting_tool'] = self.show_painting_tool
         pdict['show_ontology_tool'] = self.show_ontology_tool
         pdict['show_roi_tool'] = self.show_roi_tool
         pdict['primary_group_id'] = self.primary_group_id
@@ -1688,6 +1690,7 @@ def create_user_profile(sender, instance, created, **kwargs) -> None:
         profile.show_tagging_tool = settings.PROFILE_SHOW_TAGGING_TOOL
         profile.show_cropping_tool = settings.PROFILE_SHOW_CROPPING_TOOL
         profile.show_tracing_tool = settings.PROFILE_SHOW_TRACING_TOOL
+        profile.show_painting_tool = settings.PROFILE_SHOW_PAINTING_TOOL
         profile.show_ontology_tool = settings.PROFILE_SHOW_ONTOLOGY_TOOL
         profile.show_roi_tool = settings.PROFILE_SHOW_ROI_TOOL
 

@@ -2042,3 +2042,13 @@ i.refresh-icon:hover {
   background-color: aliceblue;
   padding: 0.5em;
 }
+
+canvas.paintinglayer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  cursor: crosshair;
+  display: block;
+  width: 100%;
+  height: 100%;
+}

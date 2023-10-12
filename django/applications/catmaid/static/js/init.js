@@ -694,6 +694,7 @@ var project;
         var tools = {
           navigator: CATMAID.Navigator,
           tracingtool: CATMAID.TracingTool,
+          paintingtool: CATMAID.PaintingTool,
           classification_editor: null
         };
 

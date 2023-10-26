@@ -84,7 +84,7 @@ init_catmaid () {
   echo "Loading virtualenv"
   source /home/env/bin/activate
 
-  if [ ! -f /home/django/projects/mysite/settings.py ] || ["$CM_FORCE_CONFIG_UPDATE" = true]; then
+  if [ ! -f /home/django/projects/mysite/settings.py ] || [ "$CM_FORCE_CONFIG_UPDATE" = true ]; then
     echo "Setting up CATMAID"
 
     cp /home/django/configuration.py.example /home/django/configuration.py

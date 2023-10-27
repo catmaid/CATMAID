@@ -170,6 +170,16 @@ init_catmaid () {
     /home/scripts/createuser.sh ${DB_NAME} ${DB_USER} ${DB_PASS} | runuser -l postgres -c 'psql -h "${DB_HOST}" -p "${DB_PORT}"'
   fi
 
+  if [[ "$CM_RUN_CELERY" = true || "$CM_RUN_ASGI" = true ]]; then
+    echo "Starting RabbitMQ"
+    mkdir -p /var/run/rabbitmq
+    chown rabbitmq /var/run/rabbitmq
+    service rabbitmq-server start
+    until wget --spider -t1 -T1 -O /dev/null -q 127.0.0.1:5672; do
+      sleep 0.1
+    done
+  fi
+
   # Migrate the database, collect static files and create a superuser.
   echo "Migrating databse"
   python manage.py migrate --noinput
@@ -230,16 +240,6 @@ init_catmaid () {
       },
   },
 }" >> mysite/settings.py
-  fi
-
-  if [[ "$CM_RUN_CELERY" = true || "$CM_RUN_ASGI" = true ]]; then
-    echo "Starting RabbitMQ"
-    mkdir -p /var/run/rabbitmq
-    chown rabbitmq /var/run/rabbitmq
-    service rabbitmq-server start
-    until wget --spider -t1 -T1 -O /dev/null -q 127.0.0.1:5672; do
-      sleep 0.1
-    done
   fi
 
   # First start supervisor in background and optionally start Celery and Daphne.

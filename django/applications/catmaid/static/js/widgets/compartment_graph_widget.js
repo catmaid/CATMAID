@@ -468,6 +468,14 @@
                 }
                },
                id: "gg_apply_filter_rules" + GG.widgetID},
+             [document.createTextNode(' - Hide/Show: ')],
+             [CATMAID.DOM.createSelect(
+               'gg_toggle_edge_by_synapse_type' + GG.widgetID,
+               ["axo-axonic", "axo-dendritic", "dendro-axonic", "dendro-dendritic"], // consider adding "self-edges" as a type and removing the "Hide self edges" button
+               "axo-axonic",
+               null)],
+              ['Hide', GG.setVisibilityOfEdgesBySynapseTypeUI.bind(GG, false)], // can't use a toggle because if more nodes or edges are added, then all of the same type couldn't be shown or hidden at once
+              ['Show', GG.setVisibilityOfEdgesBySynapseTypeUI.bind(GG, true)],
             ]);
 
         CATMAID.DOM.appendToTab(tabs['Selection'],
@@ -4863,6 +4871,50 @@
     this.cy.edges().each(function(i, edge) {
       if (edge.source().id() === edge.target().id()) {
         edge.hide();
+      }
+    });
+    this.cy.endBatch();
+  };
+
+  /** Hide/show edges of a given type, such as axo-axonic, axo-dendritic, etc.
+   * Ignores nodes that aren't labeled as axons or dendrites.
+   */
+  GroupGraph.prototype.setVisibilityOfEdgesBySynapseTypeUI = function(visible) {
+    // Read the type to toggle
+    var select = $('#gg_toggle_edge_by_synapse_type' + this.widgetID)[0];
+    var type = select.options[select.selectedIndex].text;
+    return this.setVisibilityOfEdgesBySynapseType(visible, type);
+  };
+
+  /** Hide/show edges of a given type, such as axo-axonic, axo-dendritic, etc.
+   * Ignores nodes that aren't labeled as axons or dendrites.
+   */
+  GroupGraph.prototype.setVisibilityOfEdgesBySynapseType = function(visible, type) {
+    this.cy.startBatch();
+    this.cy.edges().each(function(i, edge) {
+      if (visible === edge.visible()) return; // nothing to change
+      var node_source = edge.source();
+      var is_src_axon = node_source.id().endsWith("_axon");
+      var is_src_dendrite = node_source.id().endsWith("_dendrite");
+      var node_target = edge.target();
+      var is_tgt_axon = node_target.id().endsWith("_axon");
+      var is_tgt_dendrite = node_target.id().endsWith("_dendrite");
+      var set = function() {
+          if (visible) edge.show()
+          else edge.hide();
+      };
+      if (is_src_axon) {
+        if (is_tgt_axon) {
+          if ("axo-axonic" === type) set();
+        } else if (is_tgt_dendrite) {
+          if ("axo-dendritic" === type) set();
+        }
+      } else if (is_src_dendrite) {
+        if (is_tgt_axon) {
+          if ("dendro-axonic" === type) set();
+        } else if (is_tgt_dendrite) {
+          if ("dendro-dendritic" === type) set();
+        }
       }
     });
     this.cy.endBatch();

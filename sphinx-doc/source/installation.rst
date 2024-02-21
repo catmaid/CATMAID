@@ -21,7 +21,7 @@ Introduction
 The most fundamental dependencies of CATMAID are:
 
 1. PostgreSQL 13+ and PostGIS 3.1 (PostgreSQL 14 and PostGIS 3.2 is recommended)
-2. CPython 3.8, 3.9 or PyPy3.8 (CPython 3.8 is recommended)
+2. CPython 3.8, 3.9, 3.10 or PyPy3.8 (CPython 3.10 is recommended)
 
 To get the required PostgreSQL version for Debian-based systems, such as
 Ubuntu, you have to add the official Postgres repository as an
@@ -151,7 +151,7 @@ database called ``catmaid`` and a database user called
 ``catmaid_user``. Firstly, we need to reconfigure PostgreSQL to
 allow password-based authentication for that user to that
 database. To do that, edit the file
-``/etc/postgresql/13/main/pg_hba.conf`` and add this line as the
+``/etc/postgresql/13/main/pg_hba.conf`` (or replace ``13`` with your postgres version) and add this line as the
 *first* rule in that file::
 
     local catmaid catmaid_user md5

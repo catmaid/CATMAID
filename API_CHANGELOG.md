@@ -6,7 +6,8 @@ included in this changelog.
 
 ### Additions
 
-None.
+- GET `/{project_id}/useranalytics/data`:
+  Retrieve raw data on user contribution times
 
 ### Modifications
 

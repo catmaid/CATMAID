@@ -9,10 +9,12 @@ import pytz
 from typing import Any, Dict, List, Tuple
 
 from django.db import connection
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from django.views.decorators.cache import never_cache
+
+from rest_framework.decorators import api_view
 
 from catmaid.control.common import get_request_bool
 from catmaid.control.authentication import requires_user_role
@@ -63,6 +65,118 @@ class Bout(object):
     def __str__(self):
         return "Bout with %s events [%s, %s]" % \
                 (self.nrEvents, self.start, self.end)
+@never_cache
+@api_view(['GET'])
+@requires_user_role(UserRole.Admin)
+def get_useranalytics_data(request:HttpRequest, project_id) -> HttpResponse:
+    """ Get information on the contributions individual users made in a
+    particular time frame. The returned fields all contain lists where each
+    entry relates to one day in the query time frame by the requested user. The
+    fields are the following:
+    <br />
+
+    <ul>
+        <li>annotation_events: how many treenodes or connector nodes where
+        edited/added on a given day</li>
+        <li> annotation_timeaxis: dates for each annotation event
+        <li>review_events: how many node reviews were performed on a given day</li>
+        review_timeaxis: dates for each review event</li>
+        <li>write_events: how many write events of any form (incl.
+        annotations/tags/renames) where made on a given day</li>
+        <li>write_timeaxis: dates for each write event</li>
+        <li>raw_write_events: a raw list of all write events of any kind</li>
+        <li>active_bouts: time segments in which a user was active that had no
+        pauses longer than the requested activity time threshold.</li>
+        <li>net_active_time: the active time in hours per day between the first event of
+        the first active bout and the last event of the last bout.</li>
+        <li>netactivetime_timeaxis: dates for each net active time entry</li>
+    </ul>
+    ---
+    parameters:
+      - name: userid
+        description: The id of the user to get information on
+        type: integer
+        paramType: form
+      - name: start
+        description: |
+            Start date of request time frame in the form YYYY-MM-DD. Defaults
+            to seven days ago from today.
+        type: string
+        paramType: form
+      - name: end
+        description: |
+            End date of request time frame in the form YYYY-MM-DD. Defaults to
+            today/now.
+        type: string
+        paramType: form
+      - name: max_inactivity
+        description: Number of minutes of inactivity, before a pause is assumed.
+        type: integer
+        paramType: form
+      - name: all_writes
+        description: |
+            Whether info ann all types of write events should be returned,
+            including annotating neurons, renaming neurons or editing tags.
+            True by default.
+        type: bool
+        paramType: form
+        required: false
+        defaultValue: true
+    """
+    time_zone = pytz.utc
+
+    project = get_object_or_404(Project, pk=project_id) if project_id else None
+    if not (request.user.is_superuser or \
+            request.user.has_perm('can_browse', project)):
+        raise PermissionError('You lack the needed permissions')
+
+    userid = request.GET.get('userid', None)
+    if not (userid and userid.strip()):
+        raise ValueError("Need user ID")
+
+    all_writes = get_request_bool(request.GET, 'all_writes', True)
+    maxInactivity = int(request.GET.get('max_inactivity', 3))
+
+    # Get the start date for the query, defaulting to 7 days ago.
+    start_date = request.GET.get('start', None)
+    if start_date:
+        start_date = dateparser.parse(start_date)
+        start_date = time_zone.localize(start_date)
+    else:
+        with timezone.override(time_zone):
+            start_date = timezone.now() - timedelta(7)
+
+    # Get the end date for the query, defaulting to now.
+    end_date = request.GET.get('end', None)
+    if end_date:
+        end_date = dateparser.parse(end_date)
+        end_date = time_zone.localize(end_date)
+    else:
+        with timezone.override(time_zone):
+            end_date = timezone.now()
+
+    # The API is inclusive and should return stats for the end date as
+    # well. The actual query is easier with an exclusive end and therefore
+    # the end date is set to the beginning of the next day.
+    end_date = end_date + timedelta(days=1)
+
+    raw_data = get_activity_info( userid, project_id, maxInactivity, start_date,
+                end_date, all_writes )
+
+    data = {}
+    data['annotation_events'] = raw_data['annotation_events'].tolist()
+    data['annotation_timeaxis'] = raw_data['annotation_timeaxis']
+    data['review_events'] = raw_data['review_events'].tolist()
+    data['review_timeaxis'] = raw_data['review_timeaxis']
+    data['write_events'] = raw_data['write_events'].tolist()
+    data['write_timeaxis'] = raw_data['otherwrites_timeaxis']
+    data['raw_write_events'] = raw_data['otherwrites_events']
+    data['net_active_time'] = raw_data['net_active_time'].tolist()
+    data['netactivetime_timeaxis'] = raw_data['netactivetime_timeaxis']
+    #data['active_bouts'] = raw_data['active_bouts'].tolist()
+
+    return JsonResponse(data)
+
 
 @never_cache
 @requires_user_role(UserRole.Browse)
@@ -360,9 +474,8 @@ def generateErrorImage(msg) -> "matplotlib.figure.Figure":
     fig.suptitle(msg)
     return fig
 
-def generateReport(
-    user_id, project_id, activeTimeThresh, start_date, end_date, all_writes=True
-) -> "matplotlib.figure.Figure":
+def get_activity_info(user_id, project_id, activeTimeThresh, start_date,
+                      end_date, all_writes=True):
     """ nts: node times
         cts: connector times
         rts: review times """
@@ -372,11 +485,6 @@ def generateReport(
     cts = events['connector_events']
     rts = events['review_events']
 
-    # If no nodes have been found, return an image with a descriptive text.
-    if len(nts) == 0:
-        return generateErrorImage("No tree nodes were edited during the " +
-                "defined period if time.")
-
     annotationEvents, ae_timeaxis = eventsPerInterval( nts + cts, start_date, end_date )
     reviewEvents, re_timeaxis = eventsPerInterval( rts, start_date, end_date )
 
@@ -385,10 +493,38 @@ def generateReport(
         other_write_events = write_events
         writeEvents, we_timeaxis = eventsPerInterval(other_write_events, start_date, end_date)
     else:
-        other_write_events = []
+        writeEvents, other_write_events, we_timeaxis = [], [], []
 
     activeBouts = list(activeTimes( nts+cts+rts+other_write_events, activeTimeThresh ))
     netActiveTime, at_timeaxis = activeTimesPerDay( activeBouts )
+
+    return {
+        'annotation_events': annotationEvents,
+        'annotation_timeaxis': ae_timeaxis,
+        'review_events': reviewEvents,
+        'review_timeaxis': re_timeaxis,
+        'write_events': writeEvents,
+        'otherwrites_events': other_write_events,
+        'otherwrites_timeaxis': we_timeaxis,
+        'net_active_time': netActiveTime,
+        'netactivetime_timeaxis': at_timeaxis,
+        'active_bouts': activeBouts,
+    }
+
+
+def generateReport(
+    user_id, project_id, activeTimeThresh, start_date, end_date, all_writes=True
+) -> "matplotlib.figure.Figure":
+    """ nts: node times
+        cts: connector times
+        rts: review times """
+    activity = get_activity_info(user_id, project_id, activeTimeThresh,
+            start_date, end_date, all_writes)
+
+    # If no nodes have been found, return an image with a descriptive text.
+    if len(activity['annotation_events']) == 0:
+        return generateErrorImage("No tree nodes were edited during the " +
+                "defined period if time.")
 
     dayformat = DateFormatter('%b %d')
 
@@ -401,12 +537,12 @@ def generateReport(
     # makes the regular bar draw over it, so that only the difference is
     # visible, which is exactly what we want.
     if all_writes:
-        we = ax1.bar(we_timeaxis, writeEvents, color='#00AA00', align='edge')
+        we = ax1.bar(activity['otherwrites_timeaxis'], activity['write_events'], color='#00AA00', align='edge')
 
-    an = ax1.bar(ae_timeaxis, annotationEvents, color='#0000AA', align='edge')
-    rv = ax1.bar(re_timeaxis, reviewEvents, bottom=annotationEvents,
+    an = ax1.bar(activity['annotation_timeaxis'], activity['annotation_events'], color='#0000AA', align='edge')
+    rv = ax1.bar(activity['review_timeaxis'], activity['review_events'], bottom=activity['annotation_events'],
             color='#AA0000', align='edge')
-    ax1.set_xlim((start_date,end_date))
+    ax1.set_xlim((start_date, end_date))
 
     if all_writes:
         ax1.legend( (we, an, rv), ('Other changes','Annotated', 'Reviewed'), loc=2)
@@ -424,7 +560,7 @@ def generateReport(
 
     # Bottom left plot: net active time per day
     ax2 = plt.subplot2grid((2,2), (1,0))
-    ax2.bar(at_timeaxis, netActiveTime, color='k', align='edge')
+    ax2.bar(activity['netactivetime_timeaxis'], activity['net_active_time'], color='k', align='edge')
     ax2.set_xlim((start_date,end_date))
     ax2.set_ylabel('Hours')
     yl = ax2.get_yticklabels()
@@ -441,7 +577,7 @@ def generateReport(
 
     # Right column plot: bouts over days
     ax4 = plt.subplot2grid((2,2), (0,1), rowspan=2)
-    ax4 = dailyActivePlotFigure(activeBouts, ax4, start_date, end_date)
+    ax4 = dailyActivePlotFigure(activity['active_bouts'], ax4, start_date, end_date)
 
     yl = ax4.get_yticklabels()
     plt.setp(yl, fontsize=10)

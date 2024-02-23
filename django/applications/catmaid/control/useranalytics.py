@@ -70,10 +70,9 @@ class Bout(object):
 @requires_user_role(UserRole.Admin)
 def get_useranalytics_data(request:HttpRequest, project_id) -> HttpResponse:
     """ Get information on the contributions individual users made in a
-    particular time frame. The returned fields all contain lists where each
-    entry relates to one day in the query time frame by the requested user. The
-    fields are the following:
-    <br />
+    particular time frame. This endpoint requires admin permissions. The
+    returned fields all contain lists where each entry relates to one day in the
+    query time frame by the requested user. The fields are the following:
 
     <ul>
         <li>annotation_events: how many treenodes or connector nodes where

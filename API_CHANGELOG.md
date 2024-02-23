@@ -2,6 +2,26 @@ This changelog notes changes to API endpoints that are documented and listed
 through Swagger. Changes to undocumented, internal CATMAID APIs are not
 included in this changelog.
 
+## Under development
+
+### Additions
+
+- GET `/{project_id}/useranalytics/data`:
+  Retrieve raw data on user contribution times
+
+### Modifications
+
+None.
+
+### Deprecations
+
+None.
+
+### Removals
+
+None.
+
+
 ## 2021.12.21
 
 ### Additions

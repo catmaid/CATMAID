@@ -14,7 +14,6 @@ import pytz
 import struct
 from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
 
-from django.core.serializers.json import DjangoJSONEncoder
 from django.db import connection
 from django.http import HttpRequest, HttpResponse, JsonResponse, Http404
 from django.db.models.query import QuerySet

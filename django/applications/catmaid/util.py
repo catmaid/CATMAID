@@ -83,3 +83,20 @@ def str2list(v):
     if len(v.strip()) == 0:
         return None
     return list(map(lambda x: x.strip(), v.split(',')))
+
+def ask_to_continue():
+    def ask():
+        start = input("Continue? [y/n] ").strip()
+
+        if start == 'y':
+            return True
+        elif start == 'n':
+            return False
+        else:
+            print("Only 'y' and 'n' are allowed")
+            return None
+
+    while True:
+        c = ask()
+        if c is not None:
+            return c

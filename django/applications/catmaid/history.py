@@ -270,13 +270,20 @@ def get_dependent_historic_tx(tx, target_list=None):
     return target_list
 
 
-def undelete_neuron(tx, interactive=False):
+def undelete_neuron(project_id, tx, user_id=None, interactive=False):
     """Recreates a neuron and its connections. This simply restores everything
     from a delete.neuron transaction. Some materialized views as
     treenode_connector_edge or treenode_edge need to be recreated selectively
     for the resurrected neuron. Therefore, an update of these views is done for
     all skeleton IDs encountered.
     """
+    if user_id is None:
+        from .apps import get_system_user
+        user_id = get_system_user().id
+        logger.info('No user ID provided, working as system user')
+
+    add_log_entry(user_id, 'neurons.undelete', project_id)
+
     tx_matches = get_historic_row_count_affected_by_tx(tx)
 
     if interactive:

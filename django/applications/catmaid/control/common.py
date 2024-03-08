@@ -150,6 +150,7 @@ def insert_into_log(project_id:Union[int, str], user_id, op_type:str, location=N
         "rename_neuron",
         "remove_neuron",
         "move_neuron",
+        "undelete_neuron",
 
         "create_group",
         "rename_group",

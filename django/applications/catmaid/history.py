@@ -282,6 +282,7 @@ def undelete_neuron(project_id, tx, user_id=None, interactive=False):
         user_id = get_system_user().id
         logger.info('No user ID provided, working as system user')
 
+    # Transaction log entry
     add_log_entry(user_id, 'neurons.undelete', project_id)
 
     tx_matches = get_historic_row_count_affected_by_tx(tx)
@@ -355,5 +356,11 @@ def undelete_neuron(project_id, tx, user_id=None, interactive=False):
     from catmaid.control.edge import rebuild_edges_selectively
     logger.info(f'Rebuilding edges for skeletons {skeleton_ids}')
     rebuild_edges_selectively(skeleton_ids, log=lambda msg: logger.info(msg))
+
+    from catmaid.control.common import insert_into_log
+    insert_into_log(project_id, user_id, 'undelete_neuron',
+            freetext='Undeleted neuron(s) with skeletons ID(s) '
+            f'{", ".join(map(lambda x: str(x), skeleton_ids))} '
+            f'from transaction {tx.id} on {tx.date}')
 
     return skeleton_ids

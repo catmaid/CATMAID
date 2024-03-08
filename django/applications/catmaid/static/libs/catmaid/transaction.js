@@ -19,6 +19,7 @@
     "neurons.give_to_user": "Give neuron to user",
     "neurons.remove": "Remove neuron",
     "neurons.rename": "Rename neuron",
+    "neurons.undelete": "Undelete neuron",
     "nodes.add_or_update_review": "Review node",
     "nodes.update_location": "Update node location",
     "treenodes.create": "Create treenode",

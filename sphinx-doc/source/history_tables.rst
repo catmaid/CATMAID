@@ -17,7 +17,6 @@ regenerated. CATMAID also keeps track of changes in most non-CATMAID tables,
 that is the tables used by Django and Django applications we use, except for
 asynchronous task related Celery and Kombu.
 
-
 History tables
 --------------
 

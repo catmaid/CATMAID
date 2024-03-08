@@ -1,6 +1,44 @@
 Frequently Asked (User) Questions
 =================================
 
+.. _faq-undelete-neuron:
+
+A neuron was accidentally deleted. Can I undelete it?
+-----------------------------------------------------
+
+If history tracking is enabled (default) than this is possible to do for the
+admin, using a handful of server-side commands. Note that in their current form,
+they can only safely be applied if nothing referencing the skeleton in question
+changed (e.g. synapses connected to the neuron prior deletion, which were
+deleted separately from the neuron, won't get their other synaptic partners back
+if only the neuron is restored). In order to rollback a neuron deletion
+transaction it is currently required to do the following steps server-side as an
+admin:
+
+1. Make a backup
+2. Ideally stop CATMAID to avoid further changes (not strictly required)
+3. Look up the transaction ID and timestamp of the transaction that deleted the
+   neuron (``neurons.remove`` operation) from the table
+   ``catmaid_transaction_info`` or the Log/History Widget in the front-end.
+4. On the server, enable CATMAID's Python environment (activate virtualenv)
+5. Open ``manage.py shell`` and run the following code::
+
+       from catmaid.history import Transaction, undelete_neuron
+       tx = Transaction(<tx-id>, '<tx-execution-time>')
+       undelete_neuron(<project-id>, tx, <user-id>, <interactive>)
+
+The interactive flag indicates whether the function should ask for confirmation.
+For instance, a real example might look like::
+
+   from catmaid.history import Transaction, undelete_neuron
+   tx = Transaction(8477203, '2024-03-08 10:29:07.086284+01')
+   undelete_neuron(1, tx, 21, True)
+
+This will insert all historic rows referenced by transaction ``8477203`` on
+``2024-03-08 10:29:07.086284+01`` into the respective live tables in project
+``1``. Log entries will be created for user ``21``. The same IDs will be used as
+before.
+
 .. _faq-3dviewer-webm:
 
 Why can I only export WebM movies from the 3D viewer?

@@ -3,9 +3,11 @@
 import datetime
 import json
 import logging
-import os.path
+import os
 import numpy as np
 from typing import Any, Dict
+import requests
+import shutil
 
 from django.conf import settings
 from django.http import HttpRequest, JsonResponse
@@ -14,6 +16,8 @@ from django.shortcuts import get_object_or_404
 from ..models import UserRole, Project, Stack, ProjectStack, \
         BrokenSlice, StackMirror, StackStackGroup, WritableStack
 from .authentication import requires_user_role
+from catmaid.apps import get_system_user
+from catmaid.control.tile import get_tile_source
 
 
 logger = logging.getLogger(__name__)
@@ -21,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 n5_writing_enabled = True
 try:
-    from pyn5 import File, Mode, CompressionType
+    import pyn5
 except ImportError:
     n5_writing_enabled = False
     logger.info('CATMAID was unable to find the pyn5 library, which is an '
@@ -220,7 +224,7 @@ def write_block(request:HttpRequest, project_id=None, stack_id=None) -> JsonResp
     dataset = writable_stack.metadata.get('dataset', 'volumes/main')
     dtype = writable_stack.metadata.get('dtype', 'float64')
     compression_name = writable_stack.metadata.get('compression', 'GZIP')
-    compression = getattr(CompressionType, compression_name)
+    compression = getattr(pyn5.CompressionType, compression_name)
     compression_opts = writable_stack.metadata.get('compression_opts', -1)
     block_size = writable_stack.metadata.get('block_size', [1, 1, 1])
 
@@ -240,9 +244,16 @@ def write_block(request:HttpRequest, project_id=None, stack_id=None) -> JsonResp
     })
 
 
-def export_stack_to_n5(project_id, stack_id, stack_mirror_id, name=None, block_size=(512,512,16), bounds=None):
+def export_stack_to_n5(project_id, stack_id, stack_mirror_id=None, name=None,
+                       block_size=(512,512,16), dataset='volumes/main',
+                       dtype='float64', compression='GZIP', compression_opts=-1,
+                       bounds=None, voxel_space_bounds=True, replace=False,
+                       verify_ssl=True):
     """Export an existing stack mirror data set to a local N5 dataset,
     optionally limitted to a certain volume.
+
+    bounds: a two element tuple (min, max) where both elements are three-tuples
+            of the respective corner of the bounds to export.
     """
     stack = Stack.objects.get(id=stack_id)
 
@@ -250,11 +261,106 @@ def export_stack_to_n5(project_id, stack_id, stack_mirror_id, name=None, block_s
     export_path = os.path.join(settings.MEDIA_ROOT,
         settings.MEDIA_EXPORT_SUBDIRECTORY, export_name)
 
-    dataset = None
-    dataset_size = None
-    dtype = None
+    if bounds:
+        if bounds[1][0] > stack.dimension.x or bounds[1][1] > stack.dimension.y \
+                or bounds[1][2] > stack.dimension.z:
+            raise ValueError('The provided `bounds` are larger than the stack '
+                    'dimensions')
+    else:
+        bounds = (
+            (0,0,0),
+            (stack.dimension.x, stack.dimension.y, stack.dimension.z)
+        )
+
+    #data = np.array(json.loads(data)).transpose([2, 1, 0])
+    dataset_size = (
+        bounds[1][0] - bounds[0][0],
+        bounds[1][1] - bounds[0][1],
+        bounds[1][2] - bounds[0][2],
+    )
+
+    logger.info(f'Exporting stack {stack.id} ({stack.title}, '
+                f'Res: {stack.resolution.x}x{stack.resolution.y}x'
+                f'{stack.resolution.z}) to path {export_path}, '
+                f'dataset size: {dataset_size}, bounds: {bounds}, dtype: {dtype}, '
+                f'block size: {block_size}')
+
+    if replace and os.path.exists(export_path):
+        logger.info(f'Removing existing output file {export_path}')
+        shutil.rmtree(export_path)
 
     pyn5.create_dataset(export_path, dataset, dataset_size,
                         block_size, dtype.upper())
+
+    with open(export_path + '/' + dataset + "/attributes.json", 'r') as f:
+            attrs = json.load(f)
+            attrs['unit'] = 'nanometer'
+            attrs['pixelResolution'] = [
+                stack.resolution.x,
+                stack.resolution.y,
+                stack.resolution.z
+            ]
+
+    with open(export_path + '/' + dataset + "/attributes.json", 'w') as f:
+            f.write(json.dumps(attrs))
+
     n5 = pyn5.open(export_path, dataset, dtype.upper(), False)
-    pyn5.write(n5, (np.array(data_bounds[0]), np.array(data_bounds[1])), data, dtype)
+
+    # Crop substack with first reachable mirror
+    stack_mirror_ids = []
+    if stack_mirror_id:
+        stack_mirror_id.append(stack_mirror_id)
+    else:
+        stack_mirrors = StackMirror.objects.filter(stack_id=stack_id)
+        if len(stack_mirrors) == 0:
+            raise ValueError('No stack mirrors found')
+        for sm in stack_mirrors:
+            # If mirror is reachable use it right away
+            tile_source = get_tile_source(sm.tile_source_type)
+            try:
+                logger.debug(tile_source.get_canary_url(sm))
+                req = requests.head(tile_source.get_canary_url(sm),
+                        allow_redirects=True, verify=verify_ssl, timeout=0.1)
+                reachable = req.status_code == 200
+            except Exception as e:
+                logger.error(e)
+                reachable = False
+            if reachable:
+                stack_mirror_ids.append(sm.id)
+                break
+        if not reachable:
+            raise ValueError(f"Can't find reachable stack mirror for stack {stack_id}")
+
+    # Crate a new cropping job, import here to avoid circular import
+    from catmaid.control.cropping import CropJob, extract_substack
+
+    if voxel_space_bounds:
+        rx, ry, rz = stack.resolution.x, stack.resolution.y, stack.resolution.z
+    else:
+        rx, ry, rz = 1.0, 1.0, 1.0
+
+    t = ProjectStack.objects.get(
+            project_id=project_id, stack_id=stack.id).translation
+
+    # In contrast tu X and Y, dimension Z seems to be inclusive
+    job = CropJob(get_system_user(), project_id, stack_mirror_ids,
+                x_min=t.x+(bounds[0][0]*rx), x_max=t.x+(bounds[1][0]*rx),
+                y_min=t.y+(bounds[0][1]*ry), y_max=t.y+(bounds[1][1]*ry),
+                z_min=t.z+(bounds[0][2]*rz), z_max=t.z+((bounds[1][2]-1)*rz),
+                rotation_cw=0, zoom_level=0, single_channel=True)
+
+    cropped_stack = extract_substack(job)
+    print(f'Extracted {len(cropped_stack)} slices')
+
+    if len(cropped_stack) == 0:
+        raise ValueError('No data was extracted')
+
+    np_slices = list(map(lambda s: np.array(s), cropped_stack))
+    data = np.array(np_slices)
+
+    if data.dtype != dtype:
+        data = data.astype(dtype)
+
+    # We need row-major (Fortran) order, hence the .T
+    pyn5.write(n5, (np.array((0,0,0)), np.array(dataset_size)), data.T, dtype)
+    logger.info(f'Done exporting to {export_path}')

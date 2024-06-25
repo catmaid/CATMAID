@@ -4,31 +4,32 @@ import datetime
 import json
 import logging
 import os
-import numpy as np
 from typing import Any, Dict
 import requests
-import shutil
 
 from django.conf import settings
 from django.http import HttpRequest, JsonResponse
 from django.shortcuts import get_object_or_404
+from django.utils.decorators import method_decorator
 
 from ..models import UserRole, Project, Stack, ProjectStack, \
         BrokenSlice, StackMirror, StackStackGroup, WritableStack
 from .authentication import requires_user_role
-from catmaid.apps import get_system_user
 from catmaid.control.tile import get_tile_source
+from catmaid.control.common import ConfigurationError
 
+from rest_framework.views import APIView
 
 logger = logging.getLogger(__name__)
 
 
 n5_writing_enabled = True
 try:
-    import pyn5
+    import cloudvolume
+    from cloudvolume.datasource.n5.metadata import N5Metadata
 except ImportError:
     n5_writing_enabled = False
-    logger.info('CATMAID was unable to find the pyn5 library, which is an '
+    logger.info('CATMAID was unable to find the cloud-volume library, which is an '
                 'optional dependency. N5 writing will therefore be disabled.')
 
 
@@ -184,183 +185,139 @@ def stack_groups(request:HttpRequest, project_id=None, stack_id=None) -> JsonRes
 
     return JsonResponse(result)
 
-@requires_user_role([UserRole.Annotate])
-def write_block(request:HttpRequest, project_id=None, stack_id=None) -> JsonResponse:
-    """ Store block-wise voxel data.
-    """
 
-    if not n5_writing_enabled:
-        raise ValueError('N5 file writing is not enabled on the server')
+class WritableStackListView(APIView):
+    """Access to writable stacks."""
 
-    # Get writable stack for local path info
-    writable_stacks = WritableStack.objects.filter(project_id=project_id,
-            user=request.user, stack_id=stack_id)
-    if len(writable_stacks) == 0:
-        raise ValueError(f'Found no writable stacks for stack {stack_id}')
-    elif len(writable_stacks) > 1:
-        raise ValueError(f'Found more than one writable stack for stack {stack_id}')
-    writable_stack = writable_stacks[0]
-
-    dataset_size = writable_stack.metadata.get('dataset_size')
-    if not dataset_size:
-        raise ValueError('Need dataset_size parameter in writable stack metadata')
-
-    data = request.POST.get('data')
-    if not data:
-        raise ValueError('Need data')
-    data = np.array(json.loads(data)).transpose([2, 1, 0])
-
-    data_bounds_json = request.POST.get('data_bounds')
-    if not data_bounds_json:
-        raise ValueError('Need data_bounds paramaeter')
-    data_bounds = json.loads(data_bounds_json)
-    if not isinstance(data_bounds, list) or len(data_bounds) != 2:
-        raise ValueError('The data_bounds parameter needs to be a list of two lists')
-    if not isinstance(data_bounds[0], list) or len(data_bounds[0]) != len(dataset_size):
-        raise ValueError('The first data_bounds list  needs to be a list with the correct dimensionality')
-    if not isinstance(data_bounds[1], list) or len(data_bounds[1]) != len(dataset_size):
-        raise ValueError('The first data_bounds list  needs to be a list with the correct dimensionality')
-
-    dataset = writable_stack.metadata.get('dataset', 'volumes/main')
-    dtype = writable_stack.metadata.get('dtype', 'float64')
-    compression_name = writable_stack.metadata.get('compression', 'GZIP')
-    compression = getattr(pyn5.CompressionType, compression_name)
-    compression_opts = writable_stack.metadata.get('compression_opts', -1)
-    block_size = writable_stack.metadata.get('block_size', [1, 1, 1])
-
-    pyn5.create_dataset(writable_stack.path, dataset, dataset_size,
-                        block_size, dtype.upper())
-    n5 = pyn5.open(writable_stack.path, dataset, dtype.upper(), False)
-    pyn5.write(n5, (np.array(data_bounds[0]), np.array(data_bounds[1])), data, dtype)
-
-    writable_stack.metadata['last_update_time'] = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
-    writable_stack.metadata['last_update_bounds'] = data_bounds
-    writable_stack.save()
-
-    return JsonResponse({
-        'update': True,
-        'last_update_time': writable_stack.metadata.get('last_update_time'),
-        'last_update_bounds': writable_stack.metadata.get('last_update_bounds'),
-    })
+    @method_decorator(requires_user_role(UserRole.Browse))
+    def get(self, request:HttpRequest, project_id=None) -> JsonResponse:
+        """
+        Returns a response containing the JSON object with menu information
+        about the user's writable stacks in this project.
+        """
+        project = Project.objects.get(pk=project_id)
+        info = []
+        for writable_stack in project.writable_stacks.all():
+            info.append({
+                'id': writable_stack.id,
+                'user_id': writable_stack.user_id,
+                'stack_id': writable_stack.stack_id,
+                'name': writable_stack.name,
+                'path': writable_stack.path,
+                'filetype': writable_stack.filetype,
+                'metadata': writable_stack.metadata})
+        return JsonResponse(info, safe=False, json_dumps_params={
+            'sort_keys': True,
+        })
 
 
-def export_stack_to_n5(project_id, stack_id, stack_mirror_id=None, name=None,
-                       block_size=(512,512,16), dataset='volumes/main',
-                       dtype='float64', compression='GZIP', compression_opts=-1,
-                       bounds=None, voxel_space_bounds=True, replace=False,
-                       verify_ssl=True):
-    """Export an existing stack mirror data set to a local N5 dataset,
-    optionally limitted to a certain volume.
+    def post(self, request:HttpRequest, project_id) -> JsonResponse:
+        """
+        Create a new writable stack for the provided stack.
+        """
+        if not n5_writing_enabled:
+            raise ConfigurationError('N5 writing is not enabled, dependency pyn5 missing')
 
-    bounds: a two element tuple (min, max) where both elements are three-tuples
-            of the respective corner of the bounds to export.
-    """
-    stack = Stack.objects.get(id=stack_id)
+        project = get_object_or_404(Project, pk=project_id)
 
-    export_name = name or f'stack-{stack_id}-{"cutout" if bounds else "full"}.n5'
-    export_path = os.path.join(settings.MEDIA_ROOT,
-        settings.MEDIA_EXPORT_SUBDIRECTORY, export_name)
+        stack_id_param = request.data.get('stack_id')
+        if stack_id_param is None:
+            raise ValueError('Need stack_id parameter')
+        else:
+            stack_id = int(stack_id_param)
+        stack = get_object_or_404(Stack, pk=stack_id)
 
-    if bounds:
-        if bounds[1][0] > stack.dimension.x or bounds[1][1] > stack.dimension.y \
-                or bounds[1][2] > stack.dimension.z:
-            raise ValueError('The provided `bounds` are larger than the stack '
-                    'dimensions')
-    else:
-        bounds = (
-            (0,0,0),
-            (stack.dimension.x, stack.dimension.y, stack.dimension.z)
-        )
+        name = request.data.get('name', None)
+        if name is None:
+            raise ValueError('Need name parameter')
 
-    #data = np.array(json.loads(data)).transpose([2, 1, 0])
-    dataset_size = (
-        bounds[1][0] - bounds[0][0],
-        bounds[1][1] - bounds[0][1],
-        bounds[1][2] - bounds[0][2],
-    )
+        metadata_param = request.data.get('metadata', None)
+        if metadata_param is None:
+            metadata_param = '{}'
+        metadata = json.loads(metadata_param)
 
-    logger.info(f'Exporting stack {stack.id} ({stack.title}, '
-                f'Res: {stack.resolution.x}x{stack.resolution.y}x'
-                f'{stack.resolution.z}) to path {export_path}, '
-                f'dataset size: {dataset_size}, bounds: {bounds}, dtype: {dtype}, '
-                f'block size: {block_size}')
+        if 'dataset' not in metadata:
+            metadata['dataset'] = 'volumes/main'
+        if 'dtype' not in metadata:
+            metadata['dtype'] = 'uint8'
+        if 'compression' not in metadata:
+            metadata['compression'] = 'GZIP'
+        if 'compression_opts' not in metadata:
+            metadata['compression_opts'] = -1
+        if 'block_size' not in metadata:
+            metadata['block_size'] = [128, 128, 20]
 
-    if replace and os.path.exists(export_path):
-        logger.info(f'Removing existing output file {export_path}')
-        shutil.rmtree(export_path)
+        # For now we assume a dataset size like the reference stack
+        metadata['dataset_size'] = [stack.dimension.x, stack.dimension.y,
+                                    stack.dimension.z]
+        metadata['resolution'] = [stack.resolution.x, stack.resolution.y,
+                                    stack.resolution.z]
+        metadata['voxel_offset'] = [0, 0, 0]
 
-    pyn5.create_dataset(export_path, dataset, dataset_size,
-                        block_size, dtype.upper())
+        metadata['last_update_time'] = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
+        metadata['last_update_bounds'] = None
 
-    with open(export_path + '/' + dataset + "/attributes.json", 'r') as f:
-            attrs = json.load(f)
-            attrs['unit'] = 'nanometer'
-            attrs['pixelResolution'] = [
-                stack.resolution.x,
-                stack.resolution.y,
-                stack.resolution.z
-            ]
+        writable_stack = WritableStack.objects.create(
+                user_id=request.user.id,
+                project_id=project.id,
+                stack_id = stack.id,
+                name = name,
+                path = '',
+                filetype = 'n5',
+                metadata = metadata)
 
-    with open(export_path + '/' + dataset + "/attributes.json", 'w') as f:
-            f.write(json.dumps(attrs))
+        # Store per project, include writable stack ID in path and make sure
+        # final path doesn't start with a slash character.
+        filename = f'{project.id}-{stack.id}-{request.user.id}-{writable_stack.id}.n5'
+        writable_stack.path = f'{project.id}/{filename}'
+        writable_stack.save()
 
-    n5 = pyn5.open(export_path, dataset, dtype.upper(), False)
+        # Create initial N5 file
+        encoding = 'raw'
+        full_path = os.path.join(settings.MEDIA_ROOT,
+                                 settings.MEDIA_WRITABLE_STACK_SUBDIRECTORY,
+                                 writable_stack.path)
 
-    # Crop substack with first reachable mirror
-    stack_mirror_ids = []
-    if stack_mirror_id:
-        stack_mirror_id.append(stack_mirror_id)
-    else:
-        stack_mirrors = StackMirror.objects.filter(stack_id=stack_id)
-        if len(stack_mirrors) == 0:
-            raise ValueError('No stack mirrors found')
-        for sm in stack_mirrors:
-            # If mirror is reachable use it right away
-            tile_source = get_tile_source(sm.tile_source_type)
-            try:
-                logger.debug(tile_source.get_canary_url(sm))
-                req = requests.head(tile_source.get_canary_url(sm),
-                        allow_redirects=True, verify=verify_ssl, timeout=0.1)
-                reachable = req.status_code == 200
-            except Exception as e:
-                logger.error(e)
-                reachable = False
-            if reachable:
-                stack_mirror_ids.append(sm.id)
-                break
-        if not reachable:
-            raise ValueError(f"Can't find reachable stack mirror for stack {stack_id}")
+        # Create N5 skeleton manually, because the cloud-volume files don't seem
+        # to be compatible.
+        root_attributes = {
+            "n5": "2.1.3"
+        }
+        scale_attributes = []
+        for n, scale_level in enumerate(stack.downsample_factors):
+            scale_attributes.append({
+                "dataType": metadata['dtype'],
+                "compression": {
+                    "type": encoding,
+                },
+                "blockSize": metadata['block_size'],
+                "dimensions": metadata['dataset_size'],
+                "pixelResolution": {
+                    "unit": "um",
+                    "dimensions": metadata['resolution'],
+                },
+                "downsamplingFactors": [
+                    scale_level.x,
+                    scale_level.y,
+                    scale_level.z
+                ]
+            })
 
-    # Crate a new cropping job, import here to avoid circular import
-    from catmaid.control.cropping import CropJob, extract_substack
+        os.makedirs(full_path)
+        with open(os.path.join(full_path, 'attributes.json'), 'w') as n5_attributes_file:
+            json.dump(root_attributes, n5_attributes_file)
+        for n, scale_attribute_entry in enumerate(scale_attributes):
+            scale_path = os.path.join(full_path, metadata['dataset'], f's{n}')
+            os.makedirs(scale_path)
+            with open(os.path.join(scale_path, 'attributes.json'), 'w') as n5_attributes_file:
+                json.dump(scale_attribute_entry, n5_attributes_file)
 
-    if voxel_space_bounds:
-        rx, ry, rz = stack.resolution.x, stack.resolution.y, stack.resolution.z
-    else:
-        rx, ry, rz = 1.0, 1.0, 1.0
-
-    t = ProjectStack.objects.get(
-            project_id=project_id, stack_id=stack.id).translation
-
-    # In contrast tu X and Y, dimension Z seems to be inclusive
-    job = CropJob(get_system_user(), project_id, stack_mirror_ids,
-                x_min=t.x+(bounds[0][0]*rx), x_max=t.x+(bounds[1][0]*rx),
-                y_min=t.y+(bounds[0][1]*ry), y_max=t.y+(bounds[1][1]*ry),
-                z_min=t.z+(bounds[0][2]*rz), z_max=t.z+((bounds[1][2]-1)*rz),
-                rotation_cw=0, zoom_level=0, single_channel=True)
-
-    cropped_stack = extract_substack(job)
-    print(f'Extracted {len(cropped_stack)} slices')
-
-    if len(cropped_stack) == 0:
-        raise ValueError('No data was extracted')
-
-    np_slices = list(map(lambda s: np.array(s), cropped_stack))
-    data = np.array(np_slices)
-
-    if data.dtype != dtype:
-        data = data.astype(dtype)
-
-    # We need row-major (Fortran) order, hence the .T
-    pyn5.write(n5, (np.array((0,0,0)), np.array(dataset_size)), data.T, dtype)
-    logger.info(f'Done exporting to {export_path}')
+        return JsonResponse({
+            'id': writable_stack.id,
+            'user_id': writable_stack.user_id,
+            'stack_id': writable_stack.stack_id,
+            'name': writable_stack.name,
+            'path': writable_stack.path,
+            'filetype': writable_stack.filetype,
+            'metadata': writable_stack.metadata,
+        })

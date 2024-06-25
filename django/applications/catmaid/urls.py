@@ -142,6 +142,8 @@ urlpatterns += [
     re_path(r'^(?P<project_id>\d+)/stacks$', stack.stacks),
     re_path(r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/info$', stack.stack_info),
     re_path(r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/groups$', stack.stack_groups),
+    re_path(r'^(?P<project_id>\d+)/writable-stacks/$',
+            stack.WritableStackListView.as_view()),
 ]
 
 # General stack group access
@@ -157,7 +159,7 @@ urlpatterns += [
 
 # Writing stack data
 urlpatterns += [
-    url(r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/write-block$', stack.write_block),
+    re_path(r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/write-block$', cropping.write_block),
 ]
 
 # Tracing general

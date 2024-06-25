@@ -264,7 +264,8 @@ class WritableStack(models.Model):
     """
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE,
+                                related_name='writable_stacks')
     creation_time = DbDefaultDateTimeField()
     edition_time = DbDefaultDateTimeField()
 

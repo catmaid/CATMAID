@@ -83,10 +83,16 @@
     //! mouse catcher
     this.mouseCatcher = document.createElement( "div" );
     self.mouseCatcher.className = "sliceMouseCatcher";
+    this.initialMouseCatcher = this.mouseCatcher;
 
     this.setMouseCatcher = function( mc )
     {
       self.mouseCatcher = mc;
+    };
+
+    this.resetMouseCatcher = function()
+    {
+      self.mouseCatcher = this.initialMouseCatcher;
     };
 
     this.updateControls = function()
@@ -105,6 +111,8 @@
     {
       self.mouseCatcher.style.width = width + "px";
       self.mouseCatcher.style.height = height + "px";
+      self.initialMouseCatcher.style.width = width + "px";
+      self.initialMouseCatcher.style.height = height + "px";
     };
 
     this.redraw = function()

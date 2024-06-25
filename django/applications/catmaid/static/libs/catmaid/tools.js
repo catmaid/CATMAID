@@ -112,6 +112,22 @@ CATMAID.tools = CATMAID.tools || {};
     return undefined;
   };
 
+  tools.urlJoinAll = function(components) {
+    if (!components || components.length === 0) {
+      return undefined;
+    }
+    if (components.length === 1) {
+      return components[0];
+    }
+    let combinedUrl;
+    let n = 0;
+    while (n < components.length) {
+      combinedUrl = tools.urlJoin(combinedUrl, components[n]);
+      n += 1;
+    }
+    return combinedUrl;
+  };
+
   /**
    * Parse the query part of a URL and return an object containing all the GET
    * properties.

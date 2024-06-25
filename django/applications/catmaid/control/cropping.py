@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import enum
 import glob
 import json
 import logging
@@ -12,14 +13,17 @@ from PIL import Image as PILImage, TiffImagePlugin
 import requests
 from time import time
 from typing import Dict, List, Tuple
+import shutil
 
 from django.conf import settings
 from django.http import HttpResponse, HttpRequest, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
 
+from catmaid.apps import get_system_user
 from catmaid.models import (Stack, Project, ProjectStack, Message, User,
-        StackMirror)
+        UserRole, StackMirror)
+from catmaid.control.authentication import requires_user_role
 from catmaid.control.common import (id_generator, get_request_bool,
         get_request_list)
 from catmaid.control.tile import get_tile_source
@@ -28,7 +32,16 @@ from catmaid.control.message import notify_user
 from celery import shared_task
 from io import BytesIO
 
+
 logger = logging.getLogger(__name__)
+
+
+n5_writing_enabled = True
+try:
+    import pyn5
+except ImportError:
+    n5_writing_enabled = False
+
 
 TWO_WEEKS_SECONDS = 1209600
 
@@ -42,6 +55,10 @@ crop_output_path = os.path.join(settings.MEDIA_ROOT,
 # Whether SSL certificates should be verified
 verify_ssl = getattr(settings, 'CROPPING_VERIFY_CERTIFICATES', True)
 
+class OutputFormat(enum.Enum):
+    TIFF = 1
+    N5 = 2
+
 
 class CropJob(object):
     """ A small container class to keep information about the cropping
@@ -51,7 +68,8 @@ class CropJob(object):
     """
     def __init__(self, user, project_id, stack_mirror_ids, x_min,
             x_max, y_min, y_max, z_min, z_max, rotation_cw, zoom_level,
-            single_channel=False, output_path=None):
+            single_channel=False, output_path=None, format=OutputFormat.N5,
+            format_options=None):
         self.user = user
         self.project_id = int(project_id)
         self.project = get_object_or_404(Project, pk=project_id)
@@ -84,6 +102,8 @@ class CropJob(object):
             output_path = os.path.join(crop_output_path, file_name)
         self.single_channel = single_channel
         self.output_path = output_path
+        self.output_format = format
+        self.output_format_options = format_options or {}
 
     def get_source_metadata(self, stack, mirror, tile_coords):
         tile_source = self.stack_tile_sources[stack.id]
@@ -589,9 +609,26 @@ def process_crop_job(job: CropJob, create_message=True) -> str:
         error_message = ""
         # Only produce an image if parts of stacks are within the output
         if len(cropped_stack) > 0:
-            metadata = job.create_tiff_metadata(len(cropped_stack))
-            cropped_stack[0].save(job.output_path, compression="raw", save_all=True,
-                    append_images=cropped_stack[1:], tiffinfo=metadata)
+            if job.output_format == OutputFormat.TIFF:
+                metadata = job.create_tiff_metadata(len(cropped_stack))
+                cropped_stack[0].save(job.output_path, compression="raw", save_all=True,
+                        append_images=cropped_stack[1:], tiffinfo=metadata)
+            elif job.output_format == OutputFormat.N5:
+                bounds = (
+                    (job.x_min, job.y_min, job.z_min),
+                    (job.x_max, job.y_max, job.z_max),
+                )
+
+                export_images_to_n5(job.project_id, job.stack_id,
+                        cropped_stack, job.output_path,
+                        job.output_format_options.get('block_size'),
+                        job.output_format_options.get('dataset'),
+                        job.output_format_options.get('dtype'),
+                        job.output_format_options.get('compression'),
+                        job.output_format_options.get('compression_opts'),
+                        bounds, replace=True)
+            else:
+                raise ValueError(f'Unknown output format: {job.output_format}')
         else:
             no_error_occured = False
             error_message = "A region outside the stack has been selected. " \
@@ -771,3 +808,196 @@ def download_crop(request:HttpRequest, file_path=None) -> HttpResponse:
     response['Content-Disposition'] = 'attachment; filename="' + file_path + '"'
 
     return response
+
+
+def export_stack_to_n5(project_id, stack_id, stack_mirror_id=None, name=None,
+                       block_size=(512,512,16), dataset='volumes/main',
+                       dtype='float64', compression='GZIP', compression_opts=-1,
+                       bounds=None, voxel_space_bounds=True, replace=False,
+                       verify_ssl=True):
+    stack = Stack.objects.get(id=stack_id)
+
+    export_name = name or f'stack-{stack_id}-{"cutout" if bounds else "full"}.n5'
+    export_path = os.path.join(settings.MEDIA_ROOT,
+        settings.MEDIA_EXPORT_SUBDIRECTORY, export_name)
+
+    # Crop substack with first reachable mirror
+    stack_mirror_ids = []
+    if stack_mirror_id:
+        stack_mirror_id.append(stack_mirror_id)
+    else:
+        stack_mirrors = StackMirror.objects.filter(stack_id=stack_id)
+        if len(stack_mirrors) == 0:
+            raise ValueError('No stack mirrors found')
+        for sm in stack_mirrors:
+            # If mirror is reachable use it right away
+            tile_source = get_tile_source(sm.tile_source_type)
+            try:
+                req = requests.head(tile_source.get_canary_url(sm),
+                        allow_redirects=True, verify=verify_ssl, timeout=0.1)
+                reachable = req.status_code == 200
+            except Exception as e:
+                logger.error(e)
+                reachable = False
+            if reachable:
+                stack_mirror_ids.append(sm.id)
+                break
+        if not reachable:
+            raise ValueError(f"Can't find reachable stack mirror for stack {stack_id}")
+
+    if voxel_space_bounds:
+        rx, ry, rz = stack.resolution.x, stack.resolution.y, stack.resolution.z
+    else:
+        rx, ry, rz = 1.0, 1.0, 1.0
+
+    t = ProjectStack.objects.get(
+            project_id=project_id, stack_id=stack.id).translation
+
+    # In contrast tu X and Y, dimension Z seems to be inclusive
+    job = CropJob(get_system_user(), project_id, stack_mirror_ids,
+                x_min=t.x+(bounds[0][0]*rx), x_max=t.x+(bounds[1][0]*rx),
+                y_min=t.y+(bounds[0][1]*ry), y_max=t.y+(bounds[1][1]*ry),
+                z_min=t.z+(bounds[0][2]*rz), z_max=t.z+((bounds[1][2]-1)*rz),
+                rotation_cw=0, zoom_level=0, single_channel=True)
+
+    cropped_stack = extract_substack(job)
+    logger.info(f'Extracted {len(cropped_stack)} slices')
+
+    if len(cropped_stack) == 0:
+        raise ValueError('No data was extracted')
+
+    return export_images_to_n5(project_id, stack_id, cropped_stack,
+            export_path, block_size, dataset, dtype, compression,
+            compression_opts, bounds, replace)
+
+
+def export_images_to_n5(project_id, stack_id, cropped_stack,
+                        export_path, block_size=(512,512,16),
+                        dataset='volumes/main', dtype='uint32', compression='GZIP',
+                        compression_opts=-1, bounds=None, replace=False):
+    """Export an existing stack mirror data set to a local N5 dataset,
+    optionally limitted to a certain volume.
+
+    bounds: a two element tuple (min, max) where both elements are three-tuples
+            of the respective corner of the bounds to export.
+    """
+    stack = Stack.objects.get(id=stack_id)
+
+    if bounds:
+        if bounds[1][0] > stack.dimension.x or bounds[1][1] > stack.dimension.y \
+                or bounds[1][2] > stack.dimension.z:
+            raise ValueError('The provided `bounds` are larger than the stack '
+                    'dimensions')
+    else:
+        bounds = (
+            (0,0,0),
+            (stack.dimension.x, stack.dimension.y, stack.dimension.z)
+        )
+
+    #data = np.array(json.loads(data)).transpose([2, 1, 0])
+    dataset_size = (
+        bounds[1][0] - bounds[0][0],
+        bounds[1][1] - bounds[0][1],
+        bounds[1][2] - bounds[0][2],
+    )
+
+    logger.info(f'Exporting stack {stack.id} ({stack.title}, '
+                f'Res: {stack.resolution.x}x{stack.resolution.y}x'
+                f'{stack.resolution.z}) to path {export_path}, '
+                f'dataset size: {dataset_size}, bounds: {bounds}, dtype: {dtype}, '
+                f'block size: {block_size}')
+
+    if replace and os.path.exists(export_path):
+        logger.info(f'Removing existing output file {export_path}')
+        shutil.rmtree(export_path)
+
+    pyn5.create_dataset(export_path, dataset, dataset_size,
+                        block_size, dtype.upper())
+
+    with open(export_path + '/' + dataset + "/attributes.json", 'r') as f:
+            attrs = json.load(f)
+            attrs['pixelResolution'] = {
+                'unit': 'nm',
+                'dimensions': [
+                    stack.resolution.x,
+                    stack.resolution.y,
+                    stack.resolution.z
+                ]
+            }
+
+    with open(export_path + '/' + dataset + "/attributes.json", 'w') as f:
+            f.write(json.dumps(attrs))
+
+    n5 = pyn5.open(export_path, dataset, dtype.upper(), False)
+
+    np_slices = list(map(lambda s: np.array(s), cropped_stack))
+    data = np.array(np_slices)
+
+    if data.dtype != dtype:
+        data = data.astype(dtype)
+
+    # We need row-major (Fortran) order, hence the .T
+    pyn5.write(n5, (np.array((0,0,0)), np.array(dataset_size)), data.T, dtype)
+    logger.info(f'Done exporting to {export_path}')
+
+    return n5
+
+
+@requires_user_role([UserRole.Annotate])
+def write_block(request:HttpRequest, project_id=None, stack_id=None) -> JsonResponse:
+    """ Store block-wise voxel data.
+    """
+
+    if not n5_writing_enabled:
+        raise ValueError('N5 file writing is not enabled on the server')
+
+    # Get writable stack for local path info
+    writable_stacks = WritableStack.objects.filter(project_id=project_id,
+            user=request.user, stack_id=stack_id)
+    if len(writable_stacks) == 0:
+        raise ValueError(f'Found no writable stacks for stack {stack_id}')
+    elif len(writable_stacks) > 1:
+        raise ValueError(f'Found more than one writable stack for stack {stack_id}')
+    writable_stack = writable_stacks[0]
+
+    dataset_size = writable_stack.metadata.get('dataset_size')
+    if not dataset_size:
+        raise ValueError('Need dataset_size parameter in writable stack metadata')
+
+    data = request.POST.get('data')
+    if not data:
+        raise ValueError('Need data')
+    data = np.array(json.loads(data)).transpose([2, 1, 0])
+
+    data_bounds_json = request.POST.get('data_bounds')
+    if not data_bounds_json:
+        raise ValueError('Need data_bounds paramaeter')
+    data_bounds = json.loads(data_bounds_json)
+    if not isinstance(data_bounds, list) or len(data_bounds) != 2:
+        raise ValueError('The data_bounds parameter needs to be a list of two lists')
+    if not isinstance(data_bounds[0], list) or len(data_bounds[0]) != len(dataset_size):
+        raise ValueError('The first data_bounds list  needs to be a list with the correct dimensionality')
+    if not isinstance(data_bounds[1], list) or len(data_bounds[1]) != len(dataset_size):
+        raise ValueError('The first data_bounds list  needs to be a list with the correct dimensionality')
+
+    dataset = writable_stack.metadata.get('dataset', 'volumes/main')
+    dtype = writable_stack.metadata.get('dtype', 'float64')
+    compression_name = writable_stack.metadata.get('compression', 'GZIP')
+    compression = getattr(pyn5.CompressionType, compression_name)
+    compression_opts = writable_stack.metadata.get('compression_opts', -1)
+    block_size = writable_stack.metadata.get('block_size', [1, 1, 1])
+
+    pyn5.create_dataset(writable_stack.path, dataset, dataset_size,
+                        block_size, dtype.upper())
+    n5 = pyn5.open(writable_stack.path, dataset, dtype.upper(), False)
+    pyn5.write(n5, (np.array(data_bounds[0]), np.array(data_bounds[1])), data, dtype)
+
+    writable_stack.metadata['last_update_time'] = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
+    writable_stack.metadata['last_update_bounds'] = data_bounds
+    writable_stack.save()
+
+    return JsonResponse({
+        'update': True,
+        'last_update_time': writable_stack.metadata.get('last_update_time'),
+        'last_update_bounds': writable_stack.metadata.get('last_update_bounds'),
+    })

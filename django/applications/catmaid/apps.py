@@ -219,6 +219,7 @@ def check_media_path(app_configs, **kwargs) -> List[str]:
             settings.MEDIA_TREENODE_SUBDIRECTORY,
             settings.MEDIA_EXPORT_SUBDIRECTORY,
             settings.MEDIA_CACHE_SUBDIRECTORY,
+            settings.MEDIA_WRITABLE_STACK_SUBDIRECTORY,
         ]
         for s in known_output_subfolders:
             sub_output_dir = os.path.join(settings.MEDIA_ROOT, s)

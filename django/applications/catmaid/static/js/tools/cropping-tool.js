@@ -174,6 +174,55 @@
     toolbar.insertBefore(rgb_slices_container, toolbar_button);
     added_elements.push(rgb_slices_container);
 
+    const outputFormatOptions = {
+      'blockSize': [512, 512, 16],
+      'dataset': 'volumes/main',
+      'datatype': 'uint8',
+      'compression': 'GZIP',
+      'compressionOptions': -1,
+    };
+    let getOutputFormatOptionsDialog = function() {
+      const dialog = new CATMAID.OptionsDialog('Configure N5 output');
+
+      // Block size
+      const blockSizeField = dialog.appendField("Block size: ",
+          "filename", outputFormatOptions.blockSize);
+      // Dataset
+      const datasetField = dialog.appendField("Dataset: ",
+          "dataset", outputFormatOptions.dataset);
+      // Datatype
+      // Compression
+      // Compression options
+      // Output file name
+      // Replace output file
+
+      return dialog;
+    };
+
+    // A drop down for export format options
+    let outputFormat = 'tiff';
+    const mergeMode = CATMAID.DOM.createSelectElement('Format', [
+          {title: 'TIFF', value: 'tiff'},
+          {title: 'N5', value: 'n5'},
+        ],
+        "Rules are applied in a left-associative fashion. This selects which operation to use for this. Doesn't apply to first rule. Click label to configure.",
+        'tiff',
+        function() {
+          outputFormat = this.value;
+        }, outputFormat);
+
+    const newLabel = document.createElement('span');
+    newLabel.innerHTML = ' (<i class="fa fa-cog"></i>)';
+    mergeMode.insertBefore(newLabel, mergeMode.lastChild);
+    newLabel.addEventListener('click', event => {
+      console.log('ok');
+    });
+
+    const mergeModeContainer = create_tb_box();
+    const mergeModeContainerP = mergeModeContainer.appendChild(document.createElement('p'));
+    mergeModeContainerP.appendChild(mergeMode);
+    toolbar.insertBefore(mergeModeContainer, toolbar_button);
+
     /**
      * crop a microstack by initiating a server backend call
      */

@@ -203,6 +203,25 @@
 
 
   /**
+   * A completely empty tile source, not associated with a tile source ID.
+   */
+  CATMAID.EmptyTileSource = function () {
+    CATMAID.AbstractTileSourceWithOverview.apply(this, arguments);
+  };
+
+  CATMAID.EmptyTileSource.prototype = Object.create(CATMAID.AbstractTileSourceWithOverview.prototype);
+
+  CATMAID.EmptyTileSource.prototype.getTileURL = function(
+      project, stack, slicePixelPosition, col, row, zoomLevel) {
+    return '';
+  };
+
+  CATMAID.EmptyTileSource.prototype.getOverviewURL = function(stack, slicePixelPosition) {
+    return '';
+  };
+
+
+  /**
    * Creates URLs for standard tile path of CATMAID.
    *
    * Source type: 1

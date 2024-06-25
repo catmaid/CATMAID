@@ -1,7 +1,5 @@
 (function(CATMAID) {
 
-  const actions = [];
-
   /**
     * Return a unique name for the painting layer of a given stack viewer.
     */
@@ -60,81 +58,6 @@
   }
 
   /**
-    * Add the neuron name display and the painting layer to the given stack
-    * viewer, if they don't exist already.
-    */
-  function prepareStackViewer(stackViewer) {
-    var dataLayerName = getPaintingDataLayerName(stackViewer);
-    var dataLayer = stackViewer.getLayer(dataLayerName);
-
-    if (!dataLayer) {
-      // Create a new pixi based N5 image block layer that uses a custom mirror.
-      const isVisible = true;
-      const showOverview = false;
-      const changeMirrorIfNoData = false;
-      const mirrorId = -1; // Custom mirror
-      const dataLayer = new CATMAID.PixiImageBlockLayer(
-          stackViewer,
-          "Painting data",
-          stackViewer.stack,
-          mirrorId,
-          isVisible,
-          isVisible ? 0 : 1,
-          showOverview,
-          CATMAID.StackLayer.INTERPOLATION_MODES.INHERIT,
-          changeMirrorIfNoData);
-      stackViewer.addLayer(dataLayerName, dataLayer);
-
-      var customMirrorData = {
-        id: "custom-" + CATMAID.tools.uniqueId(),
-        title: 'Painting data N5',
-        position: -1,
-        image_base: imageBase, // end with slash
-        file_extension: 'n5',
-        tile_width: 1024,
-        tile_height: 1024,
-        tile_source_type: 11, // N5 image blocks
-      };
-
-      stackViewer.stack.addMirror(customMirrorData);
-      dataLayer.switchToMirror(customMirrorData.id);
-      CATMAID.setLocalStorageItem(self.customMirrorStorageName,
-          JSON.stringify(customMirrorData));
-
-      // Update layer control UI to reflect settings changes.
-      if (self.stackViewer && self.stackViewer.layerControl) {
-        self.layerControl.refresh();
-      }
-    }
-
-    var layerName = getPaintingLayerName(stackViewer);
-    var layer = stackViewer.getLayer(layerName);
-
-    if (!layer) {
-      layer = new CATMAID.PaintingLayer(stackViewer, {
-      });
-      stackViewer.addLayer(layerName, layer);
-    }
-
-    // Insert a text div for the label name in the canvas window title bar
-    let activeElementId = `active-element${stackViewer.getId()}`;
-    let stackFrame = stackViewer.getWindow().getFrame();
-    let activeElement = stackFrame.querySelector(`#${activeElementId}`);
-    if (!activeElement) {
-      activeElement = document.createElement("p");
-      activeElement.id = activeElementId;
-      activeElement.classList.add("active-element");
-      var spanName = document.createElement("span");
-      spanName.appendChild(document.createTextNode(""));
-      activeElement.appendChild(spanName);
-      stackFrame.appendChild(activeElement);
-      setActiveElemenTopBarText();
-    }
-
-    return layer;
-  }
-
-  /**
    * Constructor for the painting tool.
    */
   function PaintingTool() {
@@ -142,15 +65,212 @@
     this.toolname = "paintingtool";
 
     // Currently focused painting layer
-    var activePaintingLayer = null;
+    let activePaintingLayer = null;
     // Currently focused N5 layer
-    var activePaintingDataLayer = null;
+    let activePaintingDataLayer = null;
     // Currently focused stack viewer
-    var activeStackViewer = null;
+    let activeStackViewer = null;
+    // Currently active writable stack
+    let activeWritableStack = null;
     // Map stacks to its mouse handlers
-    var bindings = new Map();
+    let bindings = new Map();
     // Information whether  drawing is currently happening
-    var isDrawing = false;
+    let isDrawing = false;
+    // All currently available writable stacks for the active stack viewer.
+    let writableStacks = new Map();
+
+    const actions = [];
+
+    // A drop down for export format options
+    let writableStackOptions = [];
+    function updateWritableStackOptions() {
+      writableStackOptions = writableStacks.values().map(ws => {
+        return {
+          'title': ws.name,
+          'value': ws.id,
+        };
+      }).toArray();
+    }
+    updateWritableStackOptions();
+
+    const createWritableStackSelect = () => {
+      let stackOptions = [{
+          'title': '(none)',
+          'value': -1
+        }].concat(writableStackOptions);
+      let selectedOption = activeWritableStack;
+      if (!stackOptions || stackOptions.length === 0) {
+        selectedOption = -1;
+      }
+      return CATMAID.DOM.createSelectElement('Painting layer', stackOptions,
+        "Select one of the available writable stacks for the current primary stack as painting layer.", selectedOption, (event) => {
+          let num = Number(event.srcElement.value);
+          if (!Number.isNaN(num)) {
+            this.activateWritableStack(num < 0 ? null : num);
+          }
+        });
+    };
+    let writableStackSelect;
+
+    /**
+     * Replaces any existing display of a writable tack with the one passed in.
+     */
+    this.activateWritableStack = function(writableStackId) {
+      if (activeWritableStack === writableStackId) {
+        return;
+      }
+
+      if (activeStackViewer) {
+        removePaintingLayers(activeStackViewer);
+      }
+
+      activeWritableStack = writableStackId;
+      // TODO: There should be a simpler way than to re-register
+      // this.refreshPaintingLayer();
+      // <binding update>
+      this.register(activeStackViewer);
+    };
+
+    this.getActions = function () {
+      return actions;
+    };
+
+    this.addAction = function (action) {
+      actions.push( action );
+    };
+
+    this.addAction(new CATMAID.Action({
+      helpText: "Add a new painting layer to the current stack",
+      keyShortcuts: { "N": [ "n" ] },
+      buttonName: "new_writable_stack",
+      buttonID: "paint_button_new_writable_stack",
+      run: e => {
+        if (!CATMAID.mayView())
+          return false;
+        this.addWritableStack();
+        return true;
+      }
+    }));
+
+    /**
+     * Add a new writable stack to the current primary stack.
+     */
+    this.addWritableStack = function() {
+      const dialog = new CATMAID.OptionsDialog("Add writable stack");
+      dialog.appendMessage("Please specify the details of the new writable stack. All user created data will be stored in a server-side N5 file.");
+      const nameField = dialog.appendField('Name', 'new-writable-stack-name', `Writable stack #${writableStacks.size + 1}`);
+      dialog.onOK = () => {
+        CATMAID.WritableStack.create(project.id, activeStackViewer.primaryStack.id, nameField.value, 'n5')
+          .then(writableStack => {
+            writableStacks.set(writableStack.id, {
+              'id': writableStack.id,
+              'user_id': writableStack.user_id,
+              'stack_id': writableStack.stack_id,
+              'name': writableStack.name,
+              'path': writableStack.path,
+              'filetype': writableStack.filetype,
+              'metadata': writableStack.metadata,
+            });
+            // TODO: Trigger UI update of toolbar
+            this.refreshToolbar();
+          })
+          .catch(CATMAID.handleError);
+      };
+
+      dialog.show(400, 'auto');
+    };
+
+    /**
+      * Add the neuron name display and the painting layer to the given stack
+      * viewer, if they don't exist already.
+      */
+    function prepareStackViewer(stackViewer) {
+      removePaintingLayers(stackViewer);
+
+      var dataLayerName = getPaintingDataLayerName(stackViewer);
+      var dataLayer = stackViewer.getLayer(dataLayerName);
+      const ws = writableStacks.get(activeWritableStack);
+
+      if (!activeWritableStack || !ws) {
+        return [null, null];
+      }
+
+      if (!dataLayer) {
+        // Create a new pixi based N5 image block layer that uses a custom mirror.
+        const isVisible = true;
+        const showOverview = false;
+        const changeMirrorIfNoData = false;
+        const stack = stackViewer.primaryStack;
+
+        const writable_stack_dir = 'files/writable_stacks';
+        const dataSetUrl = CATMAID.tools.urlJoinAll([
+            CATMAID.getAbsoluteURL(),
+            writable_stack_dir,
+            ws.path,
+            ws.metadata['dataset']
+        ]);
+        const imageBase = CATMAID.tools.urlJoin(dataSetUrl, '/%SCALE_DATASET%/0_1_2');
+
+        var customMirrorData = {
+          id: "custom-" + CATMAID.tools.uniqueId(),
+          title: 'Painting data N5',
+          position: -1,
+          image_base: imageBase,
+          file_extension: 'n5',
+          tile_width: 1024,
+          tile_height: 1024,
+          tile_source_type: 11, // N5 image blocks
+        };
+        stack.addMirror(customMirrorData);
+
+        const dataLayer = new CATMAID.PixiImageBlockLayer(
+            stackViewer,
+            "Painting data",
+            stackViewer.primaryStack,
+            customMirrorData.id,
+            isVisible,
+            isVisible ? 0 : 1,
+            showOverview,
+            CATMAID.StackLayer.INTERPOLATION_MODES.INHERIT,
+            changeMirrorIfNoData);
+
+        stackViewer.addLayer(dataLayerName, dataLayer);
+
+        CATMAID.setLocalStorageItem(self.customMirrorStorageName,
+            JSON.stringify(customMirrorData));
+
+        // Update layer control UI to reflect settings changes.
+        if (self.stackViewer && self.stackViewer.layerControl) {
+          self.layerControl.refresh();
+        }
+      }
+
+      var layerName = getPaintingLayerName(stackViewer);
+      var layer = stackViewer.getLayer(layerName);
+
+      if (!layer) {
+        layer = new CATMAID.PaintingLayer(stackViewer, {
+        });
+        stackViewer.addLayer(layerName, layer);
+      }
+
+      // Insert a text div for the label name in the canvas window title bar
+      let activeElementId = `active-element${stackViewer.getId()}`;
+      let stackFrame = stackViewer.getWindow().getFrame();
+      let activeElement = stackFrame.querySelector(`#${activeElementId}`);
+      if (!activeElement) {
+        activeElement = document.createElement("p");
+        activeElement.id = activeElementId;
+        activeElement.classList.add("active-element");
+        var spanName = document.createElement("span");
+        spanName.appendChild(document.createTextNode(""));
+        activeElement.appendChild(spanName);
+        stackFrame.appendChild(activeElement);
+        setActiveElemenTopBarText();
+      }
+
+      return [layer, dataLayer];
+    }
 
     /**
      * Return the stack viewer referenced by the active node, or otherwise (if
@@ -209,6 +329,11 @@
       label.remove();
 
       // Remove the painting layer
+      removePaintingLayers(stackViewer);
+    }
+
+    function removePaintingLayers(stackViewer) {
+      // Remove the painting layer
       var layerName = getPaintingLayerName(stackViewer);
       var layer = stackViewer.getLayer(layerName);
       if (layer) {
@@ -216,8 +341,9 @@
         // destroy the painting overlay.
         stackViewer.removeLayer(layerName);
       }
+      activePaintingLayer = null;
 
-      // Remove the painting layer
+      // Remove the painting data layer
       var dataLayerName = getPaintingDataLayerName(stackViewer);
       var dataLayer = stackViewer.getLayer(dataLayerName);
       if (dataLayer) {
@@ -225,6 +351,7 @@
         // destroy the painting overlay.
         stackViewer.removeLayer(dataLayerName);
       }
+      activePaintingDataLayer = null;
     }
 
     /**
@@ -248,13 +375,15 @@
     /**
       * Create new mouse bindings for the layer's view.
       */
-    this.createPointerBindings = function (stackViewer, layer, mouseCatcher) {
+    this.createPointerBindings = function (stackViewer, layer, mouseCatcher = undefined) {
       // A handle to a delayed update
       var updateTimeout;
 
       // Remove navigator's pointer down handling and replace it with our own.
       var proto_onpointerdown = this.prototype._onpointerdown;
-      mouseCatcher.removeEventListener('pointerdown', proto_onpointerdown);
+      if (mouseCatcher) {
+        mouseCatcher.removeEventListener('pointerdown', proto_onpointerdown);
+      }
 
       var [mouseX, mouseY] = [0, 0];
       const context = activePaintingLayer.context;
@@ -388,6 +517,7 @@
         activeLayer = paintingLayers[0];
         if (activePaintingLayer !== paintingLayers[0] || forceBindingUpdate) {
           activePaintingLayer = activeLayer;
+           // Remove any existing bindings and re-add layer specific ones
           this.inactivateBindings(activeStackViewer);
           this.activateBindings(activeStackViewer, activeLayer);
         }
@@ -428,14 +558,41 @@
      * Create quick-access buttons for tools associated with painting.
      */
     this.setupSubTools = function() {
-      var box;
       if ( this.prototype.stackViewer === null ) {
-        box = CATMAID.createButtonsFromActions(
+        const box = CATMAID.createButtonsFromActions(
           actions,
           "paintingbuttons",
           "paint_", 'toolbar_item');
         $( "#toolbar_nav" ).prepend( box );
+      }
+      this.refreshToolbar();
+    };
 
+    this.refreshToolbar = function() {
+      updateWritableStackOptions();
+
+      let existingContainer = document.getElementById('paintingbuttons_extra');
+      if (existingContainer) {
+        existingContainer.parentElement.removeChild(existingContainer);
+      }
+      writableStackSelect = createWritableStackSelect();
+
+      const selectContainer = document.createElement('div');
+      selectContainer.classList.add('box');
+      selectContainer.id = 'paintingbuttons_extra';
+      const selectLayouter = selectContainer.appendChild(document.createElement('p'));
+      selectLayouter.appendChild(writableStackSelect);
+
+      const buttonContainer = document.getElementById('paintingbuttons');
+      buttonContainer.insertAdjacentElement('afterend', selectContainer);
+    };
+
+    this.refreshPaintingLayer = function() {
+      if (activeStackViewer) {
+        // Get or create the painting layer for this stack viewer
+        var [paintingLayer, dataLayer] = prepareStackViewer(activeStackViewer);
+        activePaintingLayer = paintingLayer;
+        activePaintingDataLayer = dataLayer;
       }
     };
 
@@ -444,48 +601,67 @@
      * register all GUI control elements and event handlers
      */
     this.register = function( parentStackViewer ) {
+      activeStackViewer = parentStackViewer;
+
       this.setupSubTools();
 
-      if (parentStackViewer) {
-        // Get or create the painting layer for this stack viewer
-        var [paintingLayer, dataLayer] = prepareStackViewer(parentStackViewer);
-        activePaintingLayer = paintingLayer;
-        activePaintingDataLayer = dataLayer;
+      // General UI updates
+      var button = document.getElementById("edit_button_paint");
+      if (button) button.className = "button_active";
 
-        // Set this layer as mouse catcher in Navigator
-        var view = layer.view;
-        this.prototype.setMouseCatcher(view);
+      var toolbar = document.getElementById( "toolbar_nav" );
+      if (toolbar) {
+        toolbar.style.display = "";
       }
 
-      // Register stack viewer with prototype, after the mouse catcher has been set.
-      // This attaches pointer handlers to the view.
-      this.prototype.register(parentStackViewer, "edit_button_paint");
+      // Get list of writable stacks for current user
+      return CATMAID.WritableStack.list(project.id)
+        .then(writable_stacks => {
+          writableStacks = new Map(writable_stacks.map(ws => [ws.id, ws]));
 
-      if (parentStackViewer) {
-        activeStackViewer = parentStackViewer;
-        // The active painting layer however is whichever contains the active node
-        // and its API.
-        this.setActivePaintingLayer(true);
+          // Update tool UI for stack selection and layer display
+          this.refreshToolbar();
+          this.refreshPaintingLayer();
 
-        // Try to get existing pointer bindings for this layer
-        if (!bindings.has(parentStackViewer)) {
-          this.createPointerBindings(parentStackViewer, layer, view);
-        }
-      }
+          if (activeStackViewer) {
+            if (activePaintingLayer) {
+              // Set this layer as mouse catcher in Navigator
+              this.prototype.setMouseCatcher(activePaintingLayer.view);
+            } else {
+              this.prototype.resetMouseCatcher();
+            }
+          }
+
+          // Register stack viewer with prototype, after the mouse catcher has been set.
+          // This attaches pointer handlers to the view.
+          this.prototype.register(parentStackViewer, "edit_button_paint");
+
+          if (parentStackViewer) {
+            // Create pointer bindings for this layer, if they don't exist already.
+            if (!bindings.has(parentStackViewer) && activePaintingLayer) {
+              this.createPointerBindings(parentStackViewer, activePaintingLayer);
+            }
+
+            // The active painting layer however is whichever contains the active node
+            // and its API.
+            this.setActivePaintingLayer(true);
+          }
+        })
+        .catch(CATMAID.handleError);
     };
 
     /**
-     * unregister all stack viewer related mouse and keyboard controls
+     * Unregister all stack viewer related mouse and keyboard controls. Do NOT
+     * unregister with prototype, because it would remove the mouseCatcher layer
+     * and the annotations would disappear
+     *
+     * Do this before calling the prototype destroy that sets stack viewer to
+     * null.
      */
     this.unregister = function() {
-      // do it before calling the prototype destroy that sets stack viewer to null
       if (this.prototype.stackViewer) {
         this.inactivateBindings(this.prototype.stackViewer);
       }
-      // Do NOT unregister: would remove the mouseCatcher layer
-      // and the annotations would disappear
-      //this.prototype.unregister();
-      return;
     };
 
     /**
@@ -518,9 +694,7 @@
     };
   }
 
-  CATMAID.PaintingTool = PaintingTool;
-
-  CATMAID.PaintingTool.Settings = new CATMAID.Settings(
+  PaintingTool.Settings = new CATMAID.Settings(
       'painting-tool',
       {
         version: 0,
@@ -540,5 +714,7 @@
         },
         migrations: {}
       });
+
+  CATMAID.PaintingTool = PaintingTool;
 
 })(CATMAID);

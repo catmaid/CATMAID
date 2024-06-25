@@ -98,7 +98,7 @@
     if (this.mirrorId !== -1) {
       this.tileSource = stack.createTileSourceForMirror(this.mirrorId);
     } else {
-
+      this.tileSource = new CATMAID.EmptyTileSource();
     }
 
     /* Whether mirros should be changed automatically if image data is

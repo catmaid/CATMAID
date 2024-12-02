@@ -2154,7 +2154,7 @@
     var activeNodeDisplayed = activeNode.mesh.visible;
     var activeNodeSelected = !!SkeletonAnnotations.getActiveNodeId();
 
-    activeNode.setVisible(activeNodeSelected);
+    activeNode.setVisible(activeNodeDisplayed && activeNodeSelected);
     activeNode.updatePosition(this.space, this.options);
 
     if (activeNode.mesh.visible && this.options.follow_active) {

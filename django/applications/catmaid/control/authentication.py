@@ -26,7 +26,7 @@ from django.http import HttpRequest, HttpResponse, HttpResponseRedirect, JsonRes
 from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import _get_queryset, render
 from django.template import Context, Template
-from django.utils.encoding import force_bytes, force_text
+from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.core.mail import EmailMessage
 
@@ -892,7 +892,7 @@ def register(request:HttpRequest) -> Union[HttpResponseRedirect, JsonResponse]:
 
 def activate(request:HttpRequest, uidb64, token):
     try:
-        uid = force_text(urlsafe_base64_decode(uidb64))
+        uid = force_str(urlsafe_base64_decode(uidb64))
         user = User.objects.get(pk=uid)
     except(TypeError, ValueError, OverflowError, User.DoesNotExist):
         user = None

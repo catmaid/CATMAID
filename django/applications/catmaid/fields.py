@@ -80,7 +80,7 @@ class CompositeField(models.Field, metaclass=CompositeMeta):
         return newclass
 
 
-composite_type_created = Signal(providing_args=['name'])
+composite_type_created = Signal()
 
 # Necessary when running in interactive contexts and from migrations.
 @receiver(composite_type_created)

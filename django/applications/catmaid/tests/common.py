@@ -3,7 +3,7 @@ import textwrap
 from abc import ABC
 
 from django.db import connection
-from django.test import TestCase
+from django.test import TestCase, TransactionTestCase
 from django.test.client import Client
 from catmaid.apps import get_system_user
 from catmaid.models import Project
@@ -59,6 +59,32 @@ class AssertStatusMixin(ABC):
 
 
 class CatmaidTestCase(TestCase, AssertStatusMixin):
+    fixtures = ['catmaid_testdata']
+
+    maxDiff = None
+
+    @classmethod
+    def setUpTestData(cls):
+        init_consistent_data()
+        # Set up data for the whole TestCase
+        cls.test_project_id = 3
+        cls.user = User.objects.create_user('temporary',
+                'temporary@my.mail', 'temporary')
+
+        # Add admin user and test2 users to the test1 group
+        g = Group.objects.get(name='test1')
+        g.user_set.add(User.objects.get(username='admin'))
+        g.user_set.add(User.objects.get(username='test2'))
+        g.save()
+
+    def setUp(self):
+        self.client = Client()
+
+    def fake_authentication(self):
+        self.client.login(username='temporary', password='temporary')
+
+
+class CatmaidTransactionTestCase(TransactionTestCase, AssertStatusMixin):
     fixtures = ['catmaid_testdata']
 
     maxDiff = None

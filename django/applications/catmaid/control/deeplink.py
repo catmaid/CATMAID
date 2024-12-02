@@ -89,7 +89,7 @@ class SimpleDeepLinkSerializer(ModelSerializer):
 class DeepLinkList(APIView):
 
     @method_decorator(requires_user_role([UserRole.Browse]))
-    @never_cache
+    @method_decorator(never_cache)
     def get(self, request:Request, project_id) -> Response:
         """List deep-links available to the client.
         ---
@@ -227,7 +227,7 @@ class DeepLinkList(APIView):
 
 class DeepLinkSelector(APIView):
 
-    @never_cache
+    @method_decorator(never_cache)
     def get(self, request:Request, project_id, alias) -> Response:
         """Get a deep-links available to the client.
 
@@ -242,7 +242,7 @@ class DeepLinkSelector(APIView):
         return HttpResponseRedirect(url)
 
     @method_decorator(requires_user_role_for_any_project([UserRole.Browse]))
-    @never_cache
+    @method_decorator(never_cache)
     def head(self, request:Request, project_id, alias) -> Response:
         """Get a deep-links available to the client.
         ---
@@ -257,7 +257,7 @@ class DeepLinkSelector(APIView):
             return Response('Link not found', status=status.HTTP_404_NOT_FOUND)
 
     @method_decorator(requires_user_role_for_any_project([UserRole.Annotate]))
-    @never_cache
+    @method_decorator(never_cache)
     def delete(self, request:Request, project_id, alias) -> Response:
         """Delete a deep-links available to the client.
         ---
@@ -278,7 +278,7 @@ class DeepLinkSelector(APIView):
 class DeepLinkDetails(APIView):
 
     @method_decorator(requires_user_role_for_any_project([UserRole.Browse]))
-    @never_cache
+    @method_decorator(never_cache)
     def get(self, request:Request, project_id, alias) -> Response:
         """Get details on a deep-link.
         ---
@@ -297,7 +297,7 @@ class DeepLinkDetails(APIView):
 class DeepLinkByIdSelector(APIView):
 
     @method_decorator(requires_user_role_for_any_project([UserRole.Annotate]))
-    @never_cache
+    @method_decorator(never_cache)
     def delete(self, request:Request, project_id, link_id) -> Response:
         """Delete a deep-links available to the client.
         ---

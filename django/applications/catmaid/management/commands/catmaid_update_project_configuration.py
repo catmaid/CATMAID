@@ -15,7 +15,7 @@ from .common import set_log_level
 
 class Command(BaseCommand):
     help = 'Set up the required database entries for a project'
-    requires_system_checks = False
+    requires_system_checks = []
 
     def add_arguments(self, parser):
         parser.add_argument('--project_id', dest='project_id', required=False,

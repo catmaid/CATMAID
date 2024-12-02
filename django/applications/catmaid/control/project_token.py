@@ -84,7 +84,7 @@ class SimpleProjectTokenSerializer(ModelSerializer):
 class ProjectTokenList(APIView):
 
     @method_decorator(requires_user_role([UserRole.Admin]))
-    @never_cache
+    @method_decorator(never_cache)
     def get(self, request:Request, project_id) -> Response:
         """List project tokens available for this project, if the user is an
         admin.
@@ -130,7 +130,7 @@ class ProjectTokenList(APIView):
 
 class UserProjectTokenList(APIView):
 
-    @never_cache
+    @method_decorator(never_cache)
     def get(self, request:Request, project_id) -> JsonResponse:
         """List project tokens available for this project and user.
         ---

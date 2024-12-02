@@ -104,8 +104,13 @@ def distanceMatrix(G, synNodes) -> Tuple[Any, Dict]:
     synNodes = set(synNodes)
     synIndices = tuple(i for i,node in enumerate(nodeList) if node in synNodes)
 
-    dmat = dijkstra(nx.to_scipy_sparse_matrix(G, nodeList),
-            directed=False, indices=synIndices)
+    # FIXME: The dtype paratmer and index overrides shouldn't be needed, but the
+    # Dijkstra implementation fails in SciPy >v1.10 and <v1.15. See PR #20913 in
+    # SciPy's GitHub repo.
+    mat = nx.to_scipy_sparse_matrix(G, nodeList, dtype=np.int32)
+    mat.indices = mat.indices.astype(np.int32)
+    mat.indptr = mat.indptr.astype(np.int32)
+    dmat = dijkstra(mat, directed=False, indices=synIndices)
 
     return dmat, {node: i for i,node in enumerate(nodeList)}
 

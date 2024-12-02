@@ -24,7 +24,7 @@ class SuppressedVirtualTreenodeSerializer(ModelSerializer):
 
 class SuppressedVirtualTreenodeList(APIView):
     @method_decorator(requires_user_role([UserRole.Browse, UserRole.Annotate]))
-    @never_cache
+    @method_decorator(never_cache)
     def get(self, request:Request, project_id=None, treenode_id=None, format=None) -> Response:
         """List suppressed virtual nodes along the edge to this node.
         ---

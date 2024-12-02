@@ -5052,7 +5052,6 @@ var cola;
         return LinkAccessor;
     })();
 })(cola || (cola = {}));
-//# sourceMappingURL=cola.js.map
 
 // patch in conditional cola commonjs support
 if( typeof module !== 'undefined' ){

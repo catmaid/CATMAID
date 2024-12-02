@@ -5,7 +5,8 @@ import re
 from adminplus.sites import AdminSitePlus
 
 from django.conf import settings
-from django.conf.urls import include, url
+from django.conf.urls import include
+from django.urls import re_path
 from django.contrib import admin
 from django.views.static import serve
 
@@ -27,31 +28,31 @@ admin.site.index_title = "CATMAID instance"
 
 # CATMAID
 urlpatterns = [
-    url(r'^', include('catmaid.urls')),
-    url(r'^accounts/', include('allauth.urls')),
+    re_path(r'^', include('catmaid.urls')),
+    re_path(r'^accounts/', include('allauth.urls')),
 ]
 
 # CATMAID extensions
 urlpatterns += [
-    url(r'^ext/{}/'.format(extension), include('{}.urls'.format(extension)))
+    re_path(r'^ext/{}/'.format(extension), include('{}.urls'.format(extension)))
     for extension in settings.INSTALLED_EXTENSIONS
 ]
 
 # Admin site
 urlpatterns += [
-    url(r'^admin/', admin.site.urls)
+    re_path(r'^admin/', admin.site.urls)
 ]
 
 # API Documentation
 urlpatterns += [
-    url(r'^apis/', schema_view),
-    url(r'^api-token-auth/', ObtainAuthToken.as_view()),
+    re_path(r'^apis/', schema_view),
+    re_path(r'^api-token-auth/', ObtainAuthToken.as_view()),
 ]
 
 # Serve static files in debug mode and if explicitely requested
 if settings.DEBUG or settings.SERVE_STATIC:
     def serve_static(prefix, root):
-        return url(r'^%s(?P<path>.*)$' % re.escape(prefix), serve,
+        return re_path(r'^%s(?P<path>.*)$' % re.escape(prefix), serve,
                 kwargs={'document_root': root})
 
     urlpatterns += [

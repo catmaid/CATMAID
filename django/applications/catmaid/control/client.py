@@ -32,7 +32,7 @@ class ClientDatastoreSerializer(ModelSerializer):
 
 class ClientDatastoreList(APIView):
     @method_decorator(requires_user_role_for_any_project([UserRole.Browse, UserRole.Annotate]))
-    @never_cache
+    @method_decorator(never_cache)
     def get(self, request:Request, format=None) -> Response:
         """List key-value store datastores used by the client.
         ---
@@ -96,7 +96,7 @@ class ClientDataSerializer(ModelSerializer):
 
 class ClientDataList(APIView):
     @method_decorator(requires_user_role_for_any_project([UserRole.Browse, UserRole.Annotate]))
-    @never_cache
+    @method_decorator(never_cache)
     def get(self, request:Request, name=None, format=None) -> Response:
         """List key-value data in a datastore for the client.
 

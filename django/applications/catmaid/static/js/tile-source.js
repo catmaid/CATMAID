@@ -1053,21 +1053,8 @@
         });
     }
 
-    getTileURL(project, stack, slicePixelPosition, col, row, zoomLevel) {
-      let bs = this.blockSize(zoomLevel);
-      let z = Math.floor(slicePixelPosition[0] / bs[2]);
-      let vo = this.voxelOffset(zoomLevel);
-      let sourceCoord = [col, row, z];
-      let blockCoord = CATMAID.tools.permute(sourceCoord, this.reciprocalSliceDims);
-      // The voxel offset specifies how the image dataset is translated relativ
-      // to the global origin. We want to map from global into voxel
-      let voxelCoord = [
-          blockCoord[0] * bs[0] + vo[0],
-          blockCoord[1] * bs[1] + vo[1],
-          blockCoord[2] * bs[2] + vo[2]];
-
-      return `${this.rootURL}/${this.datasetPath(zoomLevel)}/` +
-          `${voxelCoord[0]}-${voxelCoord[0] + bs[0]}_${voxelCoord[1]}-${voxelCoord[1] + bs[1]}_${voxelCoord[2]}-${voxelCoord[2] + bs[2]}`;
+    getCanaryUrl(project, stack) {
+      return `${this.rootURL}/info`;
     }
 
     populateDatasetAttributes(zoomLevel = 0) {

@@ -16,6 +16,7 @@ jobs:
       - run: |
           pip install "$(grep -E '^flake8' django/requirements-test.txt)"
           pip install "$(grep -E '^mypy' django/requirements-test.txt)"
+          pip install -r django/requirements-types.txt
         name: Install lint tools
       - run: flake8 --statistics --count django
       - run: mypy django/
@@ -52,7 +53,7 @@ jobs:
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-py_${{ matrix.python-version }}-${{ hashFiles('django/requirements*.txt') }}
-      - run: pip install ./django[test,types,async] coveralls
+      - run: pip install ./django[test,async] coveralls
       - run: bash scripts/travis/setup_database.sh
       - run: bash scripts/travis/configure_catmaid.sh
       - run: bash scripts/travis/configure_pypy_libs.sh

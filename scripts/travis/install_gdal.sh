@@ -6,7 +6,7 @@
 set -ex
 
 echo "Installing GDAL"
-sudo apt-get remove -y libgdal1
+sudo apt-get remove -y libgdal
 sudo add-apt-repository -y ppa:ubuntugis/ppa
 sudo apt-get update -q
 sudo apt-get install -y libgdal-dev

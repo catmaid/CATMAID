@@ -100,7 +100,7 @@ class ProjectListVarNode(template.Node):
                 tag = t.resolve(context)
                 if not tag:
                     continue
-                elif type(tag) == list:
+                elif isinstance(tag, list):
                     for subtag in tag:
                         current_tags.append(subtag)
                 else:

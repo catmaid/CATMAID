@@ -989,7 +989,7 @@ class Exporter():
         seen_deep_links = set()
         if self.export_public_deep_links:
             deep_links = DeepLink.objects.filter(project_id=self.project.id, is_public=True)
-            seen_deep_links.update([l.id for l in deep_links])
+            seen_deep_links.update([link.id for link in deep_links])
             logger.info(f'Exporting {len(deep_links)} public deep links')
             self.to_serialize.append(deep_links)
 
@@ -998,7 +998,7 @@ class Exporter():
             deep_links = DeepLink.objects.filter(project_id=self.project.id, is_exportable=True)
             n_exportable_deep_links = len(deep_links)
             deep_links = list(filter(lambda x: x.id not in seen_deep_links, deep_links))
-            seen_deep_links.update([l.id for l in deep_links])
+            seen_deep_links.update([link.id for link in deep_links])
             logger.info(f'Exporting {n_exportable_deep_links} exportable deep links ({len(deep_links)} are not already prev. included)')
             self.to_serialize.append(deep_links)
 

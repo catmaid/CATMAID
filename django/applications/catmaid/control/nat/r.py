@@ -661,7 +661,7 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
                 '.parallel': parallel,
             })
             # Make sure unneeded R objects are deleted
-            del(objects)
+            del objects
             gc.collect()
             objects = simplified_objects
 
@@ -674,7 +674,7 @@ def create_dps_data_cache(project_id, object_type, tangent_neighbors=20,
                     'OmitFailures': omit_failures,
                 })
 
-        del(objects)
+        del objects
 
         # Save cache to disk
         logger.debug(f'Storing skeleton cache with {len(objects_dps)} entries: {cache_path}')
@@ -836,7 +836,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                 # TODO: There must be a simler way to extract non-NA values only
                 query_object_id_str = rinterface.StrSexpVector(list(map(str, query_object_ids)))
                 query_cache_objects_dps = skeleton_cache.rx(query_object_id_str)
-                non_na_ids = list(filter(lambda x: type(x) == str,
+                non_na_ids = list(filter(lambda x: isinstance(x, str),
                         list(base.names(query_cache_objects_dps))))
                 cache_typed_query_object_ids = non_na_ids
                 query_cache_objects_dps = rnat.subset_neuronlist(
@@ -897,7 +897,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                 # TODO: There must be a simler way to extract non-NA values only
                 query_object_id_str = rinterface.StrSexpVector(list(map(str, query_object_ids)))
                 query_cache_objects_dps = pointcloud_cache.rx(query_object_id_str) # type: ignore # not provable that cache will be initialised
-                non_na_ids = list(filter(lambda x: type(x) == str,
+                non_na_ids = list(filter(lambda x: isinstance(x, str),
                         list(base.names(query_cache_objects_dps))))
                 query_cache_objects_dps = rnat.subset_neuronlist(
                         query_cache_objects_dps, rinterface.StrSexpVector(non_na_ids))
@@ -1000,7 +1000,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                     # TODO: There must be a simler way to extract non-NA values only
                     target_object_id_str = rinterface.StrSexpVector(list(map(str, target_object_ids)))
                     target_cache_objects_dps = skeleton_cache.rx(target_object_id_str)
-                    non_na_ids = list(filter(lambda x: type(x) == str,
+                    non_na_ids = list(filter(lambda x: isinstance(x, str),
                             list(base.names(target_cache_objects_dps))))
                     cache_typed_target_object_ids = non_na_ids
                     target_cache_objects_dps = rnat.subset_neuronlist(
@@ -1062,7 +1062,7 @@ def nblast(project_id, user_id, config_id, query_object_ids, target_object_ids,
                     # TODO: There must be a simler way to extract non-NA values only
                     target_object_id_str = rinterface.StrSexpVector(list(map(str, target_object_ids)))
                     target_cache_objects_dps = pointcloud_cache.rx(target_object_id_str) # type: ignore
-                    non_na_ids = list(filter(lambda x: type(x) == str,
+                    non_na_ids = list(filter(lambda x: isinstance(x, str),
                             list(base.names(target_cache_objects_dps))))
                     target_cache_objects_dps = rnat.subset_neuronlist(
                             target_cache_objects_dps, rinterface.StrSexpVector(non_na_ids))
@@ -1633,7 +1633,7 @@ def neuronlist_for_skeletons(project_id, skeleton_ids, omit_failures=False,
             })
     print(f"Converted {len(objects)}/{len(skeleton_ids)} neurons")
 
-    del(cs_r)
+    del cs_r
     gc.collect()
 
     return objects

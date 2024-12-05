@@ -1432,7 +1432,7 @@ GRID_CACHE_NODE_PROVIDERS = {
 def get_node_provider_configs():
     """Get a list of specified node provider configurationss."""
     configs = settings.NODE_PROVIDERS
-    if type(configs) == str:
+    if isinstance(configs, str):
         configs = [configs]
     return configs
 
@@ -1440,7 +1440,7 @@ def get_node_provider_configs():
 def get_configured_node_providers(provider_entries, connection=None,
         enabled_only=False) -> List:
     node_providers = []
-    if type(provider_entries) == str:
+    if isinstance(provider_entries, str):
         provider_entries = [provider_entries]
     for entry in provider_entries:
         options:Dict = {}

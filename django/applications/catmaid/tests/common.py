@@ -110,12 +110,12 @@ class CatmaidTransactionTestCase(TransactionTestCase, AssertStatusMixin):
         self.client.login(username='temporary', password='temporary')
 
 
-def round_list(l, digits=6):
+def round_list(value_list, digits=6):
     """Round floating point values in a list recursively to the specified number
     of digits.
     """
     new_list = []
-    for v in l:
+    for v in value_list:
         v_type = type(v)
         if v_type == float:
             new_list.append(round(v, digits))

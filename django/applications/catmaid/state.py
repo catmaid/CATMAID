@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import decimal
 from functools import reduce
 import json
@@ -216,7 +214,7 @@ def collect_state_checks(node_id, state, cursor, node=False,
         if not all(has_only_truthy_values(e) for e in child_nodes):
             raise ValueError("No valid state provided, invalid children")
 
-        if type(children) == bool:
+        if isinstance(children, bool):
             state_checks.append(make_all_children_query(
                 [int(c[0]) for c in child_nodes], node_id))
         state_checks.extend(StateCheck(SQL.was_edited, (c[0], c[1], c[1])) for c in child_nodes)
@@ -331,7 +329,7 @@ def lock_nodes(node_ids, cursor) -> None:
         raise ValueError("No nodes to lock")
 
 def is_disabled(state) -> bool:
-    return state and type(state) == dict and state.get('nocheck') is True
+    return state and isinstance(state, dict) and state.get('nocheck') is True
 
 def make_nocheck_state(parsed=False):
     """Get a state representation that causes skipping of actual state checks.

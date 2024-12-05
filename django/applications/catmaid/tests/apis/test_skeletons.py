@@ -980,8 +980,8 @@ class SkeletonsApiTests(CatmaidApiTestCase):
 
         skeleton_id = 235
 
-        def first_element(l):
-            return l[0]
+        def first_element(node_entry):
+            return node_entry[0]
 
         def sort_json_nodes(node_result):
             for k,v in expected_result.items():

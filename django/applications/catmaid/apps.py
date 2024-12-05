@@ -71,7 +71,7 @@ def check_old_version(sender, **kwargs) -> None:
     """Make sure this migration system starts with all South migrations applied,
     in case there are already existing tables."""
     # Only validate after catmaid was migrated
-    if type(sender) != CATMAIDConfig:
+    if not isinstance(sender, CATMAIDConfig):
         return
 
     cursor = connection.cursor()
@@ -174,7 +174,7 @@ def check_client_settings(app_configs, **kwargs):
         logger.info("Force setting instance client settings")
 
     try:
-        if type(instance_settings) == str:
+        if isinstance(instance_settings, str):
             instance_settings = json.loads(instance_settings)
         client.set_instance_settings(instance_settings, force_client_settings)
     except json.JSONDecodeError:
@@ -189,7 +189,7 @@ def check_client_settings(app_configs, **kwargs):
 def validate_environment(sender, **kwargs) -> None:
     """Make sure CATMAID is set up correctly."""
     # Only validate after catmaid was migrated
-    if type(sender) != CATMAIDConfig:
+    if not isinstance(sender, CATMAIDConfig):
         return
 
     sender.validate_projects()

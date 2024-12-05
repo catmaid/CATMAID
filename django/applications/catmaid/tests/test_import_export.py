@@ -331,12 +331,12 @@ class ImportExportTests(TestCase, AssertStatusMixin):
         def strip_ids(d):
             """ Recursively, strip all 'id' fields of dictionaries.
             """
-            if type(d) == dict:
+            if isinstance(d, dict):
                 if 'id' in d:
                     d.pop('id')
                 for _,v in d.items():
                     strip_ids(v)
-            if type(d) == list:
+            if isinstance(d, list):
                 for v in d:
                     strip_ids(v)
 
@@ -350,7 +350,7 @@ class ImportExportTests(TestCase, AssertStatusMixin):
                 # results in tuples).
                 if 'project' in p:
                     if 'stacks' in p['project']:
-                        if type(p['project']['stacks']) == tuple:
+                        if isinstance(p['project']['stacks'], tuple):
                             p['project']['stacks'] = list(p['project']['stacks'])
                 self.assertDictEqual(cp, p)
 
@@ -358,7 +358,7 @@ class ImportExportTests(TestCase, AssertStatusMixin):
 
         def parse_list(d):
             for k in d:
-                if type(d[k]) == tuple:
+                if isinstance(d[k], tuple):
                     d[k] = list(d[k])
             return d
 

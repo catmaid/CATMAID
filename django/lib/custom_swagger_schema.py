@@ -58,7 +58,7 @@ class CustomSchema(AutoSchema):
         # a block quote (due to Python comments being indented).
         _method_desc = '\n'.join(line.strip() for line in _method_desc.splitlines())
 
-        if yaml_doc and type(yaml_doc) != str:
+        if yaml_doc and not isinstance(yaml_doc, str):
             params = yaml_doc.get('parameters', [])
 
             params_type = type(params)

@@ -668,7 +668,7 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
                 SELECT relation_name, id FROM relation WHERE project_id=%(project_id)s
             """, {
                 'project_id': project_id,
-            })
+        })
         relations = dict(cursor.fetchall())
 
     if with_connectors:

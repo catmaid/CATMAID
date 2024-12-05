@@ -338,16 +338,16 @@ class ConfigurationList(APIView):
         if matching_subset:
             matching_subset = json.loads(matching_subset)
 
-            if type(matching_subset) != list:
+            if not isinstance(matching_subset, list):
                 raise ValueError("Expected matching_subset to be a list")
 
             for subset in matching_subset:
-                if type(subset) != list:
+                if not isinstance(subset, list):
                     raise ValueError("Expected all matching_subset elements to be list")
                 for element in subset:
-                    if type(element) != list or len(element) != 2:
+                    if not isinstance(element, list) or len(element) != 2:
                         raise ValueError("Expeceted subset elements to be lists with two elements")
-                    if type(element[0]) not in (int, list) or type(element[1]) != int:
+                    if type(element[0]) not in (int, list) or not isinstance(element[1], int):
                         raise ValueError("Expected subset selements to consist of ints or lists of ints")
 
         # Load and store point sets, if there are any.

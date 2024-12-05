@@ -116,7 +116,7 @@ class ConnectorNode:
                 if type(d) in (TrakEM2.AreaTree, TrakEM2.AreaList)]
 
         if len(self.displayables) > 1:
-            arealists = list(filter(lambda x: type(x) == TrakEM2.AreaList, self.displayables))
+            arealists = list(filter(lambda x: isinstance(x, TrakEM2.AreaList), self.displayables))
             n_arealists = len(arealists)
             if n_arealists == 1:
                 log('Can only assign connector node to a single displayable, '

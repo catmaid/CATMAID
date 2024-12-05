@@ -175,14 +175,14 @@ def textlabels(request:HttpRequest, project_id=None) -> JsonResponse:
         response_on_error = 'Failed to format output'
         for tl in textlabels:
             tl['colour'] = {'r': tl['r'], 'g': tl['g'], 'b': tl['b'], 'a': tl['a']}
-            del(tl['r'])
-            del(tl['g'])
-            del(tl['b'])
-            del(tl['a'])
+            del tl['r']
+            del tl['g']
+            del tl['b']
+            del tl['a']
             tl['location'] = {'x': tl['x'], 'y': tl['y'], 'z': tl['z']}
-            del(tl['x'])
-            del(tl['y'])
-            del(tl['z'])
+            del tl['x']
+            del tl['y']
+            del tl['z']
             if tl['scaling']:
                 tl['scaling'] = 1
             else:

@@ -220,7 +220,7 @@ class ClientDataList(APIView):
 
         # We expect also an actual object, not a single string or number, which
         # is represented as a dict in Python.
-        if type(value) != dict:
+        if not isinstance(value, dict):
             raise ValidationError(f'Data is of type "{type(value)}", but '
                     f'expected an object: {str(value)}')
 
@@ -336,7 +336,7 @@ def set_instance_settings(settings, force=False):
     settings familiy, e.g. "neuron-name-service" and the value is the respective
     settings data.
     """
-    if type(settings) != dict:
+    if not isinstance(settings, dict):
         raise ValueError("Settings needs to be a dictionry")
 
     data_store = ClientDatastore.objects.get(name='settings')

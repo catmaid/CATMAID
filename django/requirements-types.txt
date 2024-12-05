@@ -1,4 +1,4 @@
-#django-stubs==5.1.1
+django-stubs==5.1.1
 types-python-dateutil==2.9.0.20241003
 types-docutils==0.21.0.20241128
 types-requests==2.32.0.20241016

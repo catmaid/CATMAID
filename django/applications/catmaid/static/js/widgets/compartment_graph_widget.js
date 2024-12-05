@@ -4900,7 +4900,7 @@
       var is_tgt_axon = node_target.id().endsWith("_axon");
       var is_tgt_dendrite = node_target.id().endsWith("_dendrite");
       var set = function() {
-          if (visible) edge.show()
+          if (visible) edge.show();
           else edge.hide();
       };
       if (is_src_axon) {

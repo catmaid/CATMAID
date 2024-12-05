@@ -665,9 +665,9 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
     if with_connectors or with_tags or with_annotations:
         # postgres is caching this query
         cursor.execute("""
-                SELECT relation_name, id FROM relation WHERE project_id=%(project_id)s
-            """, {
-                'project_id': project_id,
+            SELECT relation_name, id FROM relation WHERE project_id=%(project_id)s
+        """, {
+            'project_id': project_id,
         })
         relations = dict(cursor.fetchall())
 

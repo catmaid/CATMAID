@@ -47,9 +47,6 @@ class TestWebsockets(CatmaidTransactionTestCase):
         communicator = AuthWebsocketCommunicator(UpdateConsumer.as_asgi(),
                                                  '/channels/updates', user,
                                                  headers=headers)
-
-        #communicator = WebsocketCommunicator(UpdateConsumer.as_asgi(), "GET", "/channels/updates")
-        #communicator.instance.scope["user"] = await get_user(username='temporary')
         connected, subprotocol = await communicator.connect()
         assert connected
 

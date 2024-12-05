@@ -1926,8 +1926,10 @@
     }
 
     let makeCsvLine = (n, i) => {
-      // We assume one skeleton per neuron here
-      let row = [n.id, quote(n.name), n.skeleton_ids[0]];
+      // FIXME: We assume one skeleton per neuron here
+      const skeletonId = n.skeleton_ids[0];
+      const name = CATMAID.NeuronNameService.getInstance().getName(skeletonId);
+      let row = [n.id, quote(name), skeletonId];
       if (this.displayAnnotations) {
         var annotations = (n.annotations || []).map(getName).map(quote).join(', ');
         row.push(quote(annotations));

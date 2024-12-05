@@ -152,6 +152,9 @@ Miscellaneous:
 - Neuron Search: neurons that don't have any annotations are now returned as
   well, when neurons NOT having an annotation are queried.
 
+- Neuron Search: the CSV export respects now the neuron display names
+  (NeuronNameManager) and export them instead of the fixed neuron name.
+
 - Deep links: creating links to layouts with a loaded stack group (e.g. ortho
   views or multi-channel images) won't raise an error anymore.
 

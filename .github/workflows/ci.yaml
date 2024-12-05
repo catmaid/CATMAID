@@ -46,7 +46,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: bash scripts/travis/install_postgres.sh
-      - run: bash scripts/travis/install_gdal.sh
       - run: sudo apt-get install -y -qq $(< packagelist-ubuntu-apt.txt)
         name: Install ubuntu requirements
       - uses: actions/cache@v2
@@ -81,7 +80,6 @@ jobs:
           node-version: '12'
       - run: npm install
       - run: bash scripts/travis/install_postgres.sh
-      - run: bash scripts/travis/install_gdal.sh
       - run: sudo apt-get install -y -qq $(< packagelist-ubuntu-apt.txt)
         name: Install ubuntu requirements
       - uses: actions/cache@v2

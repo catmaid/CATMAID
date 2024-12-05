@@ -167,6 +167,9 @@ Miscellaneous:
 
 - Connectivity widget: fix error when changing page length
 
+- Venn diagram widget: all selections are cleared when clicking on the
+  background.
+
 - Import/export widget: importing skeletons from a remote CATMAID server using
   annotations doesn't raise an error about a missing function anymore.
 

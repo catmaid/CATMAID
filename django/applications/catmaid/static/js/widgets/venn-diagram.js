@@ -207,13 +207,21 @@
 
     this.diagram = venn.drawD3Diagram(d3.select(containerID), positions, width, height, parameters);
 
+    const clearSelection = () => {
+        // Clear selection
+        this.selected = {};
+        const label = $('#venn_diagram_sel' + this.widgetID);
+        label.empty();
+    };
+
     var self = this;
 
     var click = function(d, i) {
-        // Clear selection
-        self.selected = {};
-        var label = $('#venn_diagram_sel' + self.widgetID);
-        label.empty();
+        clearSelection();
+
+        // Prevent this click from bubbling up. We only want the background
+        // click handler, if no element was clicked.
+        d3.event.stopPropagation();
 
         // Check if removing a group
         if (d3.event.shiftKey) {
@@ -262,6 +270,7 @@
             }
         }
 
+        const label = $('#venn_diagram_sel' + self.widgetID);
         if (intersecting.length > 1) {
             self.selected = search.models;
             var size = Object.keys(self.selected).length;
@@ -296,6 +305,11 @@
 
     this.diagram.text
       .on("click", click);
+
+    // Deselect everything on a click outside the Venn diagram.
+    this.diagram.svg[0].parentNode.onclick = () => {
+      clearSelection();
+    };
   };
 
   VennDiagram.prototype.exportSVG = function() {

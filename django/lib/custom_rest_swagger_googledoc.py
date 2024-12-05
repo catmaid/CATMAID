@@ -5,8 +5,11 @@ from django.utils.encoding import smart_text
 
 from rest_framework.utils import formatting
 
+from sphinx.config import Config as SphinxConfig
 from sphinx.ext.napoleon import Config
 from sphinx.ext.napoleon.docstring import GoogleDocstring
+
+from typing import cast
 
 
 def get_googledocstring(view_cls, html=False):
@@ -20,7 +23,8 @@ def get_googledocstring(view_cls, html=False):
 
     description = view_cls.__doc__ or ''
     config = Config(napoleon_use_param=False, napoleon_use_rtype=False)
-    description = GoogleDocstring(description, config=config)
+    # The cast is needed for the MyPy typechecker, it is essentially the same type
+    description = GoogleDocstring(description, config=cast(SphinxConfig, config))
     description = formatting.dedent(smart_text(description))
     if html:
         parts = core.publish_parts(source=description, writer_name='html')

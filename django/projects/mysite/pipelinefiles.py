@@ -138,14 +138,14 @@ for k, v in libraries_js.items():
 # Some libraries expect their own JavaScript files to be available under a
 # particular name. Therefore, we can't use pipeline with them and include them
 # separately. Entries follow the same pattern as above: key - path.
-non_pipeline_js = {}
+non_pipeline_js: dict[str, str] = {}
 
 # Even non-pipeline files have to be made known to pipeline, because it takes
 # care of collecting them into the STATIC_ROOT directory.
-for k, v in non_pipeline_js.items():
-    JAVASCRIPT[k] = {
-        'source_filenames': [v],
-        'output_filename': v
+for non_pipeline_key, non_pipeline_file in non_pipeline_js.items():
+    JAVASCRIPT[non_pipeline_key] = {
+        'source_filenames': [non_pipeline_file],
+        'output_filename': non_pipeline_file
     }
 
 
@@ -165,10 +165,10 @@ copy_only_files = {
 }
 
 # Let pipeline know about copy-only files.
-for k, v in copy_only_files.items():
-    JAVASCRIPT[k] = {
-        'source_filenames': [v],
-        'output_filename': v
+for copy_only_key, copy_only_file in copy_only_files.items():
+    JAVASCRIPT[copy_only_key] = {
+        'source_filenames': [copy_only_file],
+        'output_filename': copy_only_file
     }
 
 # Regular CATMAID front-end files

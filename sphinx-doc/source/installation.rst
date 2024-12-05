@@ -9,9 +9,8 @@
 Basic Installation Instructions
 ===============================
 
-These installation instructions have been tested on Ubuntu 20.04 LTS
-(Focal Fossa), so may need some minor changes for other Debian-based
-distributions.
+These installation instructions have been tested on Ubuntu 22.04 LTS (Jammy
+Jellyfish), so may need some minor changes for other Debian-based distributions.
 For installation on Mac OS X, first read these
 :ref:`additional instructions <installation-osx>`.
 
@@ -20,8 +19,8 @@ Introduction
 
 The most fundamental dependencies of CATMAID are:
 
-1. PostgreSQL 13+ and PostGIS 3.1 (PostgreSQL 14 and PostGIS 3.2 is recommended)
-2. CPython 3.8, 3.9, 3.10 or PyPy3.8 (CPython 3.10 is recommended)
+1. PostgreSQL 13+ and PostGIS 3.1 (PostgreSQL 16 and PostGIS 3.4 is recommended)
+2. CPython 3.9, 3.10 or PyPy3.10 (CPython 3.10 is recommended)
 
 To get the required PostgreSQL version for Debian-based systems, such as
 Ubuntu, you have to add the official Postgres repository as an
@@ -36,8 +35,9 @@ done so already)::
     wget --quiet -O - ${PG_KEY_URL} | sudo apt-key add -
     sudo apt-get update
 
-While other Python versions are supported, we recommend the use of Python 3.8.
-To be able to install it on Ubuntu 16.04 and earlier, the following needs to be done::
+While other Python versions are supported, we recommend the use of Python 3.10.
+To be able to install it on Ubuntu 20.04 and earlier, the following needs to be
+done::
 
     sudo add-apt-repository ppa:deadsnakes/ppa
     sudo apt-get update
@@ -51,7 +51,7 @@ or newer not be available on your system, use the following PPA::
 
 And then you can install these dependencies with::
 
-    sudo apt-get install python3.8 postgresql-13 postgresql-13-postgis-3-scripts gdal-bin
+    sudo apt-get install python3.10 postgresql-16 postgresql-16-postgis-3-scripts gdal-bin
 
 CATMAID is based on the `Django web framework
 <https://www.djangoproject.com/>`_.  If you just wish to work on

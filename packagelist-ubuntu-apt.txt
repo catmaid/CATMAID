@@ -1,9 +1,9 @@
-postgresql-13
-postgresql-13-postgis-3
+postgresql-16
+postgresql-16-postgis-3
 gcc
 gfortran
 git
-python3.8-dev
+python3.10-dev
 postgresql-common
 libpq-dev
 libhdf5-serial-dev
@@ -19,3 +19,4 @@ pkg-config
 binutils
 libproj-dev
 gdal-bin
+libgdal-dev

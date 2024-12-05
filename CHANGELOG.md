@@ -2,9 +2,9 @@
 
 ### Notes
 
-- This version requires Python 3.8+.
+- This version requires Python 3.9+. Python 3.10 is recommended.
 
-- Postgres 14 is now supported.
+- Postgres 14+ is now supported.
 
 - The version requires PostgreSQL 13+ and PostGIS 3.1+. If you need or want to
   upgrade Postgres, update PostGIS first and run ``ALTER EXTENSION postgis

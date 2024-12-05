@@ -1,5 +1,7 @@
-django-stubs==5.1.1
+#django-stubs==5.1.1
 types-python-dateutil==2.9.0.20241003
 types-docutils==0.21.0.20241128
 types-requests==2.32.0.20241016
 types-ujson==5.10.0.20240515
+types-pytz==2024.2.0.20241003
+types-pyyaml==6.0.12.20240917

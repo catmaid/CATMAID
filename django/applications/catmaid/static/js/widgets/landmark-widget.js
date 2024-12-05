@@ -57,6 +57,7 @@
 
     // All current display transformations
     this.displayTransformations = [];
+    this.displayTransformationParameterSets= [];
 
     // All currently available 3D Viewers and whether they are a render target
     // for landmark transformations.
@@ -135,6 +136,7 @@
 
     if (this.displayTransformations && this.displayTransformations.length > 0) {
       this.displayTransformations.length = 0;
+      this.displayTransformationParameterSets.length = 0;
       CATMAID.Landmarks.trigger(CATMAID.Landmarks.EVENT_DISPLAY_TRANSFORM_REMOVED);
     }
 
@@ -377,7 +379,9 @@
     targetSelectContainer.appendChild(select);
   };
 
-  LandmarkWidget.prototype.update = function() {
+  LandmarkWidget.prototype.update = function(defaultDataInfo = undefined) {
+    const defaultData = defaultDataInfo ? defaultDataInfo.displayTransformation : null;
+
     // Clear content
     while (this.content.lastChild) {
       this.content.removeChild(this.content.lastChild);
@@ -389,6 +393,17 @@
       tabs.tabs('option', 'active', widgetIndex);
     }
 
+    if (defaultData) {
+      // If this transformation contains multiple mappings or uses remote
+      // projects, make sure the widget is set up for this.
+      this.showMultiMappingOptions = defaultData.mappings.length > 1;
+      this.showOtherProjectOptions = !!defaultData.fromApi || defaultData.projectId != project.id;
+      $(`#landmark-widget-${this.widgetID}-show-multiple-mappings`).prop(
+            'checked', this.showMultiMappingOptions);
+      $(`#landmark-widget-${this.widgetID}-show-other-projects`).prop(
+            'checked', this.showOtherProjectOptions);
+    }
+
     let mode = LandmarkWidget.MODES[this.mode];
 
     // Reset reference lines to global setting, but allow mode definition to
@@ -398,10 +413,13 @@
           CATMAID.StackViewer.Settings.session.display_stack_reference_lines);
     });
 
-    // Update actual content
-    mode.createContent(this.content, this);
+    // Update actual content. The UI rebuild promise is returned so that other
+    // tasks can be queued after the UI is fully loaded.
+    let contentCreated = mode.createContent(this.content, this, defaultDataInfo);
 
     this.updateLandmarkLayers();
+
+    return Promise.all([contentCreated]);
   };
 
   LandmarkWidget.prototype.setMode = function(mode) {
@@ -515,9 +533,9 @@
     return index;
   }
 
-  LandmarkWidget.prototype.updateLandmarks = function() {
+  LandmarkWidget.prototype.updateLandmarks = function(projectId) {
     var self = this;
-    return CATMAID.Landmarks.list(project.id, true)
+    return CATMAID.Landmarks.list(projectId, true)
       .then(function(result) {
         self.landmarks = result;
         self.landmarkIndex = result.reduce(CATMAID.Landmarks.addToIdIndex, new Map());
@@ -526,9 +544,9 @@
       });
   };
 
-  LandmarkWidget.prototype.updateLandmarkGroups = function() {
+  LandmarkWidget.prototype.updateLandmarkGroups = function(projectId) {
     var self = this;
-    return CATMAID.Landmarks.listGroups(project.id, true, true, true, true)
+    return CATMAID.Landmarks.listGroups(projectId, true, true, true, true)
       .then(function(result) {
         self.landmarkGroups = result;
         self.landmarkGroupMemberships = result.reduce(addLandmarkGroupMembership, new Map());
@@ -537,10 +555,10 @@
       });
   };
 
-  LandmarkWidget.prototype.updateLandmarksAndGroups = function() {
+  LandmarkWidget.prototype.updateLandmarksAndGroups = function(projectId) {
     return Promise.all([
-      this.updateLandmarks(),
-      this.updateLandmarkGroups()
+      this.updateLandmarks(projectId),
+      this.updateLandmarkGroups(projectId)
     ]);
   };
 
@@ -579,7 +597,7 @@
    */
   LandmarkWidget.prototype.editGroupMembers = function(landmarkGroup) {
     var prepare = this.landmarks ? Promise.resolve(this.landmarks) :
-        this.updateLandmarks();
+        this.updateLandmarks(project.id);
     return prepare
       .then(function(landmarks) {
         return new Promise(function(resolve, reject) {
@@ -633,7 +651,7 @@
    */
   LandmarkWidget.prototype.editGroupMemberships = function(landmarkId) {
     var prepare = this.landmarkGroups ? Promise.resolve(this.landmarkGroups) :
-        this.updateLandmarkGroups();
+        this.updateLandmarkGroups(project.id);
     let self = this;
     return prepare
       .then(function(landmarkGroups) {
@@ -716,6 +734,7 @@
       });
     while (this.displayTransformations.length > 0) {
       let transformation = this.displayTransformations.pop();
+      this.displayTransformationParameterSets.pop();
       for (let j=0; j<target3dViewers.length; ++j) {
         let widget = target3dViewers[j];
         widget.showLandmarkTransform(transformation, false);
@@ -740,6 +759,7 @@
       } else {
         let t = transformations[index];
         transformations.splice(index, 1);
+        this.displayTransformationParameterSets.splice(index, 1);
         let target3dViewers = Array.from(this.targeted3dViewerNames.keys()).map(function(m) {
           return CATMAID.skeletonListSources.getSource(m);
         });
@@ -862,9 +882,10 @@
     // transformation.
     for (let i=0; i<this.displayTransformations.length; ++i) {
       let transformation = this.displayTransformations[i];
+      let indexSet = this.displayTransformationParameterSets[i];
       let providerAdded = CATMAID.Landmarks.addProvidersToTransformation(
-          transformation, this.landmarkGroupIndex, this.landmarkIndex, i,
-          this.sourceLandmarkGroupIndex, this.sourceLandmarkIndex, true);
+          transformation, indexSet.landmarkGroupIndex, indexSet.landmarkIndex, i,
+          indexSet.sourceLandmarkGroupIndex, indexSet.sourceLandmarkIndex, true);
       if (providerAdded) {
         for (let j=0; j<target3dViewers.length; ++j) {
           let widget = target3dViewers[j];
@@ -889,10 +910,17 @@
    * @returns new LandmarkSkeletonTransformation instance
    */
   LandmarkWidget.prototype.addDisplayTransformation = function(projectId,
-      skeletons, mapping, api, modelClass) {
+      skeletons, mapping, api, modelClass, sourceAnnotation = '') {
     let lst = new CATMAID.LandmarkSkeletonTransformation(projectId, skeletons,
         mapping, api, undefined, modelClass, this.useReversePointMatches);
     this.displayTransformations.push(lst);
+    this.displayTransformationParameterSets.push({
+      landmarkGroupIndex: this.landmarkGroupIndex,
+      landmarkIndex: this.landmarkIndex,
+      sourceLandmarkGroupIndex: this.sourceLandmarkGroupIndex,
+      sourceLandmarkIndex: this.sourceLandmarkIndex,
+      sourceAnnotation: sourceAnnotation || '',
+    });
 
     // Announce that there is a new display tranformation available
     CATMAID.Landmarks.trigger(CATMAID.Landmarks.EVENT_DISPLAY_TRANSFORM_ADDED);
@@ -925,6 +953,12 @@
             skeletons, [[fromGroupId, toGroupId]], undefined, undefined,
             modelClass, self.useReversePointMatches);
           self.displayTransformations.push(lst);
+          self.displayTransformationIndexSets.push({
+            landmarkGroupIndex: self.landmarkGroupIndex,
+            landmarkIndex: self.landmarkIndex,
+            sourceLandmarkGroupIndex: self.sourceLandmarkGroupIndex,
+            sourceLandmarkIndex: self.sourceLandmarkIndex,
+          });
         }
         CATMAID.Landmarks.trigger(CATMAID.Landmarks.EVENT_DISPLAY_TRANSFORM_ADDED);
       });
@@ -1156,7 +1190,7 @@
           paging: true,
           lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
           ajax: function(data, callback, settings) {
-            widget.updateLandmarksAndGroups()
+            widget.updateLandmarksAndGroups(project.id)
               .then(function(result) {
                 let groups = result[1];
                 callback({
@@ -1419,7 +1453,7 @@
           paging: true,
           lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
           ajax: function(data, callback, settings) {
-            widget.updateLandmarks()
+            widget.updateLandmarks(project.id)
               .then(function(result) {
                 // Update landmark group table, so that newly retrieved landmark
                 // names can be used.
@@ -1820,7 +1854,7 @@
             landmarkGroupSelectorWrapper.removeChild(landmarkGroupSelectorWrapper.children[0]);
           }
           let landmarkGroupSelector = CATMAID.DOM.createAsyncPlaceholder(
-              target.updateLandmarksAndGroups()
+              target.updateLandmarksAndGroups(project.id)
                 .then(function(result) {
                   let availableGroups = result[1];
                   var groups = [{
@@ -2064,7 +2098,7 @@
 
 
         // Promise landmark details
-        let landmarkGroupDetails = widget.updateLandmarksAndGroups();
+        let landmarkGroupDetails = widget.updateLandmarksAndGroups(project.id);
 
         landmarkGroupDetails
           .then(function() {
@@ -2688,7 +2722,7 @@
     },
     display: {
       title: 'Display',
-      createControls: function(target) {
+      createControls: function(target, defaults = undefined) {
         let target3dViewerSelect = document.createElement('span');
         target3dViewerSelect.setAttribute('data-role', 'display-target');
         target.updateTargetSelect(target3dViewerSelect);
@@ -2780,6 +2814,7 @@
             },
           },
           {
+            id: `landmark-widget-${target.widgetID}-show-other-projects`,
             type: 'checkbox',
             value: target.showOtherProjectOptions,
             label: 'Source other projects',
@@ -2789,6 +2824,7 @@
             },
           },
           {
+            id: `landmark-widget-${target.widgetID}-show-multiple-mappings`,
             type: 'checkbox',
             value: target.showMultiMappingOptions,
             label: 'Multiple mappings',
@@ -2799,7 +2835,11 @@
           },
         ];
       },
-      createContent: function(content, widget) {
+      createContent: function(content, widget, defaultDataInfo) {
+        const defaultData = defaultDataInfo ? defaultDataInfo.displayTransformation : null;
+        const defaultSourceAnnotation = defaultDataInfo ? defaultDataInfo.sourceNeuronAnnotation : '';
+
+        let loadingPromises = [];
         content.appendChild(document.createElement('p'))
           .appendChild(document.createTextNode('Display landmarks and ' +
             'landmark groups at their linked locations in CATMAID\'s 3D ' +
@@ -2821,7 +2861,18 @@
         let sourceSelectSetting;
         let sourceRemote = '';
         let sourceProject = project.id;
-        let sourceNeuronAnnotation = '';
+        let sourceNeuronAnnotation = defaultSourceAnnotation || '';
+
+        if (defaultData) {
+          if (defaultData.fromApi) {
+            sourceRemote = defaultData.fromApi.name;
+            sourceProject = null;
+            // TODO: Remember source neuron annotation in transformation to reset
+            // on re-use.
+          } else {
+            sourceProject = defaultData.projectId;
+          }
+        }
 
         if (widget.showOtherProjectOptions) {
 
@@ -2833,7 +2884,7 @@
                 // Try to get all projects from the selected remote and update the
                 // displayed project options.
                 updateProjectList();
-                updateSourceGroupList();
+                updateSourceGroupList(undefined, true);
                 if (updateMatchingGroupList) {
                   updateMatchingGroupList();
                 }
@@ -2853,7 +2904,7 @@
             let asyncProjectList = CATMAID.Remote.createAsyncProjectSelect(sourceRemote,
                 sourceProject, undefined, e => {
                   sourceProject = parseInt(e.target.value, 10);
-                  updateSourceGroupList();
+                  updateSourceGroupList(undefined, true);
                   if (updateMatchingGroupList) {
                     updateMatchingGroupList();
                   }
@@ -2862,9 +2913,14 @@
                 asyncProjectList, "Select the project that contains the source " +
                 "skeletons. The current project is selected by default.");
             projectSelectSettingWrapper.appendChild(projectSelectSetting);
+
+            return asyncProjectList;
           };
 
-          updateProjectList();
+          // Keep track of async tasks
+          const promiseProjectList = updateProjectList();
+          loadingPromises.push(promiseProjectList);
+
           $(newDTForm).append(projectSelectSettingWrapper);
 
           // Remote annotation to filter neurons
@@ -2915,177 +2971,24 @@
         }
 
         let srcToStr = function(m) {
-          // If a dedicated source index is available, use it.
-          let src = widget.sourceLandmarkGroupIndex || widget.landmarkGroupIndex;
-          let g = src.get(m[0]);
-          return `${g.name} (${g.id})`;
+          return `${m[0].name} (${m[0].id})`;
         };
 
         let targetToStr = function(m) {
-          let g = widget.landmarkGroupIndex.get(m[1]);
-          return `${g.name} (${g.id})`;
+          return `${m[1].name} (${m[1].id})`;
         };
 
+        // The table of currently active transformations
         let existingDisplayTransformationsContainer = document.createElement('div');
         existingDisplayTransformationsContainer.classList.add('clear');
         existingDisplayTransformationsContainer.appendChild(document.createElement('h1'))
             .appendChild(document.createTextNode('Existing display transformations'));
         let existingDTTable = existingDisplayTransformationsContainer.appendChild(
             document.createElement('table'));
-        let existingDTDataTable = widget.displayTransformTable = $(existingDTTable).DataTable({
-          data: widget.displayTransformations,
-          autoWidth: false,
-          order: [],
-          columns: [
-            {
-              orderable: false,
-              class: 'cm-center',
-              render: function(data, type, row, meta) {
-                return meta.row + 1;
-              },
-            },
-            {
-              data: 'skeletons',
-              class: 'cm-center',
-              title: 'Skeletons',
-              orderable: false,
-              render: function(data, type, row, meta) {
-                // Show skeleton list like this: 123 skeletons (remote)
-                if (type === 'display') {
-                  const nRemoteSkeletons = data.reduce((n, sk) => {
-                    return sk.api ? n + 1 : n;
-                  }, 0);
-                  const apis = Array.from(data.reduce((o, sk) => {
-                    if (sk.api) o.add(sk.api);
-                    return o;
-                  }, new Set())).join(', ');
-                  if (nRemoteSkeletons > 0) {
-                    return `<a href="#" data-action="select-all-skeletons">${data.length} skeleton${data.length > 1 ? 's' : ''} (${nRemoteSkeletons} remote from ${apis})</a> <ul class="resultTags" style="display: inline"><li><a href="#" data-action="edit-skeletons">edit</a></li></ul>`;
-                  } else {
-                    return `<a href="#" data-action="select-all-skeletons">${data.length} skeleton${data.length > 1 ? 's' : ''}</a> <ul class="resultTags" style="display: inline"><li><a href="#" data-action="edit-skeletons">edit</a></li></ul>`;
-                  }
-                } else {
-                  return data;
-                }
-              }
-            },
-
-            {
-              data: 'mappings',
-              class: 'cm-center',
-              title: 'Source landmark groups',
-              orderable: false,
-              render: function(data, type, row, meta) {
-                if (widget.landmarkGroupIndex) {
-                  let groups = data.map(srcToStr);
-                  if (groups) {
-                    return groups.join(', ');
-                  }
-                }
-                return data;
-              }
-            },
-            {
-              data: 'mappings',
-              class: 'cm-center',
-              title: 'Target landmark group',
-              orderable: false,
-              render: function(data, type, row, meta) {
-                if (widget.landmarkGroupIndex) {
-                  let groups = data.map(targetToStr);
-                  if (groups) {
-                    return groups.join(', ');
-                  }
-                }
-                return data;
-              }
-            },
-            {
-              title: "Color",
-              type: "hslcolor",
-              class: "dt-center cm-center",
-              render: {
-                "_": function(data, type, row, meta) {
-                  return row.color.getHSL({});
-                },
-                "display": function(data, type, row, meta) {
-                  var color = row.skeletons.length === 0 ? color.getHexString() :
-                      row.skeletons[0].color.getHexString();
-                  return '<button class="action-changecolor" value="#' +
-                      color + '" style="background-color: #' + color + ';color: ' +
-                      CATMAID.tools.getContrastColor(color) + '">color</button>';
-                }
-              }
-            },
-            {
-              title: 'Action',
-              class: 'cm-center',
-              orderable: false,
-              render: function(data, type, row, meta) {
-                return '<a href="#" data-action="delete-transformation">Delete</a>';
-              }
-            }
-          ]
-        }).on('click', 'a[data-action=select-skeleton]', function() {
-          let skeletonId = $(this).attr('data-id');
-          let api = $(this).attr('data-api');
-          if (api && api.length > 0) {
-            CATMAID.warn("Can't select remote skeleton");
-            return;
-          }
-          CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeletonId);
-        }).on('click', 'a[data-action=select-all-skeletons]', function() {
-          const tr = $(this).closest('tr');
-          const dt = existingDTDataTable.row(tr).data();
-          var ST = new CATMAID.SelectionTable();
-          // Create a new window, based on the newly created table and add
-          // skeletons.
-          WindowMaker.create('selection-table', ST, true);
-          ST.addSkeletons(dt.skeletons.map(o => o.id));
-        }).on('click', 'a[data-action=edit-skeletons]', function() {
-          // Show a dialog to select a skeleton source to update the skeletons from.
-          let dialog = new CATMAID.SkeletonSourceDialog("Select a skeleton source to update transformed skeletons from",
-              "Once you press OK the set of transformed skeletons will be updated to the skeletons from the selected source.",
-              source => {
-                const models = Object.values(source.getSelectedSkeletonModels());
-                const tr = $(this).closest('tr');
-                let dt = existingDTDataTable.row(tr).data();
-                dt.skeletons = models;
-                widget.updateDisplay(true);
-                widget.update();
-                CATMAID.msg('Success', 'Skeletons updated');
-              });
-          dialog.show();
-        }).on('click', 'a[data-action=delete-transformation]', function() {
-          let tr = $(this).closest('tr');
-          let row = existingDTDataTable.row(tr);
-          let data = row.data();
-          if (!confirm("Are you sure you want to delete transformation " +
-              (row.index() + 1) + "?")) {
-            return;
-          }
-          widget.removeLandmarkTransformation(data);
-          widget.update();
-        })
-        .on("click", "td .action-changecolor", this, function(e) {
-          let tr = $(this).closest('tr');
-          let dt = existingDTDataTable.row(tr).data();
-          CATMAID.ColorPicker.toggle(this, {
-            onColorChange: function(colorRGB, alpha, colorChanged, alphaChanged, colorHex) {
-              let c = '#' + colorHex;
-              for (let sm of dt.skeletons) {
-                sm.color.setStyle(c);
-                sm.opacity = alpha;
-              }
-              widget.updateLandmarkLayers();
-              widget.updateStyle();
-            }
-          });
-        });
 
         // Project select
-        let getSourceGroupList = function() {
-          if (!sourceRemote || sourceRemote.length === 0) {
+        let getSourceGroupList = function(forceGroupUpdate = false, sourceProject = undefined) {
+          if (!forceGroupUpdate && (!sourceRemote || sourceRemote.length === 0)) {
             return Promise.resolve(groupOptions);
           } else if (!sourceProject) {
             return Promise.resolve([]);
@@ -3110,12 +3013,12 @@
         let activeMappings = [];
 
         let sourceGroupCache;
-        var initSourceGroupList = function() {
-          return getSourceGroupList()
+        var initSourceGroupList = function(forceFromGroup, forceGroupUpdate) {
+          return getSourceGroupList(forceGroupUpdate, sourceProject)
             .then(groups => {
               sourceGroupCache = groups;
               let sourceSelect = CATMAID.DOM.createRadioSelect('Source landmark group',
-                  groups, undefined, true, 'selected');
+                  groups, forceFromGroup || fromGroup, true, 'selected');
               sourceSelect.onchange = function(e) {
                 fromGroup = e.target.value;
               };
@@ -3125,24 +3028,104 @@
 
         // Source select
         let sourceGroupWrapper = document.createElement('span');
-        var updateSourceGroupList = function() {
+        var updateSourceGroupList = function(forceFromGroup, forceGroupUpdate) {
           while (sourceGroupWrapper.lastChild) {
             sourceGroupWrapper.removeChild(sourceGroupWrapper.lastChild);
           }
+          let loading = initSourceGroupList(forceFromGroup, forceGroupUpdate);
           let sourceGroupSetting = CATMAID.DOM.createLabeledAsyncPlaceholder("Source group",
-              initSourceGroupList(), "Select the remote source landmark group, the space " +
+              loading, "Select the remote source landmark group, the space " +
               "from which input points are transformed.");
           sourceGroupWrapper.appendChild(sourceGroupSetting);
+
+          return loading;
         };
 
         // Target select
         let targetGroupWrapper = document.createElement('span');
+        let updateTargetGroupSelect = function(forceTargetGroup) {
+          while (targetGroupWrapper.lastChild) {
+            targetGroupWrapper.removeChild(targetGroupWrapper.lastChild);
+          }
+          let targetSelect = CATMAID.DOM.createRadioSelect('Target landmark groups',
+              groupOptions, forceTargetGroup || toGroup, true, 'selected');
+          let targetGroup = CATMAID.DOM.createLabeledControl("Target group",
+            targetSelect, "Select the target landmark group, the space to " +
+            "which input points are transformed.");
+          targetSelect.onchange = function(e) {
+            toGroup = e.target.value;
+          };
+          targetGroupWrapper.appendChild(targetGroup[0]);
+        };
 
         // This is populated depending on the configuration mode.
         var updateMatchingGroupList = null;
 
+        let defaultTransformModel = 'Affine';
+        if (defaultData) {
+          if (defaultData.modelClass === CATMAID.transform.AffineModel3D) {
+            defaultTransformModel = 'Affine';
+          } else if (defaultData.modelClass === CATMAID.transform.RigidModel3D) {
+            defaultTransformModel = 'Rigid';
+          } else if (defaultData.modelClass === CATMAID.transform.SimilarityModel3D) {
+            defaultTransformModel = 'Similarity';
+          }
+        }
+
+        let transformModelSelect = CATMAID.DOM.createSelect(undefined,
+            ['Affine', 'Rigid', 'Similarity'], defaultTransformModel);
+
+        // Add selected mapping
+        let getMapping = function (requestFromGroup, requestToGroup) {
+          if (!requestFromGroup) {
+            CATMAID.error("Need source landmark group");
+            return;
+          }
+          let fg = parseInt(requestFromGroup, 10);
+          if (!requestToGroup) {
+            CATMAID.error("Need target landmark group");
+            return;
+          }
+          let tg = parseInt(requestToGroup, 10);
+
+          let src = widget.sourceLandmarkGroupIndex ?
+              widget.sourceLandmarkGroupIndex : widget.landmarkGroupIndex;
+          if (!src.has(fg)) {
+            CATMAID.error("Source landmark group not found");
+            return;
+          }
+          if (!widget.landmarkGroupIndex.has(tg)) {
+            CATMAID.error("Target landmark group not found");
+            return;
+          }
+
+          return {
+            fromGroup: src.get(fg),
+            toGroup: widget.landmarkGroupIndex.get(tg),
+          };
+        };
+
+        // Remote instance list update
+        let componentList;
+        var updateComponentList = function() {
+          if (!componentList) {
+            return;
+          }
+          $(componentList).empty();
+          activeMappings.map(function(o, i) {
+            // Add each remote list element to the select control
+            var optionElement = $('<option/>').attr('value', i)
+                .text(`${o.fromGroup.name} (${o.fromGroup.id}) - ${o.toGroup.name} (${o.toGroup.id})`);
+            return optionElement[0];
+          }).forEach(function(o) {
+            componentList.appendChild(o);
+          });
+        };
+
         // Add additonal settings that need updated groups
-        widget.updateLandmarksAndGroups()
+        let api = CATMAID.Remote.getAPI(sourceRemote);
+        var initLandmarksAndGroups = widget.updateSourceLandmarksAndGroups(api, sourceProject)
+            .then(() => widget.updateLandmarksAndGroups(project.id))
             .then(function(result) {
               let groups = result[1];
               groupOptions = groups
@@ -3154,57 +3137,41 @@
                     };
                   });
 
-              updateSourceGroupList();
+              // Source select
+              const forceFromGroup = defaultData && defaultData.mappings.length == 1 ?
+                  defaultData.mappings[0][0].id : undefined;
+              let initLoadingPromises = [
+                updateSourceGroupList(forceFromGroup, true)
+              ];
+              if (forceFromGroup) {
+                fromGroup = forceFromGroup;
+              }
               $(newDTForm).append(sourceGroupWrapper);
 
               // Target select
-              let targetSelect = CATMAID.DOM.createRadioSelect('Target landmark groups',
-                  groupOptions, undefined, true, 'selected');
-              let targetGroup = CATMAID.DOM.createLabeledControl("Target group",
-                targetSelect, "Select the target landmark group, the space to " +
-                "which input points are transformed.");
-              targetSelect.onchange = function(e) {
-                toGroup = e.target.value;
-              };
-              $(targetGroupWrapper).append(targetGroup);
+              const forceTargetGroup = defaultData && defaultData.mappings.length == 1 ?
+                  defaultData.mappings[0][1].id : undefined;
+              initLoadingPromises.push(
+                updateTargetGroupSelect(forceTargetGroup)
+              );
+              if (forceTargetGroup) {
+                toGroup = forceTargetGroup;
+              }
               $(newDTForm).append(targetGroupWrapper);
 
               // Optionally, multiple mappings can be defined.
               if (widget.showMultiMappingOptions) {
-                let componentList = $('<select/>').addClass('multiline wide-select').attr('size', '4')[0];
+                if (defaultData) {
+                  // Active mappings are only used in multi-mapping mode.
+                  activeMappings = defaultData.mappings.map(([dFrom, dTo]) => {
+                    return getMapping(`${dFrom.id}`, `${dTo.id}`);
+                  });
+                }
+
+                componentList = $('<select/>').addClass('multiline wide-select component-list').attr('size', '4')[0];
                 let mappingList = CATMAID.DOM.createLabeledControl('Additional mappings', componentList,
                   "Landmark group mappings set up from source to target.", 'cm-top');
                 $(newDTForm).append(mappingList);
-
-                // Add selected mapping
-                let getMapping = function (fromGroup, toGroup) {
-                  if (!fromGroup) {
-                    CATMAID.error("Need source landmark group");
-                    return;
-                  }
-                  let fg = parseInt(fromGroup, 10);
-                  if (!toGroup) {
-                    CATMAID.error("Need target landmark group");
-                    return;
-                  }
-                  let tg = parseInt(toGroup, 10);
-
-                  let src = widget.sourceLandmarkGroupIndex ?
-                      widget.sourceLandmarkGroupIndex : widget.landmarkGroupIndex;
-                  if (!src.has(fg)) {
-                    CATMAID.error("Source landmark group not found");
-                    return;
-                  }
-                  if (!widget.landmarkGroupIndex.has(tg)) {
-                    CATMAID.error("Target landmark group not found");
-                    return;
-                  }
-
-                  return {
-                    fromGroup: src.get(fg),
-                    toGroup: widget.landmarkGroupIndex.get(tg),
-                  };
-                };
                 var addMappingButton = $('<button/>').text('Add new mapping').click(function() {
                   let mapping = getMapping(fromGroup, toGroup);
                   if (mapping) {
@@ -3226,10 +3193,14 @@
                 $(newDTForm).append(CATMAID.DOM.createLabeledControl('', removeButton, "Remove " +
                     "the mapping selected in the list above."));
 
+                if (defaultData) {
+                  updateComponentList();
+                }
+
                 var matchingGroups, selectedMatchingGroups;
                 // Add multple mappings at once based on name matching
                 var initMatchingGroups = function() {
-                  return getSourceGroupList()
+                  return getSourceGroupList(false, sourceProject)
                     .then(sourceGroups => {
                       // TODO should allow regex/substitution of names before matching
                       // TODO assumes names are not duplicated
@@ -3319,14 +3290,17 @@
                   while (addMatchingWrapper.lastChild) {
                     addMatchingWrapper.removeChild(addMatchingWrapper.lastChild);
                   }
+                  const promiseMatchingGroups = initMatchingGroups();
                   let matchingMapping = CATMAID.DOM.createLabeledAsyncPlaceholder(
                       '',
-                      initMatchingGroups(),
+                      promiseMatchingGroups,
                       'Add multiple mappings at once by selecting them from matching group names.');
                   addMatchingWrapper.appendChild(matchingMapping);
+
+                  return promiseMatchingGroups;
                 };
 
-                updateMatchingGroupList();
+                initLoadingPromises.push(updateMatchingGroupList());
                 $(newDTForm).append(addMatchingWrapper);
 
 
@@ -3430,54 +3404,51 @@
                     'and /right$ as T-Pattern to match all groups starting with source ' +
                     'groups ending on "left" and target groups ending on "right".'));
 
-                // Remote instance list update
-                var updateComponentList = function() {
-                  $(componentList).empty();
-                  activeMappings.map(function(o, i) {
-                    // Add each remote list element to the select control
-                    var optionElement = $('<option/>').attr('value', i)
-                        .text(`${o.fromGroup.name} (${o.fromGroup.id}) - ${o.toGroup.name} (${o.toGroup.id})`);
-                    return optionElement[0];
-                  }).forEach(function(o) {
-                    componentList.appendChild(o);
-                  });
-                };
-
                 // Initialize component list
                 updateComponentList();
               }
 
               // Target relation select
+              let displayTargetRelation = null;
               let targetRelationWrapper = document.createElement('span');
               $(newDTForm).append(targetRelationWrapper);
+              let targetGroupListCache;
+              let initTargetRelationList = function() {
+                return CATMAID.Relations.list(project.id)
+                  .then(function(relationMap) {
+                    let relationNames = Object.keys(relationMap);
+                    targetGroupListCache = [
+                      { title: '(none)', value: 'none' },
+                      ...relationNames
+                        .filter(name => widget.allowedRelationNames.has(name))
+                        .map(function(name) {
+                          return { title: name, value: relationMap[name] };
+                        })
+                    ];
+                  });
+              };
+              let updateTargetRelationSelect = function() {
+                while (targetRelationWrapper.lastChild) {
+                  targetRelationWrapper.removeChild(targetRelationWrapper.lastChild);
+                }
+                let targetRelationSelect = CATMAID.DOM.createRadioSelect(
+                    'Group link relation', targetGroupListCache, displayTargetRelation || 'none', true, 'selected');
+                let targetRelationGroup = CATMAID.DOM.createLabeledControl('Target relation',
+                  targetRelationSelect, 'Select a relation that links valid target ' +
+                  'landmark groups. This rule will be applied recursively.');
+                targetRelationSelect.onchange = function(e) {
+                  displayTargetRelation = e.srcElement.value === 'none' ? null : e.srcElement.value;
+                };
+                $(targetRelationWrapper).append(targetRelationGroup);
+              };
 
-              let displayTargetRelation = null;
-
-              CATMAID.Relations.list(project.id)
-                .then(function(relationMap) {
-                  let relationNames = Object.keys(relationMap);
-                  let relationOptions = [
-                    { title: '(none)', value: 'none' },
-                    ...relationNames
-                      .filter(name => widget.allowedRelationNames.has(name))
-                      .map(function(name) {
-                        return { title: name, value: relationMap[name] };
-                      })
-                  ];
-                  let targetRelationSelect = CATMAID.DOM.createRadioSelect(
-                      'Group link relation', relationOptions, 'none', true, 'selected');
-                  let targetRelationGroup = CATMAID.DOM.createLabeledControl('Target relation',
-                    targetRelationSelect, 'Select a relation that links valid target ' +
-                    'landmark groups. This rule will be applied recursively.');
-                  targetRelationSelect.onchange = function(e) {
-                    displayTargetRelation = e.srcElement.value === 'none' ? null : e.srcElement.value;
-                  };
-                  $(targetRelationWrapper).append(targetRelationGroup);
+              const promiseTargetRelations = initTargetRelationList()
+                .then(function() {
+                  updateTargetRelationSelect();
                 })
                 .catch(CATMAID.handleError);
+              initLoadingPromises.push(promiseTargetRelations);
 
-              let transformModelSelect = CATMAID.DOM.createSelect(undefined,
-                  ['Affine', 'Rigid', 'Similarity'], 'Affine');
               let transformModelSelectLabel = CATMAID.DOM.createLabeledControl(
                   'Transform model', transformModelSelect,
                   'Model used to fit the transformation between landmarks.');
@@ -3516,9 +3487,23 @@
                   }
 
                   // Consolidate into a single mapping array.
-                  mappings = activeMappings.map(e => [e.fromGroup.id, e.toGroup.id]);
+                  mappings = activeMappings.map(e => [{
+                    id: e.fromGroup.id,
+                    name: e.fromGroup.name,
+                  }, {
+                    id: e.toGroup.id,
+                    name: e.toGroup.name,
+                  }]);
                   if (fromGroup && toGroup) {
-                    mappings.push([parseInt(fromGroup, 10), parseInt(toGroup, 10)]);
+                    let sourceId = parseInt(fromGroup, 10);
+                    let targetId = parseInt(toGroup, 10);
+                    mappings.push([{
+                      id: sourceId,
+                      name: (widget.sourceLandmarkGroupIndex || widget.landmarkGroupIndex).get(sourceId).name,
+                    }, {
+                      id: targetId,
+                      name: widget.landmarkGroupIndex.get(targetId).name,
+                    }]);
                   }
                 }
 
@@ -3558,7 +3543,7 @@
                       }
                       widget.addDisplayTransformation(sourceProject,
                           skeletonModels, mappings, api,
-                          selectedTransformModel());
+                          selectedTransformModel(), sourceNeuronAnnotation);
                       CATMAID.msg("Success", "Transformation added");
                       widget.updateDisplay();
                       widget.update();
@@ -3602,8 +3587,10 @@
 
                     CATMAID.NeuronNameService.getInstance().registerAll(widget, skeletonModelSet)
                       .then(() => {
-                        return widget.addDisplayTransformation(sourceProject, skeletonModels,
-                          mappings, displayTargetRelation, selectedTransformModel());
+                        const lst = widget.addDisplayTransformation(sourceProject, skeletonModels,
+                          mappings, undefined, selectedTransformModel(), sourceNeuronAnnotation);
+                        lst.displayTargetRelation = displayTargetRelation;
+                        return lst;
                       })
                       .then(() => {
                         CATMAID.msg("Success", "Transformation added");
@@ -3618,12 +3605,203 @@
               };
               buttonContainer.appendChild(addButton);
               newDTForm.appendChild(buttonContainer);
+
+              return Promise.all(initLoadingPromises);
             });
+        loadingPromises.push(initLandmarksAndGroups);
+
+        // Populate display transform table
+        let existingDTDataTable = widget.displayTransformTable = $(existingDTTable).DataTable({
+          ajax: (data, callback, settings) => {
+            if (sourceProject) {
+              initLandmarksAndGroups
+                .then(function(result) {
+                  callback({
+                    draw: data.draw,
+                    data: widget.displayTransformations,
+                    recordsTotal: widget.displayTransformations.length,
+                    recordsFiltered: widget.displayTransformations.length,
+                  });
+                })
+                .catch(CATMAID.handleError);
+            } else {
+              callback({
+                draw: data.draw,
+                data: widget.displayTransformations,
+                recordsTotal: widget.displayTransformations.length,
+                recordsFiltered: widget.displayTransformations.length,
+              });
+            }
+          },
+          autoWidth: false,
+          order: [],
+          columns: [
+            {
+              orderable: false,
+              class: 'cm-center',
+              render: function(data, type, row, meta) {
+                return meta.row + 1;
+              },
+            },
+            {
+              data: 'skeletons',
+              class: 'cm-center',
+              title: 'Skeletons',
+              orderable: false,
+              render: function(data, type, row, meta) {
+                // Show skeleton list like this: 123 skeletons (remote)
+                if (type === 'display') {
+                  const nRemoteSkeletons = data.reduce((n, sk) => {
+                    return sk.api ? n + 1 : n;
+                  }, 0);
+                  const apis = Array.from(data.reduce((o, sk) => {
+                    if (sk.api) o.add(sk.api);
+                    return o;
+                  }, new Set())).join(', ');
+                  if (nRemoteSkeletons > 0) {
+                    return `<a href="#" data-action="select-all-skeletons">${data.length} skeleton${data.length > 1 ? 's' : ''} (${nRemoteSkeletons} remote from ${apis})</a> <ul class="resultTags" style="display: inline"><li><a href="#" data-action="edit-skeletons">edit</a></li></ul>`;
+                  } else {
+                    return `<a href="#" data-action="select-all-skeletons">${data.length} skeleton${data.length > 1 ? 's' : ''}</a> <ul class="resultTags" style="display: inline"><li><a href="#" data-action="edit-skeletons">edit</a></li></ul>`;
+                  }
+                } else {
+                  return data;
+                }
+              }
+            },
+
+            {
+              data: 'mappings',
+              class: 'cm-center',
+              title: 'Source landmark groups',
+              orderable: false,
+              render: function(data, type, row, meta) {
+                if (widget.landmarkGroupIndex) {
+                  let groups = data.map(srcToStr);
+                  if (groups) {
+                    return groups.join(', ');
+                  }
+                }
+                return data;
+              }
+            },
+            {
+              data: 'mappings',
+              class: 'cm-center',
+              title: 'Target landmark group',
+              orderable: false,
+              render: function(data, type, row, meta) {
+                if (widget.landmarkGroupIndex) {
+                  let groups = data.map(targetToStr);
+                  if (groups) {
+                    return groups.join(', ');
+                  }
+                }
+                return data;
+              }
+            },
+            {
+              title: "Color",
+              type: "hslcolor",
+              class: "dt-center cm-center",
+              render: {
+                "_": function(data, type, row, meta) {
+                  return row.color.getHSL({});
+                },
+                "display": function(data, type, row, meta) {
+                  var color = row.skeletons.length === 0 ? color.getHexString() :
+                      row.skeletons[0].color.getHexString();
+                  return '<button class="action-changecolor" value="#' +
+                      color + '" style="background-color: #' + color + ';color: ' +
+                      CATMAID.tools.getContrastColor(color) + '">color</button>';
+                }
+              }
+            },
+            {
+              title: 'Action',
+              class: 'cm-center',
+              orderable: false,
+              render: function(data, type, row, meta) {
+                return '<ul class="resultTags" style="display: inline"><li><a href="#" data-action="reuse-transformation" title="Re-use properties of this transformation as settings for new transformation (above).">Re-use</a></li></ul>' +
+                    '<ul class="resultTags" style="display: inline"><li><a href="#" data-action="delete-transformation">Delete</a></li></ul>';
+              }
+            }
+          ]
+        }).on('click', 'a[data-action=select-skeleton]', function() {
+          let skeletonId = $(this).attr('data-id');
+          let api = $(this).attr('data-api');
+          if (api && api.length > 0) {
+            CATMAID.warn("Can't select remote skeleton");
+            return;
+          }
+          CATMAID.TracingTool.goToNearestInNeuronOrSkeleton('skeleton', skeletonId);
+        }).on('click', 'a[data-action=select-all-skeletons]', function() {
+          const tr = $(this).closest('tr');
+          const dt = existingDTDataTable.row(tr).data();
+          var ST = new CATMAID.SelectionTable();
+          // Create a new window, based on the newly created table and add
+          // skeletons.
+          WindowMaker.create('selection-table', ST, true);
+          ST.addSkeletons(dt.skeletons.map(o => o.id));
+        }).on('click', 'a[data-action=edit-skeletons]', function() {
+          // Show a dialog to select a skeleton source to update the skeletons from.
+          let dialog = new CATMAID.SkeletonSourceDialog("Select a skeleton source to update transformed skeletons from",
+              "Once you press OK the set of transformed skeletons will be updated to the skeletons from the selected source.",
+              source => {
+                const models = Object.values(source.getSelectedSkeletonModels());
+                const tr = $(this).closest('tr');
+                let dt = existingDTDataTable.row(tr).data();
+                dt.skeletons = models;
+                widget.updateDisplay(true);
+                widget.update();
+                CATMAID.msg('Success', 'Skeletons updated');
+              });
+          dialog.show();
+        }).on('click', 'a[data-action=delete-transformation]', function() {
+          let tr = $(this).closest('tr');
+          let row = existingDTDataTable.row(tr);
+          let data = row.data();
+          if (!confirm("Are you sure you want to delete transformation " +
+              (row.index() + 1) + "?")) {
+            return;
+          }
+          widget.removeLandmarkTransformation(data);
+          widget.update();
+        }).on('click', 'a[data-action=reuse-transformation]', function() {
+          let tr = $(this).closest('tr');
+          let row = existingDTDataTable.row(tr);
+          let data = row.data();
+          let dataIndex = widget.displayTransformations.indexOf(data);
+
+          // Update widget with this transformation as default provider
+          widget.update({
+              'displayTransformation': data,
+              'sourceNeuronAnnotation': widget.displayTransformationParameterSets[dataIndex].sourceAnnotation,
+            })
+            .catch(CATMAID.handleError);
+        })
+        .on("click", "td .action-changecolor", this, function(e) {
+          let tr = $(this).closest('tr');
+          let dt = existingDTDataTable.row(tr).data();
+          CATMAID.ColorPicker.toggle(this, {
+            onColorChange: function(colorRGB, alpha, colorChanged, alphaChanged, colorHex) {
+              let c = '#' + colorHex;
+              for (let sm of dt.skeletons) {
+                sm.color.setStyle(c);
+                sm.opacity = alpha;
+              }
+              widget.updateLandmarkLayers();
+              widget.updateStyle();
+            }
+          });
+        });
 
         content.appendChild(newDisplayTransformationContainer);
         content.appendChild(existingDisplayTransformationsContainer);
 
-        widget.updateDisplay();
+        return Promise.all(loadingPromises)
+          .then(() => {
+            widget.updateDisplay();
+          });
       }
     },
     groups: {
@@ -3845,7 +4023,8 @@
               // Clear input fields
               groupNameAChanged = false;
               groupNameBChanged = false;
-              return widget.updateLandmarksAndGroups();
+              let api = CATMAID.Remote.getAPI(sourceRemote);
+              return widget.updateSourceLandmarksAndGroups(api, sourceProject);
             })
             .catch(CATMAID.handleError);
 

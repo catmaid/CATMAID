@@ -386,7 +386,7 @@
         i = 1;
       }
       let matches = [].concat(...transformation.mappings
-          .map(m => CATMAID.Landmarks.getPointMatches(m[0], m[1],
+          .map(m => CATMAID.Landmarks.getPointMatches(m[0].id, m[1].id,
               landmarkGroupIndex, landmarkIndex, sourceLandmarkGroupIndex,
               sourceLandmarkIndex, byName, transformation.useReverseMatches)));
 
@@ -608,11 +608,11 @@
       Promise.all([
           // Source group ID
           Promise.all(transformation.mappings.map(m =>
-              transformation.landmarkProvider.get(m[0],
+              transformation.landmarkProvider.get(m[0].id,
                   transformation.projectId, transformation.fromApi))),
           // Target group ID
           Promise.all(transformation.mappings.map(m =>
-              transformation.landmarkProvider.get(m[1], project.id)))
+              transformation.landmarkProvider.get(m[1].id, project.id)))
         ])
         .then(function(landmarkGroups) {
           let fromGroups = landmarkGroups[0];
@@ -632,7 +632,7 @@
         treenodeRow[5] = treenodeLocation[2];
       };
 
-      let areDifferentGroups = m => m[0] !== m[1];
+      let areDifferentGroups = m => m[0].id !== m[1].id;
 
       transformation.skeletonPromises = new Map();
       transformation.nodeProvider = {
@@ -729,11 +729,17 @@
     this.projectId = projectId;
     this.skeletons = skeletons;
     let seenSourceIds = new Set(), seenTargetIds = new Set();
-    this.mappings = mappings ? mappings.map(m => [parseInt(m[0], 10), parseInt(m[1], 10)])
+    this.mappings = mappings ? mappings.map(m => [{
+          id: parseInt(m[0].id, 10),
+          name: m[0].name
+        }, {
+          id: parseInt(m[1].id, 10),
+          name: m[1].name
+        }])
         .reduce((o, m) => {
-          if (!seenSourceIds.has(m[0]) && !seenTargetIds.has(m[1])) {
-            seenSourceIds.add(m[0]);
-            seenTargetIds.add(m[1]);
+          if (!seenSourceIds.has(m[0].id) && !seenTargetIds.has(m[1].id)) {
+            seenSourceIds.add(m[0].id);
+            seenTargetIds.add(m[1].id);
             o.push(m);
           }
           return o;

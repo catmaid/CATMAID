@@ -2924,7 +2924,7 @@
     var existingLandmarkTransform = this.loadedLandmarkTransforms[landmarkTransformId];
     if (visible) {
       // Bail out if the landmarkTransform in question is already visible
-      if (force) {
+      if (force && existingLandmarkTransform) {
         // Remove landmarkTransform
         existingLandmarkTransform.forEach(entry => {
           this.space.scene.project.remove(...entry.meshes);

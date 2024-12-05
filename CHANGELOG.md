@@ -63,6 +63,12 @@ Landmark widget:
   Clicking the skeleton set entry will open a Selection Table with all skeletons
   in the set.
 
+- Each transformation in the list of active display transformation comes now
+  with a "Re-use" button in the last column. This pre-populates the controls for
+  a new transformation according to the transformation of the respective table
+  row. The following fields are updated: source remote, source project, source
+  group, target group, transform model.
+
 - It is now possible to edit the list of transformed skeletons with the help of
   the new edit button right next to the skeleton set entry. A dialog will ask
   for a skeleton source to pull neurons from.

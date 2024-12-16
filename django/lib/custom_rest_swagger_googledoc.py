@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from django.utils.safestring import mark_safe
-from django.utils.encoding import smart_text
+from django.utils.encoding import smart_str
 
 from rest_framework.utils import formatting
 
@@ -21,7 +21,7 @@ def get_googledocstring(view_cls, html=False):
     description = view_cls.__doc__ or ''
     config = Config(napoleon_use_param=False, napoleon_use_rtype=False)
     description = GoogleDocstring(description, config=config)
-    description = formatting.dedent(smart_text(description))
+    description = formatting.dedent(smart_str(description))
     if html:
         parts = core.publish_parts(source=description, writer_name='html')
         html = parts['body_pre_docinfo'] + parts['fragment']

@@ -938,6 +938,7 @@
     // Get all transitively linked target groups from back-end. Add a
     // transformation for each.
     var self = this;
+    fromGroupId = parseInt(fromGroupId, 10);
     return CATMAID.Landmarks.getTransitivelyLinkedGroups(project.id, fromGroupId, relationId)
       .then(function(groups) {
         if (groups.length === 0) {
@@ -950,14 +951,20 @@
             throw new CATMAID.Warning("Could not find source skeletons");
           }
           let lst = new CATMAID.LandmarkSkeletonTransformation(project.id,
-            skeletons, [[fromGroupId, toGroupId]], undefined, undefined,
-            modelClass, self.useReversePointMatches);
+            skeletons, [[{
+              id: fromGroupId,
+              name: (self.sourceLandmarkGroupIndex || self.landmarkGroupIndex).get(fromGroupId).name,
+            }, {
+              id: toGroupId,
+              name: self.landmarkGroupIndex.get(toGroupId).name,
+            }]], undefined, undefined, modelClass, self.useReversePointMatches);
           self.displayTransformations.push(lst);
-          self.displayTransformationIndexSets.push({
+          self.displayTransformationParameterSets.push({
             landmarkGroupIndex: self.landmarkGroupIndex,
             landmarkIndex: self.landmarkIndex,
             sourceLandmarkGroupIndex: self.sourceLandmarkGroupIndex,
             sourceLandmarkIndex: self.sourceLandmarkIndex,
+            sourceAnnotation: '',
           });
         }
         CATMAID.Landmarks.trigger(CATMAID.Landmarks.EVENT_DISPLAY_TRANSFORM_ADDED);

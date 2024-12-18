@@ -107,7 +107,6 @@
     this.handleDeletedSkeleton = function(nodeId, parentId, skeletonId) {
       if (skeletonId == this.currentSkeletonId) {
         CATMAID.info('Review widget updated due to skeleton change');
-        const atnId = SkeletonAnnotations.getActiveNodeId();
         this.startSkeletonToReview(skeletonId, undefined, true, () => {
           this.current_segment = this.skeleton_segments[this.current_segment.id];
           this.goToNodeIndexOfSegmentSequence(this.current_segment_index, true);
@@ -834,7 +833,7 @@
           // Sort segmends in descending order and remove single node segments
           // that have been seen in longer segments. This is mainly a concern when
           // node filters are in use and single node segments can occur.
-          var sortedSegments = skeleton_data.sort(function(a, b) {
+          skeleton_data.sort(function(a, b) {
             if (a.nr_nodes > b.nr_nodes) {
               return -1;
             }
@@ -1356,8 +1355,6 @@
       },
       contentID: "review_widget",
       createContent: function(content) {
-        var self = this;
-
         this._content = content;
 
         // Node review container

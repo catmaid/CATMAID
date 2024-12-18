@@ -728,7 +728,7 @@
       modelClass = CATMAID.transform.AffineModel3D, useReverseMatches = false) {
     this.projectId = projectId;
     this.skeletons = skeletons;
-    let seenSourceIds = new Set(), seenTargetIds = new Set();
+    let seenSourceTargetCombos = new Set();
     this.mappings = mappings ? mappings.map(m => [{
           id: parseInt(m[0].id, 10),
           name: m[0].name
@@ -737,9 +737,9 @@
           name: m[1].name
         }])
         .reduce((o, m) => {
-          if (!seenSourceIds.has(m[0].id) && !seenTargetIds.has(m[1].id)) {
-            seenSourceIds.add(m[0].id);
-            seenTargetIds.add(m[1].id);
+          const comboKey = `${m[0].id}-${m[1].id}`;
+          if (!seenSourceTargetCombos.has(comboKey)) {
+            seenSourceTargetCombos.add(comboKey);
             o.push(m);
           }
           return o;

@@ -114,6 +114,12 @@ Measurement widget:
   number easier, a percentage is shown as well for each entry that reflects how
   many nodes of the respective skeleton have a radius assigned.
 
+Review widget:
+
+- Deleting a treenode when the skeleton is under review in the Review Widget
+  will cause the Review Widget to refresh its segment representation and move to
+  the next possible node.
+
 Miscellaneous:
 
 - The built-in API docs (/apis endpoint) now supports deep links, which allows

@@ -102,6 +102,20 @@
     };
 
     /**
+     * If a node of a reviewed skeleton is deleted, recomputed the review state.
+     */
+    this.handleDeletedSkeleton = function(nodeId, parentId, skeletonId) {
+      if (skeletonId == this.currentSkeletonId) {
+        CATMAID.info('Review widget updated due to skeleton change');
+        const atnId = SkeletonAnnotations.getActiveNodeId();
+        this.startSkeletonToReview(skeletonId, undefined, true, () => {
+          this.current_segment = this.skeleton_segments[this.current_segment.id];
+          this.goToNodeIndexOfSegmentSequence(this.current_segment_index, true);
+        });
+      }
+    };
+
+    /**
      * If the active skeleton changes, the review system will register it. The
      * widget will make sure the view is centered at the last active node, when
      * review is continued.
@@ -674,6 +688,14 @@
                   updateClientNodeReview(node, json.reviewer_id, json.review_time);
                   resolve(node);
                 }
+              },
+              false,
+              false,
+              (error) => {
+                if (error instanceof CATMAID.ResourceUnavailableError) {
+                  CATMAID.warn('The reviewed node seems to be deleted');
+                  return true;
+                }
               });
         } else {
           updateClientNodeReview(node, CATMAID.session.userid, new Date().toISOString());
@@ -1050,7 +1072,7 @@
       this.startSkeletonToReview( skid, subarborNodeId, true );
     };
 
-    this.startSkeletonToReview = function( skid, nodeId, forceRefresh ) {
+    this.startSkeletonToReview = function( skid, nodeId, forceRefresh, postUpdate ) {
       var dataChanged = false;
       if (!skid) {
         CATMAID.error('No skeleton ID provided for review.');
@@ -1065,15 +1087,15 @@
         return;
       }
       if (dataChanged || forceRefresh) {
-        this.refresh();
+        this.refresh(postUpdate);
       }
     };
 
-    this.refresh = function() {
+    this.refresh = function(postUpdate) {
       if (this.filterRules.length > 0 && this.applyFilterRules) {
         this.updateFilter();
       } else {
-        this.update();
+        this.update(postUpdate);
       }
     };
 
@@ -1157,6 +1179,8 @@
     // Register to the active node change event
     SkeletonAnnotations.on(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
       this.handleActiveNodeChange, this);
+    CATMAID.Nodes.on(CATMAID.Nodes.EVENT_NODE_DELETED,
+      this.handleDeletedSkeleton, this);
   };
 
   CATMAID.ReviewSystem.prototype = new InstanceRegistry();
@@ -1696,7 +1720,7 @@
     }
   };
 
-  CATMAID.ReviewSystem.prototype.update = function() {
+  CATMAID.ReviewSystem.prototype.update = function(postUpdate) {
     if (this.currentSkeletonId) {
       var url = `${this.projectId}/skeletons/${this.currentSkeletonId}/review`;
       var self = this;
@@ -1704,6 +1728,9 @@
         function(skeleton_data) {
           self.createReviewSkeletonTable(skeleton_data);
           self.redraw();
+          if (CATMAID.tools.isFn(postUpdate)) {
+            postUpdate();
+          }
         });
     } else {
       this.redraw();
@@ -1913,6 +1940,9 @@
   CATMAID.ReviewSystem.prototype.destroy = function() {
     SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
       this.handleActiveNodeChange, this);
+    CATMAID.Nodes.off(CATMAID.Nods.EVENT_NODE_DELETED,
+      this.handleDeletedSkeleton, this);
+
     if (lastFocused === this) {
       lastFocused = null;
     }

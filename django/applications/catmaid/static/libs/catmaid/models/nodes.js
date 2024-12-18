@@ -348,7 +348,7 @@
         })
         .then(function(result) {
           CATMAID.Nodes.trigger(CATMAID.Nodes.EVENT_NODE_DELETED, nodeId,
-              result.parent_id);
+              result.parent_id, result.skeleton_id);
           // Emit deletion event, if the last node was removed and the neuron
           // deleted. Otherwise, trigger a change event for the neuron.
           if (result.deleted_neuron) {

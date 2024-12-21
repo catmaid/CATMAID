@@ -191,6 +191,10 @@
       }
     }
 
+    // Also, this tile layer does not render sources that don't provide tile
+    // URLs, like block data sources.
+    showTiles = showTiles && !(this.tileSource instanceof CATMAID.AbstractImageBlockSource);
+
     var effectiveTileWidth = this.tileWidth * tileInfo.mag * tileInfo.anisotropy.x;
     var effectiveTileHeight = this.tileHeight * tileInfo.mag * tileInfo.anisotropy.y;
 

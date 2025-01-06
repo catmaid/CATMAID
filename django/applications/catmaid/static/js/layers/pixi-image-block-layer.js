@@ -393,7 +393,7 @@
         && this._emptySlice.shape[1] === this.tileHeight
         && this._emptySlice.dtype === this.tileSource.dataType())) {
         let empty = nj.zeros(
-            [this.tileWidth, this.tileHeight],
+            [this.tileWidth, this.tileHeight, 1],
             this.tileSource.dataType() || 'uint8');
         empty.selection.data.fill(this.fillValue);
         this._emptySlice = empty;

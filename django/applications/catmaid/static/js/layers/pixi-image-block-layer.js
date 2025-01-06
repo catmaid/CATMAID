@@ -36,18 +36,7 @@
       this._emptySlice = null;
 
       this.tileSource.promiseReady.then(() => {
-        let blockSize = this.tileSource.blockSize(0);
-        blockSize = CATMAID.tools.permute(blockSize, this.dimPerm);
-        this.tileWidth = blockSize[0];
-        this.tileHeight = blockSize[1];
-        this.blockSizeZ = blockSize[2];
-        if (this._tiles.length) {
-          // If tiles have been initialized, reinitialize.
-          // Forcibly clear tiles, so that even if width and height are
-          // unchanged reinit happens to account for other changes like dtype.
-          this._tiles = [];
-          this.resize(this.stackViewer.viewWidth, this.stackViewer.viewHeight);
-        }
+        this.reinitTiles();
 
         if (this.tileSource.dataType().endsWith('64')) {
           CATMAID.warn('64 bit data is not yet directly renderable, rendering as 16-bpc RGBA');
@@ -73,6 +62,33 @@
       this.prefetch = new Set(this.prefetchOrder);
       this._prefetchTimeout = null;
       this.prefetchDelay = 500;
+    }
+
+    reinitTiles(completionCallback, blocking) {
+      let blockSize = this.tileSource.blockSize(this.stackViewer.s);
+      blockSize = CATMAID.tools.permute(blockSize, this.dimPerm);
+      this.tileWidth = blockSize[0];
+      this.tileHeight = blockSize[1];
+      this.blockSizeZ = blockSize[2];
+      this._tileOrigR = 0;
+      this._tileOrigC = 0;
+      if (this._tiles.length) {
+        // If tiles have been initialized, reinitialize.
+        // Forcibly clear tiles, so that even if width and height are
+        // unchanged reinit happens to account for other changes like dtype.
+        this._tiles = [];
+        this.resize(this.stackViewer.viewWidth, this.stackViewer.viewHeight, completionCallback, blocking);
+      } else {
+        CATMAID.tools.callIfFn(completionCallback);
+      }
+    }
+
+    blocksDifferFromTiles() {
+      let blockSize = this.tileSource.blockSize(this.stackViewer.s);
+      blockSize = CATMAID.tools.permute(blockSize, this.dimPerm);
+      return this.tileWidth != blockSize[0] ||
+          this.tileHeight != blockSize[1] ||
+          this.blockSizeZ != blockSize[2];
     }
 
     /**
@@ -181,11 +197,17 @@
 
     redraw (completionCallback, blocking) {
       if (typeof this._tiles[0] === 'undefined') {
-        // Redraw requested before initialization, likely due to deep link layout.
+        // Redraw requested before initialization, likely due to deep link
+        // layout. Or redraw requested within another redraw.
         if (typeof completionCallback !== 'undefined') {
           completionCallback();
         }
         return;
+      }
+
+      // If tile setup doesn't match block size anymore, update tiles.
+      if (this.blocksDifferFromTiles()) {
+        return this.reinitTiles(completionCallback, blocking);
       }
 
       var scaledStackPosition = this.stackViewer.scaledPositionInStack(this.stack);

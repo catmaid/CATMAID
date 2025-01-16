@@ -327,20 +327,29 @@
         // immediately, so that the buffer will be cleared.
         window.clearTimeout(this._swapBuffersTimeout);
         this._swapBuffersTimeout = window.setTimeout(this._swapBuffers.bind(this, true), 3000);
-        Promise.all(toLoad.map(([[i, j], coord]) => this
-            ._readBlock(...coord.slice(0, 4))
-            .then(block => {
-              if (this._context.renderer === null) return; // Layer was destroyed.
-              if (!this._tilesBuffer || !this._tilesBuffer[i] || !this._tilesBuffer[i][j] ||
-                  !CATMAID.tools.arraysEqual(this._tilesBuffer[i][j].coord, coord)) return;
 
-              let slice = this._sliceBlock(block, blockZ);
+        // Attempt to get entire data for view at the same time and populate
+        // cache with it. This is usually much faster with sharded data. For
+        // non-sharded data, it is faster to skip this step at the moment.
+        let prepare = this.tileSource.prefersCombinedRequests() ?
+            this._populateCache(tileInfo.zoom, toLoad.map(x => x[1])) :
+            Promise.resolve([]);
+        prepare.then(() => {
+              Promise.all(toLoad.map(([[i, j], coord]) => this
+                  ._readBlock(...coord.slice(0, 4))
+                  .then(block => {
+                    if (this._context.renderer === null) return; // Layer was destroyed.
+                    if (!this._tilesBuffer || !this._tilesBuffer[i] || !this._tilesBuffer[i][j] ||
+                        !CATMAID.tools.arraysEqual(this._tilesBuffer[i][j].coord, coord)) return;
 
-              this._sliceToTexture(slice, this._tilesBuffer[i][j].texture);
-              this._tilesBuffer[i][j].coord = coord;
-              this._tilesBuffer[i][j].loaded = true;
-            })
-        )).then(this._swapBuffers.bind(this, false, this._swapBuffersTimeout));
+                    let slice = this._sliceBlock(block, blockZ);
+
+                    this._sliceToTexture(slice, this._tilesBuffer[i][j].texture);
+                    this._tilesBuffer[i][j].coord = coord;
+                    this._tilesBuffer[i][j].loaded = true;
+                  })
+              )).then(this._swapBuffers.bind(this, false, this._swapBuffersTimeout));
+            });
         loading = true;
       } else if (!loading) {
         this._oldZoom = this._swapZoom;
@@ -359,6 +368,10 @@
           completionCallback();
         }
       }
+    }
+
+    _populateCache(zoomLevel, locations) {
+      return this._blockCache.readBlocks(zoomLevel, locations);
     }
 
     _readBlock(zoomLevel, x, y, z) {

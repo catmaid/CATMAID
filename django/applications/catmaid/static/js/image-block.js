@@ -35,10 +35,57 @@
       CATMAID.asEventSource(this);
 
       this.queue = new CATMAID.MultiQueueDispatcher(
-        coord => this.readBlock(...coord),
+        this.source.prefersCombinedRequests() ?
+            // Assume same zoom level
+            coords => this.readBlocks(coords[0][0], coords) :
+            coord => this.readBlock(...coord),
         4,
-        () => this._deduper.pending()
+        () => this._deduper.pending(),
+        this.source.prefersCombinedRequests(),
+        // Filter function that will only allow set requests of same zoom level
+        // as last coord in queue.
+        (coord, i, coords) => coord[0] === coords[coords.length - 1][0]
       );
+    }
+
+    readBlocks(zoomLevel, blockCoords) {
+      if (!CATMAID.tools.isFn(this.source.readBlocks)) {
+        return Promise.resolve([]);
+      }
+
+      // Drop all block coords that are available from the cache already
+      const blockKeys = new Map();
+      const uncachedBlocks = blockCoords.map(coord => {
+        const blockKey = [coord[0], coord[1], coord[2], coord[3]].join('/');
+        blockKeys.set(blockKey, coord);
+        return blockKey;
+      }).filter(blockKey => {
+        return !this._cache.has(blockKey);
+      });
+
+      // Drop all block coords that are currently requested
+      let blockPromise = this._deduper.dedup_many(
+        uncachedBlocks,
+        (keysToRequest) => {
+          const coordsToRequest = keysToRequest.map(k => blockKeys.get(k));
+          return this.source.readBlocks(zoomLevel, coordsToRequest);
+        },
+        (blockData, key) => {
+          let [z, c1, c2, c3] = key.split('/');
+          return blockData.find(b => z == zoomLevel && b.gridPosition[0] == c1
+              && b.gridPosition[1] == c2 && b.gridPosition[2] == c3);
+        });
+
+      return blockPromise
+        .then(block_data => {
+          for (let {block, etag, gridPosition} of block_data) {
+            if (!block || !etag || !gridPosition) continue;
+            let blockKey = [zoomLevel, ...gridPosition].join('/');
+            this._stateIDs.set(blockKey, etag);
+            this._cache.set(blockKey, block);
+          }
+          return block_data;
+        });
     }
 
     readBlock(...zoomBlockCoord) {

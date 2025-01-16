@@ -634,8 +634,8 @@ Data sources:
 
 - A new tile source has been added: Neuroglancer Precomputed data, with ID 14.
   This image block source works very similar to the N5 tile source. At the
-  moment only non-compressed and non-sharded image volumes are supported. In
-  order for the voxel space coordinates to match between CATMAID and
+  moment only GZip and JPEG compression is supported. Sharded datasets can be
+  loaded. In order for the voxel space coordinates to match between CATMAID and
   Neuroglancer, if the Neuroglancer dataset defines a voxel offset, the
   respective CATMAID stack needs to have its zoom-level zero voxel offset
   defined in the stack meta data in the admin view, e.g. `{"voxelOffset":

@@ -579,6 +579,14 @@
     readBlock(zoomLevel, xi, yi, zi) {
       throw new CATMAID.NotImplementedError();
     }
+
+    /**
+     * Whether or not it can be benefitial to combine multiple block requests
+     * into a single one. This can be the case e.g. for sharded data.
+     */
+    prefersCombinedRequests() {
+      return false;
+    }
   };
 
 
@@ -1026,7 +1034,9 @@
         this.promiseNeuroglancerPrecomputedwasm = (new Function(`return import('${jsPath}')`))()
             .then(module =>
                 // The global ngpre_wasm variable is created in ngpre_wasm.js
-                ngpre_wasm(CATMAID.makeStaticURL('libs/ngpre-wasm/ngpre_wasm_bg.wasm'))
+                ngpre_wasm({
+                  module_or_path: CATMAID.makeStaticURL('libs/ngpre-wasm/ngpre_wasm_bg.wasm'),
+                })
                 .then(() => ngpre_wasm));
       }
 
@@ -1142,6 +1152,41 @@
       });
     }
 
+    readBlocks(zoomLevel, blockCoords) {
+      return this.promiseReady.then(() => {
+          let path = this.datasetPath(zoomLevel);
+          let dataAttrs = this.datasetAttributes;
+
+          if (blockCoords.length === 0) {
+            return [];
+          }
+
+          const gridCoords = blockCoords.map(coord => coord.slice(1,4).map(BigInt)).flat();
+          return this.reader.read_blocks_with_etag(path, dataAttrs, gridCoords);
+        }).then(block_data => {
+          let desBlocks = new Array(block_data.length);
+          for (let i=0; i<block_data.length; ++i) {
+            block = block_data[i];
+            if (block) {
+              let etag = block.get_etag();
+              let size = block.get_size();
+              let gridPosition = block.get_grid_position();
+              let n = 1;
+              let stride = size.map(s => { let rn = n; n *= s; return rn; });
+              desBlocks[i] = {
+                etag,
+                block: new nj.NdArray(nj.ndarray(block.into_data(), size, stride))
+                    .transpose(...this.sliceDims),
+                gridPosition,
+              };
+            } else {
+              desBlocks[i] = {block, etag: undefined, gridPosition: undefined};
+            }
+          }
+          return desBlocks;
+        });
+    }
+
     datasetPath(zoomLevel) {
       return this.datasetPathFormat
           .replace('%SCALE_DATASET%', this.scaleLevelPath(zoomLevel));
@@ -1183,6 +1228,14 @@
           cors:       result[1][0],
           corsTime:   result[1][1]
       })));
+    }
+
+    /**
+     * The Neuroglancer WASM implementation supports downloading multiple blocks
+     * in parallel.
+     */
+    prefersCombinedRequests() {
+      return true;
     }
   };
 
@@ -1237,6 +1290,56 @@
                 return {block, etag: undefined};
               }
             });
+      });
+    }
+
+    readBlocks(zoomLevel, blockCoords) {
+      return this.promiseReady.then(() => {
+          let path = this.datasetPath(zoomLevel);
+          let dataAttrs = this.datasetAttributes;
+
+          if (blockCoords.length === 0) {
+            return [];
+          }
+
+          // Flatten input grid coords (needed for wasm-bindgen)
+          const gridCoords = blockCoords.map(coord => coord.slice(1,4).map(BigInt)).flat();
+          // FIXME: Optionally, run bundle downloads in separate web workers. This
+          // seems currently slower and might not be worthwile afterall, because
+          // all block requests in a single call to WASM will be executed in
+          // parallel already.
+          let bundleRequests = false;
+          let request_block_data = bundleRequests ?
+            this.workers
+              .postMessage([path, dataAttrs.to_json(), gridCoords, true, true])
+              .then(bundles => {
+                return Promise.all(bundles.map(bundle => {
+                  return bundle && bundle.length > 0 ?
+                    this.workers.postMessage([path, dataAttrs.to_json(), bundle.flat(), true]) :
+                    [];
+                }));
+              }) :
+            this.workers.postMessage([path, dataAttrs.to_json(), gridCoords, true]).then(block_data => [block_data]);
+
+            return request_block_data
+              .then(bundled_block_data => {
+                return bundled_block_data.map(block_data => {
+                  return block_data.map(block => {
+                    if (block) {
+                      let n = 1;
+                      let stride = block.size.map(s => { let rn = n; n *= s; return rn; });
+                      return {
+                        etag: block.etag,
+                        block: new nj.NdArray(nj.ndarray(block.data, block.size, stride))
+                            .transpose(...this.sliceDims),
+                        gridPosition: block.gridPosition,
+                      };
+                    } else {
+                      return {block, etag: undefined, gridPosition: undefined};
+                    }
+                  });
+                }).flat();
+              });
       });
     }
   };

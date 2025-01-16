@@ -19,10 +19,7 @@
         throw new CATMAID.PreConditionError("PixiImageBlockLayer needs WebGL2, but it isn't available.");
       }
 
-      this._blockCache = CATMAID.ImageBlock.GlobalCacheManager.get(this.tileSource);
-      this._blockCache.on(
-          CATMAID.ImageBlock.Cache.EVENT_BLOCK_CHANGED,
-          this._onBlockChanged, this);
+      this.initCache();
       this.fillValue = 0;
 
       if (this.stack instanceof CATMAID.ReorientedStack) {
@@ -36,6 +33,7 @@
       this._emptySlice = null;
 
       this.tileSource.promiseReady.then(() => {
+        this.initCache();
         this.reinitTiles();
 
         if (this.tileSource.dataType().endsWith('64')) {
@@ -62,6 +60,13 @@
       this.prefetch = new Set(this.prefetchOrder);
       this._prefetchTimeout = null;
       this.prefetchDelay = 500;
+    }
+
+    initCache(capacity = undefined) {
+      this._blockCache = CATMAID.ImageBlock.GlobalCacheManager.get(this.tileSource, capacity);
+      this._blockCache.on(
+          CATMAID.ImageBlock.Cache.EVENT_BLOCK_CHANGED,
+          this._onBlockChanged, this);
     }
 
     reinitTiles(completionCallback, blocking) {

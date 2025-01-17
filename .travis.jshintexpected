@@ -168,8 +168,8 @@ django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2157, col
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2171, col 22, Missing semicolon.
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2175, col 22, Missing semicolon.
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2226, col 22, Missing semicolon.
-django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2333, col 35, Invalid typeof value 'bigint'
-django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2371, col 49, Invalid typeof value 'bigint'
+django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2333, col 39, 'BigInt' is only available in ES11 (use 'esversion: 11').
+django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2371, col 53, 'BigInt' is only available in ES11 (use 'esversion: 11').
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2469, col 36, Missing semicolon.
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2471, col 107, Missing semicolon.
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2488, col 5, 'async functions' is only available in ES8 (use 'esversion: 8').

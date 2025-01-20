@@ -4,3 +4,6 @@ sauceclient==1.0.0
 mypy==1.13; platform_python_implementation != 'PyPy'
 flake8==7.1.1
 pytest==8.2.1
+types-python-dateutil==2.9.0.20241206
+types-docutils==0.21.0.20241128
+types-ujson==5.10.0.20240515

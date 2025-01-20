@@ -1017,6 +1017,8 @@
       this.datasetPathFormat = this.datasetURL.substring(this.rootURL.length + 1);
 
       this.datasetAttributes = null;
+      this.canaryCache = new Map();
+      this._deduper = new CATMAID.CoalescingPromiseDeduplicator();
       this.promiseReady = NeuroglancerPrecomputedImageBlockSource.loadNeuroglancerPrecomputed()
           .then(ngprewasm => this._findRoot(ngprewasm).then(r => this.reader = r))
           .then(() => this.populateDatasetAttributes());
@@ -1204,30 +1206,41 @@
     }
 
     checkCanary(project, stack, noCache) {
-      let request = (options) => {
-        let url = this.getCanaryUrl(project, stack);
+      let url = this.getCanaryUrl(project, stack);
+      return this._deduper.dedup(
+        url,
+        () => {
+          let request = (options) => {
+            if (noCache) {
+              url += "?nocache=" + Date.now();
+            } else {
+              if (this.canaryCache.has(url)) {
+                return this.canaryCache.get(url);
+              }
+            }
 
-        if (noCache) {
-          url += "?nocache=" + Date.now();
-        }
+            let before = performance.now();
+            return fetch(new Request(url, Object.assign({method: 'HEAD'}, options)))
+              .then(response =>
+                [response.status === 200, performance.now() - before, url]
+              )
+              .catch(() => [false, Infinity, url]);
+          };
 
-        let before = performance.now();
-        return fetch(new Request(url, options))
-          .then(response =>
-            [response.status === 200, performance.now() - before]
-          )
-          .catch(() => [false, Infinity]);
-      };
-
-      return this.promiseReady.then(() => Promise.all([
-          request(),
-          request({mode: 'cors', credentials: 'same-origin'})
-      ]).then(result => ({
-          normal:     result[0][0],
-          normalTime: result[0][1],
-          cors:       result[1][0],
-          corsTime:   result[1][1]
-      })));
+          return this.promiseReady.then(() => Promise.all([
+              request(),
+              request({mode: 'cors', credentials: 'same-origin'})
+          ]).then(result => {
+            const resultObj = {
+              normal:     result[0][0],
+              normalTime: result[0][1],
+              cors:       result[1][0],
+              corsTime:   result[1][1]
+            };
+            this.canaryCache.set(result[2], resultObj);
+            return resultObj;
+          }));
+        });
     }
 
     /**

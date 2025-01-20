@@ -403,13 +403,17 @@
    * @param  {number} width  Width of the view in pixels.
    * @param  {number} height Height of the view in pixels.
    */
-  TileLayer.prototype.resize = function (width, height, completionCallback, blocking) {
+  TileLayer.prototype.resize = function (width, height, completionCallback, blocking, redraw = true) {
     this._anisotropy = this.stack.anisotropy(Math.ceil(this.stackViewer.s));
     var cols = Math.ceil(width / this.tileWidth / this._anisotropy.x) + 1;
     var rows = Math.ceil(height / this.tileHeight / this._anisotropy.y) + 1;
     if (this._tiles.length === 0 || this._tiles.length !== rows || this._tiles[0].length !== cols)
       this._initTiles(rows, cols);
-    this.redraw(completionCallback, blocking);
+    if (redraw) {
+      this.redraw(completionCallback, blocking);
+    } else {
+      CATMAID.tools.callIfFn(completionCallback);
+    }
   };
 
   /**

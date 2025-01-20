@@ -33,12 +33,34 @@
       readState,
       changeMirrorIfNoData) {
 
+    // A hidden layer is not rendered, regardless of the opacity. A layer can be
+    // visible according to opacity, but still be hidden. Hiding a layer is
+    // useful to speed up initial loading.
+    this._hidden = !visibility;
+    Object.defineProperty(this, "hidden", {
+        get: function hidden() {
+          return this._hidden;
+        },
+        set: function hidden(isHidden) {
+          this._hidden = isHidden;
+        },
+    });
+    this._visible = visibility;
+    Object.defineProperty(this, "visible", {
+        get: function visible() {
+          return this._visible && !this._hidden;
+        },
+        set: function visible(isVisible) {
+          this._visible = isVisible;
+        },
+    });
+
+
     this.stackViewer = stackViewer;
     this.displayName = displayName;
     this.stack = stack;
     this.opacity = opacity; // in the range [0,1]
     this.showOverview = showOverview;
-    this.visible = visibility;
     this.isOrderable = true;
     this.isHideable = false;
     this.lastMirrorStorageName = 'catmaid-last-mirror-' +
@@ -549,7 +571,7 @@
       displayName: this.displayName,
       stack: this.stack,
       mirrorId: this.mirrorId,
-      visibility: this.visibility,
+      visible: this.visible,
       opacity: this.opacity,
       showOverview: !!this.overviewLayer,
       interpolationMode: this._interpolationMode,
@@ -562,7 +584,7 @@
         args.displayName,
         args.stack,
         args.mirrorId,
-        args.visibility,
+        args.visible,
         args.opacity,
         args.showOverview,
         args.interpolationMode,

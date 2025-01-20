@@ -698,8 +698,9 @@ var project;
         };
 
         var load = null;
+        const hideLayersInitially = true;
         if (sg) {
-          load = CATMAID.openStackGroup(pid, sg)
+          load = CATMAID.openStackGroup(pid, sg, undefined, hideLayers)
             .then(function() {
               if (typeof zp == "number" && typeof yp == "number" &&
                   typeof xp == "number") {
@@ -717,14 +718,14 @@ var project;
               stacks.sort((a,b) => a.id - b.id);
               sids.push(stacks[0].id);
               ss.push(0);
-              return loadStacksFromURL(singleStackViewer);
+              return loadStacksFromURL(singleStackViewer, undefined, undefined, hideLayersInitially);
             });
         } else {
-          load = loadStacksFromURL(singleStackViewer, 0, !!initialLayout);
+          load = loadStacksFromURL(singleStackViewer, 0, !!initialLayout, hideLayersInitially);
         }
 
         // After stacks or stack groups have been loaded, init selected tool.
-        return load.then(function() {
+        return load.then(stackViewer => {
           var tool = tools[inittool];
           if (tool) {
             project.setTool(new tool());
@@ -778,7 +779,7 @@ var project;
 
         // Open stacks one after another and move to the requested location. Load
         // the requested tool after everything has been loaded.
-        function loadStacksFromURL(composite, loaded, noLayout) {
+        function loadStacksFromURL(composite, loaded, noLayout, hideLayers) {
           loaded = loaded || 0;
           var useExistingStackViewer = composite && (loaded > 0);
           if (pid) {
@@ -787,8 +788,9 @@ var project;
               // Open stack and queue test/loading for next one
               var sid = sids.shift();
               var s = ss.shift();
-              return CATMAID.openProjectStack(pid, sid, useExistingStackViewer, undefined, noLayout, false)
-                .then(function() {
+              return CATMAID.openProjectStack(pid, sid, useExistingStackViewer,
+                  undefined, noLayout, false, hideLayers)
+                .then(stackViewer => {
                   // Moving every stack is not really necessary, but for now a
                   // convenient way to apply the requested scale to each stack.
                   if (typeof zp == "number" && typeof yp == "number" &&
@@ -796,9 +798,10 @@ var project;
                     return project.moveTo(zp, yp, xp, s)
                       .then(function() {
                         // Queue loading of next stack
-                        return loadStacksFromURL(composite, loaded + 1, noLayout);
+                        return loadStacksFromURL(composite, loaded + 1, noLayout, hideLayers);
                       });
                   }
+                  return stackViewer;
                 });
             }
           }
@@ -819,6 +822,13 @@ var project;
         if (message) {
           CATMAID.msg('Message', message);
         }
+      })
+      .finally(() => {
+        // Finally, make stack layers visible and issue a redraw
+        project.getStackViewers().forEach(sv => {
+          sv.getLayers().forEach(l => l.hidden = false);
+          sv.redraw();
+        });
       });
     }
 
@@ -2461,7 +2471,7 @@ var project;
    *                               resolved promise is returned
    * @returns promise that will be resolved on success
    */
-  CATMAID.openStackGroup = function(pid, sgid, handleErrors) {
+  CATMAID.openStackGroup = function(pid, sgid, handleErrors, hideLayers) {
     var request = CATMAID.fetch(pid + "/stackgroup/" + sgid + "/info", "GET")
       .then(function(json) {
         if (!json.stacks || 0 === json.stacks.length) {
@@ -2498,7 +2508,7 @@ var project;
               // one. Load stacks invisible (opacity of 0) to avoid a Pixi.js
               // initialization problem with multiple renderers at the same
               // time.
-              return handle_openProjectStack(json, stackViewer, undefined, true)
+              return handle_openProjectStack(json, stackViewer, hideLayers, true)
                 .catch(CATMAID.handleError)
                 .then(function(newStackViewer) {
                   loadedStackViewers.push(newStackViewer);
@@ -2573,10 +2583,12 @@ var project;
    * @param  {boolean} handleErrors      (optional) If true, errors are handled
    *                                     internally and even in the case of
    *                                     errors a resolved promise is returned
+   * @param {boolean} hideLayers         (optional) If true, all added layers
+   *                                     will be hidden initially.
    * @return {Promise}                   A promise yielding the stack viewer.
    */
   CATMAID.openProjectStack = function(projectID, reorientedStackID, useExistingViewer,
-      mirrorId, noLayout, handleErrors) {
+      mirrorId, noLayout, handleErrors, hideLayers) {
     if (project && project.id != projectID) {
       project.destroy();
     }
@@ -2589,7 +2601,7 @@ var project;
         return handle_openProjectStack(json,
             useExistingViewer ? project.focusedStackViewer : undefined,
             mirrorId,
-            undefined,
+            hideLayers,
             reorient)
           .then(function(stackViewer) {
             if (noLayout) {

@@ -228,23 +228,23 @@
         return this.resize(this.stackViewer.viewWidth, this.stackViewer.viewHeight, completionCallback, blocking);
       }
 
-      // By default all needed tiles are shown. This can be changed so that all
-      // tiles are hidden, e.g. if the current location is on a broken slice and
-      // CATMAID is configured to hide these sections.
-      var showTiles = true;
-
-      if (this.hideIfNearestSliceBroken) {
+      // By default all needed tiles are shown (if the layer is visible). This
+      // can be changed so that all tiles are hidden, e.g. if the current
+      // location is on a broken slice and CATMAID is configured to hide these
+      // sections.
+      var showTiles = this.visible;
+      if (showTiles && this.hideIfNearestSliceBroken) {
         // Re-project the stack z without avoiding broken sections to determine
         // if the nearest section is broken.
         var linearStackZ = this.stack.projectToLinearStackZ(
             this.stackViewer.projectCoordinates().z);
         if (this.stack.isSliceBroken(linearStackZ)) {
-          this.batchContainer.visible = false;
           showTiles = false;
         } else {
           this.setOpacity(this.opacity);
         }
       }
+      this.batchContainer.visible = showTiles;
 
       var rows = this._tiles.length, cols = this._tiles[0].length;
 

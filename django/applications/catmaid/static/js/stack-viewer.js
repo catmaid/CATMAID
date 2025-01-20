@@ -838,12 +838,12 @@
     }
   };
 
-  StackViewer.prototype.resize = function () {
+  StackViewer.prototype.resize = function (redraw = true) {
     var width = this.viewWidth = this._view.offsetWidth;
     var height = this.viewHeight = this._view.offsetHeight;
 
     this._layers.forEach(function (layer) {
-      layer.resize(width, height);
+      layer.resize(width, height, undefined, undefined, redraw);
     });
 
     this.updateScaleBar();
@@ -866,7 +866,7 @@
         break;
 
       case CMWWindow.RESIZE:
-        this.resize();
+        this.resize(false);
         this.redraw();
         break;
 

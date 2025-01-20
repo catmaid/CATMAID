@@ -80,6 +80,9 @@ Stack viewer:
   section for which a blending operation can be selected. This makes it possible
   to have e.g. minimum intensity projection of the next 10 layers.
 
+- Initial loading should now be faster, because repeated redraws are now
+  prevented. This is especially noticable with block data.
+
 3D viewer:
 
 - Spatial select now visualizes the currently set selection radius by placing a

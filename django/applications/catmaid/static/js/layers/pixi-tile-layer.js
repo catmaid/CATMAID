@@ -309,9 +309,9 @@
   };
 
   /** @inheritdoc */
-  PixiTileLayer.prototype.resize = function (width, height, completionCallback, blocking) {
-    CATMAID.PixiLayer.prototype.resize.call(this, width, height);
-    CATMAID.TileLayer.prototype.resize.call(this, width, height, completionCallback, blocking);
+  PixiTileLayer.prototype.resize = function (width, height, completionCallback, blocking, redraw = true) {
+    CATMAID.PixiLayer.prototype.resize.call(this, width, height, undefined, undefined, redraw);
+    CATMAID.TileLayer.prototype.resize.call(this, width, height, completionCallback, blocking, redraw);
   };
 
   /** @inheritdoc */

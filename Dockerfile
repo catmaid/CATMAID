@@ -25,6 +25,7 @@ RUN apt-get update -y \
     && echo "deb [signed-by=/usr/share/keyrings/cran.gpg] https://cloud.r-project.org/bin/linux/ubuntu jammy-cran40/" >> /etc/apt/sources.list.d/cran.list \
     && apt-get update -y \
     && apt-get install -y python3.10 python3.10-venv python3.10-dev git python3-pip \
+    && apt-get install -y postgresql-13 postgresql-13-postgis-3 \
     && apt-get install -y nginx supervisor \
     && apt-get install -y rabbitmq-server \
     && apt-get install -y r-base r-base-dev mesa-common-dev libglu1-mesa-dev \

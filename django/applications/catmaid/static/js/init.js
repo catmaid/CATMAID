@@ -824,11 +824,13 @@ var project;
         }
       })
       .finally(() => {
-        // Finally, make stack layers visible and issue a redraw
-        project.getStackViewers().forEach(sv => {
-          sv.getLayers().forEach(l => l.hidden = false);
-          sv.redraw();
-        });
+        if (project) {
+          // Finally, make stack layers visible and issue a redraw
+          project.getStackViewers().forEach(sv => {
+            sv.getLayers().forEach(l => l.hidden = false);
+            sv.redraw();
+          });
+        }
       });
     }
 

@@ -482,7 +482,7 @@ password should be changed to something more secure (``CM_INITIAL_ADMIN_PASS``).
 .. glossary::
   ``CM_CSRF_TRUSTED_ORIGINS``
     Which servers to trust to bypass CSRF checks. None by default (""). The format
-    is expected to be a Python like list, e.g. '["example.com"].
+    is expected to be a Python like list, e.g. ["htps://example.com"].
 
 .. glossary::
   ``CM_CLIENT_SETTINGS``

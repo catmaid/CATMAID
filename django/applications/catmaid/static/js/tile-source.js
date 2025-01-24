@@ -1001,8 +1001,7 @@
           'Your browser does not support features required for NeuroglancerPrecomputed mirrors');
       }
 
-      this.datasetURL = this.baseURL.substring(0, this.baseURL.lastIndexOf('/'))
-          .replace(/^gs:\/\//, 'https://storage.googleapis.com/');
+      this.datasetURL = this.baseURL.substring(0, this.baseURL.lastIndexOf('/'));
 
       let sliceDims = this.baseURL.substring(this.baseURL.lastIndexOf('/') + 1);
       this.sliceDims = sliceDims.split('_').map(d => parseInt(d, 10));
@@ -1065,8 +1064,27 @@
         });
     }
 
+    normalizeUrl(path) {
+      // If this path points to Google Cloud storage, rebuild the path so that it uses the object
+      // get method (see https://cloud.google.com/storage/docs/json_api/v1/objects/get).
+      // Turn gs://h01-release/data/20210601/4nm_raw/
+      // into https://www.googleapis.com/storage/v1/b/h01-release/o/data%2F20210601%2F4nm_raw%2F
+      // Note that the new URL will also get a ?alt=media appended.
+      if (path.startsWith("gs://")) {
+          let components = path.split("/");
+          if (components.length < 4) {
+            throw new CATMAID.ValueError(`Unsupported Google Cloud URL: ${path}`);
+          }
+          let bucketName = components[2];
+          let subPath = components.slice(3).join("%2F");
+          return `https://www.googleapis.com/storage/v1/b/${bucketName}/o/${subPath}?alt=media`;
+      }
+
+      return path;
+    }
+
     getCanaryUrl(project, stack) {
-      return `${this.rootURL}/info`;
+      return this.normalizeUrl(`${this.rootURL}/info`);
     }
 
     populateDatasetAttributes(zoomLevel = 0) {
@@ -1212,7 +1230,11 @@
         () => {
           let request = (options) => {
             if (noCache) {
-              url += "?nocache=" + Date.now();
+              if (url.indexOf('?') >= 0) {
+                url += "&nocache=" + Date.now();
+              } else {
+                url += "?nocache=" + Date.now();
+              }
             } else {
               if (this.canaryCache.has(url)) {
                 return this.canaryCache.get(url);

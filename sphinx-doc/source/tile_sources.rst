@@ -397,7 +397,8 @@ Tile source types are listed by the enumeration integer ID referenced by
    components. It should end in a path component specifying the ordered
    dimensions from which image data should be sliced, separated by underscores.
    For example, ``2_1_0`` will slices chunk dimensions 2, 1, and 0 as the x, y,
-   and z stack dimensions, respectively.
+   and z stack dimensions, respectively. Make sure, the path has no trailing
+   slash.
 
    This tile source will also look for a path component ending in ``/info`` to
    use as the dataset root directory. If it does not find such a component, it will
@@ -416,6 +417,14 @@ Tile source types are listed by the enumeration integer ID referenced by
    Settings Widget (default). For instance, if the zero-zoom level voxel offset
    is ``(-3072, -3072, 0)``, then the metadata of the CATMAID stack should look
    like this: ``{"voxelOffset": [-3072, -3072, 0]}``.
+
+   If the ``gs://`` protocol is used like in the example above, each final
+   request path is rewritten in order to use the `get method
+   <https://cloud.google.com/storage/docs/json_api/v1/objects/get>`_  for their
+   Cloud objects. Otherwise, no data can be loaded due to CORS restrictions. A
+   rewritten URL looks like this (requesting the ``/info`` file)::
+
+     https://www.googleapis.com/storage/v1/b/neuroglancer/o/pinky100_v0%2Fson_of_alignment_v15_rechunked%2Finfo?alt=media
 
 Backend Representation
 ----------------------

@@ -227,28 +227,6 @@ let wasm_bindgen;
         return className;
     }
 
-    function _assertClass(instance, klass) {
-        if (!(instance instanceof klass)) {
-            throw new Error(`expected instance of ${klass.name}`);
-        }
-    }
-
-    let cachedBigUint64ArrayMemory0 = null;
-
-    function getBigUint64ArrayMemory0() {
-        if (cachedBigUint64ArrayMemory0 === null || cachedBigUint64ArrayMemory0.byteLength === 0) {
-            cachedBigUint64ArrayMemory0 = new BigUint64Array(wasm.memory.buffer);
-        }
-        return cachedBigUint64ArrayMemory0;
-    }
-
-    function passArray64ToWasm0(arg, malloc) {
-        const ptr = malloc(arg.length * 8, 8) >>> 0;
-        getBigUint64ArrayMemory0().set(arg, ptr / 8);
-        WASM_VECTOR_LEN = arg.length;
-        return ptr;
-    }
-
     let cachedUint32ArrayMemory0 = null;
 
     function getUint32ArrayMemory0() {
@@ -261,6 +239,15 @@ let wasm_bindgen;
     function getArrayU32FromWasm0(ptr, len) {
         ptr = ptr >>> 0;
         return getUint32ArrayMemory0().subarray(ptr / 4, ptr / 4 + len);
+    }
+
+    let cachedBigUint64ArrayMemory0 = null;
+
+    function getBigUint64ArrayMemory0() {
+        if (cachedBigUint64ArrayMemory0 === null || cachedBigUint64ArrayMemory0.byteLength === 0) {
+            cachedBigUint64ArrayMemory0 = new BigUint64Array(wasm.memory.buffer);
+        }
+        return cachedBigUint64ArrayMemory0;
     }
 
     function getArrayU64FromWasm0(ptr, len) {
@@ -371,6 +358,19 @@ let wasm_bindgen;
         return getFloat64ArrayMemory0().subarray(ptr / 8, ptr / 8 + len);
     }
 
+    function _assertClass(instance, klass) {
+        if (!(instance instanceof klass)) {
+            throw new Error(`expected instance of ${klass.name}`);
+        }
+    }
+
+    function passArray64ToWasm0(arg, malloc) {
+        const ptr = malloc(arg.length * 8, 8) >>> 0;
+        getBigUint64ArrayMemory0().set(arg, ptr / 8);
+        WASM_VECTOR_LEN = arg.length;
+        return ptr;
+    }
+
     let stack_pointer = 128;
 
     function addBorrowedObject(obj) {
@@ -382,11 +382,9 @@ let wasm_bindgen;
         wasm._dyn_core__ops__function__FnMut__A____Output___R_as_wasm_bindgen__closure__WasmClosure___describe__invoke__hba9c4d05d94bb2f6(arg0, arg1, addHeapObject(arg2));
     }
 
-    function __wbg_adapter_255(arg0, arg1, arg2, arg3) {
+    function __wbg_adapter_253(arg0, arg1, arg2, arg3) {
         wasm.wasm_bindgen__convert__closures__invoke2_mut__ha4add01b7784d4e4(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
     }
-
-    const __wbindgen_enum_ReferrerPolicy = ["", "no-referrer", "no-referrer-when-downgrade", "origin", "origin-when-cross-origin", "unsafe-url", "same-origin", "strict-origin", "strict-origin-when-cross-origin"];
 
     const __wbindgen_enum_RequestMode = ["same-origin", "no-cors", "cors", "navigate"];
 
@@ -2140,7 +2138,7 @@ let wasm_bindgen;
                     const a = state0.a;
                     state0.a = 0;
                     try {
-                        return __wbg_adapter_255(a, state0.b, arg0, arg1);
+                        return __wbg_adapter_253(a, state0.b, arg0, arg1);
                     } finally {
                         state0.a = a;
                     }
@@ -2231,9 +2229,6 @@ let wasm_bindgen;
         };
         imports.wbg.__wbg_setmode_cd03637eb7da01e0 = function(arg0, arg1) {
             getObject(arg0).mode = __wbindgen_enum_RequestMode[arg1];
-        };
-        imports.wbg.__wbg_setreferrerpolicy_aac7a6a625ee4900 = function(arg0, arg1) {
-            getObject(arg0).referrerPolicy = __wbindgen_enum_ReferrerPolicy[arg1];
         };
         imports.wbg.__wbg_static_accessor_GLOBAL_0be7472e492ad3e3 = function() {
             const ret = typeof global === 'undefined' ? null : global;
@@ -2353,8 +2348,8 @@ let wasm_bindgen;
             const ret = false;
             return ret;
         };
-        imports.wbg.__wbindgen_closure_wrapper1323 = function(arg0, arg1, arg2) {
-            const ret = makeMutClosure(arg0, arg1, 264, __wbg_adapter_54);
+        imports.wbg.__wbindgen_closure_wrapper1326 = function(arg0, arg1, arg2) {
+            const ret = makeMutClosure(arg0, arg1, 266, __wbg_adapter_54);
             return addHeapObject(ret);
         };
         imports.wbg.__wbindgen_debug_string = function(arg0, arg1) {

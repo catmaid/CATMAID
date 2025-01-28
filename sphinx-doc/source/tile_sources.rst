@@ -169,6 +169,13 @@ Tile source types are listed by the enumeration integer ID referenced by
 
     <sourceBaseUrl><zoomLevel>/<pixelPosition.z>/<row>/<col>.<fileExtension>
 
+   .. note::
+
+      If you have a dataset in N5, Zarr, or Precomputed format, you can 
+      configure a `TileServer with Tensorstore <https://github.com/catmaid/tileserver>`_ 
+      to expose this tile source interface.
+      
+
 6. DVID ``imageblk`` voxels
 ***************************
 

@@ -21,8 +21,6 @@ django/applications/catmaid/static/js/tests/test_overlay.js: line 7, col 7, 'san
 
 django/applications/catmaid/static/js/tests/test_tilesources.js: line 4, col 9, 'bn' is defined but never used.
 
-django/applications/catmaid/static/js/tools/box-selection-tool.js: line 151, col 11, 'view' is defined but never used.
-
 django/applications/catmaid/static/js/tools/ontology-tool.js: line 17, col 11, 'workspace_mode' is defined but never used.
 
 django/applications/catmaid/static/js/tools/roi-tool.js: line 253, col 11, 'xp' is defined but never used.
@@ -180,4 +178,4 @@ django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm_worker.js: line 28
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm_worker.js: line 57, col 43, 'use_cache' is defined but never used.
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm_worker.js: line 57, col 54, '_' is defined but never used.
 
-140 errors
+139 errors

@@ -67,8 +67,11 @@
 
       var left_px = Math.floor( ( l - screen_left ) / rx );
       var top_px = Math.floor( ( t - screen_top ) / ry );
-      var width_px = Math.floor( ( r - l ) / rx );
-      var height_px = Math.floor( ( b - t ) / ry );
+      // Be consistent with the back-end: 0.5 is added to both width and height
+      // to effectively round width and height to the pixel value closest to the
+      // converted physical value.
+      var width_px = Math.floor( ( r - l ) / rx  + 0.5);
+      var height_px = Math.floor( ( b - t ) / ry + 0.5);
       var right_px = left_px + width_px;
       var bottom_px = top_px + height_px;
 
@@ -148,7 +151,6 @@
   BoxSelectionTool.prototype.createCropBoxByWorld = function( worldX,
       worldY, worldWidth, worldHeight, rotation_cw, z1, z2)
   {
-      var view = this.stackViewer.getView();
       if ( this.cropBox )
       {
           delete this.cropBox;

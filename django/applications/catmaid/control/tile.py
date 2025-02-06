@@ -214,7 +214,9 @@ def put_tile(request:HttpRequest, project_id=None, stack_id=None) -> HttpRespons
     return HttpResponse("Image pushed to HDF5.", content_type="plain/text")
 
 
-class TileSource(object):
+class TileSource():
+
+    is_block_source = False
 
     def get_canary_url(self, mirror) -> str:
         """Get the canary URL for this mirror.
@@ -287,10 +289,63 @@ class LargeDataTileSource(TileSource):
         return path
 
 
+class NeuroglancerTileSource(TileSource):
+    """ Uses cloud-volume to access neuroglancer data.
+    """
+
+    is_block_source = True
+    description = "Neuroglancer Precomputed image stack"
+    param_token = '%SCALE_DATASET%'
+
+    def __init__(self):
+        # Init cloud volume
+        self.dataset = None
+
+        super().__init__()
+
+    def normalize_url_path(self, url, path):
+        if not url[-1] == '/':
+            url = url + '/'
+
+        url = url + path
+
+        if url.startswith("gs://"):
+            components = url.split("/");
+            if len(components) < 4:
+                raise ValueError(f'Unsupported Google Cloud URL: {path}');
+            bucketName = components[2];
+            subPath = "%2F".join(components[3:])
+            return f'https://www.googleapis.com/storage/v1/b/{bucketName}/o/{subPath}?alt=media'
+
+        return url
+
+    def get_canary_url(self, mirror) -> str:
+        # Basic info URL
+        url = mirror.image_base[:mirror.image_base.index(self.param_token)]
+        return self.normalize_url_path(url, 'info')
+
+    def get_block_details(self, mirror, tile_coords, zoom_level=0) -> dict:
+        if not cloudvolume_available:
+            raise ValueError('Cloudvolume not available')
+        if not self.dataset:
+            url = mirror.image_base[:mirror.image_base.index(self.param_token)]
+            self.dataset = cloudvolume.CloudVolume(f"precomputed://{url}",
+                                                   mip=zoom_level,
+                                                   use_https=True,
+                                                   bounded=False)
+        return {
+            'dataset': self.dataset,
+            'tile_coord': tile_coords,
+            'zoom_level': zoom_level,
+            'mirror': mirror,
+        }
+
+
 tile_source_map = {
     TileSourceTypes.FILE_BASED_STACK: DefaultTileSource,
     TileSourceTypes.FILE_BASED_ZOOM_STACK: BackslashTileSource,
-    TileSourceTypes.DIRECTORY_BASED_STACK: LargeDataTileSource
+    TileSourceTypes.DIRECTORY_BASED_STACK: LargeDataTileSource,
+    TileSourceTypes.NEUROGLANCER_PRECOMPUTED: NeuroglancerTileSource,
 }
 
 def get_tile_source(type_id):

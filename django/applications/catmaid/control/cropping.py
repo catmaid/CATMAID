@@ -7,6 +7,7 @@ from math import cos, sin, radians
 import os
 import os.path
 import math
+import numpy as np
 from PIL import Image as PILImage, TiffImagePlugin
 import requests
 from time import time
@@ -84,11 +85,10 @@ class CropJob(object):
         self.single_channel = single_channel
         self.output_path = output_path
 
-    def get_tile_path(self, stack, mirror, tile_coords) -> str:
-        """ This method will be used when get_tile_path is called after the
-        job has been initialized.
-        """
+    def get_source_metadata(self, stack, mirror, tile_coords):
         tile_source = self.stack_tile_sources[stack.id]
+        if tile_source.is_block_source:
+            return tile_source.get_block_details(mirror, tile_coords, self.zoom_level)
         return tile_source.get_tile_url(mirror, tile_coords, self.zoom_level)
 
     def create_tiff_metadata(self, n_images):
@@ -181,8 +181,8 @@ class ImagePart:
     """ A part of a 2D image where height and width are not necessarily
     of the same size. Provides readout of the defined sub-area of the image.
     """
-    def __init__( self, path, x_min_src, x_max_src, y_min_src, y_max_src, x_dst, y_dst ):
-        self.path = path
+    def __init__( self, meta, x_min_src, x_max_src, y_min_src, y_max_src, x_dst, y_dst ):
+        self.meta = meta
         self.x_min_src = x_min_src
         self.x_max_src = x_max_src
         self.y_min_src = y_min_src
@@ -208,19 +208,39 @@ class ImagePart:
             f'({self.x_max_src}, {self.y_min_src})')
 
     def get_image(self):
-        # Open the image
-        try:
-            r = requests.get(self.path, allow_redirects=True, verify=verify_ssl, timeout=1)
-            if not r:
-                raise ValueError(f"Could not get {self.path}")
-            if r.status_code != 200:
-                raise ValueError(f"Unexpected status code ({r.status_code}) for {self.path}")
-            img_data = r.content
-            bytes_read = len(img_data)
-        except requests.exceptions.RequestException as e:
-            raise ImageRetrievalError(self.path, str(e))
+        if type(self.meta) == str:
+            # Open the image
+            try:
+                r = requests.get(self.meta, allow_redirects=True, verify=verify_ssl, timeout=1)
+                if not r:
+                    raise ValueError(f"Could not get {self.meta}")
+                if r.status_code != 200:
+                    raise ValueError(f"Unexpected status code ({r.status_code}) for {self.meta}")
+                img_data = r.content
+                bytes_read = len(img_data)
+            except requests.exceptions.RequestException as e:
+                raise ImageRetrievalError(self.meta, str(e))
 
-        image = PILImage.open(BytesIO(img_data))
+            image = PILImage.open(BytesIO(img_data))
+        elif type(self.meta) == dict:
+            mirror = self.meta['mirror']
+            tile_coord = self.meta['tile_coord']
+            x = tile_coord[0] * mirror.tile_width
+            y = tile_coord[1] * mirror.tile_height
+            z = self.meta['tile_coord'][2]
+
+            cutout = self.meta['dataset'][
+                x:(x + mirror.tile_width),
+                y:(y + mirror.tile_height),
+                z]
+
+            # FIXME: Don't just assume first channel (last dimension below)
+            image_data = np.transpose(cutout[:,:,0,0])
+            bytes_read = len(image_data)
+            image = PILImage.frombuffer('RGBA',
+                    (mirror.tile_width, mirror.tile_height), image_data, 'raw', 'L', 0, 1)
+        else:
+            raise ValueError(f'Unknown image meta data type: {self.meta}')
 
         src_width, src_height = image.size
 
@@ -374,6 +394,11 @@ class BB:
     width = 0
     height = 0
 
+    def __str__(self):
+        return f'Bounding Box: ({self.px_x_min}, {self.px_y_min}, {self.px_z_min}) - ' + \
+                f'({self.px_x_max}, {self.px_y_max}, {self.px_z_max}) ' + \
+                f'[width: {self.width}, height: {self.height}]'
+
 
 def extract_substack_no_rotation(job) -> List:
     """ Extracts a sub-stack as specified in the passed job without respecting
@@ -484,9 +509,9 @@ def extract_substack_no_rotation(job) -> List:
                         cur_px_y_max = bb.px_y_max - y * tile_height
                     # Create an image part definition
                     z = bb.px_z_min + nz
-                    path = job.get_tile_path(stack, mirror, (x, y, z))
+                    source_meta = job.get_source_metadata(stack, mirror, (x, y, z))
                     try:
-                        part = ImagePart(path, cur_px_x_min, cur_px_x_max,
+                        part = ImagePart(source_meta, cur_px_x_min, cur_px_x_max,
                                 cur_px_y_min, cur_px_y_max, x_dst, y_dst)
                         image_parts.append( part )
                     except Exception as e:

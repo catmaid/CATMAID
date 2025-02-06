@@ -19,7 +19,7 @@ echo "SERVE_STATIC = True" >> projects/mysite/settings.py
 # TODO: Enable pipeline. Right now it doesn't seem to play well with Sauce Labs.
 echo "PIPELINE['PIPELINE_ENABLED'] = False" >> projects/mysite/settings.py
 # Disable cache-busting for front-end tests
-echo "STORAGES = { 'default': 'pipeline.storage.PipelineStorage' }" >> projects/mysite/settings.py
+echo "STORAGES = { 'default': { 'BACKEND': 'pipeline.storage.PipelineStorage' } }" >> projects/mysite/settings.py
 # Enable front-end tess
 echo "FRONT_END_TESTS_ENABLED = True" >> projects/mysite/settings.py
 # Enable Selenium GUI tests, this currently works only with non-hash file names.

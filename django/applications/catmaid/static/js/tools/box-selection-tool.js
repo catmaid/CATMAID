@@ -65,25 +65,33 @@
       var rx = stackViewer.primaryStack.resolution.x / stackViewer.scale;
       var ry = stackViewer.primaryStack.resolution.y / stackViewer.scale;
 
-      var left_px = Math.floor( ( l - screen_left ) / rx );
-      var top_px = Math.floor( ( t - screen_top ) / ry );
-      // Be consistent with the back-end: 0.5 is added to both width and height
-      // to effectively round width and height to the pixel value closest to the
-      // converted physical value.
-      var width_px = Math.floor( ( r - l ) / rx  + 0.5);
-      var height_px = Math.floor( ( b - t ) / ry + 0.5);
-      var right_px = left_px + width_px;
-      var bottom_px = top_px + height_px;
+      // Be consistent with the back-end: 0.5 is added to all coordinates to
+      // effectively snap them to the pixel value closest to the converted
+      // physical value.
+      const left_px = Math.floor( ( l - screen_left ) / rx + 0.5 );
+      const right_px = Math.floor( ( r - screen_left ) / rx + 0.5);
+      const top_px = Math.floor( ( t - screen_top ) / ry + 0.5 );
+      const bottom_px = Math.floor( ( b - screen_top ) / ry + 0.5);
+      const width_px = right_px - left_px;
+      const height_px = bottom_px - top_px;
 
-      return { left_world : l, top_world : t,
-               right_world : r, bottom_world : b,
-               width_world : width, height_world : height,
-               left_px : left_px, top_px : top_px,
-               right_px : right_px, bottom_px : bottom_px,
-               width_px : width_px, height_px : height_px,
-               rotation_cw: this.cropBox.rotation_cw,
-               z1: this.cropBox.z1,
-               z2: this.cropBox.z2 };
+      return {
+        left_world: l,
+        top_world: t,
+        right_world: r,
+        bottom_world: b,
+        width_world: width,
+        height_world: height,
+        left_px: left_px,
+        top_px: top_px,
+        right_px: right_px,
+        bottom_px: bottom_px,
+        width_px: width_px,
+        height_px: height_px,
+        rotation_cw: this.cropBox.rotation_cw,
+        z1: this.cropBox.z1,
+        z2: this.cropBox.z2
+      };
   };
 
   /**

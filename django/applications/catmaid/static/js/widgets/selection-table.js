@@ -1321,6 +1321,7 @@
       orderCellsTop: true,
       columns: [
         {
+          "name": "index",
           "type": "text",
           "visible": false,
           "render": function(data, type, row, meta) {
@@ -1328,6 +1329,7 @@
           }
         },
         {
+          "name": "remove",
           "orderable": false,
           "className": "dt-center cm-center",
           "render": function(data, type, row, meta) {
@@ -1335,6 +1337,7 @@
           }
         },
         {
+          "name": "name",
           "type": "text",
           "render": {
             "display": (data, type, row, meta) => {
@@ -1349,17 +1352,20 @@
           }
         },
         {
+          "name": "review",
           "type": "text",
           "render": function(data, type, row, meta) {
             return row.reviewPercentage + "%";
           }
         },
         {
+          "name": "selected",
           "render": function(data, type, row, meta) {
             return createCheckbox('selected', row.skeleton);
           }
         },
         {
+          "name": "pre_visible",
           "orderable": false,
           "visible": this.showVisibilityControls,
           "render": function(data, type, row, meta) {
@@ -1367,6 +1373,7 @@
           }
         },
         {
+          "name": "post_visible",
           "orderable": false,
           "visible": this.showVisibilityControls,
           "render": function(data, type, row, meta) {
@@ -1374,6 +1381,7 @@
           }
         },
         {
+          "name": "desmo_visible",
           "orderable": false,
           "visible": this.showVisibilityControls,
           "render": function(data, type, row, meta) {
@@ -1381,6 +1389,7 @@
           }
         },
         {
+          "name": "mito_visible",
           "orderable": false,
           "visible": this.showVisibilityControls,
           "render": function(data, type, row, meta) {
@@ -1388,6 +1397,7 @@
           }
         },
         {
+          "name": "text_visible",
           "orderable": false,
           "visible": this.showVisibilityControls,
           "render": function(data, type, row, meta) {
@@ -1395,6 +1405,7 @@
           }
         },
         {
+          "name": "meta_visible",
           "orderable": false,
           "visible": this.showVisibilityControls,
           "render": function(data, type, row, meta) {
@@ -1402,6 +1413,7 @@
           }
         },
         {
+          "name": "color",
           "type": "hslcolor",
           "className": "dt-center cm-center",
           "render": {
@@ -1418,6 +1430,7 @@
           }
         },
         {
+          "name": "actions",
           "orderable": false,
           "render": function(data, type, row, meta) {
             return '<i class="fa fa-tag fa-fw clickable action-annotate" ' +
@@ -1635,17 +1648,18 @@
    * Re-apply current order to skeleton list.
    */
   SelectionTable.prototype.reapplyOrder = function() {
-    var col = this.order[0][0];
+    const columnIndex = this.order[0][0];
+    const column = this.gui.datatable.settings().init().columns[columnIndex].name;
     var desc = 'desc' === this.order[0][1];
 
     // Use only first level sort
-    if (2 === col) { // Name
+    if ('name' === column) {
       this.sortByName(desc);
-    } else if (3 === col) { // Review
+    } else if ('review' === column) {
       this.sortByReview(desc);
-    } else if (4 === col) { // Selected
+    } else if ('selected' === column) {
       this.sortBySelected(desc);
-    } else if (10 === col) { // Color
+    } else if ('color' === column) {
       this.sortByColor(desc);
     }
   };

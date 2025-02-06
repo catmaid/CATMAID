@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 tile_loading_enabled = True
 # Whether or not cloudvolume tile loading is enabled
-cv_tile_loading_enabled = True
+cloudvolume_available = True
 
 try:
     import h5py
@@ -40,7 +40,7 @@ except ImportError:
 try:
     import cloudvolume
 except ImportError:
-    cv_tile_loading_enabled = False
+    cloudvolume_available = False
     logger.warning("CATMAID was unable to load the cloudvolume library. "
           "Neuroglancer precomputed tiles are therefore disabled.")
 
@@ -109,7 +109,7 @@ def get_hdf5_tile(project_id, stack_id, scale, height, width, x, y, z, col, row,
 def get_cloudvolume_tile(project_id, stack_id, scale, height, width, x, y, z,
         col, row, file_extension='png', basename=None, fill_missing=False,
         cache=True, upscale=False):
-    if not cv_tile_loading_enabled:
+    if not cloudvolume_available:
         raise ConfigurationError("CloudVolume tile loading is currently disabled")
 
     if upscale:

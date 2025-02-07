@@ -868,7 +868,12 @@
                   .then(resolve)
                   .catch(reject);
               }
-            }));
+            }))
+            .catch(error => {
+              // Reset queue
+              activeUpdate = Promise.resolve();
+              return Promise.reject(error);
+            });
           return activeUpdate;
         },
 

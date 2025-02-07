@@ -215,6 +215,10 @@ Miscellaneous:
 - Clicking the Home link in the upper left corner with a project open, will now
   also ask for confirmation (like clicking any data view entry in the menu).
 
+- Cropping tool: in some exported sub volumes a black border of one or two
+  pixels could appear on the right side and the bottom. This is fixed now and
+  the entire space of the exported image is used correctly.
+
 ## Maintenance updates
 
 - Node distance measurements: computation of straight line distance has been

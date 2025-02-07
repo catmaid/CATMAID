@@ -490,23 +490,27 @@ def extract_substack_no_rotation(job) -> List:
             image_parts = []
             x_dst = bb.px_x_offset
             for nx, x in enumerate( range(tile_x_min, tile_x_max + 1) ):
-                # The min x,y for the image part in the current tile are 0
-                # for all tiles except the first one.
-                cur_px_x_min = 0 if nx > 0 else bb.px_x_min - x * tile_width
-                # The max x,y for the image part of current tile are the tile
-                # size minus one except for the last one.
+                # The min x,y index for the image part in the current tile are 0
+                # for all tiles except the first one, where we can start within
+                # a tile. In that case we also have to subtract one to make it
+                # an index value (starting at 0).
+                cur_px_x_min = 0 if nx > 0 else bb.px_x_min - x * tile_width - 1
+                # The max x,y index for the image part of current tile are the
+                # tile size minus one except for the last one. For instance, a
+                # 64x63 tile will have a max x index of 63 (again, starting at 0).
                 if nx < (num_x_tiles - 1):
                     cur_px_x_max = tile_width - 1
                 else:
-                    cur_px_x_max = bb.px_x_max - x * tile_width
+                    cur_px_x_max = bb.px_x_max - x * tile_width - 1
                 # Reset y destination component
                 y_dst = bb.px_y_offset
                 for ny, y in enumerate( range(tile_y_min, tile_y_max + 1) ):
-                    cur_px_y_min = 0 if ny > 0 else bb.px_y_min - y * tile_height
+                    # Similar to cur_px_x_min above
+                    cur_px_y_min = 0 if ny > 0 else bb.px_y_min - y * tile_height - 1
                     if ny < (num_y_tiles - 1):
                         cur_px_y_max = tile_height - 1
                     else:
-                        cur_px_y_max = bb.px_y_max - y * tile_height
+                        cur_px_y_max = bb.px_y_max - y * tile_height - 1
                     # Create an image part definition
                     z = bb.px_z_min + nz
                     source_meta = job.get_source_metadata(stack, mirror, (x, y, z))
@@ -517,10 +521,14 @@ def extract_substack_no_rotation(job) -> List:
                     except Exception as e:
                         # ignore failed slices
                         logger.error(f'An error happend while creating an impagepart: {e}')
-                    # Update y component of destination position
-                    y_dst += cur_px_y_max - cur_px_y_min
-                # Update x component of destination position
-                x_dst += cur_px_x_max - cur_px_x_min
+                    # Update y component of destination position. The next image
+                    # part should not begin with the max location of the current
+                    # part. Therefore, add one to the difference of min/max in
+                    # the current part.
+                    y_dst += cur_px_y_max - cur_px_y_min + 1
+                # Update x component of destination position. The same applies
+                # here as it does for y_dst above.
+                x_dst += cur_px_x_max - cur_px_x_min + 1
 
             # Write out the image parts and make sure the maximum allowed file
             # size isn't exceeded.

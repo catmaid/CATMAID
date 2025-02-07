@@ -208,7 +208,7 @@ class ImagePart:
             f'({self.x_max_src}, {self.y_min_src})')
 
     def get_image(self):
-        if type(self.meta) == str:
+        if isinstance(self.meta, str):
             # Open the image
             try:
                 r = requests.get(self.meta, allow_redirects=True, verify=verify_ssl, timeout=1)
@@ -222,7 +222,7 @@ class ImagePart:
                 raise ImageRetrievalError(self.meta, str(e))
 
             image = PILImage.open(BytesIO(img_data))
-        elif type(self.meta) == dict:
+        elif isinstance(self.meta, dict):
             mirror = self.meta['mirror']
             tile_coord = self.meta['tile_coord']
             x = tile_coord[0] * mirror.tile_width

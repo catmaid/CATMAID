@@ -310,10 +310,10 @@ class NeuroglancerTileSource(TileSource):
         url = url + path
 
         if url.startswith("gs://"):
-            components = url.split("/");
+            components = url.split("/")
             if len(components) < 4:
-                raise ValueError(f'Unsupported Google Cloud URL: {path}');
-            bucketName = components[2];
+                raise ValueError(f'Unsupported Google Cloud URL: {path}')
+            bucketName = components[2]
             subPath = "%2F".join(components[3:])
             return f'https://www.googleapis.com/storage/v1/b/{bucketName}/o/{subPath}?alt=media'
 

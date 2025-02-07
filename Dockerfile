@@ -43,7 +43,7 @@ ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
 
-COPY django/requirements.txt django/requirements-async.txt django/requirements-optional.txt django/requirements-production.txt /home/django/
+COPY django/requirements.txt django/requirements-async.txt django/requirements-doc.txt django/requirements-optional.txt django/requirements-production.txt /home/django/
 
 RUN /usr/bin/python3.10 -m venv --upgrade-deps --prompt catmaid /home/env \
     && /home/env/bin/pip install -U pip \

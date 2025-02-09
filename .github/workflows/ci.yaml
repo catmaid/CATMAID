@@ -52,7 +52,8 @@ jobs:
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-py_${{ matrix.python-version }}-${{ hashFiles('django/requirements*.txt') }}
-      - run: pip install ./django[test,async] coveralls
+      - run: pip install -U pip
+      - run: pip install ./django[test,async,doc] coveralls
       - run: bash scripts/travis/setup_database.sh
       - run: bash scripts/travis/configure_catmaid.sh
       - run: bash scripts/travis/configure_pypy_libs.sh

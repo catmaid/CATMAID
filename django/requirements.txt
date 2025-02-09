@@ -36,4 +36,5 @@ ujson==5.10.0; platform_python_implementation != 'PyPy'
 ujson==4.3.0; platform_python_implementation == 'PyPy'
 
 # Include documentation requirements as well to allow live API documentation
--r 'requirements-doc.txt'
+-r requirements-doc.txt
+

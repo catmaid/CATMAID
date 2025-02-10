@@ -34,6 +34,4 @@ scipy==1.5.4; platform_python_implementation == 'PyPy'
 trimesh==4.5.3
 ujson==5.10.0; platform_python_implementation != 'PyPy'
 ujson==4.3.0; platform_python_implementation == 'PyPy'
-
-# Include documentation requirements as well to allow live API documentation
--r 'requirements-doc.txt'
+Sphinx==7.3.7

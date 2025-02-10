@@ -2873,12 +2873,10 @@
         if (defaultData) {
           if (defaultData.fromApi) {
             sourceRemote = defaultData.fromApi.name;
-            sourceProject = null;
             // TODO: Remember source neuron annotation in transformation to reset
             // on re-use.
-          } else {
-            sourceProject = defaultData.projectId;
           }
+          sourceProject = defaultData.projectId;
         }
 
         if (widget.showOtherProjectOptions) {

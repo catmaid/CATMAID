@@ -273,7 +273,11 @@
      */
     addLandmarkLocationToGroup: function(projectId, groupId, locationId) {
       return CATMAID.fetch(projectId + '/landmarks/groups/' + groupId +
-          '/locations/' + locationId + '/', 'PUT');
+          '/locations/' + locationId + '/', 'PUT')
+        .then(response => {
+          CATMAID.Landmarks.trigger(CATMAID.Landmarks.EVENT_LANDMARKGROUP_UPDATED, [groupId]);
+          return response;
+        });
     },
 
     /**
@@ -282,7 +286,11 @@
      */
     removeLandmarkLocationFromGroup: function(projectId, groupId, locationId) {
       return CATMAID.fetch(projectId + '/landmarks/groups/' + groupId +
-          '/locations/' + locationId + '/', 'DELETE');
+          '/locations/' + locationId + '/', 'DELETE')
+        .then(response => {
+          CATMAID.Landmarks.trigger(CATMAID.Landmarks.EVENT_LANDMARKGROUP_UPDATED, [groupId]);
+          return response;
+        });
     },
 
     /**
@@ -755,6 +763,7 @@
   Landmarks.EVENT_DISPLAY_TRANSFORM_ADDED = "display_transform_added";
   Landmarks.EVENT_DISPLAY_TRANSFORM_REMOVED = "display_transform_removed";
   Landmarks.EVENT_LANDMARKGROUP_ADDED = "display_transform_added";
+  Landmarks.EVENT_LANDMARKGROUP_UPDATED = "display_transform_updated";
   Landmarks.EVENT_LANDMARKGROUP_DELETED = "display_transform_deleted";
   CATMAID.asEventSource(Landmarks);
 

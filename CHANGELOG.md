@@ -141,6 +141,11 @@ Review widget:
   will cause the Review Widget to refresh its segment representation and move to
   the next possible node.
 
+3D Viwer:
+
+- Displayed landmark groups are now reloaded if they change (e.g. in the
+  Landmark Widget).
+
 Miscellaneous:
 
 - The built-in API docs (/apis endpoint) now supports deep links, which allows

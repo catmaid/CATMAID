@@ -65,6 +65,8 @@
         this.handleRadiusChange, this);
     CATMAID.Skeletons.on(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
       this.handleSkeletonUpdate, this);
+    CATMAID.Landmarks.on(CATMAID.Landmarks.EVENT_LANDMARKGROUP_UPDATED,
+      this.handleLandmarkUpdate, this);
   };
 
   WebGLApplication.prototype = Object.create(CATMAID.SkeletonSource.prototype);
@@ -130,6 +132,8 @@
         this.handleRadiusChange, this);
     CATMAID.Skeletons.off(CATMAID.Skeletons.EVENT_SKELETON_CHANGED,
       this.handleSkeletonUpdate, this);
+    CATMAID.Landmarks.off(CATMAID.Landmarks.EVENT_LANDMARKGROUP_UPDATED,
+      this.handleLandmarkUpdate, this);
     project.off(CATMAID.Project.EVENT_STACKVIEW_FOCUS_CHANGED, this.adjustStaticContent, this);
     project.off(CATMAID.Project.EVENT_LOCATION_CHANGED, this.handlelLocationChange, this);
     this.stopAnimation();
@@ -2187,6 +2191,17 @@
       var activeSkeletonId = SkeletonAnnotations.getActiveSkeletonId();
       if (activeSkeletonId === skeletonId) {
         this.updateSkeleton(skeletonId, true);
+      }
+    }
+  };
+
+  WebGLApplication.prototype.handleLandmarkUpdate = function(landmarkGroupIds) {
+    for (let landmarkGroupId of landmarkGroupIds) {
+      var existingLandmarkGroup = this.loadedLandmarkGroups[landmarkGroupId];
+      if (existingLandmarkGroup) {
+        // Reload
+        this.showLandmarkGroup(landmarkGroupId, false);
+        this.showLandmarkGroup(landmarkGroupId, true);
       }
     }
   };

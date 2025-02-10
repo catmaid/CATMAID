@@ -1937,7 +1937,7 @@
   CATMAID.ReviewSystem.prototype.destroy = function() {
     SkeletonAnnotations.off(SkeletonAnnotations.EVENT_ACTIVE_NODE_CHANGED,
       this.handleActiveNodeChange, this);
-    CATMAID.Nodes.off(CATMAID.Nods.EVENT_NODE_DELETED,
+    CATMAID.Nodes.off(CATMAID.Nodes.EVENT_NODE_DELETED,
       this.handleDeletedSkeleton, this);
 
     if (lastFocused === this) {

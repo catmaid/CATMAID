@@ -107,9 +107,11 @@
     this.handleDeletedSkeleton = function(nodeId, parentId, skeletonId) {
       if (skeletonId == this.currentSkeletonId) {
         CATMAID.info('Review widget updated due to skeleton change');
-        this.startSkeletonToReview(skeletonId, undefined, true, () => {
-          this.current_segment = this.skeleton_segments[this.current_segment.id];
-          this.goToNodeIndexOfSegmentSequence(this.current_segment_index, true);
+        this.startSkeletonToReview(skeletonId, this.currentSubarborNodeId, true, () => {
+          if (this.current_segment) {
+            // Reload data, in case the deleted node was part of this segment
+            this.current_segment = this.skeleton_segments[this.current_segment.id];
+          }
         });
       }
     };

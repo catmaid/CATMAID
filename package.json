@@ -21,6 +21,10 @@
     "lint:js-bless": "npm run --silent lint:js > .travis.jshintexpected",
     "lint:css": "csslint --config=django/applications/catmaid/static/css/.csslintrc django/applications/catmaid/static/css",
     "lint": "npm run lint:js-diff && npm run lint:css",
+    "typecheck:mypy": "mypy django",
+    "typecheck:mypy-diff": "npm run --silent typecheck:mypy | diff - .ci.mypy.expected",
+    "typecheck:mypy-bless": "npm run --silent typecheck:mypy > .ci.mypy.expected",
+    "typecheck": "npm run typecheck:mypy-diff",
     "jsdoc": "jsdoc -r django/applications/catmaid/static/js",
     "karma": "karma start karma.conf.js"
   }

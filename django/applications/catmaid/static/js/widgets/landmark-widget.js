@@ -3693,7 +3693,7 @@
                     return sk.api ? n + 1 : n;
                   }, 0);
                   const apis = Array.from(data.reduce((o, sk) => {
-                    if (sk.api) o.add(sk.api);
+                    if (sk.api) o.add(sk.api.name);
                     return o;
                   }, new Set())).join(', ');
                   if (nRemoteSkeletons > 0) {

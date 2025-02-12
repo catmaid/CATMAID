@@ -98,6 +98,9 @@ Landmark widget:
 - The input field for remote neuron annotations now supports autocompletion with
   all available annotations from the remote project.
 
+- The new column "Matches" in the table of active display transformations shows
+  for each mapping the set of matching (by name) landmarks.
+
 Stack viewer:
 
 - WebGL layers can now define a so called blending window through the layer

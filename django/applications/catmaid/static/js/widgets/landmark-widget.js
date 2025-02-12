@@ -3738,6 +3738,33 @@
               }
             },
             {
+              data: 'mappings',
+              class: 'cm-center',
+              title: 'Matches',
+              orderable: false,
+              render: function(data, type, row, meta) {
+                // Find all name-matching landmarks
+                if (row.mappings.length === 0) {
+                  return '(none)';
+                }
+                let indexSet = widget.displayTransformationParameterSets[meta.row];
+                let sourceLandmarkGroupIndex = indexSet.sourceLandmarkGroupIndex || indexSet.landmarkGroupIndex;
+                let sourceLandmarkIndex = indexSet.sourceLandmarkIndex || indexSet.landmarkIndex;
+                let matches = [].concat(...row.mappings.map(
+                    m => {
+                      let fromGroup = sourceLandmarkGroupIndex.get(m[0].id);
+                      let toGroup = indexSet.landmarkGroupIndex.get(m[1].id);
+                      return CATMAID.Landmarks.getSharedLandmarksByName(fromGroup, toGroup,
+                        sourceLandmarkIndex, indexSet.landmarkIndex, true);
+                    }));
+                if (!matches || matches.length === 0) {
+                  return '(none)';
+                }
+
+                return matches.map(s => `(${Array.from(s).map(m => m[0]).join(', ')})`).join(', ');
+              }
+            },
+            {
               title: "Color",
               type: "hslcolor",
               class: "dt-center cm-center",

@@ -420,8 +420,27 @@
       };
     },
 
+    getSharedLandmarksByName: function(fromGroup, toGroup, sourceLandmarkIndex, landmarkIndex, asNames = false) {
+      let sharedLandmarks = new Set();
+      let fromLandmarkNames = new Map(fromGroup.members.map(
+          fromId => [sourceLandmarkIndex.get(fromId).name, fromId]));
+      let toLandmarkNames = new Map(toGroup.members.map(
+          toId => [landmarkIndex.get(toId).name, toId]));
+      for (let [toLandmarkName, toLandmarkId] of toLandmarkNames) {
+        if (fromLandmarkNames.has(toLandmarkName)) {
+          if (asNames) {
+            sharedLandmarks.add([toLandmarkName, toLandmarkId]);
+          } else {
+            sharedLandmarks.add([fromLandmarkNames.get(toLandmarkName), toLandmarkId]);
+          }
+        }
+      }
+
+      return sharedLandmarks;
+    },
+
     /**
-     * Get a list of two-element lists with each sub-list representingn a point
+     * Get a list of two-element lists with each sub-list representing a point
      * match, i.e. two locations annotated with the same landmark
      */
     getPointMatches: function(fromGroupId, toGroupId, landmarkGroupIndex,
@@ -442,23 +461,17 @@
         throw new CATMAID.ValueError('Could not find "to" group: ' + toGroupId);
       }
 
-      // Find landmark overlap between both groups. If the the source and target
-      // landmark index is the same, shared landmarks can be dound using IDs,
+      // Find landmark overlap between both groups. If the source and target
+      // landmark index is the same, shared landmarks can be found using IDs,
       // which is more robust. If the landmark indices differ, the matching is
       // typically done by name, which leaves more room for error, but should be
       // just as fine in most situations.
-      let sharedLandmarkIds = new Set();
+      let sharedLandmarkIds;
       if (byName) {
-        let fromLandmarkNames = new Map(fromGroup.members.map(
-            fromId => [sourceLandmarkIndex.get(fromId).name, fromId]));
-        let toLandmarkNames = new Map(toGroup.members.map(
-            toId => [landmarkIndex.get(toId).name, toId]));
-        for (let [toLandmarkName, toLandmarkId] of toLandmarkNames) {
-          if (fromLandmarkNames.has(toLandmarkName)) {
-            sharedLandmarkIds.add([fromLandmarkNames.get(toLandmarkName), toLandmarkId]);
-          }
-        }
+        sharedLandmarkIds = CATMAID.Landmarks.getSharedLandmarksByName(
+            fromGroup, toGroup, sourceLandmarkIndex, landmarkIndex);
       } else {
+        sharedLandmarkIds = new Set();
         let fromLandmarkIds = new Set(fromGroup.members);
         let toLandmarkIds = new Set(toGroup.members);
         for (let toLandmarkId of toLandmarkIds) {

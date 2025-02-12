@@ -2913,6 +2913,7 @@
                   if (updateMatchingGroupList) {
                     updateMatchingGroupList();
                   }
+                  updateRemoteAnnotationAutocomplete();
                 });
             let projectSelectSetting = CATMAID.DOM.createLabeledAsyncPlaceholder("Source project",
                 asyncProjectList, "Select the project that contains the source " +
@@ -2937,6 +2938,15 @@
                 sourceNeuronAnnotation = this.value.trim();
               });
           $(newDTForm).append(remoteAnnotationInput);
+
+          var updateRemoteAnnotationAutocomplete = function() {
+            let fromApi = sourceRemote ? CATMAID.Remote.getAPI(sourceRemote) : null;
+            var remoteAnnotationCache = new CATMAID.AnnotationCache(sourceProject, fromApi);
+            remoteAnnotationCache.update().then(() => {
+              let input = remoteAnnotationInput.get(0).querySelector('input');
+              remoteAnnotationCache.add_autocomplete_to_input(input);
+            });
+          };
 
           // Preview button
           let remotePreviewButton = document.createElement('button');

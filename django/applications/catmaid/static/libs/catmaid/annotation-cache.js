@@ -5,7 +5,9 @@
   /**
    * The annotation cache provides annotation names and their IDs.
    */
-  var AnnotationCache = function() {
+  var AnnotationCache = function(projectId = null, api = null) {
+    this.projectId = projectId;
+    this.api = api;
     // Map of annotation name vs its ID and vice versa
     this.annotation_ids = {};
     this.annotation_names = {};
@@ -53,8 +55,20 @@
    *                           data since the last update can be found.
    */
   AnnotationCache.prototype.update = function(parallel, force) {
+    const projectId = this.projectId || this.projectId === 0 ? this.projectId : project.id;
+
+    if (!projectId && projectId !== 0) {
+      // Empty cache
+      this.annotation_ids = {};
+      this.annotation_names = {};
+
+      this.lastUpdate = new Date();
+
+      return Promise.resolve();
+    }
+
     return CATMAID.fetch({
-        url: project.id + '/annotations/',
+        url: projectId + '/annotations/',
         data: {
           simple: true,
           if_modified_since: (force || !this.lastUpdate) ?
@@ -63,6 +77,7 @@
         parallel: parallel,
         supportedStatus: [304],
         details: true,
+        api: this.api,
       })
       .then(response => {
         // Only update local cache if there is new data.

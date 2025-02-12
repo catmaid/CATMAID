@@ -3016,6 +3016,8 @@
 
         var fromGroup, toGroup;
         let activeMappings = [];
+        const autoSelectMatchingRemoteTargetGroup = true;
+        const targetGroupWrapperId = `landmark-widget-target-group-select-${widget.widgetID}`;
 
         let sourceGroupCache;
         var initSourceGroupList = function(forceFromGroup, forceGroupUpdate) {
@@ -3026,6 +3028,26 @@
                   groups, forceFromGroup || fromGroup, true, 'selected');
               sourceSelect.onchange = function(e) {
                 fromGroup = e.target.value;
+
+                // Auto-select target group with same name if target if the
+                // source is remote and no target group was selected yet.
+                if (autoSelectMatchingRemoteTargetGroup && sourceRemote &&
+                    sourceRemote.length > 0) {
+                  const fromGroupName = sourceGroupCache.find(g => g.value == fromGroup).title;
+                  let matchingTargetGroup = groupOptions.find(g => g.title === fromGroupName);
+                  if (!toGroup) {
+                    if (matchingTargetGroup) {
+                      // A string is used to capture the group IDs.
+                      toGroup = `${matchingTargetGroup.value}`;
+                      const targetRadioButton = document.querySelector(`#${targetGroupWrapperId} input[type="radio"][value="${toGroup}"]`);
+                      // Easiest way of triggering an update
+                      $(targetRadioButton).click();
+                      CATMAID.msg("Success", `Auto-selected local target group with same name ("${fromGroupName}")`);
+                    } else {
+                      CATMAID.msg("Info", "No target group with same name found, no auto-selection");
+                    }
+                  }
+                }
               };
               return sourceSelect;
             });
@@ -3048,6 +3070,7 @@
 
         // Target select
         let targetGroupWrapper = document.createElement('span');
+        targetGroupWrapper.id = targetGroupWrapperId;
         let updateTargetGroupSelect = function(forceTargetGroup) {
           while (targetGroupWrapper.lastChild) {
             targetGroupWrapper.removeChild(targetGroupWrapper.lastChild);

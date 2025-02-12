@@ -91,6 +91,10 @@ Landmark widget:
   the new edit button right next to the skeleton set entry. A dialog will ask
   for a skeleton source to pull neurons from.
 
+- If the source is a project other than the current one, and no target group has
+  been selected yet, selecting a source group will auto-select any target group
+  with the same name.
+
 Stack viewer:
 
 - WebGL layers can now define a so called blending window through the layer

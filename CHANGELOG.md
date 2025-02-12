@@ -95,6 +95,9 @@ Landmark widget:
   been selected yet, selecting a source group will auto-select any target group
   with the same name.
 
+- The input field for remote neuron annotations now supports autocompletion with
+  all available annotations from the remote project.
+
 Stack viewer:
 
 - WebGL layers can now define a so called blending window through the layer

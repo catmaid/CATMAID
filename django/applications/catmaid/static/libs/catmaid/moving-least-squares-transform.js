@@ -499,6 +499,10 @@
     return max;
   };
 
+  PointMatch.prototype.toString = function() {
+    return `Match P1 (L): ${this.p1.l} - P2 (L): ${this.p2.l}`;
+  };
+
 
   var MovingLeastSquaresTransform = function() {
 

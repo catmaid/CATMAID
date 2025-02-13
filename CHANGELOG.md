@@ -101,6 +101,11 @@ Landmark widget:
 - The new column "Matches" in the table of active display transformations shows
   for each mapping the set of matching (by name) landmarks.
 
+- The view to crate new display transformations (Display tab) now shows
+  information on matches between the selected source and target group(s) during
+  transformation creation. Both the matches by name and the point matches are
+  shown as a line above the "Add transformation" button.
+
 Stack viewer:
 
 - WebGL layers can now define a so called blending window through the layer

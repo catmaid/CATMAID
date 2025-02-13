@@ -74,6 +74,10 @@
     // A node scaling factor to help distinguish nodes from regular ones.
     this.nodeScaling = 1.5;
 
+    // The current update function for preview point matches on the "Display"
+    // tab.
+    this.updatePointMatchInfo = null;
+
     // A landmark group currently edited in the edit tab
     this.editLandmarkGroup = null;
     // Whether reference lines are on by default
@@ -2774,6 +2778,7 @@
             onclick: function() {
               target.useReversePointMatches = this.checked;
               target.updateDisplay();
+              CATMAID.tools.callIfFn(target.updatePointMatchInfo);
             }
           },
           {
@@ -3028,6 +3033,86 @@
         let activeMappings = [];
         const autoSelectMatchingRemoteTargetGroup = true;
         const targetGroupWrapperId = `landmark-widget-target-group-select-${widget.widgetID}`;
+        var transformationInfoId = `landmark-widget-transform-info-${widget.widgetID}`;
+
+        const getMatchInfo = function() {
+          let sourceLandmarkGroupIndex = widget.sourceLandmarkGroupIndex || widget.landmarkGroupIndex;
+          const fromGroupDetails = sourceLandmarkGroupIndex.get(parseInt(fromGroup, 10));
+          const toGroupDetails = widget.landmarkGroupIndex.get(parseInt(toGroup, 10));
+
+          if (activeMappings.length == 0 && (!fromGroupDetails || !toGroupDetails)) {
+            return null;
+          }
+
+          // Get all mappings
+          let mappings = activeMappings.map(e => [{
+            id: e.fromGroup.id,
+            name: e.fromGroup.name,
+          }, {
+            id: e.toGroup.id,
+            name: e.toGroup.name,
+          }]);
+
+          if (fromGroupDetails && toGroupDetails) {
+            mappings.push(
+              [{
+                id: fromGroupDetails.id,
+                name: fromGroupDetails.name,
+              }, {
+                id: toGroupDetails.id,
+                name: toGroupDetails.name,
+              }]
+            );
+          }
+
+          // Find all name-matching landmarks
+          if (mappings.length === 0) {
+            return null;
+          }
+
+          let sourceLandmarkIndex = widget.sourceLandmarkIndex || widget.landmarkIndex;
+          let matches = [].concat(...mappings.map(
+              m => {
+                let fromGroup = sourceLandmarkGroupIndex.get(m[0].id);
+                let toGroup = widget.landmarkGroupIndex.get(m[1].id);
+                return CATMAID.Landmarks.getSharedLandmarksByName(fromGroup, toGroup,
+                  sourceLandmarkIndex, widget.landmarkIndex, true);
+              }));
+          if (!matches || matches.length === 0) {
+            return null;
+          }
+          const byName =  matches.map(s => `${Array.from(s).map(m => m[0]).join(', ')}`).join(', ');
+
+          const pointMatches = [].concat(...mappings.map(
+              m => CATMAID.Landmarks.getPointMatches(m[0].id, m[1].id,
+                widget.landmarkGroupIndex, widget.landmarkIndex, sourceLandmarkGroupIndex,
+                sourceLandmarkIndex, true, widget.useReversePointMatches)));
+
+          return {
+            'matches': matches,
+            'byName': matches.length === 1 ? byName : `( ${byName} )`,
+            'pointMatches': pointMatches,
+          };
+        };
+
+        const updateMatchInfoDisplay = function() {
+          const infoField = document.querySelector(`#${transformationInfoId}`);
+          if (!infoField) {
+            return;
+          }
+
+          const matchInfo = getMatchInfo();
+          if (matchInfo) {
+            const matchStr = matchInfo.pointMatches.length === 0 ? '<em>None</em>' :
+                matchInfo.pointMatches.map((m, i) => `<div>${i+1}. ${m.toString()}</div>`).join('');
+            infoField.innerHTML = `<span>By name: ${matchInfo.byName}</span><div class="setting-content">Point matches: ${matchStr}</div>`;
+          } else {
+            infoField.innerHTML = '<em>None</em>';
+          }
+        };
+
+        // Set this update method as the current one.
+        widget.updatePointMatchInfo = updateMatchInfoDisplay;
 
         let sourceGroupCache;
         var initSourceGroupList = function(forceFromGroup, forceGroupUpdate) {
@@ -3058,6 +3143,8 @@
                     }
                   }
                 }
+
+                updateMatchInfoDisplay();
               };
               return sourceSelect;
             });
@@ -3092,6 +3179,7 @@
             "which input points are transformed.");
           targetSelect.onchange = function(e) {
             toGroup = e.target.value;
+            updateMatchInfoDisplay();
           };
           targetGroupWrapper.appendChild(targetGroup[0]);
         };
@@ -3505,6 +3593,15 @@
               targetGroupWrapper.style.display = transformationDisplay;
               targetRelationWrapper.style.display = widget.showMultiMappingOptions ? 'none' : transformationDisplay;
               transformModelSelectLabel[0].style.display = transformationDisplay;
+
+              // Information on matches of new transformation
+              let transformationInfo = document.createElement('span');
+              transformationInfo.innerHTML = '<em>None</em>';
+              transformationInfo.id = transformationInfoId;
+              let transformationInfoLabel = CATMAID.DOM.createLabeledControl(
+                  'Current matches', transformationInfo,
+                  'Information on all matches that would make up the new transformation.');
+              $(newDTForm).append(transformationInfoLabel);
 
               // Add button
               let buttonContainer = document.createElement('div');

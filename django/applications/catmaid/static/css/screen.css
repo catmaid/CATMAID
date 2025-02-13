@@ -1325,6 +1325,10 @@ div.review-block::after {
   width: 0;
 }
 
+.setting .setting-content {
+  margin-left: 15em;
+}
+
 #settings-widget select {
   min-width: 20em;
 }

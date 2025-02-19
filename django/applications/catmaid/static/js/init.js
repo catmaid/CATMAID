@@ -2510,7 +2510,7 @@ var project;
               // one. Load stacks invisible (opacity of 0) to avoid a Pixi.js
               // initialization problem with multiple renderers at the same
               // time.
-              return handle_openProjectStack(json, stackViewer, hideLayers, true)
+              return handle_openProjectStack(json, stackViewer, undefined, hideLayers)
                 .catch(CATMAID.handleError)
                 .then(function(newStackViewer) {
                   loadedStackViewers.push(newStackViewer);

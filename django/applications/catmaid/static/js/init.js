@@ -700,7 +700,7 @@ var project;
         var load = null;
         const hideLayersInitially = true;
         if (sg) {
-          load = CATMAID.openStackGroup(pid, sg, undefined, hideLayers)
+          load = CATMAID.openStackGroup(pid, sg, undefined, hideLayersInitially)
             .then(function() {
               if (typeof zp == "number" && typeof yp == "number" &&
                   typeof xp == "number") {

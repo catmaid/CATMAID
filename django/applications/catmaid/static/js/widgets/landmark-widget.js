@@ -3081,6 +3081,12 @@
           if (!matches || matches.length === 0) {
             return null;
           }
+          const nameMatches =  matches.reduce((o, s) => {
+            for (let m of s) {
+              o.push(m);
+            }
+            return o;
+          }, []);
           const byName =  matches.map(s => `${Array.from(s).map(m => m[0]).join(', ')}`).join(', ');
 
           const pointMatches = [].concat(...mappings.map(
@@ -3091,6 +3097,7 @@
           return {
             'matches': matches,
             'byName': matches.length === 1 ? byName : `( ${byName} )`,
+            'nameMatches': nameMatches,
             'pointMatches': pointMatches,
           };
         };
@@ -3103,9 +3110,11 @@
 
           const matchInfo = getMatchInfo();
           if (matchInfo) {
+            const nameLabelShortStr = matchInfo.byName.length === 0 ? '<em>None</em>' : '';
+            const nameListStr = matchInfo.nameMatches.map((m, i) => `<div>${i+1}. ${m[0]} (${m[1]})</div>`).join('');
             const matchStr = matchInfo.pointMatches.length === 0 ? '<em>None</em>' :
                 matchInfo.pointMatches.map((m, i) => `<div>${i+1}. ${m.toString()}</div>`).join('');
-            infoField.innerHTML = `<span>By name: ${matchInfo.byName}</span><div class="setting-content">Point matches: ${matchStr}</div>`;
+            infoField.innerHTML = `<span>By name: ${nameLabelShortStr}</span><div class="setting-content"><div>${nameListStr}</div></div><div class="setting-content">Point matches: ${matchStr}</div>`;
           } else {
             infoField.innerHTML = '<em>None</em>';
           }

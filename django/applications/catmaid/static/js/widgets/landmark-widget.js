@@ -3033,7 +3033,7 @@
         let activeMappings = [];
         const autoSelectMatchingRemoteTargetGroup = true;
         const targetGroupWrapperId = `landmark-widget-target-group-select-${widget.widgetID}`;
-        var transformationInfoId = `landmark-widget-transform-info-${widget.widgetID}`;
+        const transformationInfoId = `landmark-widget-transform-info-${widget.widgetID}`;
 
         const getMatchInfo = function() {
           let sourceLandmarkGroupIndex = widget.sourceLandmarkGroupIndex || widget.landmarkGroupIndex;

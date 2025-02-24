@@ -637,10 +637,14 @@
       return;
     }
 
-    var stackViewers = project.getStackViewers();
+    var stackViewers = project ? project.getStackViewers() : [];
     var viewIndex = getViewIndex(stackViewers);
 
     if (!stackViewerCountMatchesLayout(stackViewers, newLayout._layout)) {
+      if (!project) {
+        CATMAID.warn("No project open, can't access referenced stack viewers");
+        return;
+      }
       CATMAID.warn("Can't load layout, Other stack viewer configuration expected");
       return;
     }

@@ -816,7 +816,7 @@ var project;
         if (initialLayout) {
           let layout = new CATMAID.Layout(initialLayout);
           if (!CATMAID.switchToLayout(layout, true)) {
-            CATMAID.warn(`Layout ${initialLayout} could not be loaded`);
+            CATMAID.warn(`Layout could not be loaded`);
           }
         }
         if (message) {

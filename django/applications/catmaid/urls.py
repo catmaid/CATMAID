@@ -595,7 +595,7 @@ if settings.FRONT_END_TESTS_ENABLED:
 urlpatterns += [
     # User analytics and proficiency
     re_path(r'^(?P<project_id>\d+)/useranalytics$', useranalytics.plot_useranalytics),
-    re_path(r'^(?P<project_id>\d+)/useranalytics/data$', useranalytics.get_useranalytics_data),
+    re_path(r'^(?P<project_id>\d+)/useranalytics/data$', useranalytics.UserAnalyticsAPIView.as_view()),
     re_path(r'^(?P<project_id>\d+)/userproficiency$', user_evaluation.evaluate_user),
 
     re_path(r'^(?P<project_id>\d+)/graphexport/json$', graphexport.export_jsongraph),

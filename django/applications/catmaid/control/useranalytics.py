@@ -10,11 +10,13 @@ from typing import Any, Dict, List, Tuple
 
 from django.db import connection
 from django.http import HttpRequest, HttpResponse, JsonResponse
-from django.utils import timezone
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
 
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, APIView
+from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer
 
 from catmaid.control.common import get_request_bool
 from catmaid.control.authentication import requires_user_role
@@ -65,116 +67,124 @@ class Bout(object):
     def __str__(self):
         return "Bout with %s events [%s, %s]" % \
                 (self.nrEvents, self.start, self.end)
-@never_cache
-@api_view(['GET'])
-@requires_user_role(UserRole.Admin)
-def get_useranalytics_data(request:HttpRequest, project_id) -> HttpResponse:
-    """ Get information on the contributions individual users made in a
-    particular time frame. This endpoint requires admin permissions. The
-    returned fields all contain lists where each entry relates to one day in the
-    query time frame by the requested user. The fields are the following:
 
-    <ul>
-        <li>annotation_events: how many treenodes or connector nodes where
-        edited/added on a given day</li>
-        <li> annotation_timeaxis: dates for each annotation event
-        <li>review_events: how many node reviews were performed on a given day</li>
-        review_timeaxis: dates for each review event</li>
-        <li>write_events: how many write events of any form (incl.
-        annotations/tags/renames) where made on a given day</li>
-        <li>write_timeaxis: dates for each write event</li>
-        <li>raw_write_events: a raw list of all write events of any kind</li>
-        <li>active_bouts: time segments in which a user was active that had no
-        pauses longer than the requested activity time threshold.</li>
-        <li>net_active_time: the active time in hours per day between the first event of
-        the first active bout and the last event of the last bout.</li>
-        <li>netactivetime_timeaxis: dates for each net active time entry</li>
-    </ul>
-    ---
-    parameters:
-      - name: userid
-        description: The id of the user to get information on
-        type: integer
-        paramType: form
-      - name: start
-        description: |
-            Start date of request time frame in the form YYYY-MM-DD. Defaults
-            to seven days ago from today.
-        type: string
-        paramType: form
-      - name: end
-        description: |
-            End date of request time frame in the form YYYY-MM-DD. Defaults to
-            today/now.
-        type: string
-        paramType: form
-      - name: max_inactivity
-        description: Number of minutes of inactivity, before a pause is assumed.
-        type: integer
-        paramType: form
-      - name: all_writes
-        description: |
-            Whether info ann all types of write events should be returned,
-            including annotating neurons, renaming neurons or editing tags.
-            True by default.
-        type: bool
-        paramType: form
-        required: false
-        defaultValue: true
-    """
-    time_zone = pytz.utc
+    def get_events(self):
+        return self.events
 
-    project = get_object_or_404(Project, pk=project_id) if project_id else None
-    if not (request.user.is_superuser or \
-            request.user.has_perm('can_browse', project)):
-        raise PermissionError('You lack the needed permissions')
 
-    userid = request.GET.get('userid', None)
-    if not (userid and userid.strip()):
-        raise ValueError("Need user ID")
+class UserAnalyticsAPIView(APIView):
 
-    all_writes = get_request_bool(request.GET, 'all_writes', True)
-    maxInactivity = int(request.GET.get('max_inactivity', 3))
+    renderer_classes = [BrowsableAPIRenderer, JSONRenderer]
 
-    # Get the start date for the query, defaulting to 7 days ago.
-    start_date = request.GET.get('start', None)
-    if start_date:
-        start_date = dateparser.parse(start_date)
-        start_date = time_zone.localize(start_date)
-    else:
-        with timezone.override(time_zone):
-            start_date = timezone.now() - timedelta(7)
+    @method_decorator(never_cache)
+    @method_decorator(requires_user_role(UserRole.Admin))
+    def get(self, request:HttpRequest, project_id) -> HttpResponse:
+        """ Get information on the contributions individual users made in a
+        particular time frame. This endpoint requires admin permissions. The
+        returned fields all contain lists where each entry relates to one day in the
+        query time frame by the requested user. The fields are the following:
 
-    # Get the end date for the query, defaulting to now.
-    end_date = request.GET.get('end', None)
-    if end_date:
-        end_date = dateparser.parse(end_date)
-        end_date = time_zone.localize(end_date)
-    else:
-        with timezone.override(time_zone):
-            end_date = timezone.now()
+        <ul>
+            <li>annotation_events: how many treenodes or connector nodes where
+            edited/added on a given day</li>
+            <li> annotation_timeaxis: dates for each annotation event
+            <li>review_events: how many node reviews were performed on a given day</li>
+            review_timeaxis: dates for each review event</li>
+            <li>write_events: how many write events of any form (incl.
+            annotations/tags/renames) where made on a given day</li>
+            <li>write_timeaxis: dates for each write event</li>
+            <li>raw_write_events: a raw list of all write events of any kind</li>
+            <li>active_bouts: time segments in which a user was active that had no
+            pauses longer than the requested activity time threshold.</li>
+            <li>net_active_time: the active time in hours per day between the first event of
+            the first active bout and the last event of the last bout.</li>
+            <li>netactivetime_timeaxis: dates for each net active time entry</li>
+        </ul>
+        ---
+        parameters:
+        - name: userid
+            description: The id of the user to get information on
+            type: integer
+            paramType: form
+        - name: start
+            description: |
+                Start date of request time frame in the form YYYY-MM-DD. Defaults
+                to seven days ago from today.
+            type: string
+            paramType: form
+        - name: end
+            description: |
+                End date of request time frame in the form YYYY-MM-DD. Defaults to
+                today/now.
+            type: string
+            paramType: form
+        - name: max_inactivity
+            description: Number of minutes of inactivity, before a pause is assumed.
+            type: integer
+            paramType: form
+        - name: all_writes
+            description: |
+                Whether info ann all types of write events should be returned,
+                including annotating neurons, renaming neurons or editing tags.
+                True by default.
+            type: bool
+            paramType: form
+            required: false
+            defaultValue: true
+        """
+        time_zone = pytz.utc
 
-    # The API is inclusive and should return stats for the end date as
-    # well. The actual query is easier with an exclusive end and therefore
-    # the end date is set to the beginning of the next day.
-    end_date = end_date + timedelta(days=1)
+        project = get_object_or_404(Project, pk=project_id) if project_id else None
+        if not (request.user.is_superuser or \
+                request.user.has_perm('can_browse', project)):
+            raise PermissionError('You lack the needed permissions')
 
-    raw_data = get_activity_info( userid, project_id, maxInactivity, start_date,
-                end_date, all_writes )
+        userid = request.GET.get('userid', None)
+        if not (userid and userid.strip()):
+            raise ValueError("Need user ID")
 
-    data = {}
-    data['annotation_events'] = raw_data['annotation_events'].tolist()
-    data['annotation_timeaxis'] = raw_data['annotation_timeaxis']
-    data['review_events'] = raw_data['review_events'].tolist()
-    data['review_timeaxis'] = raw_data['review_timeaxis']
-    data['write_events'] = raw_data['write_events'].tolist()
-    data['write_timeaxis'] = raw_data['otherwrites_timeaxis']
-    data['raw_write_events'] = raw_data['otherwrites_events']
-    data['net_active_time'] = raw_data['net_active_time'].tolist() if len(raw_data['net_active_time']) else []
-    data['netactivetime_timeaxis'] = raw_data['netactivetime_timeaxis']
-    # data['active_bouts'] = raw_data['active_bouts'].tolist()
+        all_writes = get_request_bool(request.GET, 'all_writes', True)
+        maxInactivity = int(request.GET.get('max_inactivity', 3))
 
-    return JsonResponse(data)
+        # Get the start date for the query, defaulting to 7 days ago.
+        start_date = request.GET.get('start', None)
+        if start_date:
+            start_date = dateparser.parse(start_date)
+            start_date = time_zone.localize(start_date)
+        else:
+            with timezone.override(time_zone):
+                start_date = timezone.now() - timedelta(7)
+
+        # Get the end date for the query, defaulting to now.
+        end_date = request.GET.get('end', None)
+        if end_date:
+            end_date = dateparser.parse(end_date)
+            end_date = time_zone.localize(end_date)
+        else:
+            with timezone.override(time_zone):
+                end_date = timezone.now()
+
+        # The API is inclusive and should return stats for the end date as
+        # well. The actual query is easier with an exclusive end and therefore
+        # the end date is set to the beginning of the next day.
+        end_date = end_date + timedelta(days=1)
+
+        raw_data = get_activity_info( userid, project_id, maxInactivity, start_date,
+                    end_date, all_writes )
+
+        data = {}
+        data['annotation_events'] = raw_data['annotation_events'].tolist()
+        data['annotation_timeaxis'] = raw_data['annotation_timeaxis']
+        data['review_events'] = raw_data['review_events'].tolist()
+        data['review_timeaxis'] = raw_data['review_timeaxis']
+        data['write_events'] = raw_data['write_events'].tolist()
+        data['write_timeaxis'] = raw_data['otherwrites_timeaxis']
+        data['raw_write_events'] = raw_data['otherwrites_events']
+        data['net_active_time'] = raw_data['net_active_time'].tolist() if len(raw_data['net_active_time']) else []
+        data['netactivetime_timeaxis'] = raw_data['netactivetime_timeaxis']
+        # data['active_bouts'] = raw_data['active_bouts'].tolist()
+
+        return JsonResponse(data)
 
 
 @never_cache

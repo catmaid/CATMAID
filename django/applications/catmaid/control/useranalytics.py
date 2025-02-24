@@ -170,7 +170,7 @@ def get_useranalytics_data(request:HttpRequest, project_id) -> HttpResponse:
     data['write_events'] = raw_data['write_events'].tolist()
     data['write_timeaxis'] = raw_data['otherwrites_timeaxis']
     data['raw_write_events'] = raw_data['otherwrites_events']
-    data['net_active_time'] = raw_data['net_active_time'].tolist()
+    data['net_active_time'] = raw_data['net_active_time'].tolist() if len(raw_data['net_active_time']) else []
     data['netactivetime_timeaxis'] = raw_data['netactivetime_timeaxis']
     # data['active_bouts'] = raw_data['active_bouts'].tolist()
 

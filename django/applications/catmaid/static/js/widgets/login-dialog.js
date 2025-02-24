@@ -62,7 +62,8 @@
         var pass_field = this.dialog.appendField('Password', 'password', '', true);
         pass_field.setAttribute('type', 'password');
         // Align input fields better
-        $(this.dialog.dialog).find('label').css('width', '25%');
+        pass_field.style.marginLeft = '0.5em';
+        $(this.dialog.dialog).find('label').css('width', '10em');
         $(this.dialog.dialog).find('label').css('display', 'inline-block');
       }
     };

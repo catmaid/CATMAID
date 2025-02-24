@@ -131,6 +131,15 @@ class UserAnalyticsAPIView(APIView):
             paramType: form
             required: false
             defaultValue: true
+        - name: with_active_bouts
+            description: |
+                Whether all active bouts should be returned. This can be
+                potentially a large list.
+                False by default.
+            type: bool
+            paramType: form
+            required: false
+            defaultValue: false
         """
         time_zone = pytz.utc
 
@@ -145,6 +154,7 @@ class UserAnalyticsAPIView(APIView):
 
         all_writes = get_request_bool(request.GET, 'all_writes', True)
         maxInactivity = int(request.GET.get('max_inactivity', 3))
+        with_active_bouts = get_request_bool(request.GET, 'with_active_bouts', False)
 
         # Get the start date for the query, defaulting to 7 days ago.
         start_date = request.GET.get('start', None)
@@ -182,7 +192,9 @@ class UserAnalyticsAPIView(APIView):
         data['raw_write_events'] = raw_data['otherwrites_events']
         data['net_active_time'] = raw_data['net_active_time'].tolist() if len(raw_data['net_active_time']) else []
         data['netactivetime_timeaxis'] = raw_data['netactivetime_timeaxis']
-        # data['active_bouts'] = raw_data['active_bouts'].tolist()
+
+        if with_active_bouts:
+            data['active_bouts'] = [b.get_events() for b in raw_data['active_bouts']]
 
         return JsonResponse(data)
 

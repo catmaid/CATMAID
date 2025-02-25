@@ -3118,23 +3118,17 @@
             // Check if source and target bounding boxes overlap numerically. If
             // so, this can cause funny results if reverse matches is true. If
             // that's the case, warn user about it.
-            let srcMinX = Infinity, srcMinY = Infinity, srcMinZ = Infinity,
-                srcMaxX = -Infinity, srcMaxY = -Infinity, srcMaxZ = -Infinity;
-            let targetMinX = Infinity, targetMinY = Infinity, targetMinZ = Infinity,
-                targetMaxX = -Infinity, targetMaxY = -Infinity, targetMaxZ = -Infinity;
+            let srcMin = [Infinity, Infinity, Infinity];
+            let srcMaxX = [-Infinity, -Infinity, -Infinity];
+            let targetMinX = [Infinity, Infinity, Infinity];
+            let targetMaxX = [-Infinity, -Infinity, -Infinity];
             matchInfo.pointMatches.forEach((m) => {
-              if (m.p1.l[0] < srcMinX) { srcMinX = m.p1.l[0]; }
-              if (m.p1.l[1] < srcMinY) { srcMinY = m.p1.l[1]; }
-              if (m.p1.l[2] < srcMinZ) { srcMinZ = m.p1.l[2]; }
-              if (m.p1.l[0] > srcMaxX) { srcMaxX = m.p1.l[0]; }
-              if (m.p1.l[1] > srcMaxY) { srcMaxY = m.p1.l[1]; }
-              if (m.p1.l[2] > srcMaxZ) { srcMaxZ = m.p1.l[2]; }
-              if (m.p2.l[0] < targetMinX) { targetMinX = m.p2.l[0]; }
-              if (m.p2.l[1] < targetMinY) { targetMinY = m.p2.l[1]; }
-              if (m.p2.l[2] < targetMinZ) { targetMinZ = m.p2.l[2]; }
-              if (m.p2.l[0] > targetMaxX) { targetMaxX = m.p2.l[0]; }
-              if (m.p2.l[1] > targetMaxY) { targetMaxY = m.p2.l[1]; }
-              if (m.p2.l[2] > targetMaxZ) { targetMaxZ = m.p2.l[2]; }
+              for (let i = 0; i<3; i++) {
+                if (m.p1.l[i] < srcMin[i]) { srcMin[i] = m.p1.l[i]; }
+                if (m.p1.l[i] > srcMax[i]) { srcMax[i] = m.p1.l[i]; }
+                if (m.p2.l[i] < targetMin[i]) { targetMin[i] = m.p2.l[i]; }
+                if (m.p2.l[i] > targetMax[i]) { targetMax[i] = m.p2.l[i]; }
+              }
             });
 
             const brokenTransform =

@@ -3114,7 +3114,41 @@
             const nameListStr = matchInfo.nameMatches.map((m, i) => `<div>${i+1}. ${m[0]} (${m[1]})</div>`).join('');
             const matchStr = matchInfo.pointMatches.length === 0 ? '<em>None</em>' :
                 matchInfo.pointMatches.map((m, i) => `<div>${i+1}. ${m.toString()}</div>`).join('');
-            infoField.innerHTML = `<span>By name: ${nameLabelShortStr}</span><div class="setting-content"><div>${nameListStr}</div></div><div class="setting-content">Point matches: ${matchStr}</div>`;
+
+            // Check if source and target bounding boxes overlap numerically. If
+            // so, this can cause funny results if reverse matches is true. If
+            // that's the case, warn user about it.
+            let srcMinX = Infinity, srcMinY = Infinity, srcMinZ = Infinity,
+                srcMaxX = -Infinity, srcMaxY = -Infinity, srcMaxZ = -Infinity;
+            let targetMinX = Infinity, targetMinY = Infinity, targetMinZ = Infinity,
+                targetMaxX = -Infinity, targetMaxY = -Infinity, targetMaxZ = -Infinity;
+            matchInfo.pointMatches.forEach((m) => {
+              if (m.p1.l[0] < srcMinX) { srcMinX = m.p1.l[0]; }
+              if (m.p1.l[1] < srcMinY) { srcMinY = m.p1.l[1]; }
+              if (m.p1.l[2] < srcMinZ) { srcMinZ = m.p1.l[2]; }
+              if (m.p1.l[0] > srcMaxX) { srcMaxX = m.p1.l[0]; }
+              if (m.p1.l[1] > srcMaxY) { srcMaxY = m.p1.l[1]; }
+              if (m.p1.l[2] > srcMaxZ) { srcMaxZ = m.p1.l[2]; }
+              if (m.p2.l[0] < targetMinX) { targetMinX = m.p2.l[0]; }
+              if (m.p2.l[1] < targetMinY) { targetMinY = m.p2.l[1]; }
+              if (m.p2.l[2] < targetMinZ) { targetMinZ = m.p2.l[2]; }
+              if (m.p2.l[0] > targetMaxX) { targetMaxX = m.p2.l[0]; }
+              if (m.p2.l[1] > targetMaxY) { targetMaxY = m.p2.l[1]; }
+              if (m.p2.l[2] > targetMaxZ) { targetMaxZ = m.p2.l[2]; }
+            });
+
+            const brokenTransform =
+                ((srcMinX <= targetMinX && targetMinX <= srcMaxX) ||
+                  (srcMinX <= targetMaxX && targetMaxX <= srcMaxX)) &&
+                ((srcMinY <= targetMinY && targetMinY <= srcMaxY) ||
+                  (srcMinY <= targetMaxY && targetMaxY <= srcMaxY)) &&
+                ((srcMinZ <= targetMinZ && targetMinZ <= srcMaxZ) ||
+                  (srcMinZ <= targetMaxZ && targetMaxZ <= srcMaxZ));
+
+            let reverseMatchWarning = (brokenTransform && widget.useReversePointMatches) ?
+              '<div><span class="settings-warning">Warning: source and target point match bounding boxes overlap. At the same time, reverse matches should be used. Please switch off "Use reverse point matches" or expect wrong results.</span></div>' : '';
+
+            infoField.innerHTML = `<span>By name: ${nameLabelShortStr}</span><div class="setting-content"><div>${nameListStr}</div></div><div class="setting-content">Point matches: ${matchStr}${reverseMatchWarning}</div>`;
           } else {
             infoField.innerHTML = '<em>None</em>';
           }

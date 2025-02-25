@@ -1329,6 +1329,10 @@ div.review-block::after {
   margin-left: 15em;
 }
 
+.settings-warning {
+  color: red;
+}
+
 #settings-widget select {
   min-width: 20em;
 }

@@ -2758,11 +2758,11 @@ var project;
                   action: [{
                       title: 'Open in new viewer',
                       note: '',
-                      action: CATMAID.openProjectStack.bind(window, s.pid, s.id, false, undefined, true, true)
+                      action: CATMAID.openProjectStack.bind(window, s.pid, s.id, false, undefined, true, true, false)
                     },{
                       title: 'Add to focused viewer',
                       note: '',
-                      action: CATMAID.openProjectStack.bind(window, s.pid, s.id, true, undefined, true, true)
+                      action: CATMAID.openProjectStack.bind(window, s.pid, s.id, true, undefined, true, true, false)
                     }
                   ]
                 };

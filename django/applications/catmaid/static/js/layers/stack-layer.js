@@ -31,12 +31,13 @@
       showOverview,
       interpolatonMode,
       readState,
-      changeMirrorIfNoData) {
+      changeMirrorIfNoData,
+      hidden = false) {
 
     // A hidden layer is not rendered, regardless of the opacity. A layer can be
     // visible according to opacity, but still be hidden. Hiding a layer is
     // useful to speed up initial loading.
-    this._hidden = !visibility;
+    this._hidden = hidden;
     Object.defineProperty(this, "hidden", {
         get: function hidden() {
           return this._hidden;

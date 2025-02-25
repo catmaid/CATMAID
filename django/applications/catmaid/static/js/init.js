@@ -2808,16 +2808,18 @@ var project;
       document.getElementById( "toolbox_project" ).style.display = "block";
 
       var stackLayerConstructor = CATMAID.StackLayer.preferredConstructorForStack();
+      const visible = true;
       var stackLayer = new stackLayerConstructor(
           stackViewer,
           "Image data (" + stack.title + ")",
           stack,
           mirrorId,
-          !hideStackLayer,
-          hideStackLayer ? 0 : 1,
+          visible,
+          visible ? 1.0 : 0.0,
           !useExistingViewer,
           CATMAID.StackLayer.INTERPOLATION_MODES.INHERIT,
-          true);
+          true,
+          hideStackLayer);
 
       if (!useExistingViewer) {
         stackViewer.addLayer("StackLayer", stackLayer);

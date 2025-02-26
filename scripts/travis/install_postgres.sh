@@ -32,7 +32,7 @@ sudo pg_createcluster -d /var/ramfs/postgresql/14/main -p 5432 14 main
 sudo sed -i -e 's/peer/trust/g' -e 's/md5/trust/g' /etc/postgresql/14/main/pg_hba.conf
 
 echo "Starting Postgres 14"
-sudo systemctl start postgresql@43-main
+sudo systemctl start postgresql@14-main
 
 echo "The following Postgres clusters are installed:"
 pg_lsclusters

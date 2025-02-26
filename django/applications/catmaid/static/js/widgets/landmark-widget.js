@@ -3874,7 +3874,7 @@
             {
               data: 'mappings',
               class: 'cm-center',
-              title: 'Matches',
+              title: 'Name Matches',
               orderable: false,
               render: function(data, type, row, meta) {
                 // Find all name-matching landmarks
@@ -3896,6 +3896,30 @@
                 }
 
                 return matches.map(s => `(${Array.from(s).map(m => m[0]).join(', ')})`).join(', ');
+              }
+            },
+            {
+              data: 'mappings',
+              class: 'cm-center',
+              title: 'Point Matches',
+              orderable: false,
+              render: function(data, type, row, meta) {
+                if (row.mappings.length === 0) {
+                  return '(none)';
+                }
+                let indexSet = widget.displayTransformationParameterSets[meta.row];
+                let sourceLandmarkGroupIndex = indexSet.sourceLandmarkGroupIndex || indexSet.landmarkGroupIndex;
+                let sourceLandmarkIndex = indexSet.sourceLandmarkIndex || indexSet.landmarkIndex;
+                const pointMatches = [].concat(...row.mappings.map(
+                    m => CATMAID.Landmarks.getPointMatches(m[0].id, m[1].id,
+                      widget.landmarkGroupIndex, widget.landmarkIndex, sourceLandmarkGroupIndex,
+                      sourceLandmarkIndex, true, widget.useReversePointMatches)));
+
+                if (pointMatches && pointMatches.length > 0) {
+                  return pointMatches.map((m, i) => `${i+1}. ${m.p1.l} - <a href="#" data-location="${m.p2.l.join(",")}" data-action="select-location">${m.p2.l}</a><br>`).join('');
+                }
+
+                return '(none)';
               }
             },
             {

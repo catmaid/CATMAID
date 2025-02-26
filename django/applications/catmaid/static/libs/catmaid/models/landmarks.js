@@ -36,7 +36,8 @@
      */
     add: function(projectId, name) {
       return CATMAID.fetch(projectId + '/landmarks/', 'PUT', {
-          name: name
+          // Make sure there are no whitespace prefixes/suffixes
+          name: name.tim()
         });
     },
 
@@ -126,7 +127,8 @@
      */
     addGroup: function(projectId, name) {
       let response = CATMAID.fetch(projectId + '/landmarks/groups/', 'PUT', {
-          name: name
+          // Make sure there are no spaces/tabs prefixes/suffixes
+          name: name.trim()
         });
       response.finally(() => {
         let groupId = response.id;

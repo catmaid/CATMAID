@@ -1162,7 +1162,7 @@
             length: 8,
             id: `${this.idPrefix}landmarks-new-landmark-group`,
             onchange: function() {
-              state.newLandmarkGroupName = this.value;
+              state.newLandmarkGroupName = this.value.trim();
             },
             onenter: function() {
               this.parentNode.nextSibling.click();
@@ -1916,7 +1916,7 @@
             value: '',
             length: 8,
             onchange: function() {
-              state.newLandmarkGroupName = this.value;
+              state.newLandmarkGroupName = this.value.trim();
             },
             onenter: function() {
               this.parentNode.nextSibling.click();

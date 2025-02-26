@@ -3119,9 +3119,9 @@
             // so, this can cause funny results if reverse matches is true. If
             // that's the case, warn user about it.
             let srcMin = [Infinity, Infinity, Infinity];
-            let srcMaxX = [-Infinity, -Infinity, -Infinity];
-            let targetMinX = [Infinity, Infinity, Infinity];
-            let targetMaxX = [-Infinity, -Infinity, -Infinity];
+            let srcMax = [-Infinity, -Infinity, -Infinity];
+            let targetMin = [Infinity, Infinity, Infinity];
+            let targetMax = [-Infinity, -Infinity, -Infinity];
             matchInfo.pointMatches.forEach((m) => {
               for (let i = 0; i<3; i++) {
                 if (m.p1.l[i] < srcMin[i]) { srcMin[i] = m.p1.l[i]; }
@@ -3132,12 +3132,12 @@
             });
 
             const brokenTransform =
-                ((srcMinX <= targetMinX && targetMinX <= srcMaxX) ||
-                  (srcMinX <= targetMaxX && targetMaxX <= srcMaxX)) &&
-                ((srcMinY <= targetMinY && targetMinY <= srcMaxY) ||
-                  (srcMinY <= targetMaxY && targetMaxY <= srcMaxY)) &&
-                ((srcMinZ <= targetMinZ && targetMinZ <= srcMaxZ) ||
-                  (srcMinZ <= targetMaxZ && targetMaxZ <= srcMaxZ));
+                ((srcMin[0] <= targetMin[0] && targetMin[0] <= srcMax[0]) ||
+                  (srcMin[0] <= targetMax[0] && targetMax[0] <= srcMax[0])) &&
+                ((srcMin[1] <= targetMin[1] && targetMin[1] <= srcMax[1]) ||
+                  (srcMin[1] <= targetMax[1] && targetMax[1] <= srcMax[1])) &&
+                ((srcMin[2] <= targetMin[2] && targetMin[2] <= srcMax[2]) ||
+                  (srcMin[2] <= targetMax[2] && targetMax[2] <= srcMax[2]));
 
             let reverseMatchWarning = (brokenTransform && widget.useReversePointMatches) ?
               '<div><span class="settings-warning">Warning: source and target point match bounding boxes overlap. At the same time, reverse matches should be used. Please switch off "Use reverse point matches" or expect wrong results.</span></div>' : '';

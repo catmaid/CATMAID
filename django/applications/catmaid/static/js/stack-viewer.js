@@ -1268,7 +1268,7 @@
    * Pulsate reference lines using jQuery UI
    */
   StackViewer.prototype.pulseateReferenceLines = function (times, delay) {
-    var visible = this._vert.style.display !== "none";
+    let visible = StackViewer.Settings.session.display_stack_reference_lines;
     var halfDelay = delay * 0.5;
     this.showReferenceLines(true);
     var refLines = $(this._vert).add(this._horr);

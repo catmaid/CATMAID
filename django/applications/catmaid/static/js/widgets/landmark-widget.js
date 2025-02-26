@@ -4001,6 +4001,18 @@
               'sourceNeuronAnnotation': widget.displayTransformationParameterSets[dataIndex].sourceAnnotation,
             })
             .catch(CATMAID.handleError);
+        }).on('click', 'a[data-action=select-location]', function() {
+          let loc = this.dataset.location.split(',').map(Number);
+          project.moveTo(loc[2], loc[1], loc[0])
+            .then(function() {
+              // Biefly flash new location
+              var nFlashes = 3;
+              var delay = 100;
+              project.getStackViewers().forEach(function(s) {
+                s.pulseateReferenceLines(nFlashes, delay);
+              });
+            })
+            .catch(CATMAID.handleError);
         })
         .on("click", "td .action-changecolor", this, function(e) {
           let tr = $(this).closest('tr');

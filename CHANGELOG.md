@@ -106,6 +106,12 @@ Landmark widget:
   transformation creation. Both the matches by name and the point matches are
   shown as a line above the "Add transformation" button.
 
+- The transform table now also has a "Point Matches" column, which shows the
+  coordinates of all used point matches. When clicking on a target location in
+  the point matches column of the transform table, the view will now jump to the
+  respective location. This is currently only implemented for the target
+  location, not the source.
+
 Stack viewer:
 
 - WebGL layers can now define a so called blending window through the layer

@@ -715,7 +715,7 @@
      */
     fit( matches ) {
       if ( matches.length < AffineModel3D.MIN_NUM_MATCHES )
-        throw new NotEnoughDataPointsException( matches.length + " data points are not enough to estimate a 2d affine model, at least " + this.MIN_NUM_MATCHES + " data points required." );
+        throw new NotEnoughDataPointsException( matches.length + " data points are not enough to estimate a 2d affine model, at least " + AffineModel3D.MIN_NUM_MATCHES + " data points required." );
 
       const {pcx, pcy, pcz, qcx, qcy, qcz} = weightedCentroids(matches);
 
@@ -802,7 +802,7 @@
   class SimilarityModel3D extends Homography {
     fit(matches, proper=false) {
       if ( matches.length < SimilarityModel3D.MIN_NUM_MATCHES )
-        throw new NotEnoughDataPointsException( matches.length + " data points are not enough to estimate a 3d similarity model, at least " + MIN_NUM_MATCHES + " data points required." );
+        throw new NotEnoughDataPointsException( matches.length + " data points are not enough to estimate a 3d similarity model, at least " + SimilarityModel3D.MIN_NUM_MATCHES + " data points required." );
 
       const {pcx, pcy, pcz, qcx, qcy, qcz} = weightedCentroids(matches);
 
@@ -964,7 +964,7 @@
   class RigidModel3D extends SimilarityModel3D {
     fit(matches, proper=false) {
       if ( matches.length < RigidModel3D.MIN_NUM_MATCHES )
-        throw new NotEnoughDataPointsException( matches.length + " data points are not enough to estimate a 3d similarity model, at least " + MIN_NUM_MATCHES + " data points required." );
+        throw new NotEnoughDataPointsException( matches.length + " data points are not enough to estimate a 3d similarity model, at least " + RigidModel3D.MIN_NUM_MATCHES + " data points required." );
 
       const {pcx, pcy, pcz, qcx, qcy, qcz} = weightedCentroids(matches);
 

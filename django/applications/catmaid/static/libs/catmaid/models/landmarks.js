@@ -412,9 +412,8 @@
       try {
         mls.setMatches(matches);
       } catch (error) {
-        console.warn(error);
         throw new CATMAID.ValueError("Could not fit model for " +
-            (i+1) + ". transformation");
+            (i+1) + ". transformation: " + error.message);
       }
 
       return {

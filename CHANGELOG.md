@@ -112,6 +112,12 @@ Landmark widget:
   respective location. This is currently only implemented for the target
   location, not the source.
 
+- Each created transform can now be exported as a JavaScript function by
+  clicking the "Export JS" button. This will create a transform() function that
+  takes a [x, y, z] array and returns a transformed point [x', y', z']. The
+  function is provided as a JavaScript file, is printed to console and copied to
+  clipboard. This is useful for debugging transformations.
+
 Stack viewer:
 
 - WebGL layers can now define a so called blending window through the layer

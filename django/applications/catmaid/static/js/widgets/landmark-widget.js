@@ -1095,6 +1095,90 @@
     return true;
   };
 
+  /**
+   * Create a JavaScript file that contains a function that implements the
+   * passed in transformation.
+   */
+  LandmarkWidget.prototype.exportTransformAsJs = function(transform) {
+    const byName = true;
+    const dataIndex = this.displayTransformations.indexOf(transform);
+    const indexSet = this.displayTransformationParameterSets[dataIndex];
+    const sourceLandmarkGroupIndex = indexSet.sourceLandmarkGroupIndex || indexSet.landmarkGroupIndex;
+    const sourceLandmarkIndex = indexSet.sourceLandmarkIndex || indexSet.landmarkIndex;
+    const nameMatchSourceGroupIds = new Set();
+    const nameMatchTargetGroupIds = new Set();
+    let referencedLandmarks = new Set();
+    const nameMatches = [].concat(...transform.mappings.map(
+        m => {
+          const fromGroup = sourceLandmarkGroupIndex.get(m[0].id);
+          const toGroup = indexSet.landmarkGroupIndex.get(m[1].id);
+          const shared = CATMAID.Landmarks.getSharedLandmarksByName(fromGroup, toGroup,
+            sourceLandmarkIndex, indexSet.landmarkIndex, true);
+
+          if (shared.size > 0) {
+            nameMatchSourceGroupIds.add(m[0].id);
+            nameMatchTargetGroupIds.add(m[1].id);
+            referencedLandmarks.addAll(fromGroup.members.map(m => sourceLandmarkIndex.get(m).name));
+            referencedLandmarks.addAll(toGroup.members.map(m => indexSet.landmarkIndex.get(m).name));
+          }
+
+          return shared;
+        }));
+
+    // Find used landmarks and groups
+    const filteredLandmarkGroupIndex = Array.from(indexSet.landmarkGroupIndex).filter(entry => nameMatchTargetGroupIds.has(entry[0]));
+    const filteredSourceLandmarkGroupIndex = Array.from(sourceLandmarkGroupIndex).filter(entry => nameMatchSourceGroupIds.has(entry[0]));
+
+    referencedLandmarks = nameMatches.reduce((o, e) => o.union(new Set(Array.from(e, val => val[0]))), referencedLandmarks);
+    const filteredLandmarkIndex = Array.from(indexSet.landmarkIndex).filter(entry => referencedLandmarks.has(entry[1].name));
+    const filteredSourceLandmarkIndex = Array.from(sourceLandmarkIndex).filter(entry => referencedLandmarks.has(entry[1].name));
+
+    const nameMatcheNames = nameMatches.reduce((o, e) => o.union(new Set(Array.from(e, val => val[0]))), new Set());
+
+    let source = `
+      // point: A three element array [x, y, z]
+      function transform(point) {
+        // The following landmarks were shared between the following landmarks:
+        // ${Array.from(nameMatcheNames).join(', ')}
+        const mappings = ${JSON.stringify(transform.mappings)};
+        const landmarkGroupIndex = new Map(${JSON.stringify(filteredLandmarkGroupIndex)});
+        const landmarkIndex = new Map(${JSON.stringify(filteredLandmarkIndex)});
+        const sourceLandmarkGroupIndex = ${indexSet.sourceLandmarkGroupIndex ? 'new Map(' + JSON.stringify(filteredSourceLandmarkGroupIndex) + ')'  : 'landmarkGroupIndex'};
+        const sourceLandmarkIndex = ${indexSet.sourceLandmarkIndex ? 'new Map(' + JSON.stringify(Array.from(filteredSourceLandmarkIndex)) + ')' : 'landmarkIndex'};
+        const byName = ${JSON.stringify(byName)};
+        const useReverseMatches = ${JSON.stringify(transform.useReverseMatches)};
+        let matches = [].concat(...mappings.map(m => CATMAID.Landmarks.getPointMatches(
+            m[0].id, m[1].id, landmarkGroupIndex, landmarkIndex, sourceLandmarkGroupIndex,
+            sourceLandmarkIndex, byName, useReverseMatches)));
+
+        let ModelClass = CATMAID.transform.${transform.modelClass.name};
+        let model = new ModelClass();
+
+        // Create transform with provided model and set of matches
+        let mls = new CATMAID.transform.MovingLeastSquaresTransform();
+        mls.setModel(model);
+        mls.setMatches(matches);
+
+        // Transform
+        let transformed = [...point];
+        mls.applyInPlace(transformed);
+
+        return transformed;
+      }
+    `;
+
+    // Print to console as well, since this is usually used for debugging.
+    console.log(source);
+
+    // Copy to clipboard
+    CATMAID.tools.copyToClipBoard(source);
+
+    let filename = `catmaid-landmark-transform.js`;
+    saveAs(new Blob([source], { type: 'text/text' }), filename);
+    CATMAID.msg('Success', `Exported transformation JavaScript function, printed it to the dev console and copied it the clipboard.`);
+    return true;
+  };
+
   LandmarkWidget.MODES = {
     landmarks: {
       title: 'Landmarks',
@@ -3945,6 +4029,7 @@
               orderable: false,
               render: function(data, type, row, meta) {
                 return '<ul class="resultTags" style="display: inline"><li><a href="#" data-action="reuse-transformation" title="Re-use properties of this transformation as settings for new transformation (above).">Re-use</a></li></ul>' +
+                    '<ul class="resultTags" style="display: inline"><li><a href="#" data-action="export-transformation-js" title="Export this transformation as a JavaScrpt function which can be run manually in the console. A .js file is exported, the function is printed to the dev console and copied to the clipboard. It is the transformation only, no skeleton information.">Export JS</a></li></ul>' +
                     '<ul class="resultTags" style="display: inline"><li><a href="#" data-action="delete-transformation">Delete</a></li></ul>';
               }
             }
@@ -4001,6 +4086,15 @@
               'sourceNeuronAnnotation': widget.displayTransformationParameterSets[dataIndex].sourceAnnotation,
             })
             .catch(CATMAID.handleError);
+        }).on('click', 'a[data-action=export-transformation-js]', function() {
+          let tr = $(this).closest('tr');
+          let row = existingDTDataTable.row(tr);
+          let data = row.data();
+
+          // The exported JavaScript function is called transform() and takes a
+          // point in the form of an array as argument and returns a new
+          // transformed array.
+          widget.exportTransformAsJs(data);
         }).on('click', 'a[data-action=select-location]', function() {
           let loc = this.dataset.location.split(',').map(Number);
           project.moveTo(loc[2], loc[1], loc[0])

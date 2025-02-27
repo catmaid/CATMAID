@@ -37,7 +37,7 @@
     add: function(projectId, name) {
       return CATMAID.fetch(projectId + '/landmarks/', 'PUT', {
           // Make sure there are no whitespace prefixes/suffixes
-          name: name.tim()
+          name: name.trim()
         });
     },
 

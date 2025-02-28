@@ -106,11 +106,13 @@ Landmark widget:
   transformation creation. Both the matches by name and the point matches are
   shown as a line above the "Add transformation" button.
 
-- The transform table now also has a "Point Matches" column, which shows the
-  coordinates of all used point matches. When clicking on a target location in
-  the point matches column of the transform table, the view will now jump to the
-  respective location. This is currently only implemented for the target
-  location, not the source.
+- The transform table now also has an optional "Point Matches" column, which
+  shows the coordinates of all used point matches. It can be shown by enabling
+  the "Detailed match info" check box in the Display tab controls. This column
+  shows all used point matches in the form of "Source point - Target point"
+  entries. When clicking on a target location in the point matches column, the
+  view will now jump to the respective location. This is currently only
+  implemented for the target location, not the source.
 
 - Each created transform can now be exported as a JavaScript function by
   clicking the "Export JS" button. This will create a transform() function that

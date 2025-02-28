@@ -101,6 +101,8 @@
     // Whetehr or not to show options to add more than one source/target group
     // mapping.
     this.showMultiMappingOptions = false;
+    // Whether point matches should be shown in the transform table
+    this.showDetailedMatchInfo = false;
 
     // A list of relations that are allowed between landmark groups
     this.allowedRelationNames = new Set(['mirror_of', 'adjacent_to', 'part_of']);
@@ -2929,6 +2931,20 @@
               target.update();
             },
           },
+          {
+            id: `landmark-widget-${target.widgetID}-show-detailed-match-info`,
+            type: 'checkbox',
+            value: target.showDetailedMatchInfo,
+            label: 'Detailed match info',
+            onclick: function() {
+              target.showDetailedMatchInfo = this.checked;
+              if (target.displayTransformTable) {
+                const columnIdx = 5;
+                const column = target.displayTransformTable.column(columnIdx);
+                column.visible(target.showDetailedMatchInfo);
+              }
+            },
+          },
         ];
       },
       createContent: function(content, widget, defaultDataInfo) {
@@ -3987,6 +4003,7 @@
               class: 'cm-center',
               title: 'Point Matches',
               orderable: false,
+              visible: widget.showDetailedMatchInfo,
               render: function(data, type, row, meta) {
                 if (row.mappings.length === 0) {
                   return '(none)';

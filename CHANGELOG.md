@@ -120,6 +120,13 @@ Landmark widget:
   function is provided as a JavaScript file, is printed to console and copied to
   clipboard. This is useful for debugging transformations.
 
+- The list of actually used landmarks of the set of matching landmarks in a
+  transform can be edited. By clicking the "edit" button next to the list of
+  name matches of a transform, a dialog allows to select the landmarks that ere
+  used. The transform table reflects changes made here and so do the 3D Viewer
+  and the Landmark Layer. This makes indentifying problematic landmarks much
+  quicker.
+
 Stack viewer:
 
 - WebGL layers can now define a so called blending window through the layer

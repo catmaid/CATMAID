@@ -3989,13 +3989,26 @@
                       let fromGroup = sourceLandmarkGroupIndex.get(m[0].id);
                       let toGroup = indexSet.landmarkGroupIndex.get(m[1].id);
                       return CATMAID.Landmarks.getSharedLandmarksByName(fromGroup, toGroup,
-                        sourceLandmarkIndex, indexSet.landmarkIndex, true);
+                        sourceLandmarkIndex, indexSet.landmarkIndex, true, row.ignoredLandmarks);
                     }));
                 if (!matches || matches.length === 0) {
                   return '(none)';
                 }
 
-                return matches.map(s => `(${Array.from(s).map(m => m[0]).join(', ')})`).join(', ');
+                let matchNames = '';
+                if (row.ignoredLandmarks.size === 0) {
+                  matchNames = matches.map(s => `(${Array.from(s).sort().map(m => m[0]).join(', ')})`).join(', ');
+                } else {
+                  matchNames = matches.map(s => {
+                    let allLandmarks = Array.from(s).map(m => m[0]).concat(Array.from(row.ignoredLandmarks)).sort().map(l => {
+                      return row.ignoredLandmarks.has(l) ? `<span style="text-decoration: line-through">${l}</span>` : l;
+                    });
+                    return `(${allLandmarks.join(', ')})`;
+                  }).join(', ');
+                }
+                const editButton ='<ul class="resultTags" style="display: inline"><li><a href="#" data-action="edit-matches">edit</a></li></ul>';
+
+                return `${matchNames} ${editButton}`;
               }
             },
             {
@@ -4081,6 +4094,54 @@
                 CATMAID.msg('Success', 'Skeletons updated');
               });
           dialog.show();
+        }).on('click', 'a[data-action=edit-matches]', function() {
+          let tr = $(this).closest('tr');
+          let row = existingDTDataTable.row(tr);
+          let transform = row.data();
+          let dataIndex = widget.displayTransformations.indexOf(transform);
+
+          let indexSet = widget.displayTransformationParameterSets[dataIndex];
+          let sourceLandmarkGroupIndex = indexSet.sourceLandmarkGroupIndex || indexSet.landmarkGroupIndex;
+          let sourceLandmarkIndex = indexSet.sourceLandmarkIndex || indexSet.landmarkIndex;
+          let initialMatches = [].concat(...transform.mappings.map(
+              m => {
+                let fromGroup = sourceLandmarkGroupIndex.get(m[0].id);
+                let toGroup = indexSet.landmarkGroupIndex.get(m[1].id);
+                return CATMAID.Landmarks.getSharedLandmarksByName(fromGroup, toGroup,
+                  sourceLandmarkIndex, indexSet.landmarkIndex, true);
+              }));
+
+          // Show a checkbox select widget
+          let options = initialMatches.flatMap(m => Array.from(m))
+              .map(m => m[0]).sort().map(m => {
+                return {
+                  title: m,
+                  value: m
+                };
+              });
+          let dialog = new CATMAID.OptionsDialog("Select all matches that should be used", {
+            'Ok': () => {},
+          });
+          dialog.appendMessage("If a landmark is unchecked, it will be ignored by the transformation. The transformation is updated as the set of used matches is changed. ");
+
+          let selectedKeys = initialMatches.flatMap(m => Array.from(m)).map(m => m[0])
+              .filter(m => !transform.ignoredLandmarks.has(m));
+          var memberPanel = CATMAID.DOM.createCheckboxSelectPanel(options,
+              selectedKeys, true);
+          memberPanel.addEventListener('change', event => {
+            if (event.srcElement.checked) {
+              transform.ignoredLandmarks.delete(event.srcElement.value);
+            } else {
+              transform.ignoredLandmarks.add(event.srcElement.value);
+            }
+            // Force a display update, because otherwise downstream widgets like
+            // the 3D Viewer might not update.
+            widget.updateDisplay(true);
+            widget.refresh();
+          });
+          dialog.appendChild(memberPanel);
+
+          dialog.show(400, 300, false);
         }).on('click', 'a[data-action=delete-transformation]', function() {
           let tr = $(this).closest('tr');
           let row = existingDTDataTable.row(tr);

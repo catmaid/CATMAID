@@ -386,7 +386,7 @@
     },
 
     getMlsTransform: function(transformation, landmarkGroupIndex, landmarkIndex,
-        i, sourceLandmarkGroupIndex, sourceLandmarkIndex, byName) {
+        i, sourceLandmarkGroupIndex, sourceLandmarkIndex, byName, ignoredLandmarks = undefined) {
       // If no dedicated indices for the source landmarks is provided, use the
       // general one.
       sourceLandmarkGroupIndex = sourceLandmarkGroupIndex || landmarkGroupIndex;
@@ -398,7 +398,8 @@
       let matches = [].concat(...transformation.mappings
           .map(m => CATMAID.Landmarks.getPointMatches(m[0].id, m[1].id,
               landmarkGroupIndex, landmarkIndex, sourceLandmarkGroupIndex,
-              sourceLandmarkIndex, byName, transformation.useReverseMatches)));
+              sourceLandmarkIndex, byName, transformation.useReverseMatches,
+              ignoredLandmarks)));
 
       if (!matches || matches.length === 0) {
         throw new CATMAID.ValueError("Found no point matches for " +
@@ -421,14 +422,17 @@
       };
     },
 
-    getSharedLandmarksByName: function(fromGroup, toGroup, sourceLandmarkIndex, landmarkIndex, asNames = false) {
+    getSharedLandmarksByName: function(fromGroup, toGroup, sourceLandmarkIndex,
+        landmarkIndex, asNames = false, ignoredLandmarks = undefined) {
       let sharedLandmarks = new Set();
       let fromLandmarkNames = new Map(fromGroup.members.map(
           fromId => [sourceLandmarkIndex.get(fromId).name, fromId]));
       let toLandmarkNames = new Map(toGroup.members.map(
           toId => [landmarkIndex.get(toId).name, toId]));
+      const ignoredLandmarkSet = new Set(ignoredLandmarks);
       for (let [toLandmarkName, toLandmarkId] of toLandmarkNames) {
-        if (fromLandmarkNames.has(toLandmarkName)) {
+        if (fromLandmarkNames.has(toLandmarkName) &&
+            !ignoredLandmarkSet.has(toLandmarkName)) {
           if (asNames) {
             sharedLandmarks.add([toLandmarkName, toLandmarkId]);
           } else {
@@ -446,7 +450,7 @@
      */
     getPointMatches: function(fromGroupId, toGroupId, landmarkGroupIndex,
         landmarkIndex, sourceLandmarkGroupIndex, sourceLandmarkIndex, byName,
-        useReverseMatches) {
+        useReverseMatches, ignoredLandmarks = undefined) {
       if (!landmarkGroupIndex) {
         throw new CATMAID.ValueError('No source landmark group information found');
       }
@@ -470,7 +474,8 @@
       let sharedLandmarkIds;
       if (byName) {
         sharedLandmarkIds = CATMAID.Landmarks.getSharedLandmarksByName(
-            fromGroup, toGroup, sourceLandmarkIndex, landmarkIndex);
+            fromGroup, toGroup, sourceLandmarkIndex, landmarkIndex, false,
+            ignoredLandmarks);
       } else {
         sharedLandmarkIds = new Set();
         let fromLandmarkIds = new Set(fromGroup.members);
@@ -600,7 +605,7 @@
         try {
           mls = CATMAID.Landmarks.getMlsTransform(transformation,
             landmarkGroupIndex, landmarkIndex, i, sourceLandmarkGroupIndex,
-            sourceLandmarkIndex, byName);
+            sourceLandmarkIndex, byName, transformation.ignoredLandmarks);
         } catch (error) {
           CATMAID.warn(error ? error.message : "Unknown error");
           return false;
@@ -658,7 +663,7 @@
 
       transformation.skeletonPromises = new Map();
       transformation.nodeProvider = {
-        get: function(skeletonId) {
+        get: function(skeletonId, force) {
           // If skeleton is still in the loading queue, return promise from
           // there.
           let skeletonPromise = transformation.skeletonPromises.get(skeletonId);
@@ -667,7 +672,7 @@
           }
 
           // Return cached version, if available.
-          if (transformation.skeletonCache && transformation.skeletonCache[skeletonId]) {
+          if (!force && transformation.skeletonCache && transformation.skeletonCache[skeletonId]) {
             return Promise.resolve(transformation.skeletonCache[skeletonId]);
           }
 
@@ -771,6 +776,7 @@
     this.color = new THREE.Color(color);
     this.modelClass = modelClass;
     this.useReverseMatches = useReverseMatches;
+    this.ignoredLandmarks = new Set();
   };
 
   // Provide some basic events

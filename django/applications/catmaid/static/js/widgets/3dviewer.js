@@ -2962,7 +2962,7 @@
       for (let i=0, imax=landmarkTransform.skeletons.length; i<imax; ++i) {
         let skeletonModel = landmarkTransform.skeletons[i];
         // Create transformed skeleton mesh and add it to scene
-        landmarkTransform.nodeProvider.get(skeletonModel.id)
+        landmarkTransform.nodeProvider.get(skeletonModel.id, force)
           .then((function(json) {
             let transform = this.loadedLandmarkTransforms[landmarkTransformId];
 

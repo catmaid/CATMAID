@@ -121,6 +121,7 @@ class TileSourceTypes(enum.IntEnum):
     BOSS = 12
     CATMAID_BACKEND_CLOUDVOLUME = 13
     NEUROGLANCER_PRECOMPUTED = 14
+    OME_ZARR = 15
 
 TILE_SOURCE_TYPE_DESCRIPTIONS = {
     TileSourceTypes.FILE_BASED_STACK: 'File-based image stack',
@@ -137,6 +138,7 @@ TILE_SOURCE_TYPE_DESCRIPTIONS = {
     TileSourceTypes.BOSS: 'Boss tiles',
     TileSourceTypes.CATMAID_BACKEND_CLOUDVOLUME: 'CloudVolume tiles (back-end)',
     TileSourceTypes.NEUROGLANCER_PRECOMPUTED: 'Neuroglancer precomputed',
+    TileSourceTypes.OME_ZARR: 'OME-Zarr',
 }
 
 TILE_SOURCE_TYPE_CHOICES = [(t.value, f'{t.value}: {TILE_SOURCE_TYPE_DESCRIPTIONS[t]}') for t in TileSourceTypes]

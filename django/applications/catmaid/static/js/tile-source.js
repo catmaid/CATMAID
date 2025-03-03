@@ -42,6 +42,7 @@
       '12': CATMAID.BossTileSource,
       '13': CATMAID.CloudVolumeTileSource,
       '14': CATMAID.NeuroglancerPrecomputedImageBlockWorkerSource,
+      '15': CATMAID.OMEZarrBlockSource,
     };
 
     return tileSources[tileSourceType];
@@ -1376,6 +1377,197 @@
                 }).flat();
               });
       });
+    }
+  };
+
+
+  /**
+   * Image block source type for OME Zarr datasets.
+   * See https://ngff.openmicroscopy.org/latest/
+   * See https://guido.io/zarr.js/
+   *
+   * Source type: 15
+   */
+  CATMAID.OMEZarrBlockSource = class OMEZarrBlockSource extends (
+    CATMAID.AbstractImageBlockSource
+  ) {
+    constructor(...args) {
+      super(...args);
+
+      console.log("this.baseURL", this.baseURL);
+      this.initialize(...args);
+
+      return;
+
+      this.datasetURL = this.baseURL.substring(
+        0,
+        this.baseURL.lastIndexOf("/")
+      );
+
+      let sliceDims = this.baseURL.substring(this.baseURL.lastIndexOf("/") + 1);
+      this.sliceDims = sliceDims.split("_").map((d) => parseInt(d, 10));
+      this.reciprocalSliceDims = Array.from(
+        Array(this.sliceDims.length).keys()
+      ).sort((a, b) => this.sliceDims[a] - this.sliceDims[b]);
+
+      this.datasetAttributes = null;
+      this.promiseReady = OMEZarrBlockSource.loadZarr()
+        .then((zarr) => this._findRoot(zarr).then((r) => (this.reader = r)))
+        .then(() => this.populateDatasetAttributes());
+      this.ready = false;
+    }
+
+    async initialize(...args) {
+      console.log("this.baseURL", this.baseURL);
+
+      const store = new zarr.FetchStore(
+        "https://raw.githubusercontent.com/zarr-developers/zarr_implementations/5dc998ac72/examples/zarr.zr/blosc"
+      );
+      const arr = await zarr.open(store, { kind: "array" });
+      // {
+      //   store: FetchStore,
+      //   path: "/",
+      //   dtype: "uint8",
+      //   shape: [512, 512, 3],
+      //   chunks: [100, 100, 1],
+      // }
+      const view = await zarr.get(arr, [null, null, 0]);
+      // {
+      //   data: Uint8Array,
+      //   shape: [512, 512],
+      //   stride: [512, 1],
+      // }
+
+      /*const z = await openArray({
+        store: "http://127.0.0.1:8085/omezarrs/",
+        path: "test_ngff_image2.zarr/0",
+        mode: "r",
+      });*/
+      console.log("test_ngff_image2.zarr shape", z.shape);
+      console.log("test_ngff_image2.zarr chunks", z.chunks);
+    }
+
+    static loadZarr() {
+      if (!this.promiseZarr) {
+        this.promiseZarr = import("zarr").then((zarr) => zarr);
+      }
+      return this.promiseZarr;
+    }
+
+    _findRoot(zarr) {
+      return zarr
+        .openGroup(this.rootURL)
+        .then((r) => {
+          this.datasetPathFormat = this.datasetURL.substring(
+            this.rootURL.length + 1
+          );
+          return r;
+        })
+        .catch((error) => {
+          let origin = new URL(this.rootURL).origin;
+          let nextDir = this.rootURL.lastIndexOf("/");
+          if (nextDir === -1 || origin == this.rootURL) {
+            CATMAID.msg(
+              "Mirror Inaccessible",
+              `Could not locate Zarr root for mirror ${this.id}`,
+              { style: "error" }
+            );
+            return new Promise(() => {});
+          }
+          this.rootURL = this.rootURL.substring(0, nextDir);
+          return this._findRoot(zarr);
+        });
+    }
+
+    getTileURL(project, stack, slicePixelPosition, col, row, zoomLevel) {
+      let z = Math.floor(slicePixelPosition[0] / this.blockSize(zoomLevel)[2]);
+      let sourceCoord = [col, row, z];
+      let blockCoord = CATMAID.tools.permute(
+        sourceCoord,
+        this.reciprocalSliceDims
+      );
+
+      return (
+        this.rootURL +
+        "/" +
+        this.datasetPath(zoomLevel) +
+        "/" +
+        blockCoord.join("/")
+      );
+    }
+
+    populateDatasetAttributes(zoomLevel = 0) {
+      return this.reader
+        .getItemAttributes(this.datasetPath(zoomLevel))
+        .then((dataAttrs) => {
+          this.datasetAttributes = dataAttrs;
+          this.ready = true;
+        });
+    }
+
+    blockCoordBounds(zoomLevel) {
+      if (!this.ready) return;
+
+      let attrs = this.datasetAttributes;
+      let bs = attrs.chunks;
+      let max = attrs.shape.map((d, i) => Math.ceil(d / bs[i]) - 1);
+
+      let min = new Array(max.length).fill(0);
+      return new CATMAID.BlockCoordBounds(min, max);
+    }
+
+    blockSize(zoomLevel) {
+      if (!this.ready) return [this.tileWidth, this.tileHeight, 1];
+      let bs = this.datasetAttributes.chunks;
+      return CATMAID.tools.permute(bs, this.sliceDims);
+    }
+
+    dataType() {
+      return this.ready ? this.datasetAttributes.dtype : undefined;
+    }
+
+    readBlock(zoomLevel, ...sourceCoord) {
+      return this.promiseReady.then(() => {
+        let path = this.datasetPath(zoomLevel);
+        let blockCoord = CATMAID.tools.permute(
+          sourceCoord,
+          this.reciprocalSliceDims
+        );
+
+        return this.reader.getItem(path, blockCoord).then((block) => {
+          if (block) {
+            let size = block.shape;
+            let n = 1;
+            let stride = size.map((s) => {
+              let rn = n;
+              n *= s;
+              return rn;
+            });
+            return {
+              block: new nj.NdArray(
+                nj.ndarray(block.data, size, stride)
+              ).transpose(...this.sliceDims),
+            };
+          } else {
+            return { block: null };
+          }
+        });
+      });
+    }
+
+    datasetPath(zoomLevel) {
+      return this.datasetPathFormat.replace(
+        "%SCALE_DATASET%",
+        this.scaleLevelPath(zoomLevel)
+      );
+    }
+
+    scaleLevelPath(zoomLevel) {
+      return "s" + zoomLevel;
+    }
+
+    numScaleLevels() {
+      return this.datasetAttributes ? this.datasetAttributes.scales.length : 0;
     }
   };
 

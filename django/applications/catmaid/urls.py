@@ -533,6 +533,7 @@ urlpatterns += [
 # Landmarks
 urlpatterns += [
     re_path(rf'^(?P<project_id>{integer})/landmarks/$', landmarks.LandmarkList.as_view()),
+    re_path(rf'^(?P<project_id>{integer})/landmarks/normalize-names$', landmarks.LandmarkNameNormalizer.as_view()),
     re_path(rf'^(?P<project_id>{integer})/landmarks/(?P<landmark_id>[0-9]+)/$', landmarks.LandmarkDetail.as_view()),
     re_path(rf'^(?P<project_id>{integer})/landmarks/(?P<landmark_id>[0-9]+)/locations/$',
             landmarks.LandmarkLocationList.as_view()),

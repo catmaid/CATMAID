@@ -1701,3 +1701,46 @@ class LandmarkGroupMaterializer(APIView):
             'created_landmarks': n_created_landmarks,
             'links': link_map
         })
+
+
+class LandmarkNameNormalizer(APIView):
+
+    @method_decorator(requires_user_role(UserRole.Admin))
+    def post(self, request:Request, project_id) -> Response:
+        """Ensure all landmark names and landmark group names follow the same
+        rules: no whitespace before or after the name.
+        """
+
+        classes = get_class_to_id_map(project_id)
+        relations = get_relation_to_id_map(project_id)
+        landmark_class = classes['landmark']
+        landmarkgroup_class = classes['landmarkgroup']
+        part_of_rel = relations['part_of']
+        annotated_with_rel = relations['annotated_with']
+
+        updated_landmarks = []
+        landmarks = ClassInstance.objects.filter(project_id=project_id,
+                                                 class_column=landmark_class)
+        for landmark in landmarks:
+            trimmed_name = landmark.name.strip()
+            if trimmed_name != landmark.name:
+                landmark.name = trimmed_name
+                updated_landmarks.append(landmark)
+                landmark.save()
+
+        updated_groups = []
+        landmark_groups = ClassInstance.objects.filter(project_id=project_id,
+                class_column=landmarkgroup_class)
+        for group in landmark_groups:
+            trimmed_name = group.name.strip()
+            if trimmed_name != group.name:
+                group.name = trimmed_name
+                updated_groups.append(group)
+                group.save()
+
+        return Response({
+            'normalized_landmark_names': len(updated_landmarks),
+            'normalized_group_names': len(updated_groups),
+            'total_landmarks': len(landmarks),
+            'total_groups': len(landmark_groups),
+        })

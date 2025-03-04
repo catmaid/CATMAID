@@ -726,6 +726,13 @@
       return index;
     },
 
+    /**
+     * Ensure all landmark names and group names are following the same rules.
+     * Most importantly: no whitespace before or after the name.
+     */
+    normalizeLandmarkAndGroupNames(projectId) {
+      return CATMAID.fetch(`${projectId}/landmarks/normalize-names`,'POST');
+    },
   };
 
   /**

@@ -1203,6 +1203,28 @@
             }
           },
           {
+            type: 'button',
+            label: 'Normalize names',
+            title: 'Ensure all landmarks and landmark groups in this project follow the same rules (no whitespace prefix/suffix). Requires project admin role for the active user.',
+            onclick: function() {
+              CATMAID.Landmarks.normalizeLandmarkAndGroupNames(project.id)
+                .then(response => {
+                  if (response.normalized_landmark_names == 0 &&
+                      response.normalized_group_names == 0) {
+                    CATMAID.msg('All names already normalized', 'All landmark names and landmark group names are already normalized');
+                  } else if (response.normalized_group_names == 0) {
+                    CATMAID.msg("Success", `Normalized ${response.normalized_landmark_names} landmark names. All group names were already normalized.`);
+                  } else if (response.normalized_landmark_names == 0) {
+                    CATMAID.msg("Success", `Normalized ${response.normalized_group_names} group names. All landmark names were already normalized.`);
+                  } else {
+                    CATMAID.msg("Success", `Normalized ${response.normalized_landmark_names} landmark names and ${response.normalized_group_names} group names.`);
+                  }
+                  target.updateLandmarksAndGroups(project.id);
+                })
+                .catch(CATMAID.handleError);
+            }
+          },
+          {
             type: 'child',
             element: newLandmarkSection
           },

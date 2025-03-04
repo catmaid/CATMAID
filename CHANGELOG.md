@@ -127,6 +127,10 @@ Landmark widget:
   and the Landmark Layer. This makes indentifying problematic landmarks much
   quicker.
 
+- A "Normalize names" button is added to the Landmarks tab. This button will
+  instruct the back-end to ensure all landmark names and landmark group names
+  don't have any leading or trailing whitespace.
+
 Stack viewer:
 
 - WebGL layers can now define a so called blending window through the layer

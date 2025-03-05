@@ -1394,181 +1394,220 @@
     constructor(...args) {
       super(...args);
 
-      console.log("this.baseURL", this.baseURL);
-      this.initialize(...args);
+      function supportsDynamicImport() {
+        try {
+          new Function('import("")');
+          return true;
+        } catch (err) {
+          return false;
+        }
+      }
 
-      return;
+      if (!supportsDynamicImport() || typeof BigInt === 'undefined') {
+        // TODO: should fail gracefully here instead.
+        throw new CATMAID.Error(
+          'Your browser does not support features required for OME-Zarr mirrors');
+      }
 
-      this.datasetURL = this.baseURL.substring(
-        0,
-        this.baseURL.lastIndexOf("/")
-      );
+      this.datasetURL = this.baseURL;
+      this.sliceDims = [0, 1, 2];
+      this.reciprocalSliceDims = Array.from(Array(this.sliceDims.length).keys())
+          .sort((a, b) => this.sliceDims[a] - this.sliceDims[b]);
+      console.log('this.reciprocalSliceDims',this.reciprocalSliceDims)
 
-      let sliceDims = this.baseURL.substring(this.baseURL.lastIndexOf("/") + 1);
-      this.sliceDims = sliceDims.split("_").map((d) => parseInt(d, 10));
-      this.reciprocalSliceDims = Array.from(
-        Array(this.sliceDims.length).keys()
-      ).sort((a, b) => this.sliceDims[a] - this.sliceDims[b]);
-
-      this.datasetAttributes = null;
-      this.promiseReady = OMEZarrBlockSource.loadZarr()
-        .then((zarr) => this._findRoot(zarr).then((r) => (this.reader = r)))
-        .then(() => this.populateDatasetAttributes());
+      this.promiseReady = OMEZarrBlockSource.loadZarrita()
+      .then(() => this.loadRoot())
+      .then((data) => {
+        this.rootData = data;
+        this.populateDatasetAttributes()
+      });
       this.ready = false;
+
     }
 
     async initialize(...args) {
-      console.log("this.baseURL", this.baseURL);
-
-      const store = new zarr.FetchStore(
-        "https://raw.githubusercontent.com/zarr-developers/zarr_implementations/5dc998ac72/examples/zarr.zr/blosc"
-      );
-      const arr = await zarr.open(store, { kind: "array" });
-      // {
-      //   store: FetchStore,
-      //   path: "/",
-      //   dtype: "uint8",
-      //   shape: [512, 512, 3],
-      //   chunks: [100, 100, 1],
-      // }
-      const view = await zarr.get(arr, [null, null, 0]);
-      // {
-      //   data: Uint8Array,
-      //   shape: [512, 512],
-      //   stride: [512, 1],
-      // }
-
-      /*const z = await openArray({
-        store: "http://127.0.0.1:8085/omezarrs/",
-        path: "test_ngff_image2.zarr/0",
-        mode: "r",
-      });*/
-      console.log("test_ngff_image2.zarr shape", z.shape);
-      console.log("test_ngff_image2.zarr chunks", z.chunks);
+      console.log("initialize.baseURL", this.baseURL);
     }
 
-    static loadZarr() {
+    static loadZarrita() {
       if (!this.promiseZarr) {
-        this.promiseZarr = import("zarr").then((zarr) => zarr);
+        let url = 'https://cdn.jsdelivr.net/npm/zarrita@next/+esm'
+        this.promiseZarr = (new Function(`return import('${url}')`))().then(zarrita => { Window.Zarrita = zarrita; console.log('loaded'); return zarrita})
       }
       return this.promiseZarr;
     }
 
-    _findRoot(zarr) {
-      return zarr
-        .openGroup(this.rootURL)
-        .then((r) => {
-          this.datasetPathFormat = this.datasetURL.substring(
-            this.rootURL.length + 1
-          );
-          return r;
+    getRootZarrJsonUrl() {
+      return `${this.datasetURL}/zarr.json`;
+    }
+
+    loadRoot() {
+      const url = this.getRootZarrJsonUrl();
+      return fetch(new Request(url))
+        .then(response => {
+          return response.json();
         })
-        .catch((error) => {
-          let origin = new URL(this.rootURL).origin;
-          let nextDir = this.rootURL.lastIndexOf("/");
-          if (nextDir === -1 || origin == this.rootURL) {
-            CATMAID.msg(
-              "Mirror Inaccessible",
-              `Could not locate Zarr root for mirror ${this.id}`,
-              { style: "error" }
-            );
-            return new Promise(() => {});
-          }
-          this.rootURL = this.rootURL.substring(0, nextDir);
-          return this._findRoot(zarr);
+        .catch(() => {
+          CATMAID.msg('Mirror Inaccessible', `Could not locate zarr.json for mirror ${this.id}`, {style: 'error'});
+          // Don't cause error popups, but do not resolve promise.
+          return new Promise(() => {});
         });
     }
 
-    getTileURL(project, stack, slicePixelPosition, col, row, zoomLevel) {
-      let z = Math.floor(slicePixelPosition[0] / this.blockSize(zoomLevel)[2]);
-      let sourceCoord = [col, row, z];
-      let blockCoord = CATMAID.tools.permute(
-        sourceCoord,
-        this.reciprocalSliceDims
-      );
-
-      return (
-        this.rootURL +
-        "/" +
-        this.datasetPath(zoomLevel) +
-        "/" +
-        blockCoord.join("/")
-      );
+    getCanaryUrl(project, stack) {
+      return this.getRootZarrJsonUrl();
     }
 
-    populateDatasetAttributes(zoomLevel = 0) {
-      return this.reader
-        .getItemAttributes(this.datasetPath(zoomLevel))
-        .then((dataAttrs) => {
-          this.datasetAttributes = dataAttrs;
-          this.ready = true;
-        });
-    }
 
-    blockCoordBounds(zoomLevel) {
-      if (!this.ready) return;
+    populateDatasetAttributes() {
+      console.log('loaded root zarr data', this.rootData)
 
-      let attrs = this.datasetAttributes;
-      let bs = attrs.chunks;
-      let max = attrs.shape.map((d, i) => Math.ceil(d / bs[i]) - 1);
+      if (!('attributes' in this.rootData && 'ome' in this.rootData.attributes && this.rootData.attributes.ome.version == '0.5')) {
+        throw new CATMAID.Error(
+          'Only OME-Zarr version 0.5 is supported');
+      }
 
-      let min = new Array(max.length).fill(0);
-      return new CATMAID.BlockCoordBounds(min, max);
+      let datasets = this.rootData.attributes.ome.multiscales[0].datasets;
+      this.datasetAttributes = [];
+    
+      let allPathsPromise = [];
+
+      let request = (index, url) => {
+        return fetch(new Request(url))
+          .then(response => 
+            response.json().then(res => {
+              console.log('resX', index, url, res)
+              return [index, res];
+            })
+          )
+          .catch(() => {console.log('issue', url); [-1, {}]});
+      }
+
+      for (let index = 0; index < datasets.length; index++) {
+        console.log('index', index, datasets[index])
+        this.datasetAttributes[index] = {'root': datasets[index]};
+        
+        let url = `${this.datasetURL}/${datasets[index].path}/zarr.json`;
+        console.log('push url', url)
+        
+        allPathsPromise.push(
+          request(index, url)
+        )
+        
+        /*fetch(new Request(url))
+        .then(response => {
+          response.json().then(res => {
+            console.log('res', index, res)
+            this.datasetAttributes[index]['ds'] = res;
+            this.ready = true;
+          });
+        })
+        .catch(() => {
+          CATMAID.msg('Scale Level Inaccessible', `Could not locate zarr.json for subpath ${url}`, {style: 'error'});
+          // Don't cause error popups, but do not resolve promise.
+          return new Promise(() => {});
+        });*/
+
+      }
+      console.log('allPathsPromise', allPathsPromise)
+
+      return Promise.all(allPathsPromise).then(result => {
+        console.log('allPathPromises Result', result)
+        for (let index = 0; index < result.length; index++) {
+          console.log('update', result[index][0], 'with', result[index][1])
+          this.datasetAttributes[result[index][0]]['ds'] = result[index][1];
+        }
+      }).then(() => this.ready = true);
+
     }
 
     blockSize(zoomLevel) {
-      if (!this.ready) return [this.tileWidth, this.tileHeight, 1];
-      let bs = this.datasetAttributes.chunks;
+      if (!this.ready) return [
+        this.tileWidth,
+        this.tileHeight,
+        1
+      ];
+      let bs = this.datasetAttributes[zoomLevel].ds.chunk_grid.configuration.chunk_shape;
+      console.log('blocksize', zoomLevel, bs);
       return CATMAID.tools.permute(bs, this.sliceDims);
     }
 
-    dataType() {
-      return this.ready ? this.datasetAttributes.dtype : undefined;
+    dataType () {
+      console.log('datatype', this.ready)
+      //return 'uint8';
+      return this.ready ?
+          this.datasetAttributes[0].ds.data_type.toLowerCase() :
+          undefined;
     }
+
 
     readBlock(zoomLevel, ...sourceCoord) {
       return this.promiseReady.then(() => {
-        let path = this.datasetPath(zoomLevel);
-        let blockCoord = CATMAID.tools.permute(
-          sourceCoord,
-          this.reciprocalSliceDims
-        );
 
-        return this.reader.getItem(path, blockCoord).then((block) => {
-          if (block) {
-            let size = block.shape;
-            let n = 1;
-            let stride = size.map((s) => {
-              let rn = n;
-              n *= s;
-              return rn;
-            });
-            return {
-              block: new nj.NdArray(
-                nj.ndarray(block.data, size, stride)
-              ).transpose(...this.sliceDims),
-            };
-          } else {
-            return { block: null };
-          }
-        });
+        let path = this.datasetPath(zoomLevel);
+        let dataAttrs = this.datasetAttributes[zoomLevel];
+        
+        
+        console.log('readBlock', zoomLevel, sourceCoord);
+        let blockCoord = CATMAID.tools.permute(sourceCoord, this.reciprocalSliceDims);
+        console.log('blockCoord', blockCoord);
+
+        /*return this.reader
+            .read_block_with_etag(path, dataAttrs, blockCoord.map(BigInt))
+            .then(block => {
+              if (block) {
+                let etag = block.get_etag();
+                let size = block.get_size();
+                let n = 1;
+                let stride = size.map(s => { let rn = n; n *= s; return rn; });
+                return {
+                  etag,
+                  block: new nj.NdArray(nj.ndarray(block.into_data(), size, stride))
+                      .transpose(...this.sliceDims)
+                };
+              } else {
+                return {block, etag: undefined};
+              }
+            });*/
       });
     }
 
     datasetPath(zoomLevel) {
-      return this.datasetPathFormat.replace(
-        "%SCALE_DATASET%",
-        this.scaleLevelPath(zoomLevel)
-      );
-    }
-
-    scaleLevelPath(zoomLevel) {
-      return "s" + zoomLevel;
+      return `${this.datasetURL}/${this.datasetAttributes[zoomLevel].root.path.path}`;
     }
 
     numScaleLevels() {
-      return this.datasetAttributes ? this.datasetAttributes.scales.length : 0;
+      return this.datasetAttributes.length;
     }
+
+    checkCanary(project, stack, noCache) {
+      let request = (options) => {
+        let url = this.getCanaryUrl(project, stack);
+
+        if (noCache) {
+          url += "?nocache=" + Date.now();
+        }
+
+        let before = performance.now();
+        return fetch(new Request(url, options))
+          .then(response =>
+            [response.status === 200, performance.now() - before]
+          )
+          .catch(() => [false, Infinity]);
+      };
+
+      return this.promiseReady.then(() => Promise.all([
+          request(),
+          request({mode: 'cors', credentials: 'same-origin'})
+      ]).then(result => ({
+          normal:     result[0][0],
+          normalTime: result[0][1],
+          cors:       result[1][0],
+          corsTime:   result[1][1]
+      })));
+    }
+
+
   };
 
   /**

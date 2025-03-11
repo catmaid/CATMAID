@@ -27,5 +27,8 @@
     "typecheck": "npm run typecheck:mypy-diff",
     "jsdoc": "jsdoc -r django/applications/catmaid/static/js",
     "karma": "karma start karma.conf.js"
+  },
+  "dependencies": {
+    "prismjs": "^1.30.0"
   }
 }

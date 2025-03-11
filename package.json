@@ -29,6 +29,7 @@
     "karma": "karma start karma.conf.js"
   },
   "dependencies": {
+    "elliptic": "^6.6.1",
     "prismjs": "^1.30.0"
   }
 }

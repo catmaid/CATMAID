@@ -1410,19 +1410,19 @@
       }
 
       this.datasetURL = this.baseURL;
-      this.sliceDims = [0, 1, 2];
+      // XXX: get dims from data, collecting x,y,z in axes field
+      this.sliceDims = [1, 2, 3];
       this.reciprocalSliceDims = Array.from(Array(this.sliceDims.length).keys())
           .sort((a, b) => this.sliceDims[a] - this.sliceDims[b]);
+      console.log('this.sliceDims',this.sliceDims)
       console.log('this.reciprocalSliceDims',this.reciprocalSliceDims)
 
       this.promiseReady = OMEZarrBlockSource.loadZarrita()
       .then(() => this.loadRoot())
       .then((data) => {
         this.rootData = data;
-        this.populateDatasetAttributes()
-      });
+      }).then(() => this.populateDatasetAttributes());
       this.ready = false;
-
     }
 
     async initialize(...args) {
@@ -1432,7 +1432,7 @@
     static loadZarrita() {
       if (!this.promiseZarr) {
         let url = 'https://cdn.jsdelivr.net/npm/zarrita@next/+esm'
-        this.promiseZarr = (new Function(`return import('${url}')`))().then(zarrita => { Window.Zarrita = zarrita; console.log('loaded'); return zarrita})
+        this.promiseZarr = (new Function(`return import('${url}')`))().then(zarrita => { Window.Zarrita = zarrita; return zarrita})
       }
       return this.promiseZarr;
     }
@@ -1460,7 +1460,6 @@
 
 
     populateDatasetAttributes() {
-      console.log('loaded root zarr data', this.rootData)
 
       if (!('attributes' in this.rootData && 'ome' in this.rootData.attributes && this.rootData.attributes.ome.version == '0.5')) {
         throw new CATMAID.Error(
@@ -1469,6 +1468,7 @@
 
       let datasets = this.rootData.attributes.ome.multiscales[0].datasets;
       this.datasetAttributes = [];
+      this.stores = {};
     
       let allPathsPromise = [];
 
@@ -1476,48 +1476,28 @@
         return fetch(new Request(url))
           .then(response => 
             response.json().then(res => {
-              console.log('resX', index, url, res)
               return [index, res];
             })
           )
           .catch(() => {console.log('issue', url); [-1, {}]});
       }
 
+      // push request for each scale level
       for (let index = 0; index < datasets.length; index++) {
-        console.log('index', index, datasets[index])
         this.datasetAttributes[index] = {'root': datasets[index]};
-        
         let url = `${this.datasetURL}/${datasets[index].path}/zarr.json`;
-        console.log('push url', url)
-        
-        allPathsPromise.push(
-          request(index, url)
-        )
-        
-        /*fetch(new Request(url))
-        .then(response => {
-          response.json().then(res => {
-            console.log('res', index, res)
-            this.datasetAttributes[index]['ds'] = res;
-            this.ready = true;
-          });
-        })
-        .catch(() => {
-          CATMAID.msg('Scale Level Inaccessible', `Could not locate zarr.json for subpath ${url}`, {style: 'error'});
-          // Don't cause error popups, but do not resolve promise.
-          return new Promise(() => {});
-        });*/
-
+        allPathsPromise.push(request(index, url))
       }
-      console.log('allPathsPromise', allPathsPromise)
 
+      // get the results for each scale level and populate datasetAttributes and create stores
       return Promise.all(allPathsPromise).then(result => {
-        console.log('allPathPromises Result', result)
         for (let index = 0; index < result.length; index++) {
-          console.log('update', result[index][0], 'with', result[index][1])
+          let storePath = `${this.datasetURL}/${datasets[index].path}`
           this.datasetAttributes[result[index][0]]['ds'] = result[index][1];
+          this.stores[result[index][0]] = new Window.Zarrita.FetchStore(storePath);
         }
-      }).then(() => this.ready = true);
+      })
+      .then(() => this.ready = true);
 
     }
 
@@ -1527,48 +1507,47 @@
         this.tileHeight,
         1
       ];
+      // XXX: is chunk_shape correct as block_size
       let bs = this.datasetAttributes[zoomLevel].ds.chunk_grid.configuration.chunk_shape;
-      console.log('blocksize', zoomLevel, bs);
+      // console.log('blockSize', zoomLevel, bs, 'permute', CATMAID.tools.permute(bs, this.sliceDims));
       return CATMAID.tools.permute(bs, this.sliceDims);
     }
 
+    blockCoordBounds(zoomLevel) {
+      if (!this.ready) return;
+      // XXX What should it return?
+      console.log('blockCoordBounds', zoomLevel)
+      return new CATMAID.BlockCoordBounds([0,0,0], [100,100,100]);
+    }
+
     dataType () {
-      console.log('datatype', this.ready)
-      //return 'uint8';
-      return this.ready ?
-          this.datasetAttributes[0].ds.data_type.toLowerCase() :
-          undefined;
+      if(this.ready) {
+        return this.datasetAttributes[0].ds.data_type.toLowerCase();
+      } else {
+        return undefined;
+      }
     }
 
 
     readBlock(zoomLevel, ...sourceCoord) {
       return this.promiseReady.then(() => {
-
         let path = this.datasetPath(zoomLevel);
-        let dataAttrs = this.datasetAttributes[zoomLevel];
-        
-        
-        console.log('readBlock', zoomLevel, sourceCoord);
+        let dataAttrs = this.datasetAttributes[zoomLevel];       
         let blockCoord = CATMAID.tools.permute(sourceCoord, this.reciprocalSliceDims);
-        console.log('blockCoord', blockCoord);
+        // console.log('readBlock', zoomLevel, sourceCoord, path, dataAttrs, 'blockCoord', blockCoord);
 
-        /*return this.reader
-            .read_block_with_etag(path, dataAttrs, blockCoord.map(BigInt))
-            .then(block => {
-              if (block) {
-                let etag = block.get_etag();
-                let size = block.get_size();
-                let n = 1;
-                let stride = size.map(s => { let rn = n; n *= s; return rn; });
-                return {
-                  etag,
-                  block: new nj.NdArray(nj.ndarray(block.into_data(), size, stride))
-                      .transpose(...this.sliceDims)
-                };
-              } else {
-                return {block, etag: undefined};
-              }
-            });*/
+        let arr = new nj.NdArray(nj.uint8(nj.random([32,32,32]).multiply(255).tolist()) );
+        // XXX: why is it not showing random data in the stack viewer?
+        console.log('arr', arr)
+
+        // XXX: load array data
+        const arr2 = Window.Zarrita.open.v3(this.stores[zoomLevel], { kind: "array" }).then(arr => {
+          console.log('opened arr', arr2);
+          //const view = Window.Zarrita.get(arr, [null, null, 0]).then(view => {console.log('view', arr); return view});
+          return arr
+        });
+
+        return {block: arr.transpose(...this.sliceDims), etag: undefined};
       });
     }
 

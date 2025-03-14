@@ -80,4 +80,26 @@
     ).join(recordSep);
   };
 
+	/**
+	 * A convenient function to invoke saveAs with the appropriate Blob
+	 * and mimetype, for plain text.
+	 * The filename is optional.
+	 */
+	CATMAID.saveTextAs = function(text, filename)
+	{
+		return saveAs(new Blob([text], {type: 'text/plain'}),
+		  undefined === filename ? "content.txt" : filename);
+	};
+
+	/**
+	 * A convenient function to invoke saveAs with the appropriate Blob
+	 * and mimetype, for a javascript object (array, object, etc.)
+	 * The filename is optional.
+	 */
+	CATMAID.saveJSONAs = function(ob, filename)
+	{
+		return saveAs(new Blob([JSON.stringify(ob)], {type: 'text/plain'}),
+		  undefined === filename ? "ob.json" : filename);
+	};
+
 })(CATMAID);

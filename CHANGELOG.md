@@ -186,6 +186,13 @@ Review widget:
 - Displayed landmark groups are now reloaded if they change (e.g. in the
   Landmark Widget).
 
+Log/history widget:
+
+- Each entry in the list of transactions in the History tab has now a button to
+  show all (historic) skeleton IDs involved with this transaction. Depending on
+  the transaction label this can be different things (e.g. all linked skeletons
+  in a connector removal.
+
 Miscellaneous:
 
 - The built-in API docs (/apis endpoint) now supports deep links, which allows

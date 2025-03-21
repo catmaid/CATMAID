@@ -8,7 +8,7 @@ from catmaid.error import ClientError
 from catmaid.control.authentication import requires_user_role
 from catmaid.models import UserRole
 
-from rest_framework.decorators import api_view
+from rest_framework.decorators import APIView, api_view
 from rest_framework.request import Request
 from rest_framework.response import Response
 
@@ -125,6 +125,66 @@ def transaction_collection(request:Request, project_id) -> Response:
         })
 
 
+class TransactionSkeletonView(APIView):
+
+    def get(self, request:Request, project_id) -> Response:
+        """Try to associate a location in the passed in project for a particular
+        transaction.
+        ---
+        parameters:
+        transaction_id:
+            type: integer
+            required: true
+            description: Transaction ID in question
+            paramType: form
+        execution_time:
+            type: string
+            required: true
+            description: Execution time of the transaction
+            paramType: form
+        """
+        transaction_id = request.GET.get('transaction_id', None)
+        if not transaction_id:
+            raise ValueError("Need transaction ID")
+        transaction_id = int(transaction_id)
+
+        execution_time = request.GET.get('execution_time', None)
+        if not execution_time:
+            raise ValueError("Need execution time")
+
+        cursor = connection.cursor()
+
+        label = request.GET.get('label', None)
+        if not label:
+            cursor.execute("""
+                SELECT label FROM catmaid_transaction_info
+                WHERE transaction_id = %s AND execution_time = %s
+            """, (transaction_id, execution_time))
+            result = cursor.fetchone()
+            if not result:
+                raise ValueError(f"Could not find label for transaction {transaction_id} and "
+                        "execution time {execution_time}")
+            label = result[0]
+
+        # Look first in live table and then in history table. Use only
+        # transaction ID for lookup
+        skeleton_ids = set()
+        provider = skeleton_queries.get(label)
+        if not provider:
+            raise LocationLookupError("A representative set of skeletons for this update was not found")
+        query = provider.get()
+        while query:
+            cursor.execute(query, (transaction_id, ))
+            query = None
+            result = cursor.fetchall()
+            if result and len(result) > 0:
+                skeleton_ids.update(map(lambda x: x[0], result))
+
+        return Response({
+            'skeleton_ids': skeleton_ids,
+        })
+
+
 @api_view(["GET"])
 @requires_user_role([UserRole.Browse])
 def get_location(request:Request, project_id) -> Response:
@@ -211,7 +271,8 @@ def get_location(request:Request, project_id) -> Response:
             'z': location[2]
         })
 
-class LocationQuery(object):
+
+class HistoryQuery(object):
 
     def __init__(self, query, history_suffix='__with_history', txid_column='txid'):
         """ The query is a query string that selects tuples of three,
@@ -228,7 +289,7 @@ class LocationQuery(object):
         return self.query
 
 
-class LocationRef(object):
+class QueryRef(object):
     def __init__(self, d, key):
         self.d = d
         self.key = key
@@ -240,7 +301,7 @@ class LocationRef(object):
 location_queries:Dict = {}
 location_queries.update({
     # For annotations, select the root of the annotated neuron
-    'annotations.add': LocationQuery("""
+    'annotations.add': HistoryQuery("""
         SELECT location_x, location_y, location_z
         FROM treenode{history} t
         JOIN class_instance_class_instance{history} cici_s
@@ -251,7 +312,7 @@ location_queries.update({
             AND cici_e.{txid} = %s)
         LIMIT 1
     """),
-    'annotations.remove': LocationQuery("""
+    'annotations.remove': HistoryQuery("""
         SELECT location_x, location_y, location_z
         FROM treenode{history} t
         JOIN class_instance_class_instance{history} cici_s
@@ -262,14 +323,14 @@ location_queries.update({
             AND cici_e.exec_transaction_id = %s)
         LIMIT 1
     """),
-    'connectors.create': LocationRef(location_queries, "nodes.update_location"),
-    'connectors.remove': LocationQuery("""
+    'connectors.create': QueryRef(location_queries, "nodes.update_location"),
+    'connectors.remove': HistoryQuery("""
         SELECT c.location_x, c.location_y, c.location_z
         FROM location__history c
         WHERE c.exec_transaction_id = %s
         LIMIT 1
     """),
-    'labels.remove': LocationQuery("""
+    'labels.remove': HistoryQuery("""
         SELECT t.location_x, t.location_y, t.location_z
         FROM treenode_class_instance__history tci
         JOIN treenode{history} t
@@ -277,7 +338,7 @@ location_queries.update({
         WHERE tci.exec_transaction_id = %s
         LIMIT 1
     """),
-    'labels.update': LocationQuery("""
+    'labels.update': HistoryQuery("""
         SELECT t.location_x, t.location_y, t.location_z
         FROM treenode_class_instance{history} tci
         JOIN treenode{history} t
@@ -285,7 +346,7 @@ location_queries.update({
         WHERE tci.{txid} = %s
         LIMIT 1
     """),
-    'links.create': LocationQuery("""
+    'links.create': HistoryQuery("""
         SELECT t.location_x, t.location_y, t.location_z
         FROM treenode_connector{history} tc
         JOIN treenode{history} t
@@ -293,14 +354,14 @@ location_queries.update({
         WHERE tc.{txid} = %s
         LIMIT 1
     """),
-    'links.remove': LocationQuery("""
+    'links.remove': HistoryQuery("""
         SELECT t.location_x, t.location_y, t.location_z
         FROM treenode_connector__history tc
         JOIN treenode{history} t
         ON t.id = tc.treenode_id
         WHERE tc.{txid} = %s
     """),
-    'neurons.remove': LocationQuery("""
+    'neurons.remove': HistoryQuery("""
         SELECT location_x, location_y, location_z
         FROM treenode{history} t
         JOIN class_instance_class_instance{history} cici_s
@@ -311,7 +372,7 @@ location_queries.update({
             AND cici_e.{txid} = %s)
         LIMIT 1
     """),
-    'neurons.rename': LocationQuery("""
+    'neurons.rename': HistoryQuery("""
         SELECT location_x, location_y, location_z
         FROM treenode{history} t
         JOIN class_instance_class_instance{history} cici_s
@@ -322,7 +383,7 @@ location_queries.update({
             AND cici_e.{txid} = %s)
         LIMIT 1
     """),
-    'nodes.add_or_update_review': LocationQuery("""
+    'nodes.add_or_update_review': HistoryQuery("""
         SELECT t.location_x, t.location_y, t.location_z
         FROM review{history} r
         JOIN treenode{history} t
@@ -330,20 +391,20 @@ location_queries.update({
         WHERE r.{txid} = %s
         LIMIT 1
     """),
-    'nodes.update_location': LocationQuery("""
+    'nodes.update_location': HistoryQuery("""
         SELECT location_x, location_y, location_z
         FROM location{history}
         WHERE {txid} = %s
         LIMIT 1
     """),
-    'skeletons.import': LocationQuery("""
+    'skeletons.import': HistoryQuery("""
         SELECT location_x, location_y, location_z
         FROM skeleton_origin__with_history so, treenode{history} t
         WHERE so.{txid} = %s AND t.skeleton_id = so.skeleton_id
         ORDER BY t.edition_time DESC
         LIMIT 1;
     """),
-    'textlabels.create': LocationQuery("""
+    'textlabels.create': HistoryQuery("""
         SELECT t.location_x, t.location_y, t.location_z
         FROM textlabel{history} t
         JOIN textlabel_location{history} tl
@@ -351,8 +412,8 @@ location_queries.update({
         WHERE t.{txid} = %s
         LIMIT 1
     """),
-    'textlabels.update': LocationRef(location_queries, "textlabels.create"),
-    'textlabels.delete': LocationQuery("""
+    'textlabels.update': QueryRef(location_queries, "textlabels.create"),
+    'textlabels.delete': HistoryQuery("""
         SELECT t.location_x, t.location_y, t.location_z
         FROM textlabel__history t
         JOIN textlabel_location{history} tl
@@ -362,13 +423,13 @@ location_queries.update({
     """),
     # Look transaction and edition time up in treenode table and return node
     # location.
-    'treenodes.create': LocationRef(location_queries, "nodes.update_location"),
-    'treenodes.insert': LocationRef(location_queries, "nodes.update_location"),
-    'treenodes.remove': LocationRef(location_queries, "connectors.remove"),
-    'treenodes.update_confidence': LocationRef(location_queries, "nodes.update_location"),
-    'treenodes.update_parent': LocationRef(location_queries, "nodes.update_location"),
-    'treenodes.update_radius': LocationRef(location_queries, "nodes.update_location"),
-    'treenodes.suppress_virtual_node': LocationQuery("""
+    'treenodes.create': QueryRef(location_queries, "nodes.update_location"),
+    'treenodes.insert': QueryRef(location_queries, "nodes.update_location"),
+    'treenodes.remove': QueryRef(location_queries, "connectors.remove"),
+    'treenodes.update_confidence': QueryRef(location_queries, "nodes.update_location"),
+    'treenodes.update_parent': QueryRef(location_queries, "nodes.update_location"),
+    'treenodes.update_radius': QueryRef(location_queries, "nodes.update_location"),
+    'treenodes.suppress_virtual_node': HistoryQuery("""
         SELECT t.location_x, t.location_y, t.location_z
         FROM suppressed_virtual_treenode{history} svt
         JOIN treenode{history} t
@@ -376,6 +437,140 @@ location_queries.update({
         WHERE svt.{txid} = %s
         LIMIT 1
     """),
-    'treenodes.unsuppress_virtual_node': LocationRef(location_queries,
+    'treenodes.unsuppress_virtual_node': QueryRef(location_queries,
+            "treenodes.suppress_virtual_node"),
+})
+
+
+skeleton_queries:Dict = {}
+skeleton_queries.update({
+    # For annotations, select the root of the annotated neuron
+    'annotations.add': HistoryQuery("""
+        SELECT t.skeleton_id
+        FROM treenode{history} t
+        JOIN class_instance_class_instance{history} cici_s
+            ON (cici_s.class_instance_a = t.skeleton_id
+            AND t.parent_id IS NULL)
+        JOIN class_instance_class_instance{history} cici_e
+            ON (cici_s.class_instance_b = cici_e.class_instance_a
+            AND cici_e.{txid} = %s)
+    """),
+    'annotations.remove': HistoryQuery("""
+        SELECT t.skeleton_id
+        FROM treenode{history} t
+        JOIN class_instance_class_instance{history} cici_s
+            ON (cici_s.class_instance_a = t.skeleton_id
+            AND t.parent_id IS NULL)
+        JOIN class_instance_class_instance__history cici_e
+            ON (cici_s.class_instance_b = cici_e.class_instance_a
+            AND cici_e.exec_transaction_id = %s)
+    """),
+    'connectors.create': QueryRef(skeleton_queries, "nodes.update_location"),
+    'connectors.remove': HistoryQuery("""
+        SELECT c.skeleton_id
+        FROM treenode_connector__history c
+        WHERE c.exec_transaction_id = %s
+    """),
+    'labels.remove': HistoryQuery("""
+        SELECT t.skeleton_id
+        FROM treenode_class_instance__history tci
+        JOIN treenode{history} t
+        ON t.id = tci.treenode_id
+        WHERE tci.exec_transaction_id = %s
+    """),
+    'labels.update': HistoryQuery("""
+        SELECT t.skeleton_id
+        FROM treenode_class_instance{history} tci
+        JOIN treenode{history} t
+        ON t.id = tci.treenode_id
+        WHERE tci.{txid} = %s
+    """),
+    'links.create': HistoryQuery("""
+        SELECT t.skeleton_id
+        FROM treenode_connector{history} tc
+        JOIN treenode{history} t
+        ON t.id = tc.treenode_id
+        WHERE tc.{txid} = %s
+    """),
+    'links.remove': HistoryQuery("""
+        SELECT t.skeleton_id
+        FROM treenode_connector__history tc
+        JOIN treenode{history} t
+        ON t.id = tc.treenode_id
+        WHERE tc.{txid} = %s
+    """),
+    'neurons.remove': HistoryQuery("""
+        SELECT skeleton_id
+        FROM treenode{history} t
+        JOIN class_instance_class_instance{history} cici_s
+            ON (cici_s.class_instance_a = t.skeleton_id
+            AND t.parent_id IS NULL)
+        JOIN class_instance_class_instance__history cici_e
+            ON (cici_s.class_instance_b = cici_e.class_instance_a
+            AND cici_e.{txid} = %s)
+    """),
+    'neurons.rename': HistoryQuery("""
+        SELECT skeleton_id
+        FROM treenode{history} t
+        JOIN class_instance_class_instance{history} cici_s
+            ON (cici_s.class_instance_a = t.skeleton_id
+            AND t.parent_id IS NULL)
+        JOIN class_instance_class_instance__history{history} cici_e
+            ON (cici_s.class_instance_b = cici_e.class_instance_a
+            AND cici_e.{txid} = %s)
+    """),
+    'nodes.add_or_update_review': HistoryQuery("""
+        SELECT t.skeleton_id
+        FROM review{history} r
+        JOIN treenode{history} t
+        ON t.id = r.treenode_id
+        WHERE r.{txid} = %s
+    """),
+    'nodes.update_location': HistoryQuery("""
+        SELECT skeleton_id
+        FROM treenode{history}
+        WHERE {txid} = %s
+    """),
+    'skeletons.import': HistoryQuery("""
+        SELECT skeleton_id
+        FROM skeleton_origin__with_history so, treenode{history} t
+        WHERE so.{txid} = %s AND t.skeleton_id = so.skeleton_id
+        ORDER BY t.edition_time DESC
+    """),
+    'textlabels.create': HistoryQuery("""
+        SELECT t.skeleton_id
+        FROM textlabel{history} t
+        JOIN textlabel_location{history} tl
+        ON t.id = tl.textlabel_id
+        WHERE t.{txid} = %s
+    """),
+    'textlabels.update': QueryRef(skeleton_queries, "textlabels.create"),
+    'textlabels.delete': HistoryQuery("""
+        SELECT t.skeleton_id
+        FROM textlabel__history t
+        JOIN textlabel_location{history} tl
+        ON t.id = tl.textlabel_id
+        WHERE t.{txid} = %s
+    """),
+    # Look transaction and edition time up in treenode table and return node
+    # location.
+    'treenodes.create': QueryRef(skeleton_queries, "nodes.update_location"),
+    'treenodes.insert': QueryRef(skeleton_queries, "nodes.update_location"),
+    'treenodes.remove': HistoryQuery("""
+        SELECT t.skeleton_id
+        FROM treenode__history t
+        WHERE t.exec_transaction_id = %s
+    """),
+    'treenodes.update_confidence': QueryRef(skeleton_queries, "nodes.update_location"),
+    'treenodes.update_parent': QueryRef(skeleton_queries, "nodes.update_location"),
+    'treenodes.update_radius': QueryRef(skeleton_queries, "nodes.update_location"),
+    'treenodes.suppress_virtual_node': HistoryQuery("""
+        SELECT t.skeleton_id
+        FROM suppressed_virtual_treenode{history} svt
+        JOIN treenode{history} t
+        ON t.id = svt.child_id
+        WHERE svt.{txid} = %s
+    """),
+    'treenodes.unsuppress_virtual_node': QueryRef(skeleton_queries,
             "treenodes.suppress_virtual_node"),
 })

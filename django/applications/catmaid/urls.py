@@ -87,6 +87,7 @@ urlpatterns += [
 urlpatterns += [
     re_path(r'^(?P<project_id>\d+)/transactions/$', transaction.transaction_collection),
     re_path(r'^(?P<project_id>\d+)/transactions/location$', transaction.get_location),
+    re_path(r'^(?P<project_id>\d+)/transactions/skeletons$', transaction.TransactionSkeletonView.as_view()),
 ]
 
 # Project permissions

@@ -325,11 +325,18 @@
               title: "Time",
               orderable: false,
               render: function(data, type, row, meta) {
-                return new Date(row.execution_time);
+                return new Date(row.execution_time).toUTCString();
               }
             },
             {data: "transaction_id", title: "Transaction", orderable: false},
-            {data: "change_type", title: "Type", orderable: false}
+            {data: "change_type", title: "Type", orderable: false},
+            {
+              title: "Action",
+              orderable: false,
+              render: function(data, type, row, meta) {
+                return '<ul class="resultTags"><li title="Show all skeleton IDs affected by this transaction (if any)." data-action="show-tx-skeletons">Skeleton IDs</li></ul>';
+              }
+            },
           ],
         }).on('dblclick', 'tr', function() {
           var data = self.historyTable.row( this ).data();
@@ -358,6 +365,32 @@
                   // Re-throw exception
                   throw error;
                 }
+              })
+              .catch(CATMAID.handleError);
+          }
+        }).on('click', 'li[data-action=show-tx-skeletons]', function() {
+          var data = self.historyTable.row( this.closest('tr') ).data();
+          if (data) {
+            var params = {
+              'transaction_id': data.transaction_id,
+              'execution_time': data.execution_time
+            };
+            CATMAID.fetch({
+                url: project.id + '/transactions/skeletons',
+                method: 'GET',
+                data: params,
+                parallel: true,
+              })
+              .then(function(response) {
+                if (!response.skeleton_ids || response.skeleton_ids.length === 0) {
+                  CATMAID.msg('Info', 'No skeletons were affected by this transaction.');
+                  return;
+                }
+
+                const dialog = new CATMAID.OptionsDialog("Skeltons involved in transaction");
+                dialog.appendMessage(`The following list of skeletons were involved in transaction ${data.transaction_id} / ${data.execution_time}:`);
+                dialog.appendMessage(response.skeleton_ids.map(x => String(x)).join(', '));
+                dialog.show('400', 'auto');
               })
               .catch(CATMAID.handleError);
           }

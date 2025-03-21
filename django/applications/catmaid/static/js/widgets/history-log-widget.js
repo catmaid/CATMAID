@@ -279,6 +279,7 @@
           dom: "lrphtip",
           paging: true,
           lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
+          autoWidth: false,
           serverSide: true,
           ajax: function(data, callback, settings) {
             var params = -1 === data.length ? undefined : {

@@ -308,11 +308,12 @@
           let projectId = CATMAID.tools.getDefined(this.models[skid].projectId, project.id);
           return `${projectId}/skeletons/${skid}/node-overview`;
         },
-        function(skid) { return {}; }, // post
-        (function(skid, json) {
+        (skid) => { return {}; }, // post
+        (skid, json) => {
           var rows = json[0],
               review_rows = json[1],
               tag_rows = json[2];
+
           // Find out the type of each treenode
           var arbor = new Arbor();
           for (var i=0; i<rows.length; ++i) {
@@ -391,14 +392,14 @@
 
           n_rows += rows.length;
           all_rows = all_rows.concat(rows);
-        }).bind(this),
-        (function(skid) {
+        },
+        (skid) => {
           // Failed loading
           CATMAID.warn("Failed to load skeleton #" + skid);
           delete this.models[skid];
           delete this.ranges[skid];
-        }).bind(this),
-        (function() {
+        },
+        () => {
           this.oTable.rows.add(all_rows);
           this.filter_nodetype = $('select#' + this.idPrefix + 'search-type').val();
           this.oTable.columns(1).search(this.filter_nodetype).draw();
@@ -441,7 +442,7 @@
             })
             .catch(CATMAID.handleError);
 
-        }).bind(this),
+        },
         'GET',
         false,
         (skeletonId => this.models[skeletonId].api));

@@ -193,6 +193,12 @@ Log/history widget:
   the transaction label this can be different things (e.g. all linked skeletons
   in a connector removal.
 
+Treenode table:
+
+- Node filters can now be added. Node filters can be managed like in other
+  widgets: by blicking the funnel icon in the widget's title bar. Node filters
+  allow to constrain further what nodes are shown in the treenode table.
+
 Miscellaneous:
 
 - The built-in API docs (/apis endpoint) now supports deep links, which allows

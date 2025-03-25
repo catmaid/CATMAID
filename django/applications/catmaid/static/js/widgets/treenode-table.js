@@ -20,6 +20,13 @@
     this.supportsRemoteSkeletons = true;
 
     this.treenodeViewer = null;
+
+    // A set of filter rules to apply to the handled skeletons
+    this.filterRules = [];
+    // Filter rules can optionally be disabled
+    this.applyFilterRules = true;
+    // A set of nodes allowed by node filters
+    this.allowedNodeIds = new Set();
   };
 
   TreenodeTable.prototype = Object.create(CATMAID.SkeletonSource.prototype);
@@ -140,6 +147,10 @@
             </tbody> 
           </table>`;
       },
+      filter: {
+        rules: this.filterRules,
+        update: this.updateFilter.bind(this)
+      },
       init: function() {
         this.setNodeTypeFilter(this.filter_nodetype);
         this.init();
@@ -205,6 +216,7 @@
     this.models = {};
     this.ranges = {};
     this.filter_nodeids.clear();
+    this.allowedNodeIds.clear();
     this.oTable.clear();
     this.oTable.draw();
   };
@@ -404,10 +416,12 @@
           this.filter_nodetype = $('select#' + this.idPrefix + 'search-type').val();
           this.oTable.columns(1).search(this.filter_nodetype).draw();
 
-          if (this.filter_nodeids.size > 0) {
-            let idRegEx = '^(' + Array.from(this.filter_nodeids).join('|') + ')$';
+          // Apply widget node filters or externally specified set of allowed nodes
+          let nodeFilterActive = this.applyFilterRules && this.filterRules.length > 0;
+          if (this.filter_nodeids.size > 0 || nodeFilterActive) {
+            const allAllowedNodeIds = this.allowedNodeIds.union(this.filter_nodeids);
+            let idRegEx = '^(' + Array.from(allAllowedNodeIds).join('|') + ')$';
             this.oTable.columns(0).search(idRegEx, true, false, true).draw();
-            //this.oTable.columns(0).search('^(8995095|999)', true, false, true).draw();
           } else {
             this.oTable.columns(0).search('').draw();
           }
@@ -637,6 +651,32 @@
     } else {
       selectElement.classList.remove('highlight');
     }
+  };
+
+  /**
+   * Reevaluate the current set of node filter rules to update the set of
+   * allowed nodes.
+   */
+  TreenodeTable.prototype.updateFilter = function(options) {
+    const skeletonIds = Object.keys(this.models).map(CATMAID.tools.getId, this.models);
+    if (skeletonIds.length === 0 || this.filterRules.length === 0) {
+      this.refresh();
+      return Promise.resolve();
+    }
+
+    const filter = new CATMAID.SkeletonFilter(this.filterRules, this.models);
+    return filter.execute()
+      .then(filteredNodes => {
+        this.allowedNodeIds.clear();
+        this.allowedNodeIds.addAll(Object.keys(filteredNodes.nodes).map(n => {
+          return parseInt(n, 10);
+        }));
+        if (0 === this.allowedNodeIds.length) {
+          CATMAID.warn("No nodes left after filter application");
+        }
+        this.refresh();
+      })
+      .catch(CATMAID.handleError);
   };
 
   // Export widget

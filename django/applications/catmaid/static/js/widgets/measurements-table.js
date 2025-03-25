@@ -613,18 +613,17 @@
       return Promise.resolve();
     }
 
-    var self = this;
     var filter = new CATMAID.SkeletonFilter(this.filterRules, this.models);
     filter.execute()
-      .then(function(filteredNodes) {
-        self.allowedNodes.clear();
-        self.allowedNodes.addAll(Object.keys(filteredNodes.nodes).map(function(n) {
+      .then(filteredNodes => {
+        this.allowedNodes.clear();
+        this.allowedNodes.addAll(Object.keys(filteredNodes.nodes).map(n => {
           return parseInt(n, 10);
         }));
-        if (0 === self.allowedNodes.length) {
+        if (0 === this.allowedNodes.length) {
           CATMAID.warn("No points left after filter application");
         }
-        self.update(true);
+        this.update(true);
       })
       .catch(CATMAID.handleError);
   };

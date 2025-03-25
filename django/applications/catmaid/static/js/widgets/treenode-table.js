@@ -112,39 +112,39 @@
                       <option value="5" selected>5</option>
                     </select>
                   </div>
-                </th> 
-                <th>x</th> 
-                <th>y</th> 
-                <th>z</th> 
-                <th>s</th> 
-                <th>r</th> 
-                <th>user<input type="text" id="${self.idPrefix}search-user" value="Search" class="search_init" /></th> 
-                <th>last modified</th> 
+                </th>
+                <th>x</th>
+                <th>y</th>
+                <th>z</th>
+                <th>s</th>
+                <th>r</th>
+                <th>user<input type="text" id="${self.idPrefix}search-user" value="Search" class="search_init" /></th>
+                <th>last modified</th>
                 <th>reviewer
                   <input type="text" id="${self.idPrefix}search-reviewer" value="Search" class="search_init"/>
-                </th> 
+                </th>
                 <th title="Imported">i</th>
-              </tr> 
-            </thead> 
-            <tfoot> 
-              <tr> 
-                <th>id</th> 
-                <th>type</th> 
-                <th>tags</th> 
-                <th>c</th> 
-                <th>x</th> 
-                <th>y</th> 
-                <th>z</th> 
-                <th>s</th> 
-                <th>r</th> 
-                <th>user</th> 
-                <th>last modified</th> 
-                <th>reviewer</th> 
+              </tr>
+            </thead>
+            <tfoot>
+              <tr>
+                <th>id</th>
+                <th>type</th>
+                <th>tags</th>
+                <th>c</th>
+                <th>x</th>
+                <th>y</th>
+                <th>z</th>
+                <th>s</th>
+                <th>r</th>
+                <th>user</th>
+                <th>last modified</th>
+                <th>reviewer</th>
                 <th title="Imported">i</th>
-              </tr> 
-            </tfoot> 
-            <tbody> 
-            </tbody> 
+              </tr>
+            </tfoot>
+            <tbody>
+            </tbody>
           </table>`;
       },
       filter: {

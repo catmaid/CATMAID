@@ -218,7 +218,8 @@
     fetchSkeletons(
         Object.keys(models).map(Number),
         function(skid) {
-          return `${project.id}/${skid}/1/1/0/compact-arbor`;
+          const projectId = CATMAID.tools.getDefined(models[skid].projectId, project.id);
+          return `${projectId}/${skid}/1/1/0/compact-arbor`;
         },
         skid => {
           return {

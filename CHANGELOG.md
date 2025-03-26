@@ -277,6 +277,9 @@ Miscellaneous:
   pixels could appear on the right side and the bottom. This is fixed now and
   the entire space of the exported image is used correctly.
 
+- Review widget: fast reviewing using the W key sometimes raised an error
+  regarding a missing intersection. This is fixed now (#2296)
+
 ## Maintenance updates
 
 - Node distance measurements: computation of straight line distance has been

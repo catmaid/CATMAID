@@ -202,7 +202,7 @@
         // Virtual nodes can only exists if both parent and child are not on the
         // current section and not both above or below.
         if ((n.zdiff < 0 && pn.zdiff > 0) || (n.zdiff > 0 && pn.zdiff < 0)) {
-          var vn = CATMAID.createVirtualNode(this.graphics, n, pn, this.stackViewer);
+          var vn = CATMAID.createVirtualNode(this.graphics, n, pn, this.stackViewer.z, this.stackViewer);
           if (vn) {
             n.parent = vn;
             n.parent_id = vn.id;

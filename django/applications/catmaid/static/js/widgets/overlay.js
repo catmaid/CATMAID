@@ -2837,7 +2837,7 @@ var SkeletonAnnotations = {};
    * This function expects child and parent to be real nodes and does no further
    * checks in this regard for performance reasons.
    */
-  CATMAID.createVirtualNode = function(graphics, child, parent, stackViewer) {
+  CATMAID.createVirtualNode = function(graphics, child, parent, z, stackViewer) {
     // Make sure child and parent are at different sections
     if (stackViewer.primaryStack.projectToUnclampedStackZ(child.z, child.y, child.x) ===
         stackViewer.primaryStack.projectToUnclampedStackZ(parent.z, parent.y, parent.x)) {
@@ -2845,7 +2845,7 @@ var SkeletonAnnotations = {};
       return null;
     }
 
-    return CATMAID._createVirtualNode(graphics, child, parent, stackViewer);
+    return CATMAID._createVirtualNode(graphics, child, parent, z, stackViewer);
   };
 
   let _virtualNodeCreationTmpVector = new THREE.Vector3();
@@ -2855,10 +2855,12 @@ var SkeletonAnnotations = {};
   /**
    * The actual implementation of createVirtualNode(), without precondition
    * checks to allow faster execution if this was tested before.
+   *
+   * We could use stackViewer.z instead of the explicit z parameter, but this
+   * would require us to ensure the current stack viewer Z is between the passed
+   * in nodes. This seems like an unnecessary constraint.
    */
-  CATMAID._createVirtualNode = function(graphics, child, parent, stackViewer, onlyInView) {
-    var z = stackViewer.z;
-
+  CATMAID._createVirtualNode = function(graphics, child, parent, z, stackViewer, onlyInView) {
     // Define X and Y so that they are on the intersection of the line between
     // child and parent and the current section.
     _virtualNodeCreationTmpLine.start.set(child.x, child.y, child.z);
@@ -2996,9 +2998,9 @@ var SkeletonAnnotations = {};
 
     // Set currently allowed section distances, to correctly account for broken
     // sections.
-    var sv = this.stackViewer;
-    var dToSecBefore = sv.validZDistanceBefore(sv.z);
-    var dToSecAfter = sv.validZDistanceAfter(sv.z);
+    var currentZ = this.stackViewer.z;
+    var dToSecBefore = this.stackViewer.validZDistanceBefore(currentZ);
+    var dToSecAfter = this.stackViewer.validZDistanceAfter(currentZ);
     this.graphics.init(dToSecBefore, dToSecAfter);
 
     // Look-up some frequently used objects
@@ -3010,7 +3012,7 @@ var SkeletonAnnotations = {};
         var n = extraNodes[i];
         var stackZ = primaryStack.projectToUnclampedStackZ(n.z, n.y, n.x);
         this.nodes.set(n.id, this.graphics.newNode(n.id, null, n.parent_id, n.radius,
-            n.x, n.y, n.z, stackZ - this.stackViewer.z, n.confidence, n.skeleton_id,
+            n.x, n.y, n.z, stackZ - currentZ, n.confidence, n.skeleton_id,
             n.edition_time, n.user_id));
       }
     }
@@ -3099,7 +3101,7 @@ var SkeletonAnnotations = {};
       var stackZ = primaryStack.projectToUnclampedStackZ(a[4], a[3], a[2]);
       let newNode = this.graphics.newNode(
         a[0], null, a[1], a[6], a[2], a[3], a[4],
-        stackZ - this.stackViewer.z, a[5], a[7], a[8], a[9]);
+        stackZ - currentZ, a[5], a[7], a[8], a[9]);
       this.nodes.set(a[0], newNode);
       addedNodes.push(newNode);
       ++nAddedTreenodes;
@@ -3167,7 +3169,7 @@ var SkeletonAnnotations = {};
       // For performance reasons, the edition time is transmitted as epoch time
       let newNode = this.graphics.newConnectorNode(
         a[0], a[1], a[2], a[3],
-        stackZ - this.stackViewer.z, a[4], subtype, a[5], a[6]);
+        stackZ - currentZ, a[4], subtype, a[5], a[6]);
       this.nodes.set(a[0], newNode);
       addedNodes.push(newNode);
       ++nAddedConnectors;
@@ -3194,7 +3196,8 @@ var SkeletonAnnotations = {};
       // Virtual nodes can only exists if both parent and child are not on the
       // current section and not both above or below.
       if ((n.zdiff < 0 && pn.zdiff > 0) || (n.zdiff > 0 && pn.zdiff < 0)) {
-        var vn = CATMAID._createVirtualNode(this.graphics, n, pn, this.stackViewer);
+        const targetZ = this.stackViewer.primaryStack.projectToUnclampedStackZ(n.z, n.y, n.x) - n.zdiff;
+        var vn = CATMAID._createVirtualNode(this.graphics, n, pn, targetZ, this.stackViewer);
         if (vn) {
           ++nAddedVirtualNodes;
           n.parent = vn;
@@ -3373,22 +3376,31 @@ var SkeletonAnnotations = {};
           var n = self.nodes.get(addedNodes[i].id);
           var p = n.parent_id ? self.nodes.get(n.parent_id) : null;
 
-          if (n && p && ((n.zdiff < 0 && p.zdiff > 0) || (n.zdiff > 0 && p.zdiff < 0))) {
-            var vn = CATMAID.createVirtualNode(self.graphics, n, p, self.stackViewer);
-            if (vn) {
-              n.parent = vn;
-              n.parent_id = vn.id;
-              p.addChildNode(vn);
-              vn.addChildNode(n);
-              self.nodes.set(vn.id, vn);
-              addedNodes.push(vn);
-              continue;
-            }
+          if (n && p) {
+            // While n.zdiff has been computed above, p.zdiff might not be
+            // up-to-date anymore (wrt to the passed in Z). This can be the case
+            // if the user travels through Z very quickly. Therefore, we
+            // recompute it on the fly:
+            const zDiffP = self.stackViewer.primaryStack.projectToUnclampedStackZ(p.z, p.y, p.x) - self.stackViewer.z;
 
-            // If no virtual node was inserted, link parent and child normally.
-            n.parent = p;
-            // update the parent's children
-            p.addChildNode(n);
+            if (((n.zdiff < 0 && zDiffP > 0) || (n.zdiff > 0 && zDiffP < 0))) {
+              const targetZ = self.stackViewer.primaryStack.projectToUnclampedStackZ(n.z, n.y, n.x) - n.zdiff;
+              var vn = CATMAID.createVirtualNode(self.graphics, n, p, targetZ, self.stackViewer);
+              if (vn) {
+                n.parent = vn;
+                n.parent_id = vn.id;
+                p.addChildNode(vn);
+                vn.addChildNode(n);
+                self.nodes.set(vn.id, vn);
+                addedNodes.push(vn);
+                continue;
+              }
+
+              // If no virtual node was inserted, link parent and child normally.
+              n.parent = p;
+              // update the parent's children
+              p.addChildNode(n);
+            }
           }
         }
 
@@ -6223,7 +6235,7 @@ var SkeletonAnnotations = {};
     }
 
     // Otherwise, add the new node to the local node store and display. This is
-    // done explicitely to avoid a full node update.
+    // done explicitly to avoid a full node update.
 
     // The parent will be null if there isn't one or if the parent Node
     // object is not within the set of retrieved nodes, but the parentID

@@ -768,7 +768,7 @@
                     return 'all-meta' ===  l.id || 'own-meta' === l.id;
                 });
                 // Check if we need neuron names
-                var needsNeueonNames = componentList.some(function(l) {
+                var needsNeuronNames = componentList.some(function(l) {
                     return 'neuronname' === l.id;
                 });
 
@@ -807,7 +807,7 @@
                   let def_skeleton_ids = [];
                   for (let skid of apiSkids) {
                     let sk = managedSkeletons[skid];
-                    if (!sk.updateTime || (needsMetaAnnotations && !sk.metaUpdated) || (needsNeueonNames && !sk.neuronName)) {
+                    if (!sk.updateTime || (needsMetaAnnotations && !sk.metaUpdated) || (needsNeuronNames && !sk.neuronName)) {
                       def_skeleton_ids.push(skid);
                     } else {
                       cond_skeleton_ids.push(skid);
@@ -832,7 +832,7 @@
                           skeleton_ids: def_skeleton_ids,
                           annotations: 0,
                           metaannotations: needsMetaAnnotations ? 1 : 0,
-                          neuronnames: needsNeueonNames ? 1 : 0,
+                          neuronnames: needsNeuronNames ? 1 : 0,
                           // Conditional query skeletons with condition
                           conditional_skeleton_ids: cond_skeleton_ids,
                           if_modified_since: skipDate,
@@ -854,7 +854,7 @@
                           }
                         }
 
-                        if (needsNeueonNames && result.neuronnames) {
+                        if (needsNeuronNames && result.neuronnames) {
                           for (let skeletonId in result.neuronnames) {
                             managedSkeletons[skeletonId].neuronName = result.neuronnames[skeletonId];
                           }

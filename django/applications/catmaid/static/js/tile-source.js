@@ -752,7 +752,7 @@
             .then(block => {
               if (block) {
                 let etag = block.get_etag();
-                let size = block.get_size();
+                let size = block.get_size(); // [x, y, z, channel]
                 let n = 1;
                 let stride = size.map(s => { let rn = n; n *= s; return rn; });
                 return {
@@ -1157,7 +1157,7 @@
             .then(block => {
               if (block) {
                 let etag = block.get_etag();
-                let size = block.get_size();
+                let size = block.get_size(); // [x, y, z, channel]
                 let n = 1;
                 let stride = size.map(s => { let rn = n; n *= s; return rn; });
                 return {
@@ -1189,7 +1189,7 @@
             block = block_data[i];
             if (block) {
               let etag = block.get_etag();
-              let size = block.get_size();
+              let size = block.get_size(); // [x, y, z, channel]
               let gridPosition = block.get_grid_position();
               let n = 1;
               let stride = size.map(s => { let rn = n; n *= s; return rn; });

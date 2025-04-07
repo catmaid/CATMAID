@@ -1117,7 +1117,8 @@
       max.forEach((n, i) => maxNum[i] = Number(n));
 
       let min = new Array(maxNum.length).fill(0);
-      return new CATMAID.BlockCoordBounds(min, maxNum);
+      let x = new CATMAID.BlockCoordBounds(min, maxNum)
+      return x;
     }
 
     blockSize(zoomLevel) {
@@ -1127,7 +1128,8 @@
         1
       ];
       let bs = this.datasetAttributes.get_block_size(zoomLevel);
-      return CATMAID.tools.permute(bs, this.sliceDims);
+      let x = CATMAID.tools.permute(bs, this.sliceDims);
+      return x;
     }
 
     voxelOffset(zoomLevel) {
@@ -1364,10 +1366,11 @@
                     if (block) {
                       let n = 1;
                       let stride = block.size.map(s => { let rn = n; n *= s; return rn; });
+                      let dd = new nj.NdArray(nj.ndarray(block.data, block.size, stride))
+                      .transpose(...this.sliceDims);
                       return {
                         etag: block.etag,
-                        block: new nj.NdArray(nj.ndarray(block.data, block.size, stride))
-                            .transpose(...this.sliceDims),
+                        block: dd,
                         gridPosition: block.gridPosition,
                       };
                     } else {
@@ -1384,7 +1387,7 @@
   /**
    * Image block source type for OME Zarr datasets.
    * See https://ngff.openmicroscopy.org/latest/
-   * See https://guido.io/zarr.js/
+   * See https://zarrita.dev/packages/zarrita.html
    *
    * Source type: 15
    */
@@ -1404,18 +1407,11 @@
       }
 
       if (!supportsDynamicImport() || typeof BigInt === 'undefined') {
-        // TODO: should fail gracefully here instead.
         throw new CATMAID.Error(
           'Your browser does not support features required for OME-Zarr mirrors');
       }
 
       this.datasetURL = this.baseURL;
-      // XXX: get dims from data, collecting x,y,z in axes field
-      this.sliceDims = [1, 2, 3];
-      this.reciprocalSliceDims = Array.from(Array(this.sliceDims.length).keys())
-          .sort((a, b) => this.sliceDims[a] - this.sliceDims[b]);
-      console.log('this.sliceDims',this.sliceDims)
-      console.log('this.reciprocalSliceDims',this.reciprocalSliceDims)
 
       this.promiseReady = OMEZarrBlockSource.loadZarrita()
       .then(() => this.loadRoot())
@@ -1466,6 +1462,18 @@
           'Only OME-Zarr version 0.5 is supported');
       }
 
+      // extract slice dims based on spatial axes names
+      const targetNames = ["x", "y", "z"];
+      this.sliceDims = this.rootData.attributes.ome.multiscales[0].axes.reduce((acc, item, index) => {
+          if (targetNames.includes(item.name)) {
+              acc.push(index);
+          }
+          return acc;
+      }, []);
+
+      this.reciprocalSliceDims = Array.from(Array(this.sliceDims.length).keys())
+          .sort((a, b) => this.sliceDims[a] - this.sliceDims[b]);
+
       let datasets = this.rootData.attributes.ome.multiscales[0].datasets;
       this.datasetAttributes = [];
       this.stores = {};
@@ -1489,7 +1497,8 @@
         allPathsPromise.push(request(index, url))
       }
 
-      // get the results for each scale level and populate datasetAttributes and create stores
+      // get the resulting array specs for each scale level
+      // and populate datasetAttributes and create stores
       return Promise.all(allPathsPromise).then(result => {
         for (let index = 0; index < result.length; index++) {
           let storePath = `${this.datasetURL}/${datasets[index].path}`
@@ -1507,17 +1516,22 @@
         this.tileHeight,
         1
       ];
-      // XXX: is chunk_shape correct as block_size
-      let bs = this.datasetAttributes[zoomLevel].ds.chunk_grid.configuration.chunk_shape;
-      // console.log('blockSize', zoomLevel, bs, 'permute', CATMAID.tools.permute(bs, this.sliceDims));
+      let bs = this.datasetAttributes[zoomLevel].ds.codecs[0].configuration.chunk_shape;
       return CATMAID.tools.permute(bs, this.sliceDims);
     }
 
     blockCoordBounds(zoomLevel) {
       if (!this.ready) return;
-      // XXX What should it return?
-      console.log('blockCoordBounds', zoomLevel)
-      return new CATMAID.BlockCoordBounds([0,0,0], [100,100,100]);
+      // volume shape divided by chunk_shape at zoom level
+      let dimension = this.datasetAttributes[zoomLevel].ds.shape;
+      let block_size = this.datasetAttributes[zoomLevel].ds.codecs[0].configuration.chunk_shape;     
+      let max = dimension.map((d, i) => {
+        return d / block_size[i];
+      })
+      let maxNum = new Array(max.length);
+      max.forEach((n, i) => maxNum[i] = Number(n));
+      let min = [0,0,0]; // new Array(maxNum.length).fill(0);
+      return new CATMAID.BlockCoordBounds(min, maxNum);
     }
 
     dataType () {
@@ -1528,31 +1542,22 @@
       }
     }
 
-
     readBlock(zoomLevel, ...sourceCoord) {
       return this.promiseReady.then(() => {
-        let path = this.datasetPath(zoomLevel);
-        let dataAttrs = this.datasetAttributes[zoomLevel];       
-        let blockCoord = CATMAID.tools.permute(sourceCoord, this.reciprocalSliceDims);
-        // console.log('readBlock', zoomLevel, sourceCoord, path, dataAttrs, 'blockCoord', blockCoord);
-
-        let arr = new nj.NdArray(nj.uint8(nj.random([32,32,32]).multiply(255).tolist()) );
-        // XXX: why is it not showing random data in the stack viewer?
-        console.log('arr', arr)
-
-        // XXX: load array data
-        const arr2 = Window.Zarrita.open.v3(this.stores[zoomLevel], { kind: "array" }).then(arr => {
-          console.log('opened arr', arr2);
-          //const view = Window.Zarrita.get(arr, [null, null, 0]).then(view => {console.log('view', arr); return view});
-          return arr
+        let blockCoord = CATMAID.tools.permute(sourceCoord, this.reciprocalSliceDims);    
+        return Window.Zarrita.open.v3(this.stores[zoomLevel], { kind: "array" }).then(arr => {
+          const viewChunk2 = arr.getChunk(blockCoord).then(view => {
+            let d1 = new nj.NdArray(nj.ndarray(view.data, view.shape, view.stride))
+            let view2 = d1.transpose(...this.sliceDims);
+            return view2;
+          });
+          return {block: viewChunk2, etag: undefined};
         });
-
-        return {block: arr.transpose(...this.sliceDims), etag: undefined};
       });
     }
 
     datasetPath(zoomLevel) {
-      return `${this.datasetURL}/${this.datasetAttributes[zoomLevel].root.path.path}`;
+      return `${this.datasetURL}/${this.datasetAttributes[zoomLevel].root.path}`;
     }
 
     numScaleLevels() {

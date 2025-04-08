@@ -1526,7 +1526,7 @@
       let dimension = this.datasetAttributes[zoomLevel].ds.shape;
       let block_size = this.datasetAttributes[zoomLevel].ds.codecs[0].configuration.chunk_shape;     
       let max = dimension.map((d, i) => {
-        return d / block_size[i];
+        return Math.ceil(d / block_size[i]) - 1;
       })
       let maxNum = new Array(max.length);
       max.forEach((n, i) => maxNum[i] = Number(n));

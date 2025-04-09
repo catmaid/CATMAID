@@ -433,6 +433,29 @@ Tile source types are listed by the enumeration integer ID referenced by
 
      https://www.googleapis.com/storage/v1/b/neuroglancer/o/pinky100_v0%2Fson_of_alignment_v15_rechunked%2Finfo?alt=media
 
+
+
+15. OME-Zarr image blocks
+*************************
+
+   This type supports loading **image blocks** from
+   `OME-Zarr v0.5 format <https://ngff.openmicroscopy.org/0.5/index.html>`_ served over HTTP.
+
+   The ``sourceBaseUrl`` should point to the OME-Zarr dataset where the `zarr.json` is located
+   (without trailing slash). The specification of the dataset dimension and voxel resolution should
+   correspond to the first array in the `multiscales` field, corresponding the scale level 0.
+
+   The assumption is that the arrays in the `multiscales` field are mapped to the CATMAID scale levels
+   where the first element is the array at the highest resolution, and the last element the last downscaled
+   version of the dataset.
+
+   An OME-Zarr array can contain axes that are not spatial. For display in CATMAID, the OME-Zarr metadata
+   is parsed to extract the space axes labeled `x, y, and z` to slice into the array.
+
+   Please refer to the `NGFF documentation <https://ngff.openmicroscopy.org/>`_ to learn about tools,
+   datasets, etc. to work with OME-Zarr datasets.
+
+
 Backend Representation
 ----------------------
 

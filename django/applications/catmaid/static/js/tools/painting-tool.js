@@ -64,6 +64,8 @@
     this.prototype = new CATMAID.Navigator();
     this.toolname = "paintingtool";
 
+    // Currently selected mode;
+    let currentMode = PaintingTool.MODES.MOVE;
     // Currently focused painting layer
     let activePaintingLayer = null;
     // Currently focused N5 layer
@@ -140,6 +142,26 @@
     };
 
     this.addAction(new CATMAID.Action({
+      helpText: "Switch to navigation mode",
+      buttonName: "move",
+      buttonID: 'paint_button_move',
+      run: () => {
+        this.setInteractionMode(PaintingTool.MODES.MOVE, true);
+        return true;
+      }
+    }));
+
+    this.addAction(new CATMAID.Action({
+      helpText: "Switch to painting mode",
+      buttonName: "paint",
+      buttonID: 'paint_button_paint',
+      run: () => {
+        this.setInteractionMode(PaintingTool.MODES.PAINT, true);
+        return true;
+      }
+    }));
+
+    this.addAction(new CATMAID.Action({
       helpText: "Add a new painting layer to the current stack",
       keyShortcuts: { "N": [ "n" ] },
       buttonName: "new_writable_stack",
@@ -151,6 +173,32 @@
         return true;
       }
     }));
+
+
+    /**
+     * Set current interaction mode in tool, whether to paint or to move.
+     */
+    this.setInteractionMode = function(mode, toggle = false) {
+      let oldMode = currentMode;
+
+      if (toggle && currentMode === mode) {
+        currentMode = PaintingTool.MODES.SELECT;
+      } else {
+        switch (mode) {
+          case PaintingTool.MODES.MOVE:
+            currentMode = mode;
+            break;
+          case PaintingTool.MODES.PAINT:
+            currentMode = mode;
+            break;
+        }
+      }
+
+      if (oldMode !== currentMode) {
+        this.trigger(
+            PaintingTool.EVENT_INTERACTION_MODE_CHANGED, currentMode, oldMode);
+      }
+    };
 
     /**
      * Add a new writable stack to the current primary stack.
@@ -223,7 +271,7 @@
         };
         stack.addMirror(customMirrorData);
 
-        const dataLayer = new CATMAID.PixiImageBlockLayer(
+        dataLayer = new CATMAID.PixiImageBlockLayer(
             stackViewer,
             "Painting data",
             stackViewer.primaryStack,
@@ -249,8 +297,7 @@
       var layer = stackViewer.getLayer(layerName);
 
       if (!layer) {
-        layer = new CATMAID.PaintingLayer(stackViewer, {
-        });
+        layer = new CATMAID.PaintingLayer(stackViewer, this, dataLayer);
         stackViewer.addLayer(layerName, layer);
       }
 
@@ -398,7 +445,7 @@
           // Left mouse click will delegate to painting overlay
           var fallback = false;
           if (mouseButton === 1) {
-            if (SkeletonAnnotations.currentmode === SkeletonAnnotations.MODES.MOVE) {
+            if (SkeletonAnnotations.currentMode === SkeletonAnnotations.MODES.MOVE) {
               fallback = true;
             } else {
               isDrawing = true;
@@ -523,6 +570,8 @@
         }
 
         return activeLayer;
+      } else {
+        CATMAID.error("More than one painting layer found");
       }
 
       /*
@@ -585,6 +634,8 @@
 
       const buttonContainer = document.getElementById('paintingbuttons');
       buttonContainer.insertAdjacentElement('afterend', selectContainer);
+
+      this.updateInteractionModeSelection();
     };
 
     this.refreshPaintingLayer = function() {
@@ -691,8 +742,40 @@
         window.clearInterval(this.autoCacheUpdateInterval);
         this.autoCacheUpdateInterval = null;
       }
+
+      this.off(PaintingTool.EVENT_INTERACTION_MODE_CHANGED,
+          this.updateInteractionModeSelection, this);
     };
+
+    /**
+    * Update painting tool mode button selection state.
+    */
+    PaintingTool.prototype.updateInteractionModeSelection = function() {
+      // Deselect all mode buttons
+      document.getElementById("paint_button_move").className = "button";
+      document.getElementById("paint_button_paint").className = "button";
+
+      // Activate button for new mode
+      switch (currentMode) {
+        case PaintingTool.MODES.MOVE:
+          document.getElementById("paint_button_move").className = "button_active";
+          break;
+        case PaintingTool.MODES.PAINT:
+          document.getElementById("paint_button_paint").className = "button_active";
+          break;
+      }
+    };
+
+    // If the interation mode changes, update the UI
+    this.on(PaintingTool.EVENT_INTERACTION_MODE_CHANGED,
+        this.updateInteractionModeSelection, this);
   }
+
+  PaintingTool.MODES = Object.freeze({
+    SELECT: 0,
+    MOVE: 1,
+    PAINT: 2,
+  });
 
   PaintingTool.Settings = new CATMAID.Settings(
       'painting-tool',
@@ -714,6 +797,9 @@
         },
         migrations: {}
       });
+
+  PaintingTool.EVENT_INTERACTION_MODE_CHANGED = "painting_tool_interaction_mode_changed";
+  CATMAID.asEventSource(PaintingTool.prototype);
 
   CATMAID.PaintingTool = PaintingTool;
 

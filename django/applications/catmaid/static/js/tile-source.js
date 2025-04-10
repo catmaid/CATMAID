@@ -799,6 +799,10 @@
       return this.datasetAttributes.length;
     }
 
+    getCanaryUrl(project, stack) {
+      return `${this.rootURL}/attributes.json`;
+    }
+
     checkCanary(project, stack, noCache) {
       let request = (options) => {
         let url = this.getCanaryUrl(project, stack);

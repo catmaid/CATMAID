@@ -774,12 +774,15 @@
      */
     this.unregister = function()
     {
-      if ( self.stackViewer && self.mouseCatcher.parentNode == self.stackViewer.getView() )
-        self.stackViewer.getView().removeChild( self.mouseCatcher );
+      for (let mouseCatcher of [self.mouseCatcher, self.initialMouseCatcher]) {
+        if ( self.stackViewer && mouseCatcher.parentNode == self.stackViewer.getView() ) {
+          self.stackViewer.getView().removeChild( mouseCatcher );
+        }
 
-      self.mouseCatcher.removeEventListener('pointerdown', this._mousePosStatusUpdate);
-      self.mouseCatcher.removeEventListener('pointermove', this._mousePosStatusUpdate);
-      self.mouseCatcher.removeEventListener('pointerup', this._mousePosStatusUpdate);
+        mouseCatcher.removeEventListener('pointerdown', this._mousePosStatusUpdate);
+        mouseCatcher.removeEventListener('pointermove', this._mousePosStatusUpdate);
+        mouseCatcher.removeEventListener('pointerup', this._mousePosStatusUpdate);
+      }
     };
 
     /**

@@ -1488,41 +1488,55 @@
               return [index, res];
             })
           )
-          .catch(() => {console.log('issue', url); [-1, {}]});
+          .catch(() => { console.log('issue', url); [-1, {}]});
       }
 
       // push request for each scale level
       for (let index = 0; index < datasets.length; index++) {
         this.datasetAttributes[index] = {'root': datasets[index]};
         let url = `${this.datasetURL}/${datasets[index].path}/zarr.json`;
-        // console.log('url', url)
         allPathsPromise.push(request(index, url))
       }
 
       // get the resulting array specs for each scale level
       // and populate datasetAttributes and create stores
-      /*
-      return Promise.all(allPathsPromise).then(result => {
-        for (let index = 0; index < result.length; index++) {
-          let storePath = `${this.datasetURL}/${datasets[index].path}`
-          this.datasetAttributes[result[index][0]]['ds'] = result[index][1];
-          // console.log('storePath', storePath)
-          this.stores[result[index][0]] = new Window.Zarrita.FetchStore(storePath);
-        }
-      })
-      .then(() => this.ready = true);*/
-
       return Promise.all(allPathsPromise).then(result => {
         const storePromises = []; // Array to hold store promises
       
         for (let index = 0; index < result.length; index++) {
           let storePath = `${this.datasetURL}/${datasets[index].path}`;
-          this.datasetAttributes[result[index][0]]['ds'] = result[index][1];
+          let ds = result[index][1];
+          this.datasetAttributes[result[index][0]]['ds'] = ds;
+
+          // check if one of the codecs is a transpose. if so, we need
+          // to transpose the retrieved chunk
+          let transposeCodec = ds.codecs.find(codec => codec.name === "transpose");
+          let order = [0,1,2];
+          if(transposeCodec) {
+            let codecOrder = transposeCodec?.configuration?.order;
+            let newOrder = [];
+            this.axes.forEach((axis,i) => {
+              switch (axis.name) {
+                case 'x':
+                  newOrder.push(codecOrder[i]);
+                  break;
+                case 'y':
+                  newOrder.push(codecOrder[i]);
+                  break;
+                case 'z':
+                  newOrder.push(codecOrder[i]);
+                  break;
+                default:
+                  break;
+              }
+            });
+            order = newOrder;
+          }
+          this.datasetAttributes[result[index][0]]['order'] = order;
       
           // Create the store and push the promise to the array
           let store = new Window.Zarrita.FetchStore(storePath);
           let storePromise = Window.Zarrita.open.v3(store, { kind: "array" }).then(arr => {
-            // console.log('assigned arr', result[index][0], arr)
             this.stores[result[index][0]] = arr;
             return arr;
           });      
@@ -1572,23 +1586,14 @@
       return this.promiseReady.then(() => {
         let blockCoord = CATMAID.tools.permute(sourceCoord, this.reciprocalSliceDims);
         
-
         // retrieve voxel-based slices
         let blockDim = this.blockSize(zoomLevel);
-        console.log('readBlock blockCoord', blockCoord, 'blockDim', blockDim);
         let minX = blockDim[0] * blockCoord[0];
         let maxX = blockDim[0] * (blockCoord[0]+1);
         let minY = blockDim[1] * blockCoord[1];
         let maxY = blockDim[1] * (blockCoord[1]+1);
         let minZ = blockDim[2] * blockCoord[2];       
         let maxZ = blockDim[2] * (blockCoord[2]+1);
-        // console.log('minmax', minX, maxX, minY, maxY, minZ, maxZ)
-
-        // for max dimension aligned requests
-        // let dimension = CATMAID.tools.permute(this.datasetAttributes[zoomLevel].ds.shape, this.sliceDims);
-        //let maxX = Math.min(dimension[0], blockDim[0] * (blockCoord[0]+1));
-        //let maxY = Math.min(dimension[1], blockDim[1] * (blockCoord[1]+1));
-        //let maxZ = Math.min(dimension[2], blockDim[2] * (blockCoord[2]+1));
 
         // for non-spatial axes, just use the first element
         let slices = [];
@@ -1608,20 +1613,15 @@
               break;
           }
         });
-
+      
+        console.log('readBlock blockCoord', blockCoord[0], blockCoord[1], blockCoord[2])
+        
         const viewChunk = Window.Zarrita.get(this.stores[zoomLevel], slices).then(view => {
-          //let d1 = new nj.NdArray(nj.ndarray(view.data, view.shape, view.stride))
-          // FIXME: also need to update stride
-          // let d1 = new nj.NdArray(nj.ndarray(view.data, blockDim, view.stride))
           let d1 = new nj.NdArray(nj.ndarray(view.data, blockDim))
-          console.log('d1', d1)
-          let d1_expanded = d1.reshape(...d1.shape, 1);
-          console.log('d1_expanded', d1_expanded);
-          console.log('this.sliceDims', this.sliceDims)
-          // let d1_transposed = d1_expanded.transpose(...this.sliceDims);
+          let d1_transposed = d1.transpose(this.datasetAttributes[zoomLevel]['order']);
+          let d1_expanded = d1_transposed.reshape(...d1_transposed.shape, 1);
           return d1_expanded;
         });
-        console.log('viewChunk', viewChunk)
         return {block: viewChunk, etag: undefined};
       });
     }

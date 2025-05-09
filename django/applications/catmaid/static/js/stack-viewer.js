@@ -994,9 +994,11 @@
    * @param layer
    */
   StackViewer.prototype.addLayer = function (key, layer, loadSettings = true) {
-    if (this._layers.has(key))
+    if (this._layers.has(key)) {
       this._layers.get(key).unregister();
+    }
     this._layers.set(key, layer);
+    layer.resize(this.viewWidth, this.viewHeight);
     if (this._layerOrder.indexOf(key) === -1) {
       this._layerOrder.push(key);
 

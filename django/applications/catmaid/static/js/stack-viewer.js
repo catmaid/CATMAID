@@ -70,7 +70,7 @@
     this._layerOrder = [];
 
     // A list of default subscriptions for new layers.
-    this._defaultSubscruptions = [];
+    this._defaultSubscriptions = [];
 
     /**
      * Whether redraws in this stack viewer should be blocking, that is,
@@ -662,7 +662,7 @@
    * Set default layer subscriptions
    */
   StackViewer.prototype.addDefaultSubscription = function(sourceWidget, targetLayer, meta = {}) {
-    this._defaultSubscruptions.push({
+    this._defaultSubscriptions.push({
       source: sourceWidget,
       target: targetLayer,
       colors: meta.colors,
@@ -1022,10 +1022,10 @@
 
       // If a set of default subscriptions is set for this viewer, try to apply
       // them.
-      if (this._defaultSubscruptions) {
+      if (this._defaultSubscriptions) {
         let existingLayersOfSameType = this.getLayersOfType(layer.constructor);
         let newLayerKey = `${layer.constructor.name.toLowerCase()}-${existingLayersOfSameType.length}`;
-        for (let sub of this._defaultSubscruptions) {
+        for (let sub of this._defaultSubscriptions) {
           // Simply check for name equality, which currently is order dependent.
           // At the moment we also only allow subscriptions with the stack
           // viewer as target (e.g. to color nodes). At the moment, only tracing

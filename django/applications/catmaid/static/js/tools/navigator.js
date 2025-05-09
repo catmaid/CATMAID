@@ -88,11 +88,25 @@
     this.setMouseCatcher = function( mc )
     {
       self.mouseCatcher = mc;
+
+      if (mc !== self.initialMouseCatcher) {
+        self.initialMouseCatcher.removeEventListener('pointerdown', this._mousePosStatusUpdate);
+        self.initialMouseCatcher.removeEventListener('pointermove', this._mousePosStatusUpdate);
+        self.initialMouseCatcher.removeEventListener('pointerup', this._mousePosStatusUpdate);
+        self.initialMouseCatcher.style.display = 'none';
+      }
     };
 
     this.resetMouseCatcher = function()
     {
+      if (self.mouseCatcher !== self.initialMouseCatcher) {
+        self.mouseCatcher.removeEventListener('pointerdown', this._mousePosStatusUpdate);
+        self.mouseCatcher.removeEventListener('pointermove', this._mousePosStatusUpdate);
+        self.mouseCatcher.removeEventListener('pointerup', this._mousePosStatusUpdate);
+      }
+
       self.mouseCatcher = this.initialMouseCatcher;
+      self.mouseCatcher.style.display = '';
     };
 
     this.updateControls = function()

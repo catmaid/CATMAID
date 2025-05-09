@@ -148,6 +148,37 @@
     }]]]);
   };
 
+  /**
+   * Paint into data layer with current settings.
+   */
+  PaintingLayer.prototype.paintAt = function(x, y, prevX, prevY) {
+    if (prevX === undefined || prevX === null) {
+      prevX = x;
+    }
+    if (prevY === undefined || prevY === null) {
+      prevY = y;
+    }
+
+    if (x === prevX && y === prevY) {
+      this.context.beginPath();
+      this.context.moveTo(x, y);
+      this.context.fillStyle = this.color;
+      this.context.arc(x, y, this.brushSize / 2.0, 0, 2 * Math.PI);
+      this.context.fill();
+      this.context.closePath();
+    } else {
+      this.context.beginPath();
+      this.context.moveTo(prevX, prevY);
+      this.context.lineTo(x, y);
+      this.context.strokeStyle = this.color;
+      this.context.lineWidth = this.brushSize;
+      this.context.lineJoin = "round";
+      this.context.lineCap = "round";
+      this.context.stroke();
+      this.context.closePath();
+    }
+  };
+
   // Export layer into CATMAID namespace
   CATMAID.PaintingLayer = PaintingLayer;
 

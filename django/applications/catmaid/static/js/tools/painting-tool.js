@@ -1,5 +1,7 @@
 (function(CATMAID) {
 
+  "use strict";
+
   /**
     * Return a unique name for the painting layer of a given stack viewer.
     */
@@ -232,7 +234,7 @@
       * Add the neuron name display and the painting layer to the given stack
       * viewer, if they don't exist already.
       */
-    function prepareStackViewer(stackViewer) {
+    function prepareStackViewer(stackViewer, tool) {
       removePaintingLayers(stackViewer);
 
       var dataLayerName = getPaintingDataLayerName(stackViewer);
@@ -297,7 +299,7 @@
       var layer = stackViewer.getLayer(layerName);
 
       if (!layer) {
-        layer = new CATMAID.PaintingLayer(stackViewer, this, dataLayer);
+        layer = new CATMAID.PaintingLayer(stackViewer, tool, dataLayer);
         stackViewer.addLayer(layerName, layer);
       }
 
@@ -433,30 +435,30 @@
       }
 
       var [mouseX, mouseY] = [0, 0];
-      const context = activePaintingLayer.context;
+      var [prevMouseX, prevMouseY] = [0, 0];
       const boundings = activePaintingLayer.view.getBoundingClientRect();
 
       var overlayBindings = {
         pointerdown: function( e ) {
           mouseX = e.clientX - boundings.left;
           mouseY = e.clientY - boundings.top;
+          prevMouseX = mouseX;
+          prevMouseY = mouseY;
 
           var mouseButton = CATMAID.ui.getMouseButton(e);
           // Left mouse click will delegate to painting overlay
           var fallback = false;
           if (mouseButton === 1) {
-            if (SkeletonAnnotations.currentMode === SkeletonAnnotations.MODES.MOVE) {
+            if (currentMode === PaintingTool.MODES.MOVE) {
               fallback = true;
             } else {
               isDrawing = true;
-
-              // Start drawing
-              context.beginPath();
-              context.moveTo(mouseX, mouseY);
             }
+
+            layer.paintAt(mouseX, mouseY, prevMouseX, prevMouseY);
           }
 
-          // Right mouse button and middle mouse button will pan view. And soma
+          // Right mouse button and middle mouse button will pan view. And so
           // will the left mouse button if the painting overlay returned false.
           if (mouseButton === 2 || mouseButton === 3 || fallback) {
             fallback = false;
@@ -521,12 +523,13 @@
           }
         },
         pointermove: function (event) {
+          prevMouseX = mouseX;
+          prevMouseY = mouseY;
           mouseX = event.clientX - boundings.left;
           mouseY = event.clientY - boundings.top;
 
           if (isDrawing){
-            context.lineTo(mouseX, mouseY);
-            context.stroke();
+            layer.paintAt(mouseX, mouseY, prevMouseX, prevMouseY);
           }
         },
         pointerup: function (event) {
@@ -573,22 +576,6 @@
       } else {
         CATMAID.error("More than one painting layer found");
       }
-
-      /*
-      let activeNodeId = SkeletonAnnotations.getActiveNodeId();
-      if (activeNodeId !== undefined) {
-        let api = SkeletonAnnotations.getActiveSkeletonAPI();
-
-        for (let layer of tracingLayers) {
-          layer.tracingOverlay.updateCursor();
-          if (CATMAID.API.equals(layer.tracingOverlay.api, api) &&
-              layer.tracingOverlay.nodes.has(activeNodeId)) {
-            activeLayer = layer;
-            break;
-          }
-        }
-      }
-      */
 
       if (!activeLayer) {
         activeLayer = paintingLayers[0];
@@ -641,7 +628,7 @@
     this.refreshPaintingLayer = function() {
       if (activeStackViewer) {
         // Get or create the painting layer for this stack viewer
-        var [paintingLayer, dataLayer] = prepareStackViewer(activeStackViewer);
+        var [paintingLayer, dataLayer] = prepareStackViewer(activeStackViewer, this);
         activePaintingLayer = paintingLayer;
         activePaintingDataLayer = dataLayer;
       }

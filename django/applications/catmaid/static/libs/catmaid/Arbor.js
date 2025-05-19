@@ -1469,7 +1469,7 @@ Arbor.prototype.terminalCableLength = function(positions) {
 
 /**
  * Find path from node to an upstream node that is in stops. If no node in
- * stops is upstrem of node, then returns null. Will traverse towards upstream
+ * stops is upstream of node, then returns null. Will traverse towards upstream
  * regardless of whether the initial node belongs to stops or not.
  */
 Arbor.prototype.pathToUpstreamNodeIn = function(node, stops) {
@@ -1868,12 +1868,17 @@ Arbor.prototype.connectedFractions = function(nodes) {
 /**
  * Return a new Arbor that contains nodes from root all the way to either end
  * nodes or the nodes found in the cuts map.
+ *
+ * cuts: a map of node keys vs truthy (not undefined or not falsy)
  */
 Arbor.prototype.upstreamArbor = function(cuts) {
-  var up = new Arbor(),
-      successors = this.allSuccessors(),
-      open = successors[this.root].slice(0); // clone
+  var up = new Arbor();
   up.root = this.root;
+  if (cuts[this.root]) {
+    return up;
+  }
+  var successors = this.allSuccessors(),
+      open = successors[this.root].slice(0); // clone
   while (open.length > 0) {
     var node = open.pop(),
         paren = this.edges[node];

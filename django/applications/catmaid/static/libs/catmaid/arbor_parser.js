@@ -18,6 +18,9 @@
       this.n_presynaptic_sites = null;
       this.input_partners = null;
       this.output_partners = null;
+      // Map of partner skeleton IDs vs list of their own treenode IDs at which that connection type is received
+      this.pre = null;
+      this.post = null;
   };
 
   ArborParser.prototype = {};
@@ -148,6 +151,48 @@
         else m[node] = no;
         return m;
     }, $.extend({}, this.inputs));
+  };
+
+  /** Like synapses but retains knowlege of which treenode_id in the other skeleton.
+   *  When calling this function, this.pre is a map of this skeleton treenode_id keys
+   *  to values that are a map of other skeleton_id vs list of its nodes where it connects,
+   *  and likewise for this.post. */
+  ArborParser.prototype.fullConnectors = function(rows, testIfInArbor) {
+    var io = [{}, {}]; // pre 0 and and post 1
+    for (var i=0; i<rows.length; ++i ){
+      var row = rows[i];
+      // Skip non-synapse connectors
+      if (0 !== row[6] && 1 !== row[6]) continue;
+
+      var node = row[0]; // 0: treenode ID
+      
+      // Optionally, consider synapses only on particular nodes
+      if (testIfInArbor && !this.arbor.contains(node)) {
+        continue;
+      }
+
+      // Pick pre or post
+      var t = io[row[6]]; // 6: 0 for pre, 1 for post
+
+      // Add a new entry
+      var other_skid = row[5]; // 5: the other skeleton ID
+      var other_node = row[4]; // 4: the other treenode ID
+      var connections = t[node]; // map of other_skid keys vs list of their nodes
+      if (undefined === connections) {
+        var m = {};
+        m[other_skid] = [other_node];
+        t[node] = m;
+      } else {
+        var a = connections[other_skid];
+        if (undefined === a) {
+          connections[other_skid] = [other_node];
+        } else {
+          a.push[other_node];
+        }
+      }
+    }
+    this.pre = io[0];
+    this.post = io[1];
   };
 
   /** Replace in this.arbor the functions defined in the fnNames array by a function

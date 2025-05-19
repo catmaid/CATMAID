@@ -54,6 +54,9 @@ summary statistics.
     g.edges(data=True)
     nx.write_graphml( g, 'mynetwork.graphml' )
     </pre></li>
+  
+  <li><a id='export-4-matrices' href='#'><strong>4 connectivity matrices</strong></a><br />
+    Export all four connectivity matrices (axo-dendritic, axo-axonic, dendro-dendritic and dendro-axonic) as CSV from a selection of neurons. Each row is presynaptic to each column. Both rows and columns start with the skeleton ID. A separate, fifth CSV file is exported relating skeleton IDs to neuron names in two columns.</li>
 
   <li><a id='export-neuroml181' href='#'><strong>NeuroML 1.8.1 (Level 3, NetworkML)</strong></a></br />
   For modeling with <a href="http://www.neuroconstruct.org/">neuroConstruct</a> and then e.g. the <a href="http://www.neuron.yale.edu/neuron/">NEURON</a> simulator.</li>
@@ -228,6 +231,10 @@ annotations, neuron name, connectors or partner neurons.
         // Bind NetworkX JSON link to handler
         $container.find('#export-networkx').click(function() {
           graphexport_nxjson();
+        });
+        // Bind Export 4 matrices to handler
+        $container.find('#export-4-matrices').click(function() {
+          export_split_connectivity_matrices();
         });
         // Bind NeuroML link to handler
         $container.find('#export-neuroml181').click(function() {
@@ -1509,6 +1516,230 @@ annotations, neuron name, connectors or partner neurons.
 
     dialog.show(500, 250, true);
   }
+
+  /**
+  * Considers the connections from the source to the target,
+  * by reading in inputs into the source from the target,
+  * and checking that the target, which is an axon or a dendrite,
+  * contains the treenode at which the synapse is directed.
+  * This check is necessary because each arbor is constructed
+  * without knowledge of the other arbors other than the
+  * treenode IDs related to the connectors.
+  * 
+  * source: "axon" or "dendrite", a key of each neuron. Each being an ArborParser with .pre and .post after a call to fullConnectors.
+  * target: like source.
+  */
+  function makeMatrix(neurons, source, target) {
+    var skids = Object.keys(neurons);
+
+    // A map from skeleton ID to index in the skids array,
+    // which is also the order in the rows and columns of the returned matrix.
+    var skid_to_index = skids.reduce(function(m, skid, i) {
+        m[skid] = i;
+        return m;
+    }, {});
+
+    // The matrix: pre-filled with zeros
+    var matrix = new Array(skids.length);
+    for (var i=0; i<skids.length; ++i) matrix[i] = new Array(skids.length).fill(0);
+
+    var nns = CATMAID.NeuronNameService.getInstance();
+
+    // For each skeleton_id in neurons
+    Object.keys(neurons).forEach(function(skid_src, index_src) {
+        var pre = neurons[skid_src][source].pre;
+        // For each treenode_id with output synapses in the source neuron
+        Object.keys(pre).forEach(function(treenode_id) {
+            var m = pre[treenode_id]; // map of target skids vs array of treenode_id in the target skid
+            // For each target skeleton via a connector on that treenode of the source skeleton
+            Object.keys(m).forEach(function(skid_target) {
+                var partner = neurons[skid_target];
+                if (undefined === partner) return; // not in the set of neurons to consider
+                var target_subarbor = partner[target].arbor; // an axon or a dendrite
+                // Check if each target treenode_id at which the synapse is received is in the target subarbor
+                var count = m[skid_target].reduce(function(sum, other_treenode_id) {
+                  return sum + (target_subarbor.contains(other_treenode_id) ? 1 : 0);
+                }, 0);
+                // Add to cell in the matrix
+                matrix[index_src][skid_to_index[skid_target]] += count;
+            });
+        });
+    });
+
+    return [skids, skids.map(nns.getName, skids), matrix];
+  };
+
+  function export_split_connectivity_matrices() {
+    // Add skeleton source message and controls
+    var dialog = new CATMAID.OptionsDialog('Export split connectivity matrices');
+
+    // Add user interface
+    dialog.appendMessage('Please select a source from where to get the ' +
+        'neurons whose 4 connectivity matrices should be exported.');
+    var select = document.createElement('select');
+    CATMAID.skeletonListSources.createOptions().forEach(function(option, i) {
+      select.options.add(option);
+      if (option.value === 'Active skeleton') select.selectedIndex = i;
+    });
+    var label_p = document.createElement('p');
+    var label = document.createElement('label');
+    label.appendChild(document.createTextNode('Source:'));
+    label.appendChild(select);
+    label_p.appendChild(label);
+    dialog.dialog.appendChild(label_p);
+
+    var splitTagField = dialog.appendField('Split at tag', 'split-tag', '', false);
+
+    // Add handler for initiating the export
+    dialog.onOK = function() {
+      // Collected objects for all skeletons
+      var result = {skeletons: {}};
+      // Get all selected skeletons from the selected source
+      var source = CATMAID.skeletonListSources.getSource($(select).val());
+      var skids = source.getSelectedSkeletons();
+      // Cancel if there are no skeletons
+      if (skids.length === 0) {
+        alert('Please select at least one skeleton in the selection widget.');
+        return;
+      }
+      var splitTag = splitTagField.value.trim();
+      // Cancel if none
+      if (0 === splitTag.length) {
+        alert('Please input the text tag to split arbors into axon and dendrite');
+        return;
+      }
+
+      var project_id = project.id;
+
+      var neurons = {}; // keyed by skeleton ID
+
+      fetchSkeletons(
+        skids,
+        (skid) => {
+          // Return a JSON which is a single array with:
+          // 0: An array of treenodes
+          // 1: The synapses
+          // 2: A map of treenode text tags vs array of treenode IDs.
+          return `${project_id}/${skid}/1/1/1/compact-arbor`;
+        },
+        (skid) => { return {}; }, // POST parameters
+        (skid, json) => {
+            //console.log(json);
+            // The dictionary of treenode text tags vs array of treenode_id
+            let tags = json[2]; // a dictionary
+            // The Arbor instance for the whole skeleton
+            let ap = new CATMAID.ArborParser().makeArbor(json[0]); // without synapses
+            // Ensure arbor is rooted at the soma
+            let soma_nodes = tags['soma'];
+            if (undefined == soma_nodes) {
+              var msg = "WARNING no soma for skeleton_id " + skid;
+              console.log(msg);
+              CATMAID.warn(msg);
+            } else {
+              if (soma_nodes.length > 1) {
+                var msg = "WARNING more than one soma tag for skeleton_id " + skid;
+                console.log(msg);
+                CATMAID.warn(msg);
+              }
+              // Ensure arbor is rooted at the soma
+              ap.arbor.reroot(soma_nodes[0]);
+            }
+            // Split by axon/dendrite using a text tag
+            let axon_split_nodes = tags[splitTag]; // will be undefined if it doesn't have the tag
+            if (undefined !== axon_split_nodes) {
+              // Node or nodes at which to split
+              let split = {};
+              for (var i=0; i<axon_split_nodes.length; ++i) {
+                split[axon_split_nodes[i]] = true;
+              }
+
+              // Axon and its synapses
+              var apAxon = new CATMAID.ArborParser();
+
+              if (1 === axon_split_nodes.length) {
+                // One single axon subarbor
+                apAxon.arbor = ap.arbor.subArbor(axon_split_nodes[0]);
+              } else {
+                // Construct a broken arbor to capture the multiple axons in its edges map.
+                // All it needs is for the Arbor.contains(node) function
+                // to return true if a node with a synapse is in its edges map,
+                // so that below ArborParser.fullConnectors can check for membership.
+                apAxon.arbor = new Arbor();
+                apAxon.arbor.edges = ap.arbor.pruneAt(split); // returns the removed nodes as a map,
+                                                              // which are those of the multiple axons
+                // Note it's a broken arbor, nodes aren't linked to parent nodes
+              }
+              apAxon.fullConnectors(json[1], true);
+
+              // Dendrite and its synapses
+              var apDendrite = new CATMAID.ArborParser();
+              apDendrite.arbor = ap.arbor.upstreamArbor(split);
+              apDendrite.fullConnectors(json[1], true);
+
+              
+              // Package
+              neurons[skid] = {"axon": apAxon,
+                               "dendrite": apDendrite,
+                               "connections": json[1],
+                               "name": nns.getName(skid),
+                               "split": true};
+            } else {
+              console.log("No '" + axon_split_tag + "' tag for " + skid);
+              ap.fullConnectors(json[1], true);
+              neurons[skid] = {"axon": ap,
+                               "dendrite": ap,  // same arbor and synapses for axon and dendrite
+                               "connections": json[1],
+                               "name": nns.getName(skid),
+                               "split": false};
+            }
+        },
+        (skid) => {
+          // Failed loading
+          console.log("Failed to load skeleton #" + skid);
+        },
+        () => {
+          console.log(neurons);
+          // When done loading all arbors, fill in the matrices
+          // Synaptic connectivity matrices
+          var axo_dendritic    = makeMatrix(neurons, "axon",     "dendrite"),
+              axo_axonic       = makeMatrix(neurons, "axon",     "axon"),
+              dendro_dendritic = makeMatrix(neurons, "dendrite", "dendrite"),
+              dendro_axonic    = makeMatrix(neurons, "dendrite", "axon");
+          console.log(axo_dendritic);
+          console.log(axo_axonic);
+          console.log(dendro_dendritic);
+          console.log(dendro_axonic);
+          // Save matrices
+          var saveCSV = function(skids, matrix, name) {
+            var rows = [];
+            // CSV header: each column is led by the skeleton IDs
+            rows.push(["\"skeleton_id\""].concat(skids).join(", "));
+            for (var i=0; i<matrix.length; ++i) {
+              // Each matrix row, preceeded by the skeleton_id
+              rows.push([skids[i]].concat(matrix[i]).join(", "));
+            }
+            CATMAID.saveTextAs(rows.join("\n"), name);
+          };
+          var skids = axo_dendritic[0];
+          saveCSV(skids, axo_dendritic[2],    "axo-dendritic.csv");
+          saveCSV(skids, axo_axonic[2],       "axo-axonic.csv");
+          saveCSV(skids, dendro_dendritic[2], "dendro-dendritic.csv");
+          saveCSV(skids, dendro_axonic[2],    "dendro-axonic.csv");
+
+          var names = axo_dendritic[1];
+          var names_table = ["\"skeleton_id\", \"neuron_name\""];
+          for (var i=0; i<skids.length; ++i ) {
+            names_table.push(skids[i] + ", \"" names[i] + "\"");
+          }
+          CATMAID.saveTextAs(names_table.join("\n"), "skeleton-neuron_names.csv");
+        });
+    };
+
+    dialog.show(500, 250, true);
+  };
+
+
+
 
   // A key that references this widget in CATMAID
   var widgetKey = "import-export-widget";

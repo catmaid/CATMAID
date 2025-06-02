@@ -1613,6 +1613,8 @@ annotations, neuron name, connectors or partner neurons.
 
       var neurons = {}; // keyed by skeleton ID
 
+      var nns = CATMAID.NeuronNameService.getInstance();
+
       fetchSkeletons(
         skids,
         (skid) => {

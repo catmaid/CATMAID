@@ -1686,7 +1686,7 @@ annotations, neuron name, connectors or partner neurons.
                                "name": nns.getName(skid),
                                "split": true};
             } else {
-              console.log("No '" + axon_split_tag + "' tag for " + skid);
+              console.log("No '" + splitTag + "' tag for " + skid);
               ap.fullConnectors(json[1], true);
               neurons[skid] = {"axon": ap,
                                "dendrite": ap,  // same arbor and synapses for axon and dendrite

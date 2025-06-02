@@ -1729,7 +1729,7 @@ annotations, neuron name, connectors or partner neurons.
           var names = axo_dendritic[1];
           var names_table = ["\"skeleton_id\", \"neuron_name\""];
           for (var i=0; i<skids.length; ++i ) {
-            names_table.push(skids[i] + ", \"" names[i] + "\"");
+            names_table.push(skids[i] + ", \"" + names[i] + "\"");
           }
           CATMAID.saveTextAs(names_table.join("\n"), "skeleton-neuron_names.csv");
         });

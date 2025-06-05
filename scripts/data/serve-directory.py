@@ -1,21 +1,18 @@
 #!/usr/bin/env python
 #
-# Simple local Python 2/3 HTTP(S) server with CORS support. The fist argument is
+# Simple local Python 3 HTTP(S) server with CORS support. The fist argument is
 # the port to listen on. The Server will try to use HTTPS if the path to a
 # certificate is provided as second argument.
 #
-# To creae a local self-signed certificate, run e.g.:
-# openssl req -new -x509 -keyout localhost.pem -out localhost.pem -days 24855 -nodes
+# To creae a local self-signed certificate (localhost.pem) and a key file
+# (localhost-key.pem), run the following:
+# openssl req -new -x509 -keyout localhost-key.pem -out localhost.pem -days 24855 -nodes
+#
+# With these files in place, the server can be started like this:
+# python serve-directory.py 9999 localhost.pem localhost-key.pem
 
 import os, ssl, sys
-
-try:
-    # Python 3
-    from http.server import HTTPServer, SimpleHTTPRequestHandler
-except ImportError:
-    # Python 2
-    from BaseHTTPServer import HTTPServer
-    from SimpleHTTPServer import SimpleHTTPRequestHandler
+from http.server import HTTPServer, SimpleHTTPRequestHandler
 
 
 class CORSRequestHandler (SimpleHTTPRequestHandler):
@@ -29,11 +26,13 @@ class Server(HTTPServer, object):
     CORS headers and uses SSL if a certificate path is provided.
     """
 
-    def __init__(self, server_address, handler, cert_path=None):
+    def __init__(self, server_address, handler, cert_path=None, key_path=None):
         super(Server, self).__init__(server_address, handler)
-        if cert_path:
-            self.socket = ssl.wrap_socket (self.socket,
-                certfile=cert_path, server_side=True)
+        if cert_path and key_path:
+            context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+            context.load_cert_chain(cert_path, keyfile=key_path)
+            context.check_hostname = False
+            self.socket = context.wrap_socket(self.socket, server_side=True)
 
 def main():
     cwd = os.getcwd()
@@ -41,13 +40,15 @@ def main():
     if n_args == 2:
         port = int(sys.argv[1])
         cert_path = None
+        key_path = None
         protocol = 'HTTP'
-    elif n_args == 3:
+    elif n_args == 4:
         port = int(sys.argv[1])
         cert_path = sys.argv[2]
+        key_path = sys.argv[3]
         protocol = 'HTTPS'
     else:
-        print("Usage: {} <port> <cert-file>".format(__file__))
+        print("Usage: {} <port> <cert-file> <key-file>".format(__file__))
         return
 
     print("Starting {} server in folder {}".format(protocol, cwd))
@@ -85,7 +86,7 @@ def main():
             print("Could not read metadata file 'metadata.txt'")
         print('')
 
-    server = Server(('localhost', port), CORSRequestHandler, cert_path)
+    server = Server(('localhost', port), CORSRequestHandler, cert_path, key_path)
     server.serve_forever()
 
 

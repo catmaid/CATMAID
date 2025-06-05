@@ -73,6 +73,15 @@ the source code is in ``/home/alice/catmaid``::
 
    git clone https://github.com/catmaid/CATMAID.git catmaid
 
+Note that if you want the current Git version to be known by your CATMAID
+instance (and printed to the status bar), you need to tell Git globally that the
+``catmaid`` folder is a safe directory::
+
+  sudo git config --system --add safe.directory /home/alice/catmaid
+
+As a result users that don't own this local Git repository can now execute Git
+commands in it (e.g. ``www-data`` can run ``git describe``).
+
 2. Install required Python packages
 ###################################
 

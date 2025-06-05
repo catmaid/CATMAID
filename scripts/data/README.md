@@ -9,8 +9,8 @@ by CATMAID. This allows fast local access to image files.
 Setup
 -----
 
-To use this functionality, make sure Python 2 or Python 3 is installed and that
-the folder this file is part of contains a directory with image data, the
+To use this functionality, make sure Python 3 is installed and that the folder
+this file is part of contains a directory with image data, the
 `serve-directory.py` script and a file called `localhost.pem`.
 
 The `localhost.pem` certificate file should NEVER be used for actual encryption

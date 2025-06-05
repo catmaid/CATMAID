@@ -280,6 +280,9 @@ Miscellaneous:
 - Review widget: fast reviewing using the W key sometimes raised an error
   regarding a missing intersection. This is fixed now (#2296)
 
+- The scripts/data/serve-directory.py script has been fixed to work with more
+  recent Python versions.
+
 ## Maintenance updates
 
 - Node distance measurements: computation of straight line distance has been

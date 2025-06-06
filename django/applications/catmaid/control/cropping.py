@@ -916,18 +916,18 @@ def export_images_to_n5(project_id, stack_id, cropped_stack,
                         block_size, dtype.upper())
 
     with open(export_path + '/' + dataset + "/attributes.json", 'r') as f:
-            attrs = json.load(f)
-            attrs['pixelResolution'] = {
-                'unit': 'nm',
-                'dimensions': [
-                    stack.resolution.x,
-                    stack.resolution.y,
-                    stack.resolution.z
-                ]
-            }
+        attrs = json.load(f)
+        attrs['pixelResolution'] = {
+            'unit': 'nm',
+            'dimensions': [
+                stack.resolution.x,
+                stack.resolution.y,
+                stack.resolution.z
+            ]
+        }
 
     with open(export_path + '/' + dataset + "/attributes.json", 'w') as f:
-            f.write(json.dumps(attrs))
+        f.write(json.dumps(attrs))
 
     n5 = pyn5.open(export_path, dataset, dtype.upper(), False)
 

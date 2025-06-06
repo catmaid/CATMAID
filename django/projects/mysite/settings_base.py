@@ -347,7 +347,7 @@ for any data lost.</li>
 """
 
 # A new user's defaul groups
-NEW_USER_DEFAULT_GROUPS: set[str] = []
+NEW_USER_DEFAULT_GROUPS: list[str] = []
 
 # Whether the creation of new users should cause the creation of a group with
 # the same name. This groups is used to manage edit permission on the user's

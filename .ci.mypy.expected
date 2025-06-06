@@ -67,8 +67,6 @@ django/applications/catmaid/history.py:3: error: Library stubs not installed for
 django/applications/catmaid/history.py:3: error: Library stubs not installed for "dateutil"  [import-untyped]
 django/applications/catmaid/control/common.py:5: error: Library stubs not installed for "requests"  [import-untyped]
 django/applications/catmaid/control/common.py:5: note: Hint: "python3 -m pip install types-requests"
-django/projects/mysite/settings_base.py:348: error: Need type annotation for "NEW_USER_DEFAULT_GROUPS" (hint: "NEW_USER_DEFAULT_GROUPS: list[<type>] = ...")  [var-annotated]
-django/projects/mysite/settings_base.py:478: error: Need type annotation for "STATIC_EXTENSION_FILES" (hint: "STATIC_EXTENSION_FILES: list[<type>] = ...")  [var-annotated]
 django/applications/catmaid/control/node.py:16: error: Library stubs not installed for "ujson"  [import-untyped]
 django/applications/catmaid/control/node.py:16: note: Hint: "python3 -m pip install types-ujson"
 Found 58 errors in 38 files (checked 335 source files)

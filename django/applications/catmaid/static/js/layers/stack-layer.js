@@ -316,6 +316,7 @@
     // Get some default values from the current tile source
     const dialogTitle = editActive ? 'Edit custom mirror' : 'Add custom mirror';
     var dialog = new CATMAID.OptionsDialog(dialogTitle);
+    dialog.setAlignFields(true);
     dialog.appendMessage("Please specify at least a URL for the custom mirror");
     var url = dialog.appendField("URL", "customMirrorURL", mirrorData.image_base || "", false);
     var title = dialog.appendField("Title", "customMirrorTitle", mirrorData.title || "Custom mirror", false);
@@ -325,12 +326,11 @@
         mirrorData.tile_width || defaultData.tile_width, false);
     var tileHeight = dialog.appendField("Tile height", "customMirrorTileHeight",
         mirrorData.tile_height || defaultData.tile_height, false);
-    var tileSrcType = dialog.appendField("Tile source type",
-        "customMirrorTileSrcType", mirrorData.tile_source_type || defaultData.tile_source_type, false);
-    var tileSrcType = dialog.appendChoice("Tile source type",
-        "customMirrorTileSrcType", Object.keys(CATMAID.TileSources.TileSourceMap),
+    var tileSrcType = dialog.appendChoice("Tile source type", "customMirrorTileSrcType",
         Object.values(CATMAID.TileSources.TileSourceMap).map(x => x.name),
+        Object.keys(CATMAID.TileSources.TileSourceMap),
         mirrorData.tile_source_type || defaultData.tile_source_type);
+    tileSrcType.style.width = 'auto';
 
     var changeMirrorIfNoDataCb = dialog.appendCheckbox("Change mirror on inaccessible data",
         "change-mirror-if-no-data", this.changeMirrorIfNoData, "If this is selected, a different mirror is " +

@@ -1436,6 +1436,10 @@ a.neuron-selection-link:hover {
   float: left;
 }
 
+.dialog-confirm p, dl {
+  margin: 1.5em 0.25em 0.5em 0.25em;
+}
+
 div#dialog-confirm ul {
   padding: 0;
 }
@@ -1460,7 +1464,8 @@ div#dialog-confirm select {
 
 #dialog-confirm input:not([type]),
 #dialog-confirm input[type=""],
-#dialog-confirm input[type=text] {
+#dialog-confirm input[type=text],
+#dialog-confirm select {
   margin-left: 0.5em;
 }
 

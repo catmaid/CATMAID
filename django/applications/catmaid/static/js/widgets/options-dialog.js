@@ -14,9 +14,23 @@
     this.dialog.setAttribute("title", title);
     this.buttons = buttons;
     this.manualDestroy = manualDestroy;
+    this.alignFields = false;
   };
 
   OptionsDialog.prototype = {};
+
+  OptionsDialog.prototype.setAlignFields = function (value) {
+    this.alignFields = value;
+    if (this.alignFields) {
+      this.dialog.style.display = 'grid';
+      this.dialog.style.gridTemplateColumns = '11em auto';
+      this.dialog.style.gridGap = '0.5em';
+    } else {
+      this.dialog.style.display = '';
+      this.dialog.style.gridTemplateColumns = '';
+      this.dialog.style.gridGap = '';
+    }
+  };
 
   /**
    * Show ValueError instances as warning, otherwise let CATMAID deal with the
@@ -103,8 +117,17 @@
     $(this.dialog).dialog("destroy");
   };
 
+  OptionsDialog.prototype.getFieldContainer = function() {
+    if (this.alignFields) {
+      return this.dialog;
+    }
+    const p = document.createElement('p');
+    this.dialog.appendChild(p);
+    return p;
+  };
+
   OptionsDialog.prototype.appendChild = function(element) {
-    var container = document.createElement('p');
+    var container = this.getFieldContainer();
     container.appendChild(element);
     this.dialog.appendChild(container);
     return container;
@@ -113,12 +136,14 @@
   OptionsDialog.prototype.appendHTML = function(html) {
     var container = document.createElement('p');
     container.innerHTML = html;
+    container.style.gridColumn = '1 / 3';
     this.dialog.appendChild(container);
     return container;
   };
 
   OptionsDialog.prototype.appendMessage = function(text) {
     var msg = document.createElement('p');
+    msg.style.gridColumn = '1 / 3';
     msg.appendChild(document.createTextNode(text));
     this.dialog.appendChild(msg);
     return msg;
@@ -129,25 +154,30 @@
       alert("Improper arrays for names and values.");
       return;
     }
-    var p = document.createElement('p');
-    if (title) p.innerHTML = title;
+    var p = this.getFieldContainer();
+    var label = document.createElement('label');
+    label.setAttribute('for', choiceID);
+    p.appendChild(label);
+    if (title) {
+      label.appendChild(document.createTextNode(title));
+    }
+
     var choice = document.createElement('select');
     choice.setAttribute("id", choiceID);
     for (var i=0, len=names.length; i<len; ++i) {
       var option = document.createElement('option');
       option.text = names[i];
       option.value = values[i];
-      option.defaultSelected = defaultValue === values[i];
+      option.defaultSelected = defaultValue == values[i];
       choice.add(option);
     }
     p.appendChild(choice);
-    this.dialog.appendChild(p);
     return choice;
   };
 
   OptionsDialog.prototype.appendField = function(title, fieldID,
       initialValue, submitOnEnter, placeholder) {
-    var p = document.createElement('p');
+    var p = this.getFieldContainer();
     var label = document.createElement('label');
     label.setAttribute('for', fieldID);
     label.appendChild(document.createTextNode(title));
@@ -159,7 +189,6 @@
       input.setAttribute('placeholder', placeholder);
     }
     p.appendChild(input);
-    this.dialog.appendChild(p);
     // Make this field press okay on Enter, if wanted
     if (submitOnEnter) {
       $(input).keypress((function(e) {
@@ -190,7 +219,7 @@
   };
 
   OptionsDialog.prototype.appendCheckbox = function(title, checkboxID, selected, helptext) {
-    var p = document.createElement('p');
+    let p = this.getFieldContainer();
     var label = document.createElement('label');
     var checkbox = document.createElement('input');
     checkbox.setAttribute('type', 'checkbox');
@@ -198,17 +227,17 @@
     if (selected) checkbox.setAttribute('checked', 'true');
     label.appendChild(checkbox);
     label.appendChild(document.createTextNode(title));
+    label.style.gridColumn = '1 / 3';
     p.appendChild(label);
     if (helptext) {
       label.setAttribute('title', helptext);
     }
-    this.dialog.appendChild(p);
     return checkbox;
   };
 
   OptionsDialog.prototype.appendCheckboxField = function(title, checkboxID,
       fieldID, selected, fieldValue, autoDisable, helptext) {
-    var p = document.createElement('p');
+    let p = this.getFieldContainer();
     var label = document.createElement('label');
     var checkbox = document.createElement('input');
     checkbox.setAttribute('type', 'checkbox');
@@ -224,7 +253,6 @@
     if (helptext) {
       label.setAttribute('title', helptext);
     }
-    this.dialog.appendChild(p);
 
     if (autoDisable) {
       if (!selected) field.disabled = true;

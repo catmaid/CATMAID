@@ -101,13 +101,14 @@ class StacksApiTests(CatmaidApiTestCase):
             test_data = json.dumps(test_data_raw.tolist())
             test_bounds = [[0, 0, 0], [3, 3, 3]]
 
-            response = self.client.post(f'/{self.test_project_id}/stack/{test_stack_id}/write-block',
-                             {
-                                 'data': test_data,
-                                 'data_bounds': json.dumps(test_bounds),
-                                 'compression': 'GZIP',
-                                 'compression_opts': -1,
-                            })
+            response = self.client.post(
+                f'/{self.test_project_id}/stack/{test_stack_id}/write-block',
+                {
+                    'data': test_data,
+                    'data_bounds': json.dumps(test_bounds),
+                    'compression': 'GZIP',
+                    'compression_opts': -1,
+                })
             self.assertStatus(response)
             parsed_response = json.loads(response.content.decode('utf-8'))
 

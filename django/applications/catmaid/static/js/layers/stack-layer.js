@@ -339,7 +339,8 @@
 
     var getMirrorData = function() {
       var imageBase = url.value;
-      if (!imageBase.endsWith('/')) {
+      const tileSourceType = parseInt(tileSrcType.value, 10);
+      if (!CATMAID.TileSources.typeIsImageBlockSource(tileSourceType) && !imageBase.endsWith('/')) {
         imageBase = imageBase + '/';
       }
       return {
@@ -350,7 +351,7 @@
         file_extension: ext.value,
         tile_width: parseInt(tileWidth.value, 10),
         tile_height: parseInt(tileHeight.value, 10),
-        tile_source_type: parseInt(tileSrcType.value, 10)
+        tile_source_type: tileSourceType
       };
     };
 

@@ -31,6 +31,10 @@ django/applications/catmaid/static/js/tools/roi-tool.js: line 357, col 9, 'cropB
 django/applications/catmaid/static/js/tools/selector.js: line 47, col 13, 'xp' is defined but never used.
 django/applications/catmaid/static/js/tools/selector.js: line 48, col 13, 'yp' is defined but never used.
 
+django/applications/catmaid/static/js/tools/cropping-tool.js: line 188, col 13, 'blockSizeField' is defined but never used.
+django/applications/catmaid/static/js/tools/cropping-tool.js: line 191, col 13, 'datasetField' is defined but never used.
+django/applications/catmaid/static/js/tools/cropping-tool.js: line 184, col 9, 'getOutputFormatOptionsDialog' is defined but never used.
+
 django/applications/catmaid/static/js/tools/tagging-tool.js: line 1, col 10, 'TaggingTool' is defined but never used.
 
 django/applications/catmaid/static/js/widgets/annotation-graph.js: line 186, col 11, 'created' is defined but never used.
@@ -55,6 +59,8 @@ django/applications/catmaid/static/js/widgets/clustering_widget.js: line 795, co
 django/applications/catmaid/static/js/widgets/clustering_widget.js: line 634, col 13, 'max_x' is defined but never used.
 django/applications/catmaid/static/js/widgets/clustering_widget.js: line 691, col 13, 'x' is defined but never used.
 django/applications/catmaid/static/js/widgets/clustering_widget.js: line 691, col 25, 'h' is defined but never used.
+
+django/applications/catmaid/static/js/widgets/import-export-widget.js: line 1596, col 11, 'result' is defined but never used.
 
 django/applications/catmaid/static/js/widgets/input.js: line 104, col 7, 'self' is defined but never used.
 django/applications/catmaid/static/js/widgets/input.js: line 5, col 10, 'Input' is defined but never used.
@@ -178,4 +184,4 @@ django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm_worker.js: line 28
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm_worker.js: line 57, col 43, 'use_cache' is defined but never used.
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm_worker.js: line 57, col 54, '_' is defined but never used.
 
-139 errors
+143 errors

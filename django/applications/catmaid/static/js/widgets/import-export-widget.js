@@ -54,7 +54,7 @@ summary statistics.
     g.edges(data=True)
     nx.write_graphml( g, 'mynetwork.graphml' )
     </pre></li>
-  
+
   <li><a id='export-4-matrices' href='#'><strong>4 connectivity matrices</strong></a><br />
     Export all four connectivity matrices (axo-dendritic, axo-axonic, dendro-dendritic and dendro-axonic) as CSV from a selection of neurons. Each row is presynaptic to each column. Both rows and columns start with the skeleton ID. A separate, fifth CSV file is exported relating skeleton IDs to neuron names in two columns.</li>
 
@@ -1525,7 +1525,7 @@ annotations, neuron name, connectors or partner neurons.
   * This check is necessary because each arbor is constructed
   * without knowledge of the other arbors other than the
   * treenode IDs related to the connectors.
-  * 
+  *
   * source: "axon" or "dendrite", a key of each neuron. Each being an ArborParser with .pre and .post after a call to fullConnectors.
   * target: like source.
   */
@@ -1567,7 +1567,7 @@ annotations, neuron name, connectors or partner neurons.
     });
 
     return [skids, skids.map(nns.getName, skids), matrix];
-  };
+  }
 
   function export_split_connectivity_matrices() {
     // Add skeleton source message and controls
@@ -1678,7 +1678,7 @@ annotations, neuron name, connectors or partner neurons.
               apDendrite.arbor = ap.arbor.upstreamArbor(split);
               apDendrite.fullConnectors(json[1], true);
 
-              
+
               // Package
               neurons[skid] = {"axon": apAxon,
                                "dendrite": apDendrite,
@@ -1738,7 +1738,7 @@ annotations, neuron name, connectors or partner neurons.
     };
 
     dialog.show(500, 250, true);
-  };
+  }
 
 
 

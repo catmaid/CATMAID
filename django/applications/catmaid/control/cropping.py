@@ -620,7 +620,7 @@ def process_crop_job(job: CropJob, create_message=True) -> str:
                     (job.x_max, job.y_max, job.z_max),
                 )
 
-                export_images_to_n5(job.project_id, job.ref_stack_id,
+                export_images_to_n5(job.project_id, job.ref_stack.id,
                         cropped_stack, job.output_path,
                         job.output_format_options.get('block_size'),
                         job.output_format_options.get('dataset'),

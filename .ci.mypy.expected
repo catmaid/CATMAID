@@ -4,7 +4,6 @@ django/projects/mysite/pipelinefiles.py:168: error: Incompatible types in assign
 django/projects/mysite/pipelinefiles.py:170: error: List item 0 has incompatible type "list[str]"; expected "str"  [list-item]
 django/lib/custom_rest_swagger_googledoc.py:19: error: Library stubs not installed for "docutils"  [import-untyped]
 django/lib/custom_rest_swagger_googledoc.py:19: note: Hint: "python3 -m pip install types-docutils"
-django/applications/catmaid/control/stack.py:8: error: Library stubs not installed for "requests"  [import-untyped]
 django/applications/catmaid/management/commands/catmaid_update_cache_tables.py:3: error: Library stubs not installed for "ujson"  [import-untyped]
 django/applications/catmaid/control/transaction.py:2: error: Library stubs not installed for "ujson"  [import-untyped]
 django/applications/catmaid/control/annotation.py:4: error: Library stubs not installed for "dateutil.parser"  [import-untyped]
@@ -64,6 +63,7 @@ django/applications/catmaid/history.py:3: error: Library stubs not installed for
 django/applications/catmaid/history.py:3: error: Library stubs not installed for "dateutil"  [import-untyped]
 django/applications/catmaid/control/common.py:5: error: Library stubs not installed for "requests"  [import-untyped]
 django/applications/catmaid/control/common.py:5: note: Hint: "python3 -m pip install types-requests"
+django/applications/catmaid/control/stack.py:8: error: Library stubs not installed for "requests"  [import-untyped]
 django/applications/catmaid/control/node.py:16: error: Library stubs not installed for "ujson"  [import-untyped]
 django/applications/catmaid/control/node.py:16: note: Hint: "python3 -m pip install types-ujson"
 Found 56 errors in 37 files (checked 337 source files)

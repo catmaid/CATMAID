@@ -72,53 +72,53 @@ select.highlight {
 }
 
 h1 {
-	margin: 1.5em 16px 0.5em 20px;
-	font-size: 25px;
-	line-height: 1.1em;
-	font-weight: normal;
+  margin: 1.5em 16px 0.5em 20px;
+  font-size: 25px;
+  line-height: 1.1em;
+  font-weight: normal;
 }
 
 h2 {
-	margin: 1.5em 16px 0.5em 20px;
-	font-size: 16px;
-	line-height: 1.1em;
-	font-weight: bold;
+  margin: 1.5em 16px 0.5em 20px;
+  font-size: 16px;
+  line-height: 1.1em;
+  font-weight: bold;
 }
 
 p,
 dl {
-	margin: 1.5em 16px 0.5em 20px;
+  margin: 1.5em 16px 0.5em 20px;
 }
 
 .data-view [role=filter-indicator].filtering {
-	padding: 4px 24px 4px 0;
-	vertical-align: middle;
-	background: url(../images/wait_bgwhite.gif) no-repeat right center;
+  padding: 4px 24px 4px 0;
+  vertical-align: middle;
+  background: url(../images/wait_bgwhite.gif) no-repeat right center;
 }
 
 dt,
 dd {
-	margin-bottom: 0.5em;
+  margin-bottom: 0.5em;
 }
 
 dl p {
-	font-style: italic;
-	margin: 0;
+  font-style: italic;
+  margin: 0;
 }
 
 .wait_bgwhite,
 div.form .wait_bgwhite {
-	padding: 4px 0 4px 24px;
-	vertical-align: middle;
-	background: url(../images/wait_bgwhite.gif) no-repeat left center;
+  padding: 4px 0 4px 24px;
+  vertical-align: middle;
+  background: url(../images/wait_bgwhite.gif) no-repeat left center;
 }
 
 dt {
-	font-weight: bold;
+  font-weight: bold;
 }
 
 dd {
-	margin-left: 1em;
+  margin-left: 1em;
 }
 
 table tr.highlight,
@@ -180,25 +180,25 @@ a, a:visited {
 }
 
 #imprint {
-	height: 32px;
-	width: 100%;
-	background: url(../images/bar32_bg.gif) repeat-x left top;
-	position: absolute;
-	left: 0;
-	bottom: 0;
-	margin: 0;
-	padding: 0;
-	overflow: hidden;
-	border: none;
-	border-top: solid 4px #000000;
+  height: 32px;
+  width: 100%;
+  background: url(../images/bar32_bg.gif) repeat-x left top;
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: none;
+  border-top: solid 4px #000000;
 }
 
 #imprint p {
-	border: none;
-	margin: 0;
-	padding: 4px 0 0 20px;
-	vertical-align: middle;
-	line-height: 20px;
+  border: none;
+  margin: 0;
+  padding: 4px 0 0 20px;
+  vertical-align: middle;
+  line-height: 20px;
 }
 
 #spinner {
@@ -282,13 +282,13 @@ div#context-help {}
 }
 
 #content {
-	position: absolute;
-	left: 0;
-	top: 0;
-	bottom: 0;
-	width: 100%;
-	overflow: auto;
-	background: #FFFFFF;
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+  overflow: auto;
+  background: #FFFFFF;
 }
 
 /* Hide the browser warning messsage if all features are present */
@@ -373,64 +373,64 @@ div#data_view .header h1 {
 }
 
 div#data_view table {
-	margin:1.5em 16px 0.5em 20px;
-	line-height:1.1em;
-	font-weight:normal;
-	border: 0;
+  margin:1.5em 16px 0.5em 20px;
+  line-height:1.1em;
+  font-weight:normal;
+  border: 0;
 }
 
 div#data_view tr.odd {
-	background-color: #E6E6E6;
+  background-color: #E6E6E6;
 }
 
 div#data_view tr.even {
-	background-color: #E2E4FF;
+  background-color: #E2E4FF;
 }
 
 div#data_view td.projectname {
-	font-weight:bold;
-	vertical-align: top;
+  font-weight:bold;
+  vertical-align: top;
 }
 
 div#data_view td.stackimage,
 div#data_view td.odd-stackimage,
 div#data_view td.even-stackimage {
-	vertical-align: top;
-	text-align: right;
+  vertical-align: top;
+  text-align: right;
 }
 
 div#data_view td.odd-stackimage {
-	background-color: #E6E6E6;
+  background-color: #E6E6E6;
 }
 
 div#data_view td.even-stackimage {
-	background-color: #E2E4FF;
+  background-color: #E2E4FF;
 }
 
 div#data_view td.stackname,
 div#data_view td.odd-stackname,
 div#data_view td.even-stackname {
-	vertical-align: top;
-	text-align: left;
+  vertical-align: top;
+  text-align: left;
 }
 
 div#data_view td.odd-stackname {
-	background-color: #E6E6E6;
+  background-color: #E6E6E6;
 }
 
 div#data_view td.even-stackname {
-	background-color: #E2E4FF;
+  background-color: #E2E4FF;
 }
 
 div#data_view td.head {
-	vertical-align: top;
-	text-align: center;
-	font-weight: bold;
-	background-color: #FFFFFF;
+  vertical-align: top;
+  text-align: center;
+  font-weight: bold;
+  background-color: #FFFFFF;
 }
 
 div#data_view .highlight {
-	font-weight:bold;
+  font-weight:bold;
 }
 
 div#data_view figure {
@@ -438,11 +438,11 @@ div#data_view figure {
 }
 
 div#data_view .comment {
-	font-style: italic;
+  font-style: italic;
 }
 
 div#data_view dl {
-	margin: 1.0em 16px 0.5em 20px;
+  margin: 1.0em 16px 0.5em 20px;
 }
 
 div#data_view dl a {
@@ -540,11 +540,11 @@ div#data_view.data-view-spaces_resources span.project-controls i:hover {
 }
 
 div#ontology_editor_widget div#ontology_known_roots {
-	margin-top: 10px;
+  margin-top: 10px;
 }
 
 div#ontology_editor_widget span#known_root_names {
-	font-style: italic;
+  font-style: italic;
 }
 
 div#ontology_editor_widget div#ontology_warnings {
@@ -596,7 +596,7 @@ div.clustering-content #distance_matrix td.lowertriangle {
 }
 
 div.clustering-content .title {
-	font-weight: bold;
+  font-weight: bold;
 }
 
 /* This is needed to make jQuery's slideToggle() not override
@@ -608,22 +608,22 @@ div.clustering-content .content {
 
 .extend-box-open,
 .extend-box-closed {
-	width: 0;
-	height: 0;
-	float: left;
-	margin-top: 1px;
-	margin-right: 3px;
-	border-style: solid;
+  width: 0;
+  height: 0;
+  float: left;
+  margin-top: 1px;
+  margin-right: 3px;
+  border-style: solid;
 }
 
 .extend-box-open {
-	border-width: 8px 4px 0 4px;
-	border-color: #0000ff transparent transparent transparent;
+  border-width: 8px 4px 0 4px;
+  border-color: #0000ff transparent transparent transparent;
 }
 
 .extend-box-closed {
-	border-width: 4px 0 4px 8px;
-	border-color: transparent transparent transparent #0000ff;
+  border-width: 4px 0 4px 8px;
+  border-color: transparent transparent transparent #0000ff;
 }
 
 .navigator_navi_bar {
@@ -740,9 +740,9 @@ table.neuron_annotations_query_fields {
 }
 
 .catmaid .ui-state-highlight {
-	border: 1px solid #fcefa1;
-	background: #fbf9ee;
-	color: #363636;
+  border: 1px solid #fcefa1;
+  background: #fbf9ee;
+  color: #363636;
 }
 
 .padded-content,
@@ -884,7 +884,7 @@ table.neuron_annotations_query_fields {
 
 .sourcepanel .extra-button {
   float: right;
-	font-weight: bold;
+  font-weight: bold;
   font-size: larger;
   margin-top: .5em;
   margin-right: .5em;
@@ -1134,7 +1134,7 @@ div.review-block::after {
 }
 
 #review_segment_table tr.highlight {
-	font-weight:bold;
+  font-weight:bold;
   border: 1px solid #000;
 }
 
@@ -1543,7 +1543,7 @@ table.skeleton-table .sorting_desc,
 table.skeleton-table .sorting,
 table.skeleton-table .sorting_asc_disabled,
 table.skeleton-table .sorting_desc_disabled {
-	background: none;
+  background: none;
 }
 
 table.skeleton-table .sorting_disabled {
@@ -1552,31 +1552,31 @@ table.skeleton-table .sorting_disabled {
 }
 
 table.skeleton-table .sorting_asc::after {
-	content: url('../libs/jquery/datatable/images/sort_asc.png');
+  content: url('../libs/jquery/datatable/images/sort_asc.png');
   position: relative;
   top: 0.5em;
 }
 
 table.skeleton-table .sorting_desc::after {
-	content: url('../libs/jquery/datatable/images/sort_desc.png');
+  content: url('../libs/jquery/datatable/images/sort_desc.png');
   position: relative;
   top: 0.5em;
 }
 
 table.skeleton-table .sorting::after {
-	content: url('../libs/jquery/datatable/images/sort_both.png');
+  content: url('../libs/jquery/datatable/images/sort_both.png');
   position: relative;
   top: 0.5em;
 }
 
 table.skeleton-table .sorting_asc_disabled::after {
-	content: url('../libs/jquery/datatable/images/sort_asc_disabled.png');
+  content: url('../libs/jquery/datatable/images/sort_asc_disabled.png');
   position: relative;
   top: 0.5em;
 }
 
 table.skeleton-table .sorting_desc_disabled::after {
-	content: url('../libs/jquery/datatable/images/sort_desc_disabled.png');
+  content: url('../libs/jquery/datatable/images/sort_desc_disabled.png');
   position: relative;
   top: 0.5em;
 }
@@ -1688,7 +1688,7 @@ img.missing-image {
 }
 
 img.missing-image:before {
-	content: rgba(160,160,160,0.2);
+  content: rgba(160,160,160,0.2);
   display: inline-block;
   font-size: 0;
   line-height: 0;

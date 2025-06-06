@@ -61,7 +61,6 @@ django/applications/catmaid/apps.py:6: error: Library stubs not installed for "u
 django/applications/catmaid/control/cropping.py:12: error: Library stubs not installed for "requests"  [import-untyped]
 django/applications/catmaid/control/cropping.py:14: error: Library stubs not installed for "requests"  [import-untyped]
 django/applications/catmaid/control/cropping.py:623: error: "CropJob" has no attribute "ref_stack_id"; maybe "ref_stack"?  [attr-defined]
-django/applications/catmaid/management/commands/catmaid_update_project_configuration.py:18: error: Need type annotation for "requires_system_checks" (hint: "requires_system_checks: list[<type>] = ...")  [var-annotated]
 django/applications/catmaid/models.py:15: error: Module "django" has no attribute "forms"  [attr-defined]
 django/applications/catmaid/history.py:3: error: Library stubs not installed for "dateutil.parser"  [import-untyped]
 django/applications/catmaid/history.py:3: error: Library stubs not installed for "dateutil"  [import-untyped]
@@ -69,4 +68,4 @@ django/applications/catmaid/control/common.py:5: error: Library stubs not instal
 django/applications/catmaid/control/common.py:5: note: Hint: "python3 -m pip install types-requests"
 django/applications/catmaid/control/node.py:16: error: Library stubs not installed for "ujson"  [import-untyped]
 django/applications/catmaid/control/node.py:16: note: Hint: "python3 -m pip install types-ujson"
-Found 58 errors in 38 files (checked 335 source files)
+Found 57 errors in 37 files (checked 334 source files)

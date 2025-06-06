@@ -27,24 +27,7 @@
   CATMAID.TileSources.getTypeConstructor = function (tileSourceType) {
     // Map tile source types to corresponding constructors. This could also be
     // represented as an array, but is this way more clear and readable.
-    var tileSources = {
-      '1': CATMAID.DefaultTileSource,
-      '2': CATMAID.RequestTileSource,
-      '3': CATMAID.HDF5TileSource,
-      '4': CATMAID.BackslashTileSource,
-      '5': CATMAID.LargeDataTileSource,
-      '6': CATMAID.DVIDImageblkTileSource,
-      '7': CATMAID.RenderServTileSource,
-      '8': CATMAID.DVIDImagetileTileSource,
-      '9': CATMAID.FlixServerTileSource,
-      '10': CATMAID.H2N5TileSource,
-      '11': CATMAID.N5ImageBlockWorkerSource,
-      '12': CATMAID.BossTileSource,
-      '13': CATMAID.CloudVolumeTileSource,
-      '14': CATMAID.NeuroglancerPrecomputedImageBlockWorkerSource,
-    };
-
-    return tileSources[tileSourceType];
+    return CATMAID.TileSources.TileSourceMap[tileSourceType].type;
   };
 
   CATMAID.TileSources.typeIsImageBlockSource = function (tileSourceType) {
@@ -1517,5 +1500,22 @@
   };
 
   CATMAID.GenericOverviewLayer.prototype = Object.create(CATMAID.ArtificialOverviewLayer.prototype);
+
+  CATMAID.TileSources.TileSourceMap = {
+    '1': { type: CATMAID.DefaultTileSource, name: 'File based' },
+    '2': { type: CATMAID.RequestTileSource, name: 'Request query' },
+    '3': { type: CATMAID.HDF5TileSource, name: 'HDF5 via CATMAID back-end' },
+    '4': { type: CATMAID.BackslashTileSource, name: 'File based: zoom-level directories' },
+    '5': { type: CATMAID.LargeDataTileSource, name: 'Directory based' },
+    '6': { type: CATMAID.DVIDImageblkTileSource, name: 'DVID imageblk voxels' },
+    '7': { type: CATMAID.RenderServTileSource, name: 'Janelia Render Service' },
+    '8': { type: CATMAID.DVIDImagetileTileSource, name: 'DVID imagetile tiles' },
+    '9': { type: CATMAID.FlixServerTileSource, name: 'FlixServer tiles' },
+    '10': { type: CATMAID.H2N5TileSource, name: 'H2N5 Tiles' },
+    '11': { type: CATMAID.N5ImageBlockWorkerSource, name: 'N5 image blocks' },
+    '12': { type: CATMAID.BossTileSource, name: 'JHU/APL Boss tiles' },
+    '13': { type: CATMAID.CloudVolumeTileSource, name: 'Cloudvolume via CATMAID back-end' },
+    '14': { type: CATMAID.NeuroglancerPrecomputedImageBlockWorkerSource, name: 'Neuroglancer Precomputed image blocks' },
+  };
 
 })(CATMAID);

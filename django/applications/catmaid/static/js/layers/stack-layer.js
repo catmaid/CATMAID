@@ -75,7 +75,7 @@
       var serializedCustomMirrorData = readStateItem(this.customMirrorStorageName);
       if (serializedCustomMirrorData) {
         var customMirrorData = JSON.parse(serializedCustomMirrorData);
-        stack.addMirror(customMirrorData);
+        stack.setMirror(customMirrorData);
       }
 
       // If no mirror index is given, try to read the last used value from a
@@ -310,28 +310,35 @@
   /**
    * Show a dialog that give a user the option to configure a custom mirror.
    */
-  StackLayer.prototype.addCustomMirror = function () {
+  StackLayer.prototype.showCustomMirrorDialog = function (editActive=false) {
+    const defaultData = this.stack.getMirror(this.mirrorId);
+    const mirrorData = editActive ? defaultData : {};
     // Get some default values from the current tile source
-    var mirror = this.stack.mirrors[this.mirrorId];
-    var dialog = new CATMAID.OptionsDialog('Add custom mirror');
+    const dialogTitle = editActive ? 'Edit custom mirror' : 'Add custom mirror';
+    var dialog = new CATMAID.OptionsDialog(dialogTitle);
     dialog.appendMessage("Please specify at least a URL for the custom mirror");
-    var url = dialog.appendField("URL", "customMirrorURL", "", false);
-    var title = dialog.appendField("Title", "customMirrorTitle", "Custom mirror", false);
+    var url = dialog.appendField("URL", "customMirrorURL", mirrorData.image_base || "", false);
+    var title = dialog.appendField("Title", "customMirrorTitle", mirrorData.title || "Custom mirror", false);
     var ext = dialog.appendField("File extension", "customMirrorExt",
-        mirror.file_extension, false);
+        mirrorData.file_extension || defaultData.file_extension, false);
     var tileWidth = dialog.appendField("Tile width", "customMirrorTileWidth",
-        mirror.tile_width, false);
+        mirrorData.tile_width || defaultData.tile_width, false);
     var tileHeight = dialog.appendField("Tile height", "customMirrorTileHeight",
-        mirror.tile_height, false);
+        mirrorData.tile_height || defaultData.tile_height, false);
     var tileSrcType = dialog.appendField("Tile source type",
-        "customMirrorTileSrcType", mirror.tile_source_type, false);
+        "customMirrorTileSrcType", mirrorData.tile_source_type || defaultData.tile_source_type, false);
+    var tileSrcType = dialog.appendChoice("Tile source type",
+        "customMirrorTileSrcType", Object.keys(CATMAID.TileSources.TileSourceMap),
+        Object.values(CATMAID.TileSources.TileSourceMap).map(x => x.name),
+        mirrorData.tile_source_type || defaultData.tile_source_type);
+
     var changeMirrorIfNoDataCb = dialog.appendCheckbox("Change mirror on inaccessible data",
-        "change-mirror-if-no-data", false, "If this is selected, a different mirror is " +
+        "change-mirror-if-no-data", this.changeMirrorIfNoData, "If this is selected, a different mirror is " +
         "selected automatically, if the custom mirror is unreachable");
 
-    var messageContainer = dialog.appendHTML("Depending of the configuration " +
+    var messageContainer = dialog.appendHTML("Depending of the configuration of " +
       "this mirror, you maybe have to add a SSL certificate exception. To do this, " +
-      "click <a href=\"#\">here</a> after the information above is complete. " +
+      "click <a href=\"#\">HERE</a> after the information above is entered completely. " +
       "A new page will open, displaying either an image or a SSL warning. In " +
       "case of the warning, add a security exception for this (and only this) " +
       "certificate. Only after having this done and the link shows an image, " +
@@ -375,8 +382,8 @@
     dialog.onOK = function() {
       self.changeMirrorIfNoData = changeMirrorIfNoDataCb.checked;
       var customMirrorData = getMirrorData();
-      self.stack.addMirror(customMirrorData);
-      self.switchToMirror(customMirrorData.id);
+      stack.setMirror(customMirrorData);
+      self.switchToMirror(customMirrorData.id, editActive);
       CATMAID.setLocalStorageItem(self.customMirrorStorageName,
           JSON.stringify(customMirrorData));
 
@@ -389,11 +396,40 @@
     dialog.show(500, 'auto');
   };
 
+  StackLayer.prototype.addCustomMirror = function (initialValues, editActive=false) {
+    return this.showCustomMirrorDialog();
+  };
+
+  /**
+   * If a custom mirror is selected, this will show an edit dialog for the
+   * current custom mirror.
+   */
+  StackLayer.prototype.editCustomMirror = function () {
+    if (!this.isCurrentMirrorCustomMirror()) {
+      CATMAID.warn("Please select a custom mirror first");
+      return;
+    }
+    return this.showCustomMirrorDialog(this.mirrorId, true);
+  };
+
+  /**
+   * Returns a list of all custom mirror IDs for this stack.
+   */
+  StackLayer.prototype.getCustomMirrorIds = function () {
+    return Object.keys(this.stack.mirrors).filter(mid => mid.startsWith('custom'));
+  };
+
+  /**
+   * Whether the currently active mirror is a custom mirror.
+   */
+  StackLayer.prototype.isCurrentMirrorCustomMirror = function () {
+    const customMirrorIds = this.getCustomMirrorIds();
+    return customMirrorIds.indexOf(this.mirrorId) != -1;
+  };
+
   StackLayer.prototype.clearCustomMirrors = function () {
-    var customMirrorIds = Object.keys(this.stack.mirrors)
-      .filter(mid => mid.startsWith('custom'));
-    var customMirrorUsed = customMirrorIds.indexOf(this.mirrorId) != -1;
-    if (customMirrorUsed) {
+    const customMirrorIds = this.getCustomMirrorIds();
+    if (this.isCurrentMirrorCustomMirror()) {
       CATMAID.warn("Please select another mirror first");
       return;
     }
@@ -470,6 +506,10 @@
         {
           name: 'Add',
           onclick: this.addCustomMirror.bind(this)
+        },
+        {
+          name: 'Edit',
+          onclick: this.editCustomMirror.bind(this)
         },
         {
           name: 'Clear',

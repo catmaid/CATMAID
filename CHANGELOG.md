@@ -141,6 +141,9 @@ Stack viewer:
 - Initial loading should now be faster, because repeated redraws are now
   prevented. This is especially noticable with block data.
 
+- Custom mirrors can now be edited and support image block sources like N5 or
+  Neuroglancer Precomputed.
+
 3D viewer:
 
 - Spatial select now visualizes the currently set selection radius by placing a

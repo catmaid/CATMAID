@@ -589,7 +589,7 @@
           selectedMirror.tile_height);
     };
 
-    self.addMirror = function(mirrorData) {
+    self.setMirror = function(mirrorData) {
       self.mirrors[mirrorData.id] = {
           id: mirrorData.id,
           image_base: mirrorData.image_base,
@@ -604,6 +604,10 @@
 
     self.removeMirror = function(mirrorId) {
       delete self.mirrors[mirrorId];
+    };
+
+    self.getMirror = function(mirrorId) {
+      return self.mirrors[mirrorId];
     };
 
     self.mirrorsByPriority = function() {

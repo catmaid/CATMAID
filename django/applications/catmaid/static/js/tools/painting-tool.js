@@ -271,7 +271,7 @@
           tile_height: 1024,
           tile_source_type: 11, // N5 image blocks
         };
-        stack.addMirror(customMirrorData);
+        stack.setMirror(customMirrorData);
 
         dataLayer = new CATMAID.PixiImageBlockLayer(
             stackViewer,

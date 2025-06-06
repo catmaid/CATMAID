@@ -4,6 +4,7 @@ django/projects/mysite/pipelinefiles.py:168: error: Incompatible types in assign
 django/projects/mysite/pipelinefiles.py:170: error: List item 0 has incompatible type "list[str]"; expected "str"  [list-item]
 django/lib/custom_rest_swagger_googledoc.py:19: error: Library stubs not installed for "docutils"  [import-untyped]
 django/lib/custom_rest_swagger_googledoc.py:19: note: Hint: "python3 -m pip install types-docutils"
+django/applications/catmaid/control/stack.py:8: error: Library stubs not installed for "requests"  [import-untyped]
 django/applications/catmaid/management/commands/catmaid_update_cache_tables.py:3: error: Library stubs not installed for "ujson"  [import-untyped]
 django/applications/catmaid/control/transaction.py:2: error: Library stubs not installed for "ujson"  [import-untyped]
 django/applications/catmaid/control/annotation.py:4: error: Library stubs not installed for "dateutil.parser"  [import-untyped]
@@ -54,13 +55,10 @@ django/applications/catmaid/control/skeletonexport.py:69: note: Use https://gith
 django/applications/catmaid/control/skeletonexport.py:198: error: Incompatible default for argument "format" (default has type "None", argument has type "str")  [assignment]
 django/applications/catmaid/control/skeletonexport.py:198: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
 django/applications/catmaid/control/skeletonexport.py:198: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
-django/applications/catmaid/control/cropping.py:12: error: Library stubs not installed for "requests"  [import-untyped]
 django/applications/catmaid/control/clustering.py:17: error: Module "django" has no attribute "forms"  [attr-defined]
 django/applications/catmaid/control/classification.py:10: error: Module "django" has no attribute "forms"  [attr-defined]
 django/applications/catmaid/apps.py:6: error: Library stubs not installed for "ujson"  [import-untyped]
-django/applications/catmaid/control/cropping.py:12: error: Library stubs not installed for "requests"  [import-untyped]
 django/applications/catmaid/control/cropping.py:14: error: Library stubs not installed for "requests"  [import-untyped]
-django/applications/catmaid/control/cropping.py:623: error: "CropJob" has no attribute "ref_stack_id"; maybe "ref_stack"?  [attr-defined]
 django/applications/catmaid/models.py:15: error: Module "django" has no attribute "forms"  [attr-defined]
 django/applications/catmaid/history.py:3: error: Library stubs not installed for "dateutil.parser"  [import-untyped]
 django/applications/catmaid/history.py:3: error: Library stubs not installed for "dateutil"  [import-untyped]
@@ -68,4 +66,4 @@ django/applications/catmaid/control/common.py:5: error: Library stubs not instal
 django/applications/catmaid/control/common.py:5: note: Hint: "python3 -m pip install types-requests"
 django/applications/catmaid/control/node.py:16: error: Library stubs not installed for "ujson"  [import-untyped]
 django/applications/catmaid/control/node.py:16: note: Hint: "python3 -m pip install types-ujson"
-Found 57 errors in 37 files (checked 334 source files)
+Found 56 errors in 37 files (checked 337 source files)

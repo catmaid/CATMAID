@@ -286,6 +286,9 @@ Miscellaneous:
 - The scripts/data/serve-directory.py script has been fixed to work with more
   recent Python versions.
 
+- Block image datasets like N5 or Neuroglancer now don't lead to errors anymore
+  when their size isn't anymore a multiple of the block size.
+
 ## Maintenance updates
 
 - Node distance measurements: computation of straight line distance has been

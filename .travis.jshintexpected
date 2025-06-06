@@ -21,6 +21,10 @@ django/applications/catmaid/static/js/tests/test_overlay.js: line 7, col 7, 'san
 
 django/applications/catmaid/static/js/tests/test_tilesources.js: line 4, col 9, 'bn' is defined but never used.
 
+django/applications/catmaid/static/js/tools/cropping-tool.js: line 188, col 13, 'blockSizeField' is defined but never used.
+django/applications/catmaid/static/js/tools/cropping-tool.js: line 191, col 13, 'datasetField' is defined but never used.
+django/applications/catmaid/static/js/tools/cropping-tool.js: line 184, col 9, 'getOutputFormatOptionsDialog' is defined but never used.
+
 django/applications/catmaid/static/js/tools/ontology-tool.js: line 17, col 11, 'workspace_mode' is defined but never used.
 
 django/applications/catmaid/static/js/tools/roi-tool.js: line 253, col 11, 'xp' is defined but never used.
@@ -30,10 +34,6 @@ django/applications/catmaid/static/js/tools/roi-tool.js: line 357, col 9, 'cropB
 
 django/applications/catmaid/static/js/tools/selector.js: line 47, col 13, 'xp' is defined but never used.
 django/applications/catmaid/static/js/tools/selector.js: line 48, col 13, 'yp' is defined but never used.
-
-django/applications/catmaid/static/js/tools/cropping-tool.js: line 188, col 13, 'blockSizeField' is defined but never used.
-django/applications/catmaid/static/js/tools/cropping-tool.js: line 191, col 13, 'datasetField' is defined but never used.
-django/applications/catmaid/static/js/tools/cropping-tool.js: line 184, col 9, 'getOutputFormatOptionsDialog' is defined but never used.
 
 django/applications/catmaid/static/js/tools/tagging-tool.js: line 1, col 10, 'TaggingTool' is defined but never used.
 
@@ -117,6 +117,8 @@ django/applications/catmaid/static/js/widgets/textlabel.js: line 879, col 13, 'c
 django/applications/catmaid/static/js/widgets/textlabel.js: line 754, col 7, 'self' is defined but never used.
 django/applications/catmaid/static/js/widgets/textlabel.js: line 1, col 10, 'TextlabelTool' is defined but never used.
 
+django/applications/catmaid/static/libs/catmaid/arbor_parser.js: line 190, col 28, Expected an assignment or function call and instead saw an expression.
+
 django/applications/catmaid/static/libs/catmaid/color-source.js: line 92, col 17, 'lowerStop' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/color-source.js: line 92, col 28, 'upperStop' is defined but never used.
 django/applications/catmaid/static/libs/catmaid/color-source.js: line 93, col 17, 'sortedSteps' is defined but never used.
@@ -184,4 +186,4 @@ django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm_worker.js: line 28
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm_worker.js: line 57, col 43, 'use_cache' is defined but never used.
 django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm_worker.js: line 57, col 54, '_' is defined but never used.
 
-143 errors
+144 errors

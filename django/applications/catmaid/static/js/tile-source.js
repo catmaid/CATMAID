@@ -1502,20 +1502,20 @@
   CATMAID.GenericOverviewLayer.prototype = Object.create(CATMAID.ArtificialOverviewLayer.prototype);
 
   CATMAID.TileSources.TileSourceMap = {
-    '1': { type: CATMAID.DefaultTileSource, name: 'Simple file based' },
-    '2': { type: CATMAID.RequestTileSource, name: 'Request query' },
-    '3': { type: CATMAID.HDF5TileSource, name: 'HDF5 (CATMAID back-end)' },
-    '4': { type: CATMAID.BackslashTileSource, name: 'File based: zoom-level folders' },
-    '5': { type: CATMAID.LargeDataTileSource, name: 'Directory based' },
-    '6': { type: CATMAID.DVIDImageblkTileSource, name: 'DVID imageblk voxels' },
-    '7': { type: CATMAID.RenderServTileSource, name: 'Janelia Render Service' },
-    '8': { type: CATMAID.DVIDImagetileTileSource, name: 'DVID imagetile tiles' },
-    '9': { type: CATMAID.FlixServerTileSource, name: 'FlixServer tiles' },
-    '10': { type: CATMAID.H2N5TileSource, name: 'H2N5 Tiles' },
-    '11': { type: CATMAID.N5ImageBlockWorkerSource, name: 'N5' },
-    '12': { type: CATMAID.BossTileSource, name: 'JHU/APL Boss tiles' },
-    '13': { type: CATMAID.CloudVolumeTileSource, name: 'Cloudvolume (CATMAID back-end)' },
-    '14': { type: CATMAID.NeuroglancerPrecomputedImageBlockWorkerSource, name: 'Neuroglancer Precomputed' },
+    '1': { id: '1', type: CATMAID.DefaultTileSource, name: 'Simple file based' },
+    '2': { id: '2', type: CATMAID.RequestTileSource, name: 'Request query' },
+    '3': { id: '3', type: CATMAID.HDF5TileSource, name: 'HDF5 (CATMAID back-end)' },
+    '4': { id: '4', type: CATMAID.BackslashTileSource, name: 'File based: zoom-level folders' },
+    '5': { id: '5', type: CATMAID.LargeDataTileSource, name: 'Directory based' },
+    '6': { id: '6', type: CATMAID.DVIDImageblkTileSource, name: 'DVID imageblk voxels' },
+    '7': { id: '7', type: CATMAID.RenderServTileSource, name: 'Janelia Render Service' },
+    '8': { id: '8', type: CATMAID.DVIDImagetileTileSource, name: 'DVID imagetile tiles' },
+    '9': { id: '9', type: CATMAID.FlixServerTileSource, name: 'FlixServer tiles' },
+    '10': { id: '10', type: CATMAID.H2N5TileSource, name: 'H2N5 Tiles' },
+    '11': { id: '11', type: CATMAID.N5ImageBlockWorkerSource, name: 'N5' },
+    '12': { id: '12', type: CATMAID.BossTileSource, name: 'JHU/APL Boss tiles' },
+    '13': { id: '13', type: CATMAID.CloudVolumeTileSource, name: 'Cloudvolume (CATMAID back-end)' },
+    '14': { id: '14', type: CATMAID.NeuroglancerPrecomputedImageBlockWorkerSource, name: 'Neuroglancer Precomputed' },
   };
 
 })(CATMAID);

@@ -327,7 +327,7 @@
     var tileHeight = dialog.appendField("Tile height", "customMirrorTileHeight",
         mirrorData.tile_height || defaultData.tile_height, false);
     var tileSrcType = dialog.appendChoice("Tile source type", "customMirrorTileSrcType",
-        Object.values(CATMAID.TileSources.TileSourceMap).map(x => x.name),
+        Object.values(CATMAID.TileSources.TileSourceMap).map(x => `${x.id}: ${x.name}`),
         Object.keys(CATMAID.TileSources.TileSourceMap),
         mirrorData.tile_source_type || defaultData.tile_source_type);
     tileSrcType.style.width = 'auto';

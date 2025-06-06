@@ -120,16 +120,17 @@ a copy of a simple Python server script available from the
 `CATMAID source repository <https://github.com/catmaid/CATMAID/blob/master/scripts/data/serve-directory.py>`_.
 Save a copy of this script in the root folder of the USB SDD along with a copy
 of the
-`certificate <https://github.com/catmaid/CATMAID/blob/master/scripts/data/localhost.pem>`_,
+`certificate <https://github.com/catmaid/CATMAID/blob/master/scripts/data/localhost.pem>`_ and the `key file <https://github.com/catmaid/CATMAID/blob/master/scripts/data/localhost-key.pem>`_
 which is available from the same location and should be placed next to the
 ``serve-directory.py`` script. Next navigate with a terminal to the root of the
 image data and execute the Python script::
 
-  python serve-directory.py 8090 ./localhost.pem
+  python serve-directory.py 8090 localhost.pem localhost-key,pem
 
-The first argument is the port on which the server will be made available and
-the second argument is the downlaoded previously SSL certificate. If everything
-works as expected, the URL to put in CATMAID's custom mirror dialog should be::
+The first argument is the port on which the server will be made available,
+the second argument is the previously downloaded SSL certificate along with its
+key file as last argument. If everything works as expected, the URL to put in
+CATMAID's custom mirror dialog should be::
 
   https://localhost:8090/
 

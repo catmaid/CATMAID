@@ -347,7 +347,7 @@ for any data lost.</li>
 """
 
 # A new user's defaul groups
-NEW_USER_DEFAULT_GROUPS = []
+NEW_USER_DEFAULT_GROUPS: set[str] = []
 
 # Whether the creation of new users should cause the creation of a group with
 # the same name. This groups is used to manage edit permission on the user's
@@ -477,7 +477,7 @@ SERVE_STATIC = False
 # folder.
 STATIC_EXTENSION_URL = "/staticext/"
 STATIC_EXTENSION_ROOT = "/tmp"
-STATIC_EXTENSION_FILES = []
+STATIC_EXTENSION_FILES: list[str] = []
 
 # Default cookie suffix, should be customized if multiple CATMAID instances run
 # on the same server, e.g. with:

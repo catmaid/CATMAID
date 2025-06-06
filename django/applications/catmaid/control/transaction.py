@@ -168,7 +168,7 @@ class TransactionSkeletonView(APIView):
 
         # Look first in live table and then in history table. Use only
         # transaction ID for lookup
-        skeleton_ids = set()
+        skeleton_ids: set[int] = set()
         provider = skeleton_queries.get(label)
         if not provider:
             raise LocationLookupError("A representative set of skeletons for this update was not found")

@@ -53,6 +53,7 @@ class HistoryTableTests(TransactionTestCase):
         'catmaid_favorite_project',
         'catmaid_userprofile',
         'catmaid_volume',
+        'catmaid_writable_stack',
         'change_request',
         'class',
         'class_class',
@@ -204,6 +205,7 @@ class HistoryTableTests(TransactionTestCase):
         'treenode_class_instance__history',
         'treenode_connector__history',
         'volume_class_instance__history',
+        'catmaid_writable_stack__history',
 
         # History tables of versioned non-CATMAID tables
         'auth_group__history',

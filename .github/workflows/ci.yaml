@@ -86,7 +86,7 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-py_${{ matrix.python-version }}-${{ hashFiles('django/requirements.txt') }}
+          key: ${{ runner.os }}-pip-py_${{ matrix.python-version }}-${{ hashFiles('django/requirements-*.txt') }}
       - run: pip install ./django
       - run: bash scripts/travis/setup_database.sh
       - run: bash scripts/travis/configure_catmaid.sh

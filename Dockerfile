@@ -29,7 +29,7 @@ RUN apt-get update -y \
     && apt-get install -y nginx supervisor \
     && apt-get install -y rabbitmq-server \
     && apt-get install -y r-base r-base-dev mesa-common-dev libglu1-mesa-dev \
-        libssl-dev libssh2-1-dev libcurl4-openssl-dev cmtk \
+        libssl-dev libssh2-1-dev libcurl4-openssl-dev cmtk curl cargo \
     && rm -rf /var/lib/apt/lists/*
 COPY packagelist-ubuntu-apt.txt /home/
 RUN apt-get update -y  \

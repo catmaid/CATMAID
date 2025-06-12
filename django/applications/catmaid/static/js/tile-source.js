@@ -732,7 +732,7 @@
         this.tileHeight,
         1
       ];
-      let bs = this.datasetAttributes[zoomLevel].get_block_size();
+      let bs = this.datasetAttributes[Math.max(0, zoomLevel)].get_block_size();
       return CATMAID.tools.permute(bs, this.sliceDims);
     }
 
@@ -1131,7 +1131,7 @@
         this.tileHeight,
         1
       ];
-      let bs = this.datasetAttributes.get_block_size(zoomLevel);
+      let bs = this.datasetAttributes.get_block_size(Math.max(0, zoomLevel));
       return CATMAID.tools.permute(bs, this.sliceDims);
     }
 

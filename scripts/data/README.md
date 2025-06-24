@@ -28,21 +28,36 @@ Again: NEVER use the included localhost.pem certificate for security.
 Starting the server
 -------------------
 
-To start the server, the `serve-directory.py` script has to be started, ideally
-from a terminal/shell. It expects two parameters: a port to provide image access
-from and a certificate file. The port can be any number greater than 1024. If a
-port is already in use by another program, the `serve-directory.py`script will
-fail with an error and you have to try a different port.
+To start the server, the serve-directory.py script has to be started, ideally from a terminal/shell. The parameters it expects depend on how you intend to use it.
 
-Assuming a terminal is open and the current working directory is the directory
-of the `serve-directory.py` file (typically on a USB drive), a start command
-would look like this:
+For the recommended secure (HTTPS) server, the script requires three parameters: a <port>, a <certificate> file, and a <key> file. You can also provide an optional fourth parameter to serve a specific directory. The port can be any number greater than `1024`. If a port is already in use by another program, the `serve-directory.py` script will fail with an error, and you have to try a different port.
 
+Assuming a terminal is open, below are the different ways to run the server.
+
+#### Option 1: Basic HTTPS Server
+This is the standard method. It serves the contents of the current directory over HTTPS. Run this command from the directory containing your image data, where you also have saved a copy of `serve-directory.py`.
+
+```bash
+# Usage: python serve-directory.py <port> <cert-file> <key-file>
+python serve-directory.py 9999 localhost.pem localhost-key.pem
 ```
-./serve-directory.py 9999 localhost.pem
+
+#### Option 2: Serving a Specific Directory (HTTPS)
+This is useful if your data, pem and key files are in different locations from the script. You can run the script from anywhere and provide the path to your those files like below.
+
+```bash
+# Usage: python serve-directory.py <port> <cert-file> <key-file> <directory-to-serve>
+python serve-directory.py 9999 /path/localhost.pem /path/localhost-key.pem /path/to/your/image-data
+```
+#### Option 3: Insecure HTTP Server
+This method is the simplest but is not recommended for security reasons. It serves the current directory over plain HTTP.
+
+```bash
+# Usage: python serve-directory.py <port>
+python serve-directory.py 9999
 ```
 
-If this runs without errors, all files available in this directory are available
+If all of the above run without errors, all files in the n5 should be available
 now through the URL `https://localhost:9999/`.
 
 

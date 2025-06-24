@@ -1,3 +1,4 @@
+
 .mypy_cache
 django/hdf5/*/
 django/hdf5/*.hdf
@@ -36,4 +37,9 @@ out/
 *.backup*
 
 data/
+
+.DS_Store
+._.DS_Store
+**/.DS_Store
+**/._.DS_Store
 

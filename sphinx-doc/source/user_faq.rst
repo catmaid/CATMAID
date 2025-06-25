@@ -115,32 +115,32 @@ dialog, which should normally be the case if the image data is a copy of an
 existing image stack. Additionally, it is recommended that this data is made
 available through HTTPS. As an example, a common use case is to have a copy of
 the image data set on an external USB SSD drive. To make this data available to
-CATMAID, a local webserver has to be started. An easy way to do this is 
-to grab a copy of a simple Python server script available from the CATMAID source 
-repository <https://github.com/catmaid/CATMAID/blob/master/scripts/data/serve-directory.py>_. 
-Save a copy of this script along with the certificate 
-<https://github.com/catmaid/CATMAID/blob/master/scripts/data/localhost.pem>_ 
-and the key file <https://github.com/catmaid/CATMAID/blob/master/scripts/data/localhost-key.pem>_ 
+CATMAID, a local webserver has to be started. An easy way to do this is
+to grab a copy of a simple Python server script available from the CATMAID source
+repository <https://github.com/catmaid/CATMAID/blob/master/scripts/data/serve-directory.py>_.
+Save a copy of this script along with the certificate
+<https://github.com/catmaid/CATMAID/blob/master/scripts/data/localhost.pem>_
+and the key file <https://github.com/catmaid/CATMAID/blob/master/scripts/data/localhost-key.pem>_
 to a convenient location on your computer.
 
-With a terminal, you can then start the server. 
-The script can be run from any location, providing flexibility in 
+With a terminal, you can then start the server.
+The script can be run from any location, providing flexibility in
 how you organize your files.
 
-For example, if you place the script and certificate/key 
-files in the root folder of your image data, you can navigate into that 
+For example, if you place the script and certificate/key
+files in the root folder of your image data, you can navigate into that
 folder and run::
 
-python serve-directory.py 8090 localhost.pem localhost-key.pem
+  python serve-directory.py 8090 localhost.pem localhost-key.pem
 
 The first argument is the port, followed by the SSL certificate and key file.
 
 Alternatively, if your image data and the pem and key files are in different locations
-(e.g., on an external drive at /media/my-data/n5-images), 
-you can run the script from where you saved it and pass the path 
+(e.g., on an external drive at /media/my-data/n5-images),
+you can run the script from where you saved it and pass the path
 to the data/pem/key files like below::
 
-python serve-directory.py 8090 /path/localhost.pem /path/localhost-key.pem /media/my-data/n5-images.
+  python serve-directory.py 8090 /path/localhost.pem /path/localhost-key.pem /media/my-data/n5-images
 
 If everything works as expected, the URL to put in
 CATMAID's custom mirror dialog should be::

@@ -945,7 +945,7 @@ def export_images_to_n5(project_id, stack_id, cropped_stack,
 
 
 @requires_user_role([UserRole.Annotate])
-def write_block(request:HttpRequest, project_id=None, stack_id=None) -> JsonResponse:
+def write_block(request:HttpRequest, project_id=None, writable_stack_id=None) -> JsonResponse:
     """ Store block-wise voxel data.
     """
 
@@ -953,18 +953,9 @@ def write_block(request:HttpRequest, project_id=None, stack_id=None) -> JsonResp
         raise ValueError('N5 file writing is not enabled on the server')
 
     # Get writable stack for local path info
-    writable_stacks = WritableStack.objects.filter(project_id=project_id,
-            user=request.user, stack_id=stack_id)
-    if len(writable_stacks) == 0:
-        raise ValueError(f'Found no writable stacks for stack {stack_id}')
-    elif len(writable_stacks) > 1:
-        raise ValueError(f'Found more than one writable stack for stack {stack_id}')
-    writable_stack = writable_stacks[0]
-
-    dataset_size = writable_stack.metadata.get('dataset_size')
-    if not dataset_size:
-        raise ValueError('Need dataset_size parameter in writable stack metadata')
-
+    writable_stack = WritableStack.objects.get(id=writable_stack_id,
+                                               project_id=project_id,
+                                               user=request.user)
     data = request.POST.get('data')
     if not data:
         raise ValueError('Need data')
@@ -981,6 +972,10 @@ def write_block(request:HttpRequest, project_id=None, stack_id=None) -> JsonResp
     if not isinstance(data_bounds[1], list) or len(data_bounds[1]) != len(dataset_size):
         raise ValueError('The first data_bounds list  needs to be a list with the correct dimensionality')
 
+    dataset_size = writable_stack.metadata.get('dataset_size')
+    if not dataset_size:
+        raise ValueError('Need dataset_size parameter in writable stack metadata')
+
     dataset = writable_stack.metadata.get('dataset', 'volumes/main')
     dtype = writable_stack.metadata.get('dtype', 'float64')
     compression_name = writable_stack.metadata.get('compression', 'GZIP')
@@ -988,8 +983,10 @@ def write_block(request:HttpRequest, project_id=None, stack_id=None) -> JsonResp
     compression_opts = writable_stack.metadata.get('compression_opts', -1)
     block_size = writable_stack.metadata.get('block_size', [1, 1, 1])
 
+    # TODO: Try to create only if not yet present
     pyn5.create_dataset(writable_stack.path, dataset, dataset_size,
                         block_size, dtype.upper())
+
     n5 = pyn5.open(writable_stack.path, dataset, dtype.upper(), False)
     pyn5.write(n5, (np.array(data_bounds[0]), np.array(data_bounds[1])), data, dtype)
 

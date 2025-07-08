@@ -337,8 +337,8 @@
      * move all stacks to the physical coordinates, except sp, sp is a
      * stack specific scale level that cannot be traced back to where it
      * came from, so we just pass it through.
-           * Rxecute a completion * callback when everything is done.
-           * One stack is moved as a continuation
+     * Execute a completion callback when everything is done.
+     * One stack is moved as a continuation
      * of the stack before (except first stack, which is moved directly). This
      * makes sure we also wait for asynchronous requests to finish, that a stack
      * move might imply (e.g. requesting more treenodes for the tracing tool).

@@ -298,7 +298,7 @@
     // Click on a row to go to the coordinate
     this.datatable.on('click', 'tbody tr', function() {
       let row = self.datatable.row(this).data();
-      project.moveTo(row[self.table.zField + 1], row[self.table.yField + 1], row[self.table.zField + 1]);
+      project.moveTo(row[self.table.zField + 1], row[self.table.yField + 1], row[self.table.xField + 1]);
     })
   };
 

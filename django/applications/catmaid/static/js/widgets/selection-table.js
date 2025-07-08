@@ -27,6 +27,7 @@
     this.next_color_index = 0;
     this.batchColor = '#ffff00';
     this.batchOpacity = 1.0;
+    this.order = [[0, 'asc']];
     this.annotationFilter = null;
     this.appendWithBatchColor = false;
     this.gui = new this.GUI(this);
@@ -1132,7 +1133,6 @@
     this.datatable = null;
     this.page = 0;
     this.entriesPerPage = 25;
-    this.order = [[0, 'asc']];
     this.showVisibilityControls = true;
   };
 

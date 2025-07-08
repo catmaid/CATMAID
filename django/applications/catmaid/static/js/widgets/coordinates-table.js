@@ -246,7 +246,7 @@
       if (datatable) {
         this.page = datatable.page();
         this.entriesPerPage = datatable.page.len();
-        this.order = datatable.order();
+        this.order = datatable.order(); // TODO this is in CoordinatesTable, not in GUI. Error is in SelectionTable as well
         datatable.destroy();
       }
     }

@@ -25,6 +25,8 @@
     return "Coordinates " + this.widgetID;
   };
 
+  CoordinatesTable.prototype.highlighting_color = "#ffb0fc"; // faint magenta
+
   CoordinatesTable.prototype.getWidgetConfiguration = function() {
     return {
       class: "coordinates-table",
@@ -295,6 +297,10 @@
       project.moveTo(row[self.table.iz + 1], // +1 because of the index column
                      row[self.table.iy + 1],
                      row[self.table.ix + 1]);
+      // Reset background color
+      $('tbody tr', self.datatable).css('background-color', '');
+      // Highlight this row
+      $(this).css('background-color', CoordinatesTable.prototype.highlighting_color);
     })
   };
 

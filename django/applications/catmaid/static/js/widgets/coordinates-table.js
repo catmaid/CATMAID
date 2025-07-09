@@ -13,9 +13,9 @@
     this.widgetID = this.registerInstance();
     this.rows = [];
     this.titleRow = undefined;
-    this.xField = 0;
-    this.yField = 1;
-    this.zField = 2;
+    this.ix = 0;
+    this.iy = 1;
+    this.iz = 2;
     this.gui = new this.GUI(this);
   };
 
@@ -145,9 +145,9 @@
           }
 
           var titleRow = undefined;
-					var ix = xField.value -1,
-						  iy = yField.value -1,
-						  iz = zField.value -1;
+          var ix = xField.value -1,
+              iy = yField.value -1,
+              iz = zField.value -1;
 
           // Make sure all rows have at least 3 coordinates with valid numeric values
           var validRows = csvLines.filter(function(row, i) {
@@ -157,12 +157,12 @@
             if (i < lineSkip) {
               return false;
             }
-						console.log(row);
-						console.log(ix, iy, iz);
+            console.log(row);
+            console.log(ix, iy, iz);
             let x = parseFloat(row[ix]), // 1-based
                 y = parseFloat(row[iy]),
                 z = parseFloat(row[iz]);
-						console.log("x, y, z: ", x, y, z);
+            console.log("x, y, z: ", x, y, z);
             if (Number.isNaN(x) || Number.isNaN(y) || Number.isNaN(z)) {
               console.log("Skipping line with non-numeric coordinates: row index " + i + " with columns:\n" + row.join(", "));
               return false;
@@ -186,7 +186,7 @@
       .catch(CATMAID.handleError);
   };
 
-  CoordinatesTable.prototype.setData = function(titleRow, rows, xField, yField, zField) {
+  CoordinatesTable.prototype.setData = function(titleRow, rows, ix, iy, iz) {
     if (this.rows && this.rows.length > 0) {
       if (!confirm("Remove all rows and replace with new ones?")) {
         return;
@@ -194,10 +194,10 @@
     }
 
     this.titleRow = titleRow;
-		this.rows = rows;
-    this.xField = xField;
-    this.yField = yField;
-    this.zField = zField;
+    this.rows = rows;
+    this.ix = ix;
+    this.iy = iy;
+    this.iz = iz;
 
     // Refresh the datatable
     this.gui.clear();
@@ -257,8 +257,8 @@
     var columnProps = [{"title": ""}];
     if (this.table.titleRow) {
       columnProps = columnProps.concat(this.table.titleRow.map(function(name) {
-				return {"title": name};
-			}));
+        return {"title": name};
+      }));
     } else {
       let names = new Array(this.table.rows[0].length).fill({"title": "", "type": "text"});
       let e = names[this.table.xField];
@@ -291,14 +291,16 @@
       orderCellsTop: true,
       columns: columnProps,
       data: rowData
-		});
+    });
 
     var self = this;
 
     // Click on a row to go to the coordinate
     this.datatable.on('click', 'tbody tr', function() {
       let row = self.datatable.row(this).data();
-      project.moveTo(row[self.table.zField + 1], row[self.table.yField + 1], row[self.table.xField + 1]);
+      project.moveTo(row[self.table.iz + 1], // +1 because of the index column
+                     row[self.table.iy + 1],
+                     row[self.table.ix + 1]);
     })
   };
 

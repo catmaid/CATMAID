@@ -55,9 +55,6 @@
         tab.setAttribute("class", "coordinates-table");
         tab.innerHTML =
             '<thead>' +
-              '<tr>' +
-                '<th></th>' +
-              '</tr>' +
             '</thead>' +
             '<tbody>' +
             '</tbody>';

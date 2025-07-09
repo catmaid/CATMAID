@@ -154,12 +154,9 @@
             if (i < lineSkip) {
               return false;
             }
-            console.log(row);
-            console.log(ix, iy, iz);
             let x = parseFloat(row[ix]), // 1-based
                 y = parseFloat(row[iy]),
                 z = parseFloat(row[iz]);
-            console.log("x, y, z: ", x, y, z);
             if (Number.isNaN(x) || Number.isNaN(y) || Number.isNaN(z)) {
               console.log("Skipping line with non-numeric coordinates: row index " + i + " with columns:\n" + row.join(", "));
               return false;

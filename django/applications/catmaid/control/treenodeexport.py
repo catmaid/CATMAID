@@ -13,7 +13,8 @@ from django.db.models import Count
 
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.common import get_relation_to_id_map, id_generator
-from catmaid.control.cropping import CropJob, extract_substack, ImageRetrievalError
+from catmaid.control.cropping import (collect_stack_mirros, CropJob,
+                                      extract_substack, ImageRetrievalError)
 from catmaid.models import ClassInstanceClassInstance, TreenodeConnector, \
         Message, User, UserRole, Treenode
 
@@ -163,8 +164,9 @@ class TreenodeExporter:
         zoom_level = 0
 
         # Create a single file for each section (instead of a mulipage TIFF)
+        stack_mirror_ids = collect_stack_mirros([self.job.stack_id])
         crop_self = CropJob(self.job.user, self.job.project_id,
-                self.job.stack_id, x_min, x_max, y_min, y_max, z_min, z_max,
+                stack_mirror_ids, x_min, x_max, y_min, y_max, z_min, z_max,
                 rotation_cw, zoom_level, single_channel=True)
         cropped_stack = extract_substack(crop_self)
         # Save each file in output path
@@ -335,7 +337,8 @@ class ConnectorExporter(TreenodeExporter):
         zoom_level = 0
 
         # Create a single file for each section (instead of a mulipage TIFF)
-        crop_self = CropJob(self.job.user, self.job.project_id,
+        stack_mirror_ids = collect_stack_mirros([self.job.stack_id])
+        crop_self = CropJob(self.job.user, stack_mirror_ids,
                 self.job.stack_id, x_min, x_max, y_min, y_max, z_min, z_max,
                 rotation_cw, zoom_level, single_channel=True)
         cropped_stack = extract_substack(crop_self)

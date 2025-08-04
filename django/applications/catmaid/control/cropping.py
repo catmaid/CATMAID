@@ -707,6 +707,33 @@ def sanity_check(job) -> List[str]:
         errors.append( "zoom_level must not be smaller than 0" )
     return errors
 
+
+def collect_stack_mirros(stack_ids):
+    """
+    Collect all reachable stack mirrors from a list of stack IDs.
+    """
+    stack_mirror_ids = []
+    for sid in stack_ids:
+        stack_mirrors = StackMirror.objects.select_related('stack').filter(stack_id=sid)
+        for sm in stack_mirrors:
+            # If mirror is reachable use it right away
+            tile_source = get_tile_source(sm.tile_source_type)
+            try:
+                req = requests.head(tile_source.get_canary_url(sm),
+                        allow_redirects=True, verify=verify_ssl, timeout=1.0)
+                reachable = req.status_code == 200
+            except Exception as e:
+                logger.error(e)
+                reachable = False
+            if reachable:
+                stack_mirror_ids.append(sm.id)
+                break
+
+        if not reachable:
+            raise ValueError(f"Can't find reachable stack mirror for stack {sid}")
+
+    return stack_mirror_ids
+
 @login_required
 def crop(request:HttpRequest, project_id=None) -> JsonResponse:
     """ Crops out the specified region of the stack. The region is expected to
@@ -733,24 +760,7 @@ def crop(request:HttpRequest, project_id=None) -> JsonResponse:
                     "is not set up correctly. Please contact an administrator.")
 
     # Use first reachable stack mirrors
-    stack_mirror_ids = []
-    for sid in stack_ids:
-        stack_mirrors = StackMirror.objects.select_related('stack').filter(stack_id=sid)
-        for sm in stack_mirrors:
-            # If mirror is reachable use it right away
-            tile_source = get_tile_source(sm.tile_source_type)
-            try:
-                req = requests.head(tile_source.get_canary_url(sm),
-                        allow_redirects=True, verify=verify_ssl, timeout=1.0)
-                reachable = req.status_code == 200
-            except Exception as e:
-                logger.error(e)
-                reachable = False
-            if reachable:
-                stack_mirror_ids.append(sm.id)
-                break
-        if not reachable:
-            raise ValueError(f"Can't find reachable stack mirror for stack {sid}")
+    stack_mirror_ids = collect_stack_mirros(stack_ids)
 
     # Crate a new cropping job
     job = CropJob(request.user, project_id, stack_mirror_ids, x_min, x_max,

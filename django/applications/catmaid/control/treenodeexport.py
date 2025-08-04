@@ -431,7 +431,7 @@ def process_export_job(exporter) -> str:
 
     return msg
 
-def start_asynch_process(exporter):
+def start_async_process(exporter):
     """ It launches the data extraction and sub-stack building as a separate
     process. Celery is used for this and it it returns a AsyncResult object.
     """
@@ -477,10 +477,7 @@ def export_connectors(request:HttpRequest, project_id=None) -> JsonResponse:
     Based on them this method will create and run a new exporting job.
     """
     job = create_request_based_export_job(request, project_id)
-    proc = start_asynch_process(ConnectorExporter(job))
-    if proc.failed():
-        raise Exception("Something went wrong while queuing the export: " + \
-                proc.result)
+    proc = start_async_process(ConnectorExporter(job))
     json_data = {'message': 'The connector archive is currently ' \
             'exporting. You will be notified once it is ready for download.'}
     return JsonResponse(json_data)
@@ -491,10 +488,7 @@ def export_treenodes(request:HttpRequest, project_id=None) -> JsonResponse:
     Based on them this method will create and run a new exporting job.
     """
     job = create_request_based_export_job(request, project_id)
-    proc = start_asynch_process(TreenodeExporter(job))
-    if proc.failed():
-        raise Exception("Something went wrong while queuing the export: " + \
-                proc.result)
+    proc = start_async_process(TreenodeExporter(job))
     json_data = {'message': 'The treenode archive is currently ' \
             'exporting. You will be notified once it is ready for download.'}
     return JsonResponse(json_data)

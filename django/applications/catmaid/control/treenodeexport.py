@@ -164,6 +164,7 @@ class TreenodeExporter:
         zoom_level = 0
 
         # Create a single file for each section (instead of a mulipage TIFF)
+        stack = Stack.objects.get(id=self.job.stack_id)
         stack_mirror_ids = collect_stack_mirros([self.job.stack_id])
         crop_self = CropJob(self.job.user, self.job.project_id,
                 stack_mirror_ids, x_min, x_max, y_min, y_max, z_min, z_max,
@@ -176,7 +177,7 @@ class TreenodeExporter:
             # image center's coordinates, rounded to full integers.
             x = int(treenode.location_x + 0.5)
             y = int(treenode.location_y + 0.5)
-            z = int(z_min + i * crop_self.stacks[0].resolution.z + 0.5)
+            z = int(z_min + i * stack.resolution.z + 0.5)
             image_name = f"{treenode.id}-{x}-{y}-{z}.tiff"
             treenode_image_path = os.path.join(output_path, image_name)
             img.save(treenode_image_path)

@@ -966,6 +966,11 @@ def write_block(request:HttpRequest, project_id=None, writable_stack_id=None) ->
     writable_stack = WritableStack.objects.get(id=writable_stack_id,
                                                project_id=project_id,
                                                user=request.user)
+
+    dataset_size = writable_stack.metadata.get('dataset_size')
+    if not dataset_size:
+        raise ValueError('Need dataset_size parameter in writable stack metadata')
+
     data = request.POST.get('data')
     if not data:
         raise ValueError('Need data')
@@ -981,10 +986,6 @@ def write_block(request:HttpRequest, project_id=None, writable_stack_id=None) ->
         raise ValueError('The first data_bounds list  needs to be a list with the correct dimensionality')
     if not isinstance(data_bounds[1], list) or len(data_bounds[1]) != len(dataset_size):
         raise ValueError('The first data_bounds list  needs to be a list with the correct dimensionality')
-
-    dataset_size = writable_stack.metadata.get('dataset_size')
-    if not dataset_size:
-        raise ValueError('Need dataset_size parameter in writable stack metadata')
 
     dataset = writable_stack.metadata.get('dataset', 'volumes/main')
     dtype = writable_stack.metadata.get('dtype', 'float64')

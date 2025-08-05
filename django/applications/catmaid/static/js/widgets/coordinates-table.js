@@ -1,8 +1,7 @@
 /* global
   CATMAID,
   InstanceRegistry,
-  project,
-  WindowMaker,
+  project
 */
 
 (function(CATMAID) {
@@ -51,7 +50,6 @@
         buttons.appendChild(clear);
       },
       createContent: function(content) {
-        var self = this;
         var tab = document.createElement('table');
         tab.setAttribute("id", "coordinates-table" + this.widgetID);
         tab.setAttribute("class", "coordinates-table");
@@ -143,7 +141,7 @@
             return;
           }
 
-          var titleRow = undefined;
+          var titleRow;
           var ix = xField.value -1,
               iy = yField.value -1,
               iz = zField.value -1;
@@ -301,7 +299,7 @@
       $('tbody tr', self.datatable).css('background-color', '');
       // Highlight this row
       $(this).css('background-color', CoordinatesTable.prototype.highlighting_color);
-    })
+    });
   };
 
   // Export coordinates table

@@ -1606,8 +1606,6 @@ annotations, neuron name, connectors or partner neurons.
 
     // Add handler for initiating the export
     dialog.onOK = function() {
-      // Collected objects for all skeletons
-      var result = {skeletons: {}};
       // Get all selected skeletons from the selected source
       var source = CATMAID.skeletonListSources.getSource($(select).val());
       var skids = source.getSelectedSkeletons();

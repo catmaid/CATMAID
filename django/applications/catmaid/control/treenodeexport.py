@@ -16,7 +16,7 @@ from catmaid.control.common import get_relation_to_id_map, id_generator
 from catmaid.control.cropping import (collect_stack_mirros, CropJob,
                                       extract_substack, ImageRetrievalError)
 from catmaid.models import ClassInstanceClassInstance, TreenodeConnector, \
-        Message, User, UserRole, Treenode
+        Message, User, UserRole, Stack, Treenode
 
 from celery import shared_task
 

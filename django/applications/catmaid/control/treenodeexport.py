@@ -172,8 +172,12 @@ class TreenodeExporter:
         # Save each file in output path
         output_path = self.create_path(treenode)
         for i, img in enumerate(cropped_stack):
-            # Save image in output path, named <treenode-id>.tiff
-            image_name = "%s.tiff" % treenode.id
+            # Save image in output path, named after the treenode ID and the
+            # image center's coordinates, rounded to full integers.
+            x = int(treenode.location_x + 0.5)
+            y = int(treenode.location_y + 0.5)
+            z = int(z_min + i * crop_self.stacks[0].resolution.z + 0.5)
+            image_name = f"{treenode.id}-{x}-{y}-{z}.tiff"
             treenode_image_path = os.path.join(output_path, image_name)
             img.save(treenode_image_path)
 
@@ -350,7 +354,7 @@ class ConnectorExporter(TreenodeExporter):
             x = int(connector.location_x + 0.5)
             y = int(connector.location_y + 0.5)
             z = int(z_min + i * crop_self.stacks[0].resolution.z + 0.5)
-            image_name = "%s_%s_%s.tiff" % (x, y, z)
+            image_name = f"{x}_{y}_{z}.tiff"
             connector_image_path = os.path.join(connector_path, image_name)
             img.write(connector_image_path)
 

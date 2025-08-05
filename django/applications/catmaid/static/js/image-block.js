@@ -120,6 +120,26 @@
           {zoomLevel, x, y, z, block});
     }
 
+    writeBlock(projectId, writableStackId, zoomLevel, x, y, z, block, format='n5') {
+      if (format !== 'n5') {
+        return Promise.reject(new CATMAID.Error('Not implemented'));
+      }
+
+      // First, write to cache to update UI
+      this.setBlock(zoomLevel, x, y, z, block);
+
+      // Second, write to back-end asynchronously
+      // TODO: This should be done with the help of rate limitng to only send
+      // changes every 3 seconds or so.
+      CATMAID.fetch(`${projectId}/writable-stacks/${writableStackId}/write-block`, 'POST', {
+          data: block.tolist(),
+          data_bounds: [[x, y, z], [x, y, z]],
+        })
+        .then(response => {
+          return Promise.reject('Not yet implemented');
+        });
+    }
+
     evictAll() {
       this._cache.evictAll();
     }

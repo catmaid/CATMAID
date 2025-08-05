@@ -142,8 +142,8 @@ urlpatterns += [
     re_path(r'^(?P<project_id>\d+)/stacks$', stack.stacks),
     re_path(r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/info$', stack.stack_info),
     re_path(r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/groups$', stack.stack_groups),
-    re_path(r'^(?P<project_id>\d+)/writable-stacks/$',
-            stack.WritableStackListView.as_view()),
+    re_path(r'^(?P<project_id>\d+)/writable-stacks/$', stack.WritableStackListView.as_view()),
+    re_path(r'^(?P<project_id>\d+)/writable-stacks/(?P<writable_stack_id>\d+)/write-block$', cropping.write_block),
 ]
 
 # General stack group access
@@ -155,11 +155,6 @@ urlpatterns += [
 urlpatterns += [
     re_path(r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/tile$', tile.get_tile),
     re_path(r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/put_tile$', tile.put_tile),
-]
-
-# Writing stack data
-urlpatterns += [
-    re_path(r'^(?P<project_id>\d+)/stack/(?P<stack_id>\d+)/write-block$', cropping.write_block),
 ]
 
 # Tracing general

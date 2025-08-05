@@ -385,6 +385,11 @@
         });
     }
 
+    writeBlock(projectId, writableStackId, zoomLevel, x, y, z, block, format='n5') {
+      let blockCoord = CATMAID.tools.permute([x, y, z], this.recipDimPerm);
+      return this._blockCache.writeBlock(projectId, writableStackId, zoomLevel, ...blockCoord, block, format);
+    }
+
     _sliceBlock(block, blockZ) {
       var slice;
       if (block && block.shape[2] > blockZ) {

@@ -13,6 +13,7 @@
 
     // The stack viewer is needed by the PixiLayer constructor
     this.stackViewer = stackViewer;
+    this.dataLayer = dataLayer;
     //CATMAID.PixiLayer.call(this);
 
     this.view = document.createElement('canvas');
@@ -159,24 +160,111 @@
       prevY = y;
     }
 
-    if (x === prevX && y === prevY) {
-      this.context.beginPath();
-      this.context.moveTo(x, y);
-      this.context.fillStyle = this.color;
-      this.context.arc(x, y, this.brushSize / 2.0, 0, 2 * Math.PI);
-      this.context.fill();
-      this.context.closePath();
-    } else {
-      this.context.beginPath();
-      this.context.moveTo(prevX, prevY);
-      this.context.lineTo(x, y);
-      this.context.strokeStyle = this.color;
-      this.context.lineWidth = this.brushSize;
-      this.context.lineJoin = "round";
-      this.context.lineCap = "round";
-      this.context.stroke();
-      this.context.closePath();
+    const canvasDrawing = true;
+
+    if (canvasDrawing) {
+      if (x === prevX && y === prevY) {
+        this.context.beginPath();
+        this.context.moveTo(x, y);
+        this.context.fillStyle = this.color;
+        this.context.arc(x, y, this.brushSize / 2.0, 0, 2 * Math.PI);
+        this.context.fill();
+        this.context.closePath();
+      } else {
+        this.context.beginPath();
+        this.context.moveTo(prevX, prevY);
+        this.context.lineTo(x, y);
+        this.context.strokeStyle = this.color;
+        this.context.lineWidth = this.brushSize;
+        this.context.lineJoin = "round";
+        this.context.lineCap = "round";
+        this.context.stroke();
+        this.context.closePath();
+      }
     }
+
+    // Draw a circle into the data layer's cache
+    if (!(this.dataLayer instanceof CATMAID.PixiImageBlockLayer)) {
+      CATMAID.warn('Painting data layer has wrong layer type');
+      return;
+    }
+
+    // Convert screen coordinates to voxel coordinates. Convert voxel
+    // coordinates into block coordinates.
+    const screenPosition = this.stackViewer.screenPosition();
+    const voxelPosX = screenPosition.left +
+        x / this.stackViewer.scale / this.stackViewer.primaryStack.anisotropy(0).x;
+    const voxelPosY = screenPosition.top  +
+        y / this.stackViewer.scale / this.stackViewer.primaryStack.anisotropy(0).y;
+    const voxelPosZ = this.stackViewer.z;
+
+    let zoom = this.stackViewer.s;
+    var mag = 1.0;
+
+    //var anisotropy = this.dataLayer.stack.anisotropy(zoom);
+    //let [tileWidth, tileHeight] = this.dataLayer.tileSizeForZoom(zoom);
+    //var effectiveTileWidth = tileWidth * mag * anisotropy.x;
+    //var effectiveTileHeight = tileHeight * mag * anisotropy.y;
+
+    // The minimum zoom level indicates down to what scale level data is
+    // available. Usually this is zoom level zero.
+    var minZoom = this.stackViewer.primaryStack.minZoomLevel;
+
+    /* If the zoom is below our minimum zoom level (usually this means negative)
+     * we zoom in digitally. For this we take the zero zoom level and adjust the
+     * tile properties. This way we let the browser do the zooming work.
+     */
+    if (zoom < minZoom || zoom % 1 !== 0) {
+      /* For nonintegral zoom levels the ceiling is used to select
+       * source image zoom level. While using the floor would allow
+       * better image quality, it would requiring dynamically
+       * increasing the number of tiles to fill the viewport since
+       * in that case effectiveTileWidth < tileWidth.
+       */
+      zoom = Math.min(this.stackViewer.primaryStack.MAX_S, Math.max(minZoom, Math.ceil(zoom)));
+      /* Magnification is positive for digital zoom beyond image
+       * resolution and negative for non-integral zooms within
+       * image resolution.
+       */
+      if (s < 0 || zoom === this.stackViewer.primaryStack.MAX_S) {
+        mag = Math.pow(2, zoom - s);
+      } else {
+        mag = this.stackViewer.primaryStack.effectiveDownsampleFactor(zoom) /
+            this.stackViewer.primaryStack.effectiveDownsampleFactor(this.stackViewer.s);
+      }
+    }
+
+    const blockSize = this.dataLayer.tileSource.blockSize(this.stackViewer.s);
+    const dataType = this.dataLayer.tileSource.dataType();
+
+    let blockCoord = [
+      Math.floor(voxelPosX /  blockSize[0]),
+      Math.floor(voxelPosY /  blockSize[1]),
+      Math.floor(voxelPosZ /  blockSize[2]),
+    ];
+
+    // Assume block is in cache
+    this.dataLayer._readBlock(this.stackViewer.s, ...blockCoord)
+      .then((block) => {
+        if (!block) {
+          // No block found in cache and on server
+          CATMAID.msg('success', 'A new block is created, because no existing block is found');
+          // TODO: Init new block
+          // const backgroundValue = 0;
+          const blockData = nj.zeros(blockSize, dataType);
+          block = new nj.NdArray(blockData)
+              .transpose(...this.dataLayer.tileSource.sliceDims);
+        }
+
+        // Update block data and write to cache if not already there. The block is
+        // a nj.NdArray instance.
+
+
+        // Write block back to server. This is done asynchronously in regular
+        // intervald (if changes happen).
+        return this.dataLayer.writeBlock(project.id, this.stackViewer.s, zoom, ...blockCoord, block);
+      })
+      .catch(CATMAID.handleError);
   };
 
   // Export layer into CATMAID namespace

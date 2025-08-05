@@ -202,6 +202,11 @@ Treenode table:
   widgets: by blicking the funnel icon in the widget's title bar. Node filters
   allow to constrain further what nodes are shown in the treenode table.
 
+Import/Export widget:
+
+- The treenode archive creation dialog allows now also to specify the Z radius.
+  This allows to export an image block for each treenode.
+
 Miscellaneous:
 
 - The built-in API docs (/apis endpoint) now supports deep links, which allows

@@ -1303,7 +1303,9 @@ annotations, neuron name, connectors or partner neurons.
           'how many slices you want to have in each set.');
     } else {
       dialog.appendMessage('One image will be created for every treenode. ' +
-          'Please specify what radius you want to see around it.');
+          'Please specify what radius you want to see around it. The specified ' +
+          'Z radius is additional to the always exported slice of the treenode, ' +
+          'extending in both directions.');
     }
 
     // X/Y radius inputs -- default to 100px
@@ -1313,10 +1315,11 @@ annotations, neuron name, connectors or partner neurons.
     xy_radius_unit.appendChild(new Option("px", "px", dialog.xy_in_px));
     xy_radius_unit.appendChild(new Option("nm", "nm", !dialog.xy_in_px));
     xy_radius.parentNode.appendChild(xy_radius_unit);
+    xy_radius.parentNode.style.display = 'flex';
 
     // Z radius inputs will only be available for connector export
     if (connector_export) {
-      var z_radius = dialog.appendField('Z radius: ', 'c_export_z_radius',
+      var z_radius = dialog.appendField('Extra Z radius: ', 'c_export_z_radius',
           dialog.z_radius);
       var z_radius_unit = document.createElement('select');
       z_radius_unit.appendChild(new Option("sections", "sections",
@@ -1324,6 +1327,17 @@ annotations, neuron name, connectors or partner neurons.
       z_radius_unit.appendChild(new Option("nm", "nm",
           !dialog.z_in_sections));
       z_radius.parentNode.appendChild(z_radius_unit);
+      z_radius.parentNode.style.display = 'flex';
+    } else {
+      var z_radius = dialog.appendField('Z radius: ', 't_export_z_radius',
+          dialog.z_radius);
+      var z_radius_unit = document.createElement('select');
+      z_radius_unit.appendChild(new Option("sections", "sections",
+          dialog.z_in_sections));
+      z_radius_unit.appendChild(new Option("nm", "nm",
+          !dialog.z_in_sections));
+      z_radius.parentNode.appendChild(z_radius_unit);
+      z_radius.parentNode.style.display = 'flex';
     }
 
     // Display total extent
@@ -1437,7 +1451,7 @@ annotations, neuron name, connectors or partner neurons.
         .catch(CATMAID.handleError);
     };
 
-    dialog.show(500, connector_export ? 370 : 330, true);
+    dialog.show(500, 'auto', true);
     update_info();
   }
 

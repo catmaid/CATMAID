@@ -40,7 +40,9 @@ onmessage = function(e) {
                 // transferrable and therefore zero-copy.
                 loadedBlocks.push({
                   etag: block.get_etag(),
-                  size: block.get_size(),
+                  // We receive [x, y, z, ch] as size and expect only a single
+                  // channel at the moment.
+                  size: block.get_size().slice(0, 3),
                   gridPosition: block.get_grid_position(),
                   // Needs to be last, due to the block being consumed (into)
                   data: block.into_data(),
@@ -118,7 +120,9 @@ onmessage = function(e) {
             // transferrable and therefore zero-copy.
             let desBlock = {
               etag: block.get_etag(),
-              size: block.get_size(),
+              // We receive [x, y, z, ch] as size and expect only a single
+              // channel at the moment.
+              size: block.get_size().slice(0, 3),
               data: block.into_data(),
             };
             postMessage([messageId, desBlock], [desBlock.data.buffer]);

@@ -279,7 +279,7 @@
             stackViewer.primaryStack,
             customMirrorData.id,
             isVisible,
-            isVisible ? 0 : 1,
+            isVisible ? 1 : 0,
             showOverview,
             CATMAID.StackLayer.INTERPOLATION_MODES.INHERIT,
             changeMirrorIfNoData);
@@ -288,6 +288,15 @@
 
         CATMAID.setLocalStorageItem(self.customMirrorStorageName,
             JSON.stringify(customMirrorData));
+
+        // Add an "Object label color map" filter after WebGL is available, to
+        // render the painted labels
+        const backgroundLabel = 0;
+        const filter = new (dataLayer.getAvailableFilters()["Object Label Color Map"])();
+        filter.setParam("backgroundLabel", CATMAID.PixiLayer.Filters.int2arr(Number(backgroundLabel)));
+        filter.setParam("foregroundAlpha", 0.8);
+        filter.setParam("seed", 0.09);
+        dataLayer.addFilter(filter);
 
         // Update layer control UI to reflect settings changes.
         if (self.stackViewer && self.stackViewer.layerControl) {

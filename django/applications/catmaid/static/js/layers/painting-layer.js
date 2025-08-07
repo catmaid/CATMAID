@@ -106,6 +106,7 @@
       this.updateContextConfiguration();
     } else if (name === 'value') {
       this.value = value;
+      this.dataLayer.setLayerSetting('backgroundLabel', value);
     } else if (name === 'dtype') {
       this.dtype = dtype;
     } else if (name === 'brushSize') {
@@ -278,7 +279,7 @@
         }
 
         // Write block back to server. This is done asynchronously in regular
-        // intervald (if changes happen).
+        // intervals (if changes happen).
         return this.dataLayer.writeBlock(project.id, this.stackViewer.s, zoom, ...blockCoord, block);
       })
       .catch(CATMAID.handleError);

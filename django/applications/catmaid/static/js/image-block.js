@@ -131,13 +131,16 @@
       // Second, write to back-end asynchronously
       // TODO: This should be done with the help of rate limitng to only send
       // changes every 3 seconds or so.
+      /*
       CATMAID.fetch(`${projectId}/writable-stacks/${writableStackId}/write-block`, 'POST', {
+          // TODO: zip/lzw block, esp. useful for new blocks
           data: block.tolist(),
           data_bounds: [[x, y, z], [x, y, z]],
         })
         .then(response => {
           return Promise.reject('Not yet implemented');
         });
+      */
     }
 
     evictAll() {

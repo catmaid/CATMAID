@@ -160,7 +160,7 @@
       prevY = y;
     }
 
-    const canvasDrawing = true;
+    const canvasDrawing = false;
 
     if (canvasDrawing) {
       if (x === prevX && y === prevY) {
@@ -250,15 +250,32 @@
           // No block found in cache and on server
           CATMAID.msg('success', 'A new block is created, because no existing block is found');
           // TODO: Init new block
-          // const backgroundValue = 0;
-          const blockData = nj.zeros(blockSize, dataType);
-          block = new nj.NdArray(blockData)
-              .transpose(...this.dataLayer.tileSource.sliceDims);
+          const backgroundValue = 0;
+          block = nj.zeros(blockSize, dataType);
+          block.assign(backgroundValue, false);
+          // TODO: Needed?
+          block = block.transpose(...this.dataLayer.tileSource.sliceDims);
         }
 
         // Update block data and write to cache if not already there. The block is
         // a nj.NdArray instance.
+        const relVoxelPos = [
+          Math.floor(voxelPosX - blockCoord[0] * blockSize[0]),
+          Math.floor(voxelPosY - blockCoord[1] * blockSize[1]),
+          Math.floor(voxelPosZ - blockCoord[2] * blockSize[2])
+        ];
 
+        // Draw a coarse circle
+        const halfBrushSize = Math.floor(this.brushSize / 2.0);
+        const sqBrushSize = halfBrushSize * halfBrushSize;
+        for (let x = -halfBrushSize; x <= halfBrushSize; x++) {
+          for (let y = -halfBrushSize; y <= halfBrushSize; y++) {
+            const sqDist = x * x + y * y;
+            if (sqDist <= sqBrushSize) {
+              block.set(relVoxelPos[0] + x, relVoxelPos[1] + y, relVoxelPos[2], this.value);
+            }
+          }
+        }
 
         // Write block back to server. This is done asynchronously in regular
         // intervald (if changes happen).

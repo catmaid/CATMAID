@@ -20,6 +20,8 @@ let wasm_bindgen;
         const idx = heap_next;
         heap_next = heap[idx];
 
+        if (typeof(heap_next) !== 'number') throw new Error('corrupt heap');
+
         heap[idx] = obj;
         return idx;
     }
@@ -29,6 +31,28 @@ let wasm_bindgen;
             return f.apply(this, args);
         } catch (e) {
             wasm.__wbindgen_exn_store(addHeapObject(e));
+        }
+    }
+
+    function logError(f, args) {
+        try {
+            return f.apply(this, args);
+        } catch (e) {
+            let error = (function () {
+                try {
+                    return e instanceof Error ? `${e.message}\n\nStack:\n${e.stack}` : e.toString();
+                } catch(_) {
+                    return "<failed to stringify thrown value>";
+                }
+            }());
+            console.error("wasm-bindgen: imported JS function that was not marked as `catch` threw an error:", error);
+            throw e;
+        }
+    }
+
+    function _assertBoolean(n) {
+        if (typeof(n) !== 'boolean') {
+            throw new Error(`expected a boolean argument, found ${typeof(n)}`);
         }
     }
 
@@ -69,6 +93,8 @@ let wasm_bindgen;
 
     function passStringToWasm0(arg, malloc, realloc) {
 
+        if (typeof(arg) !== 'string') throw new Error(`expected a string argument, found ${typeof(arg)}`);
+
         if (realloc === undefined) {
             const buf = cachedTextEncoder.encode(arg);
             const ptr = malloc(buf.length, 1) >>> 0;
@@ -97,7 +123,7 @@ let wasm_bindgen;
             ptr = realloc(ptr, len, len = offset + arg.length * 3, 1) >>> 0;
             const view = getUint8ArrayMemory0().subarray(ptr + offset, ptr + len);
             const ret = encodeString(arg, view);
-
+            if (ret.read !== arg.length) throw new Error('failed to pass whole string');
             offset += ret.written;
             ptr = realloc(ptr, len, offset, 1) >>> 0;
         }
@@ -119,6 +145,10 @@ let wasm_bindgen;
         return cachedDataViewMemory0;
     }
 
+    function _assertNum(n) {
+        if (typeof(n) !== 'number') throw new Error(`expected a number argument, found ${typeof(n)}`);
+    }
+
     function dropObject(idx) {
         if (idx < 132) return;
         heap[idx] = heap_next;
@@ -129,6 +159,10 @@ let wasm_bindgen;
         const ret = getObject(idx);
         dropObject(idx);
         return ret;
+    }
+
+    function _assertBigInt(n) {
+        if (typeof(n) !== 'bigint') throw new Error(`expected a bigint argument, found ${typeof(n)}`);
     }
 
     const CLOSURE_DTORS = (typeof FinalizationRegistry === 'undefined')
@@ -358,6 +392,14 @@ let wasm_bindgen;
         return getFloat64ArrayMemory0().subarray(ptr / 8, ptr / 8 + len);
     }
 
+    let stack_pointer = 128;
+
+    function addBorrowedObject(obj) {
+        if (stack_pointer == 1) throw new Error('out of js stack');
+        heap[--stack_pointer] = obj;
+        return stack_pointer;
+    }
+
     function _assertClass(instance, klass) {
         if (!(instance instanceof klass)) {
             throw new Error(`expected instance of ${klass.name}`);
@@ -370,20 +412,16 @@ let wasm_bindgen;
         WASM_VECTOR_LEN = arg.length;
         return ptr;
     }
-
-    let stack_pointer = 128;
-
-    function addBorrowedObject(obj) {
-        if (stack_pointer == 1) throw new Error('out of js stack');
-        heap[--stack_pointer] = obj;
-        return stack_pointer;
-    }
     function __wbg_adapter_54(arg0, arg1, arg2) {
-        wasm._dyn_core__ops__function__FnMut__A____Output___R_as_wasm_bindgen__closure__WasmClosure___describe__invoke__hba9c4d05d94bb2f6(arg0, arg1, addHeapObject(arg2));
+        _assertNum(arg0);
+        _assertNum(arg1);
+        wasm._dyn_core__ops__function__FnMut__A____Output___R_as_wasm_bindgen__closure__WasmClosure___describe__invoke__h98f045fc8253be43(arg0, arg1, addHeapObject(arg2));
     }
 
     function __wbg_adapter_253(arg0, arg1, arg2, arg3) {
-        wasm.wasm_bindgen__convert__closures__invoke2_mut__ha4add01b7784d4e4(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
+        _assertNum(arg0);
+        _assertNum(arg1);
+        wasm.wasm_bindgen__convert__closures__invoke2_mut__hc1925e19f5c1b969(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
     }
 
     const __wbindgen_enum_RequestMode = ["same-origin", "no-cors", "cors", "navigate"];
@@ -393,6 +431,10 @@ let wasm_bindgen;
         : new FinalizationRegistry(ptr => wasm.__wbg_datasetattributes_free(ptr >>> 0, 1));
 
     class DatasetAttributes {
+
+        constructor() {
+            throw new Error('cannot invoke `new` directly');
+        }
 
         static __wrap(ptr) {
             ptr = ptr >>> 0;
@@ -419,7 +461,10 @@ let wasm_bindgen;
          */
         get_dimensions(zoom_level) {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
+                _assertNum(zoom_level);
                 wasm.datasetattributes_get_dimensions(retptr, this.__wbg_ptr, zoom_level);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -436,7 +481,10 @@ let wasm_bindgen;
          */
         get_block_size(zoom_level) {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
+                _assertNum(zoom_level);
                 wasm.datasetattributes_get_block_size(retptr, this.__wbg_ptr, zoom_level);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -453,7 +501,10 @@ let wasm_bindgen;
          */
         get_voxel_offset(zoom_level) {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
+                _assertNum(zoom_level);
                 wasm.datasetattributes_get_voxel_offset(retptr, this.__wbg_ptr, zoom_level);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -471,7 +522,9 @@ let wasm_bindgen;
             let deferred1_0;
             let deferred1_1;
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.datasetattributes_get_data_type(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -491,7 +544,10 @@ let wasm_bindgen;
             let deferred1_0;
             let deferred1_1;
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
+                _assertNum(zoom_level);
                 wasm.datasetattributes_get_compression(retptr, this.__wbg_ptr, zoom_level);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -508,6 +564,9 @@ let wasm_bindgen;
          * @returns {number}
          */
         get_ndim(zoom_level) {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
+            _assertNum(zoom_level);
             const ret = wasm.datasetattributes_get_ndim(this.__wbg_ptr, zoom_level);
             return ret >>> 0;
         }
@@ -517,6 +576,9 @@ let wasm_bindgen;
          * @returns {number}
          */
         get_num_elements(zoom_level) {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
+            _assertNum(zoom_level);
             const ret = wasm.datasetattributes_get_num_elements(this.__wbg_ptr, zoom_level);
             return ret >>> 0;
         }
@@ -526,6 +588,9 @@ let wasm_bindgen;
          * @returns {number}
          */
         get_block_num_elements(zoom_level) {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
+            _assertNum(zoom_level);
             const ret = wasm.datasetattributes_get_block_num_elements(this.__wbg_ptr, zoom_level);
             return ret >>> 0;
         }
@@ -536,6 +601,9 @@ let wasm_bindgen;
          * @returns {boolean}
          */
         is_sharded(zoom_level) {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
+            _assertNum(zoom_level);
             const ret = wasm.datasetattributes_is_sharded(this.__wbg_ptr, zoom_level);
             return ret !== 0;
         }
@@ -543,6 +611,8 @@ let wasm_bindgen;
          * @returns {any}
          */
         to_json() {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
             const ret = wasm.datasetattributes_to_json(this.__wbg_ptr);
             return takeObject(ret);
         }
@@ -566,6 +636,10 @@ let wasm_bindgen;
         : new FinalizationRegistry(ptr => wasm.__wbg_ngprehttpfetch_free(ptr >>> 0, 1));
 
     class NgPreHTTPFetch {
+
+        constructor() {
+            throw new Error('cannot invoke `new` directly');
+        }
 
         static __wrap(ptr) {
             ptr = ptr >>> 0;
@@ -600,6 +674,8 @@ let wasm_bindgen;
          * @returns {Promise<any>}
          */
         get_version() {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
             const ret = wasm.ngprehttpfetch_get_version(this.__wbg_ptr);
             return takeObject(ret);
         }
@@ -608,6 +684,8 @@ let wasm_bindgen;
          * @returns {Promise<any>}
          */
         get_dataset_attributes(path_name) {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
             const ptr0 = passStringToWasm0(path_name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
             const len0 = WASM_VECTOR_LEN;
             const ret = wasm.ngprehttpfetch_get_dataset_attributes(this.__wbg_ptr, ptr0, len0);
@@ -618,6 +696,8 @@ let wasm_bindgen;
          * @returns {Promise<boolean>}
          */
         exists(path_name) {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
             const ptr0 = passStringToWasm0(path_name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
             const len0 = WASM_VECTOR_LEN;
             const ret = wasm.ngprehttpfetch_exists(this.__wbg_ptr, ptr0, len0);
@@ -628,6 +708,8 @@ let wasm_bindgen;
          * @returns {Promise<boolean>}
          */
         dataset_exists(path_name) {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
             const ptr0 = passStringToWasm0(path_name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
             const len0 = WASM_VECTOR_LEN;
             const ret = wasm.ngprehttpfetch_dataset_exists(this.__wbg_ptr, ptr0, len0);
@@ -640,9 +722,14 @@ let wasm_bindgen;
          * @returns {Promise<any>}
          */
         read_block(path_name, data_attrs, grid_position) {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
             const ptr0 = passStringToWasm0(path_name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
             const len0 = WASM_VECTOR_LEN;
             _assertClass(data_attrs, DatasetAttributes);
+            if (data_attrs.__wbg_ptr === 0) {
+                throw new Error('Attempt to use a moved value');
+            }
             const ptr1 = passArray64ToWasm0(grid_position, wasm.__wbindgen_malloc);
             const len1 = WASM_VECTOR_LEN;
             const ret = wasm.ngprehttpfetch_read_block(this.__wbg_ptr, ptr0, len0, data_attrs.__wbg_ptr, ptr1, len1);
@@ -653,6 +740,8 @@ let wasm_bindgen;
          * @returns {Promise<any>}
          */
         list_attributes(path_name) {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
             const ptr0 = passStringToWasm0(path_name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
             const len0 = WASM_VECTOR_LEN;
             const ret = wasm.ngprehttpfetch_list_attributes(this.__wbg_ptr, ptr0, len0);
@@ -665,9 +754,14 @@ let wasm_bindgen;
          * @returns {Promise<any>}
          */
         block_etag(path_name, data_attrs, grid_position) {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
             const ptr0 = passStringToWasm0(path_name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
             const len0 = WASM_VECTOR_LEN;
             _assertClass(data_attrs, DatasetAttributes);
+            if (data_attrs.__wbg_ptr === 0) {
+                throw new Error('Attempt to use a moved value');
+            }
             const ptr1 = passArray64ToWasm0(grid_position, wasm.__wbindgen_malloc);
             const len1 = WASM_VECTOR_LEN;
             const ret = wasm.ngprehttpfetch_block_etag(this.__wbg_ptr, ptr0, len0, data_attrs.__wbg_ptr, ptr1, len1);
@@ -680,9 +774,14 @@ let wasm_bindgen;
          * @returns {Promise<any>}
          */
         read_block_with_etag(path_name, data_attrs, grid_position) {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
             const ptr0 = passStringToWasm0(path_name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
             const len0 = WASM_VECTOR_LEN;
             _assertClass(data_attrs, DatasetAttributes);
+            if (data_attrs.__wbg_ptr === 0) {
+                throw new Error('Attempt to use a moved value');
+            }
             const ptr1 = passArray64ToWasm0(grid_position, wasm.__wbindgen_malloc);
             const len1 = WASM_VECTOR_LEN;
             const ret = wasm.ngprehttpfetch_read_block_with_etag(this.__wbg_ptr, ptr0, len0, data_attrs.__wbg_ptr, ptr1, len1);
@@ -695,9 +794,14 @@ let wasm_bindgen;
          * @returns {Promise<any[]>}
          */
         read_blocks_with_etag(path_name, data_attrs, flattened_grid_coords) {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
             const ptr0 = passStringToWasm0(path_name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
             const len0 = WASM_VECTOR_LEN;
             _assertClass(data_attrs, DatasetAttributes);
+            if (data_attrs.__wbg_ptr === 0) {
+                throw new Error('Attempt to use a moved value');
+            }
             const ptr1 = passArray64ToWasm0(flattened_grid_coords, wasm.__wbindgen_malloc);
             const len1 = WASM_VECTOR_LEN;
             const ret = wasm.ngprehttpfetch_read_blocks_with_etag(this.__wbg_ptr, ptr0, len0, data_attrs.__wbg_ptr, ptr1, len1);
@@ -710,9 +814,14 @@ let wasm_bindgen;
          * @returns {Promise<any[]>}
          */
         get_optimized_request_bundles(path_name, data_attrs, flattened_grid_coords) {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
             const ptr0 = passStringToWasm0(path_name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
             const len0 = WASM_VECTOR_LEN;
             _assertClass(data_attrs, DatasetAttributes);
+            if (data_attrs.__wbg_ptr === 0) {
+                throw new Error('Attempt to use a moved value');
+            }
             const ptr1 = passArray64ToWasm0(flattened_grid_coords, wasm.__wbindgen_malloc);
             const len1 = WASM_VECTOR_LEN;
             const ret = wasm.ngprehttpfetch_get_optimized_request_bundles(this.__wbg_ptr, ptr0, len0, data_attrs.__wbg_ptr, ptr1, len1);
@@ -726,6 +835,10 @@ let wasm_bindgen;
         : new FinalizationRegistry(ptr => wasm.__wbg_vecdatablockfloat32_free(ptr >>> 0, 1));
 
     class VecDataBlockFLOAT32 {
+
+        constructor() {
+            throw new Error('cannot invoke `new` directly');
+        }
 
         static __wrap(ptr) {
             ptr = ptr >>> 0;
@@ -751,7 +864,9 @@ let wasm_bindgen;
          */
         get_size() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockfloat32_get_size(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -767,7 +882,9 @@ let wasm_bindgen;
          */
         get_grid_position() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockfloat32_get_grid_position(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -783,7 +900,9 @@ let wasm_bindgen;
          */
         get_data() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockfloat32_get_data(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -799,8 +918,10 @@ let wasm_bindgen;
          */
         into_data() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const ptr = this.__destroy_into_raw();
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(ptr);
                 wasm.vecdatablockfloat32_into_data(retptr, ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -815,6 +936,8 @@ let wasm_bindgen;
          * @returns {number}
          */
         get_num_elements() {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
             const ret = wasm.vecdatablockfloat32_get_num_elements(this.__wbg_ptr);
             return ret >>> 0;
         }
@@ -823,7 +946,9 @@ let wasm_bindgen;
          */
         get_etag() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockfloat32_get_etag(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -845,6 +970,10 @@ let wasm_bindgen;
         : new FinalizationRegistry(ptr => wasm.__wbg_vecdatablockfloat64_free(ptr >>> 0, 1));
 
     class VecDataBlockFLOAT64 {
+
+        constructor() {
+            throw new Error('cannot invoke `new` directly');
+        }
 
         static __wrap(ptr) {
             ptr = ptr >>> 0;
@@ -870,7 +999,9 @@ let wasm_bindgen;
          */
         get_size() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockfloat64_get_size(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -886,7 +1017,9 @@ let wasm_bindgen;
          */
         get_grid_position() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockfloat64_get_grid_position(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -902,7 +1035,9 @@ let wasm_bindgen;
          */
         get_data() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockfloat64_get_data(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -918,8 +1053,10 @@ let wasm_bindgen;
          */
         into_data() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const ptr = this.__destroy_into_raw();
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(ptr);
                 wasm.vecdatablockfloat64_into_data(retptr, ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -934,6 +1071,8 @@ let wasm_bindgen;
          * @returns {number}
          */
         get_num_elements() {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
             const ret = wasm.vecdatablockfloat64_get_num_elements(this.__wbg_ptr);
             return ret >>> 0;
         }
@@ -942,7 +1081,9 @@ let wasm_bindgen;
          */
         get_etag() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockfloat64_get_etag(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -964,6 +1105,10 @@ let wasm_bindgen;
         : new FinalizationRegistry(ptr => wasm.__wbg_vecdatablockint16_free(ptr >>> 0, 1));
 
     class VecDataBlockINT16 {
+
+        constructor() {
+            throw new Error('cannot invoke `new` directly');
+        }
 
         static __wrap(ptr) {
             ptr = ptr >>> 0;
@@ -989,7 +1134,9 @@ let wasm_bindgen;
          */
         get_size() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockint16_get_size(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -1005,7 +1152,9 @@ let wasm_bindgen;
          */
         get_grid_position() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockint16_get_grid_position(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -1021,7 +1170,9 @@ let wasm_bindgen;
          */
         get_data() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockint16_get_data(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -1037,8 +1188,10 @@ let wasm_bindgen;
          */
         into_data() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const ptr = this.__destroy_into_raw();
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(ptr);
                 wasm.vecdatablockint16_into_data(retptr, ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -1053,6 +1206,8 @@ let wasm_bindgen;
          * @returns {number}
          */
         get_num_elements() {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
             const ret = wasm.vecdatablockint16_get_num_elements(this.__wbg_ptr);
             return ret >>> 0;
         }
@@ -1061,7 +1216,9 @@ let wasm_bindgen;
          */
         get_etag() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockint16_get_etag(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -1083,6 +1240,10 @@ let wasm_bindgen;
         : new FinalizationRegistry(ptr => wasm.__wbg_vecdatablockint32_free(ptr >>> 0, 1));
 
     class VecDataBlockINT32 {
+
+        constructor() {
+            throw new Error('cannot invoke `new` directly');
+        }
 
         static __wrap(ptr) {
             ptr = ptr >>> 0;
@@ -1108,7 +1269,9 @@ let wasm_bindgen;
          */
         get_size() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockint32_get_size(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -1124,7 +1287,9 @@ let wasm_bindgen;
          */
         get_grid_position() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockint32_get_grid_position(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -1140,7 +1305,9 @@ let wasm_bindgen;
          */
         get_data() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockint32_get_data(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -1156,9 +1323,11 @@ let wasm_bindgen;
          */
         into_data() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const ptr = this.__destroy_into_raw();
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-                wasm.vecdatablockfloat32_into_data(retptr, ptr);
+                _assertNum(ptr);
+                wasm.vecdatablockint32_into_data(retptr, ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
                 var v1 = getArrayI32FromWasm0(r0, r1).slice();
@@ -1172,6 +1341,8 @@ let wasm_bindgen;
          * @returns {number}
          */
         get_num_elements() {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
             const ret = wasm.vecdatablockint32_get_num_elements(this.__wbg_ptr);
             return ret >>> 0;
         }
@@ -1180,7 +1351,9 @@ let wasm_bindgen;
          */
         get_etag() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockint32_get_etag(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -1202,6 +1375,10 @@ let wasm_bindgen;
         : new FinalizationRegistry(ptr => wasm.__wbg_vecdatablockint64_free(ptr >>> 0, 1));
 
     class VecDataBlockINT64 {
+
+        constructor() {
+            throw new Error('cannot invoke `new` directly');
+        }
 
         static __wrap(ptr) {
             ptr = ptr >>> 0;
@@ -1227,7 +1404,9 @@ let wasm_bindgen;
          */
         get_size() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockint64_get_size(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -1243,7 +1422,9 @@ let wasm_bindgen;
          */
         get_grid_position() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockint64_get_grid_position(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -1259,7 +1440,9 @@ let wasm_bindgen;
          */
         get_data() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockint64_get_data(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -1275,9 +1458,11 @@ let wasm_bindgen;
          */
         into_data() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const ptr = this.__destroy_into_raw();
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-                wasm.vecdatablockfloat64_into_data(retptr, ptr);
+                _assertNum(ptr);
+                wasm.vecdatablockint64_into_data(retptr, ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
                 var v1 = getArrayI64FromWasm0(r0, r1).slice();
@@ -1291,6 +1476,8 @@ let wasm_bindgen;
          * @returns {number}
          */
         get_num_elements() {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
             const ret = wasm.vecdatablockint64_get_num_elements(this.__wbg_ptr);
             return ret >>> 0;
         }
@@ -1299,7 +1486,9 @@ let wasm_bindgen;
          */
         get_etag() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockint64_get_etag(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -1321,6 +1510,10 @@ let wasm_bindgen;
         : new FinalizationRegistry(ptr => wasm.__wbg_vecdatablockint8_free(ptr >>> 0, 1));
 
     class VecDataBlockINT8 {
+
+        constructor() {
+            throw new Error('cannot invoke `new` directly');
+        }
 
         static __wrap(ptr) {
             ptr = ptr >>> 0;
@@ -1346,7 +1539,9 @@ let wasm_bindgen;
          */
         get_size() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockint8_get_size(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -1362,7 +1557,9 @@ let wasm_bindgen;
          */
         get_grid_position() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockint8_get_grid_position(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -1378,7 +1575,9 @@ let wasm_bindgen;
          */
         get_data() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockint8_get_data(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -1394,8 +1593,10 @@ let wasm_bindgen;
          */
         into_data() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const ptr = this.__destroy_into_raw();
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(ptr);
                 wasm.vecdatablockint8_into_data(retptr, ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -1410,6 +1611,8 @@ let wasm_bindgen;
          * @returns {number}
          */
         get_num_elements() {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
             const ret = wasm.vecdatablockint8_get_num_elements(this.__wbg_ptr);
             return ret >>> 0;
         }
@@ -1418,7 +1621,9 @@ let wasm_bindgen;
          */
         get_etag() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockint8_get_etag(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -1440,6 +1645,10 @@ let wasm_bindgen;
         : new FinalizationRegistry(ptr => wasm.__wbg_vecdatablockuint16_free(ptr >>> 0, 1));
 
     class VecDataBlockUINT16 {
+
+        constructor() {
+            throw new Error('cannot invoke `new` directly');
+        }
 
         static __wrap(ptr) {
             ptr = ptr >>> 0;
@@ -1465,7 +1674,9 @@ let wasm_bindgen;
          */
         get_size() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockuint16_get_size(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -1481,7 +1692,9 @@ let wasm_bindgen;
          */
         get_grid_position() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockuint16_get_grid_position(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -1497,7 +1710,9 @@ let wasm_bindgen;
          */
         get_data() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockuint16_get_data(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -1513,9 +1728,11 @@ let wasm_bindgen;
          */
         into_data() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const ptr = this.__destroy_into_raw();
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-                wasm.vecdatablockint16_into_data(retptr, ptr);
+                _assertNum(ptr);
+                wasm.vecdatablockuint16_into_data(retptr, ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
                 var v1 = getArrayU16FromWasm0(r0, r1).slice();
@@ -1529,6 +1746,8 @@ let wasm_bindgen;
          * @returns {number}
          */
         get_num_elements() {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
             const ret = wasm.vecdatablockuint16_get_num_elements(this.__wbg_ptr);
             return ret >>> 0;
         }
@@ -1537,7 +1756,9 @@ let wasm_bindgen;
          */
         get_etag() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockuint16_get_etag(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -1559,6 +1780,10 @@ let wasm_bindgen;
         : new FinalizationRegistry(ptr => wasm.__wbg_vecdatablockuint32_free(ptr >>> 0, 1));
 
     class VecDataBlockUINT32 {
+
+        constructor() {
+            throw new Error('cannot invoke `new` directly');
+        }
 
         static __wrap(ptr) {
             ptr = ptr >>> 0;
@@ -1584,7 +1809,9 @@ let wasm_bindgen;
          */
         get_size() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockuint32_get_size(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -1600,7 +1827,9 @@ let wasm_bindgen;
          */
         get_grid_position() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockuint32_get_grid_position(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -1616,7 +1845,9 @@ let wasm_bindgen;
          */
         get_data() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockuint32_get_data(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -1632,9 +1863,11 @@ let wasm_bindgen;
          */
         into_data() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const ptr = this.__destroy_into_raw();
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-                wasm.vecdatablockfloat32_into_data(retptr, ptr);
+                _assertNum(ptr);
+                wasm.vecdatablockuint32_into_data(retptr, ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
                 var v1 = getArrayU32FromWasm0(r0, r1).slice();
@@ -1648,6 +1881,8 @@ let wasm_bindgen;
          * @returns {number}
          */
         get_num_elements() {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
             const ret = wasm.vecdatablockuint32_get_num_elements(this.__wbg_ptr);
             return ret >>> 0;
         }
@@ -1656,7 +1891,9 @@ let wasm_bindgen;
          */
         get_etag() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockuint32_get_etag(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -1678,6 +1915,10 @@ let wasm_bindgen;
         : new FinalizationRegistry(ptr => wasm.__wbg_vecdatablockuint64_free(ptr >>> 0, 1));
 
     class VecDataBlockUINT64 {
+
+        constructor() {
+            throw new Error('cannot invoke `new` directly');
+        }
 
         static __wrap(ptr) {
             ptr = ptr >>> 0;
@@ -1703,7 +1944,9 @@ let wasm_bindgen;
          */
         get_size() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockuint64_get_size(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -1719,7 +1962,9 @@ let wasm_bindgen;
          */
         get_grid_position() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockuint64_get_grid_position(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -1735,7 +1980,9 @@ let wasm_bindgen;
          */
         get_data() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockuint64_get_data(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -1751,9 +1998,11 @@ let wasm_bindgen;
          */
         into_data() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const ptr = this.__destroy_into_raw();
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-                wasm.vecdatablockfloat64_into_data(retptr, ptr);
+                _assertNum(ptr);
+                wasm.vecdatablockuint64_into_data(retptr, ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
                 var v1 = getArrayU64FromWasm0(r0, r1).slice();
@@ -1767,6 +2016,8 @@ let wasm_bindgen;
          * @returns {number}
          */
         get_num_elements() {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
             const ret = wasm.vecdatablockuint64_get_num_elements(this.__wbg_ptr);
             return ret >>> 0;
         }
@@ -1775,7 +2026,9 @@ let wasm_bindgen;
          */
         get_etag() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockuint64_get_etag(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -1797,6 +2050,10 @@ let wasm_bindgen;
         : new FinalizationRegistry(ptr => wasm.__wbg_vecdatablockuint8_free(ptr >>> 0, 1));
 
     class VecDataBlockUINT8 {
+
+        constructor() {
+            throw new Error('cannot invoke `new` directly');
+        }
 
         static __wrap(ptr) {
             ptr = ptr >>> 0;
@@ -1822,7 +2079,9 @@ let wasm_bindgen;
          */
         get_size() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockuint8_get_size(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -1838,7 +2097,9 @@ let wasm_bindgen;
          */
         get_grid_position() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockuint8_get_grid_position(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -1854,7 +2115,9 @@ let wasm_bindgen;
          */
         get_data() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockuint8_get_data(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -1870,9 +2133,11 @@ let wasm_bindgen;
          */
         into_data() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const ptr = this.__destroy_into_raw();
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
-                wasm.vecdatablockint8_into_data(retptr, ptr);
+                _assertNum(ptr);
+                wasm.vecdatablockuint8_into_data(retptr, ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
                 var v1 = getArrayU8FromWasm0(r0, r1).slice();
@@ -1886,6 +2151,8 @@ let wasm_bindgen;
          * @returns {number}
          */
         get_num_elements() {
+            if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
+            _assertNum(this.__wbg_ptr);
             const ret = wasm.vecdatablockuint8_get_num_elements(this.__wbg_ptr);
             return ret >>> 0;
         }
@@ -1894,7 +2161,9 @@ let wasm_bindgen;
          */
         get_etag() {
             try {
+                if (this.__wbg_ptr == 0) throw new Error('Attempt to use a moved value');
                 const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+                _assertNum(this.__wbg_ptr);
                 wasm.vecdatablockuint8_get_etag(retptr, this.__wbg_ptr);
                 var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
                 var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
@@ -1916,6 +2185,10 @@ let wasm_bindgen;
         : new FinalizationRegistry(ptr => wasm.__wbg_version_free(ptr >>> 0, 1));
 
     class Version {
+
+        constructor() {
+            throw new Error('cannot invoke `new` directly');
+        }
 
         static __wrap(ptr) {
             ptr = ptr >>> 0;
@@ -1977,10 +2250,10 @@ let wasm_bindgen;
             const ret = getObject(arg0).arrayBuffer();
             return addHeapObject(ret);
         }, arguments) };
-        imports.wbg.__wbg_buffer_61b7ce01341d7f88 = function(arg0) {
+        imports.wbg.__wbg_buffer_61b7ce01341d7f88 = function() { return logError(function (arg0) {
             const ret = getObject(arg0).buffer;
             return addHeapObject(ret);
-        };
+        }, arguments) };
         imports.wbg.__wbg_call_500db948e69c7330 = function() { return handleError(function (arg0, arg1, arg2) {
             const ret = getObject(arg0).call(getObject(arg1), getObject(arg2));
             return addHeapObject(ret);
@@ -1989,34 +2262,35 @@ let wasm_bindgen;
             const ret = getObject(arg0).call(getObject(arg1));
             return addHeapObject(ret);
         }, arguments) };
-        imports.wbg.__wbg_datasetattributes_new = function(arg0) {
+        imports.wbg.__wbg_datasetattributes_new = function() { return logError(function (arg0) {
             const ret = DatasetAttributes.__wrap(arg0);
             return addHeapObject(ret);
-        };
-        imports.wbg.__wbg_done_f22c1561fa919baa = function(arg0) {
+        }, arguments) };
+        imports.wbg.__wbg_done_f22c1561fa919baa = function() { return logError(function (arg0) {
             const ret = getObject(arg0).done;
+            _assertBoolean(ret);
             return ret;
-        };
-        imports.wbg.__wbg_entries_4f2bb9b0d701c0f6 = function(arg0) {
+        }, arguments) };
+        imports.wbg.__wbg_entries_4f2bb9b0d701c0f6 = function() { return logError(function (arg0) {
             const ret = Object.entries(getObject(arg0));
             return addHeapObject(ret);
-        };
+        }, arguments) };
         imports.wbg.__wbg_eval_cd0c386c3899dd07 = function() { return handleError(function (arg0, arg1) {
             const ret = eval(getStringFromWasm0(arg0, arg1));
             return addHeapObject(ret);
         }, arguments) };
-        imports.wbg.__wbg_fetch_229368eecee9d217 = function(arg0, arg1) {
+        imports.wbg.__wbg_fetch_229368eecee9d217 = function() { return logError(function (arg0, arg1) {
             const ret = getObject(arg0).fetch(getObject(arg1));
             return addHeapObject(ret);
-        };
-        imports.wbg.__wbg_fetch_e26fdd92ea39f634 = function(arg0, arg1) {
+        }, arguments) };
+        imports.wbg.__wbg_fetch_e26fdd92ea39f634 = function() { return logError(function (arg0, arg1) {
             const ret = getObject(arg0).fetch(getObject(arg1));
             return addHeapObject(ret);
-        };
-        imports.wbg.__wbg_get_9aa3dff3f0266054 = function(arg0, arg1) {
+        }, arguments) };
+        imports.wbg.__wbg_get_9aa3dff3f0266054 = function() { return logError(function (arg0, arg1) {
             const ret = getObject(arg0)[arg1 >>> 0];
             return addHeapObject(ret);
-        };
+        }, arguments) };
         imports.wbg.__wbg_get_ae7344ec6091c6c5 = function() { return handleError(function (arg0, arg1, arg2, arg3) {
             const ret = getObject(arg1).get(getStringFromWasm0(arg2, arg3));
             var ptr1 = isLikeNone(ret) ? 0 : passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
@@ -2028,19 +2302,19 @@ let wasm_bindgen;
             const ret = Reflect.get(getObject(arg0), getObject(arg1));
             return addHeapObject(ret);
         }, arguments) };
-        imports.wbg.__wbg_getwithrefkey_1dc361bd10053bfe = function(arg0, arg1) {
+        imports.wbg.__wbg_getwithrefkey_1dc361bd10053bfe = function() { return logError(function (arg0, arg1) {
             const ret = getObject(arg0)[getObject(arg1)];
             return addHeapObject(ret);
-        };
-        imports.wbg.__wbg_headers_24e3e19fe3f187c0 = function(arg0) {
+        }, arguments) };
+        imports.wbg.__wbg_headers_24e3e19fe3f187c0 = function() { return logError(function (arg0) {
             const ret = getObject(arg0).headers;
             return addHeapObject(ret);
-        };
-        imports.wbg.__wbg_headers_786276f5fbbdb28a = function(arg0) {
+        }, arguments) };
+        imports.wbg.__wbg_headers_786276f5fbbdb28a = function() { return logError(function (arg0) {
             const ret = getObject(arg0).headers;
             return addHeapObject(ret);
-        };
-        imports.wbg.__wbg_instanceof_ArrayBuffer_670ddde44cdb2602 = function(arg0) {
+        }, arguments) };
+        imports.wbg.__wbg_instanceof_ArrayBuffer_670ddde44cdb2602 = function() { return logError(function (arg0) {
             let result;
             try {
                 result = getObject(arg0) instanceof ArrayBuffer;
@@ -2048,9 +2322,10 @@ let wasm_bindgen;
                 result = false;
             }
             const ret = result;
+            _assertBoolean(ret);
             return ret;
-        };
-        imports.wbg.__wbg_instanceof_Map_98ecb30afec5acdb = function(arg0) {
+        }, arguments) };
+        imports.wbg.__wbg_instanceof_Map_98ecb30afec5acdb = function() { return logError(function (arg0) {
             let result;
             try {
                 result = getObject(arg0) instanceof Map;
@@ -2058,9 +2333,10 @@ let wasm_bindgen;
                 result = false;
             }
             const ret = result;
+            _assertBoolean(ret);
             return ret;
-        };
-        imports.wbg.__wbg_instanceof_Response_d3453657e10c4300 = function(arg0) {
+        }, arguments) };
+        imports.wbg.__wbg_instanceof_Response_d3453657e10c4300 = function() { return logError(function (arg0) {
             let result;
             try {
                 result = getObject(arg0) instanceof Response;
@@ -2068,9 +2344,10 @@ let wasm_bindgen;
                 result = false;
             }
             const ret = result;
+            _assertBoolean(ret);
             return ret;
-        };
-        imports.wbg.__wbg_instanceof_Uint8Array_28af5bc19d6acad8 = function(arg0) {
+        }, arguments) };
+        imports.wbg.__wbg_instanceof_Uint8Array_28af5bc19d6acad8 = function() { return logError(function (arg0) {
             let result;
             try {
                 result = getObject(arg0) instanceof Uint8Array;
@@ -2078,9 +2355,10 @@ let wasm_bindgen;
                 result = false;
             }
             const ret = result;
+            _assertBoolean(ret);
             return ret;
-        };
-        imports.wbg.__wbg_instanceof_Window_d2514c6a7ee7ba60 = function(arg0) {
+        }, arguments) };
+        imports.wbg.__wbg_instanceof_Window_d2514c6a7ee7ba60 = function() { return logError(function (arg0) {
             let result;
             try {
                 result = getObject(arg0) instanceof Window;
@@ -2088,9 +2366,10 @@ let wasm_bindgen;
                 result = false;
             }
             const ret = result;
+            _assertBoolean(ret);
             return ret;
-        };
-        imports.wbg.__wbg_instanceof_WorkerGlobalScope_b32c94246142a6a7 = function(arg0) {
+        }, arguments) };
+        imports.wbg.__wbg_instanceof_WorkerGlobalScope_b32c94246142a6a7 = function() { return logError(function (arg0) {
             let result;
             try {
                 result = getObject(arg0) instanceof WorkerGlobalScope;
@@ -2098,40 +2377,45 @@ let wasm_bindgen;
                 result = false;
             }
             const ret = result;
+            _assertBoolean(ret);
             return ret;
-        };
-        imports.wbg.__wbg_isArray_1ba11a930108ec51 = function(arg0) {
+        }, arguments) };
+        imports.wbg.__wbg_isArray_1ba11a930108ec51 = function() { return logError(function (arg0) {
             const ret = Array.isArray(getObject(arg0));
+            _assertBoolean(ret);
             return ret;
-        };
-        imports.wbg.__wbg_isSafeInteger_12f5549b2fca23f4 = function(arg0) {
+        }, arguments) };
+        imports.wbg.__wbg_isSafeInteger_12f5549b2fca23f4 = function() { return logError(function (arg0) {
             const ret = Number.isSafeInteger(getObject(arg0));
+            _assertBoolean(ret);
             return ret;
-        };
-        imports.wbg.__wbg_iterator_23604bb983791576 = function() {
+        }, arguments) };
+        imports.wbg.__wbg_iterator_23604bb983791576 = function() { return logError(function () {
             const ret = Symbol.iterator;
             return addHeapObject(ret);
-        };
+        }, arguments) };
         imports.wbg.__wbg_json_2c755d0be3f5cc5c = function() { return handleError(function (arg0) {
             const ret = getObject(arg0).json();
             return addHeapObject(ret);
         }, arguments) };
-        imports.wbg.__wbg_length_65d1cd11729ced11 = function(arg0) {
+        imports.wbg.__wbg_length_65d1cd11729ced11 = function() { return logError(function (arg0) {
             const ret = getObject(arg0).length;
+            _assertNum(ret);
             return ret;
-        };
-        imports.wbg.__wbg_length_d65cf0786bfc5739 = function(arg0) {
+        }, arguments) };
+        imports.wbg.__wbg_length_d65cf0786bfc5739 = function() { return logError(function (arg0) {
             const ret = getObject(arg0).length;
+            _assertNum(ret);
             return ret;
-        };
-        imports.wbg.__wbg_log_464d1b2190ca1e04 = function(arg0) {
+        }, arguments) };
+        imports.wbg.__wbg_log_464d1b2190ca1e04 = function() { return logError(function (arg0) {
             console.log(getObject(arg0));
-        };
-        imports.wbg.__wbg_new_254fa9eac11932ae = function() {
+        }, arguments) };
+        imports.wbg.__wbg_new_254fa9eac11932ae = function() { return logError(function () {
             const ret = new Array();
             return addHeapObject(ret);
-        };
-        imports.wbg.__wbg_new_3d446df9155128ef = function(arg0, arg1) {
+        }, arguments) };
+        imports.wbg.__wbg_new_3d446df9155128ef = function() { return logError(function (arg0, arg1) {
             try {
                 var state0 = {a: arg0, b: arg1};
                 var cb0 = (arg0, arg1) => {
@@ -2148,23 +2432,23 @@ let wasm_bindgen;
             } finally {
                 state0.a = state0.b = 0;
             }
-        };
-        imports.wbg.__wbg_new_3ff5b33b1ce712df = function(arg0) {
+        }, arguments) };
+        imports.wbg.__wbg_new_3ff5b33b1ce712df = function() { return logError(function (arg0) {
             const ret = new Uint8Array(getObject(arg0));
             return addHeapObject(ret);
-        };
-        imports.wbg.__wbg_new_688846f374351c92 = function() {
+        }, arguments) };
+        imports.wbg.__wbg_new_688846f374351c92 = function() { return logError(function () {
             const ret = new Object();
             return addHeapObject(ret);
-        };
-        imports.wbg.__wbg_new_bc96c6a1c0786643 = function() {
+        }, arguments) };
+        imports.wbg.__wbg_new_bc96c6a1c0786643 = function() { return logError(function () {
             const ret = new Map();
             return addHeapObject(ret);
-        };
-        imports.wbg.__wbg_newnoargs_fd9e4bf8be2bc16d = function(arg0, arg1) {
+        }, arguments) };
+        imports.wbg.__wbg_newnoargs_fd9e4bf8be2bc16d = function() { return logError(function (arg0, arg1) {
             const ret = new Function(getStringFromWasm0(arg0, arg1));
             return addHeapObject(ret);
-        };
+        }, arguments) };
         imports.wbg.__wbg_newwithstrandinit_a1f6583f20e4faff = function() { return handleError(function (arg0, arg1, arg2) {
             const ret = new Request(getStringFromWasm0(arg0, arg1), getObject(arg2));
             return addHeapObject(ret);
@@ -2173,142 +2457,143 @@ let wasm_bindgen;
             const ret = getObject(arg0).next();
             return addHeapObject(ret);
         }, arguments) };
-        imports.wbg.__wbg_next_137428deb98342b0 = function(arg0) {
+        imports.wbg.__wbg_next_137428deb98342b0 = function() { return logError(function (arg0) {
             const ret = getObject(arg0).next;
             return addHeapObject(ret);
-        };
-        imports.wbg.__wbg_ngprehttpfetch_new = function(arg0) {
+        }, arguments) };
+        imports.wbg.__wbg_ngprehttpfetch_new = function() { return logError(function (arg0) {
             const ret = NgPreHTTPFetch.__wrap(arg0);
             return addHeapObject(ret);
-        };
-        imports.wbg.__wbg_now_62a101fe35b60230 = function(arg0) {
+        }, arguments) };
+        imports.wbg.__wbg_now_62a101fe35b60230 = function() { return logError(function (arg0) {
             const ret = getObject(arg0).now();
             return ret;
-        };
-        imports.wbg.__wbg_ok_4cacdb33ce54895f = function(arg0) {
+        }, arguments) };
+        imports.wbg.__wbg_ok_4cacdb33ce54895f = function() { return logError(function (arg0) {
             const ret = getObject(arg0).ok;
+            _assertBoolean(ret);
             return ret;
-        };
-        imports.wbg.__wbg_performance_2e69ce813a883f21 = function(arg0) {
+        }, arguments) };
+        imports.wbg.__wbg_performance_2e69ce813a883f21 = function() { return logError(function (arg0) {
             const ret = getObject(arg0).performance;
             return isLikeNone(ret) ? 0 : addHeapObject(ret);
-        };
-        imports.wbg.__wbg_performance_33af593be9d2f2bb = function(arg0) {
+        }, arguments) };
+        imports.wbg.__wbg_performance_33af593be9d2f2bb = function() { return logError(function (arg0) {
             const ret = getObject(arg0).performance;
             return isLikeNone(ret) ? 0 : addHeapObject(ret);
-        };
-        imports.wbg.__wbg_queueMicrotask_2181040e064c0dc8 = function(arg0) {
+        }, arguments) };
+        imports.wbg.__wbg_queueMicrotask_2181040e064c0dc8 = function() { return logError(function (arg0) {
             queueMicrotask(getObject(arg0));
-        };
-        imports.wbg.__wbg_queueMicrotask_ef9ac43769cbcc4f = function(arg0) {
+        }, arguments) };
+        imports.wbg.__wbg_queueMicrotask_ef9ac43769cbcc4f = function() { return logError(function (arg0) {
             const ret = getObject(arg0).queueMicrotask;
             return addHeapObject(ret);
-        };
-        imports.wbg.__wbg_resolve_0bf7c44d641804f9 = function(arg0) {
+        }, arguments) };
+        imports.wbg.__wbg_resolve_0bf7c44d641804f9 = function() { return logError(function (arg0) {
             const ret = Promise.resolve(getObject(arg0));
             return addHeapObject(ret);
-        };
-        imports.wbg.__wbg_set_1d80752d0d5f0b21 = function(arg0, arg1, arg2) {
+        }, arguments) };
+        imports.wbg.__wbg_set_1d80752d0d5f0b21 = function() { return logError(function (arg0, arg1, arg2) {
             getObject(arg0)[arg1 >>> 0] = takeObject(arg2);
-        };
-        imports.wbg.__wbg_set_23d69db4e5c66a6e = function(arg0, arg1, arg2) {
+        }, arguments) };
+        imports.wbg.__wbg_set_23d69db4e5c66a6e = function() { return logError(function (arg0, arg1, arg2) {
             getObject(arg0).set(getObject(arg1), arg2 >>> 0);
-        };
-        imports.wbg.__wbg_set_3f1d0b984ed272ed = function(arg0, arg1, arg2) {
+        }, arguments) };
+        imports.wbg.__wbg_set_3f1d0b984ed272ed = function() { return logError(function (arg0, arg1, arg2) {
             getObject(arg0)[takeObject(arg1)] = takeObject(arg2);
-        };
-        imports.wbg.__wbg_set_76818dc3c59a63d5 = function(arg0, arg1, arg2) {
+        }, arguments) };
+        imports.wbg.__wbg_set_76818dc3c59a63d5 = function() { return logError(function (arg0, arg1, arg2) {
             const ret = getObject(arg0).set(getObject(arg1), getObject(arg2));
             return addHeapObject(ret);
-        };
+        }, arguments) };
         imports.wbg.__wbg_set_aa8f7a765a0a2e5f = function() { return handleError(function (arg0, arg1, arg2, arg3, arg4) {
             getObject(arg0).set(getStringFromWasm0(arg1, arg2), getStringFromWasm0(arg3, arg4));
         }, arguments) };
-        imports.wbg.__wbg_setmethod_cfc7f688ba46a6be = function(arg0, arg1, arg2) {
+        imports.wbg.__wbg_setmethod_cfc7f688ba46a6be = function() { return logError(function (arg0, arg1, arg2) {
             getObject(arg0).method = getStringFromWasm0(arg1, arg2);
-        };
-        imports.wbg.__wbg_setmode_cd03637eb7da01e0 = function(arg0, arg1) {
+        }, arguments) };
+        imports.wbg.__wbg_setmode_cd03637eb7da01e0 = function() { return logError(function (arg0, arg1) {
             getObject(arg0).mode = __wbindgen_enum_RequestMode[arg1];
-        };
-        imports.wbg.__wbg_static_accessor_GLOBAL_0be7472e492ad3e3 = function() {
+        }, arguments) };
+        imports.wbg.__wbg_static_accessor_GLOBAL_0be7472e492ad3e3 = function() { return logError(function () {
             const ret = typeof global === 'undefined' ? null : global;
             return isLikeNone(ret) ? 0 : addHeapObject(ret);
-        };
-        imports.wbg.__wbg_static_accessor_GLOBAL_THIS_1a6eb482d12c9bfb = function() {
+        }, arguments) };
+        imports.wbg.__wbg_static_accessor_GLOBAL_THIS_1a6eb482d12c9bfb = function() { return logError(function () {
             const ret = typeof globalThis === 'undefined' ? null : globalThis;
             return isLikeNone(ret) ? 0 : addHeapObject(ret);
-        };
-        imports.wbg.__wbg_static_accessor_SELF_1dc398a895c82351 = function() {
+        }, arguments) };
+        imports.wbg.__wbg_static_accessor_SELF_1dc398a895c82351 = function() { return logError(function () {
             const ret = typeof self === 'undefined' ? null : self;
             return isLikeNone(ret) ? 0 : addHeapObject(ret);
-        };
-        imports.wbg.__wbg_static_accessor_WINDOW_ae1c80c7eea8d64a = function() {
+        }, arguments) };
+        imports.wbg.__wbg_static_accessor_WINDOW_ae1c80c7eea8d64a = function() { return logError(function () {
             const ret = typeof window === 'undefined' ? null : window;
             return isLikeNone(ret) ? 0 : addHeapObject(ret);
-        };
-        imports.wbg.__wbg_statusText_613aac5c001080c1 = function(arg0, arg1) {
+        }, arguments) };
+        imports.wbg.__wbg_statusText_613aac5c001080c1 = function() { return logError(function (arg0, arg1) {
             const ret = getObject(arg1).statusText;
             const ptr1 = passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
             const len1 = WASM_VECTOR_LEN;
             getDataViewMemory0().setInt32(arg0 + 4 * 1, len1, true);
             getDataViewMemory0().setInt32(arg0 + 4 * 0, ptr1, true);
-        };
-        imports.wbg.__wbg_then_0438fad860fe38e1 = function(arg0, arg1) {
+        }, arguments) };
+        imports.wbg.__wbg_then_0438fad860fe38e1 = function() { return logError(function (arg0, arg1) {
             const ret = getObject(arg0).then(getObject(arg1));
             return addHeapObject(ret);
-        };
-        imports.wbg.__wbg_then_0ffafeddf0e182a4 = function(arg0, arg1, arg2) {
+        }, arguments) };
+        imports.wbg.__wbg_then_0ffafeddf0e182a4 = function() { return logError(function (arg0, arg1, arg2) {
             const ret = getObject(arg0).then(getObject(arg1), getObject(arg2));
             return addHeapObject(ret);
-        };
-        imports.wbg.__wbg_value_4c32fd138a88eee2 = function(arg0) {
+        }, arguments) };
+        imports.wbg.__wbg_value_4c32fd138a88eee2 = function() { return logError(function (arg0) {
             const ret = getObject(arg0).value;
             return addHeapObject(ret);
-        };
-        imports.wbg.__wbg_vecdatablockfloat32_new = function(arg0) {
+        }, arguments) };
+        imports.wbg.__wbg_vecdatablockfloat32_new = function() { return logError(function (arg0) {
             const ret = VecDataBlockFLOAT32.__wrap(arg0);
             return addHeapObject(ret);
-        };
-        imports.wbg.__wbg_vecdatablockfloat64_new = function(arg0) {
+        }, arguments) };
+        imports.wbg.__wbg_vecdatablockfloat64_new = function() { return logError(function (arg0) {
             const ret = VecDataBlockFLOAT64.__wrap(arg0);
             return addHeapObject(ret);
-        };
-        imports.wbg.__wbg_vecdatablockint16_new = function(arg0) {
+        }, arguments) };
+        imports.wbg.__wbg_vecdatablockint16_new = function() { return logError(function (arg0) {
             const ret = VecDataBlockINT16.__wrap(arg0);
             return addHeapObject(ret);
-        };
-        imports.wbg.__wbg_vecdatablockint32_new = function(arg0) {
+        }, arguments) };
+        imports.wbg.__wbg_vecdatablockint32_new = function() { return logError(function (arg0) {
             const ret = VecDataBlockINT32.__wrap(arg0);
             return addHeapObject(ret);
-        };
-        imports.wbg.__wbg_vecdatablockint64_new = function(arg0) {
+        }, arguments) };
+        imports.wbg.__wbg_vecdatablockint64_new = function() { return logError(function (arg0) {
             const ret = VecDataBlockINT64.__wrap(arg0);
             return addHeapObject(ret);
-        };
-        imports.wbg.__wbg_vecdatablockint8_new = function(arg0) {
+        }, arguments) };
+        imports.wbg.__wbg_vecdatablockint8_new = function() { return logError(function (arg0) {
             const ret = VecDataBlockINT8.__wrap(arg0);
             return addHeapObject(ret);
-        };
-        imports.wbg.__wbg_vecdatablockuint16_new = function(arg0) {
+        }, arguments) };
+        imports.wbg.__wbg_vecdatablockuint16_new = function() { return logError(function (arg0) {
             const ret = VecDataBlockUINT16.__wrap(arg0);
             return addHeapObject(ret);
-        };
-        imports.wbg.__wbg_vecdatablockuint32_new = function(arg0) {
+        }, arguments) };
+        imports.wbg.__wbg_vecdatablockuint32_new = function() { return logError(function (arg0) {
             const ret = VecDataBlockUINT32.__wrap(arg0);
             return addHeapObject(ret);
-        };
-        imports.wbg.__wbg_vecdatablockuint64_new = function(arg0) {
+        }, arguments) };
+        imports.wbg.__wbg_vecdatablockuint64_new = function() { return logError(function (arg0) {
             const ret = VecDataBlockUINT64.__wrap(arg0);
             return addHeapObject(ret);
-        };
-        imports.wbg.__wbg_vecdatablockuint8_new = function(arg0) {
+        }, arguments) };
+        imports.wbg.__wbg_vecdatablockuint8_new = function() { return logError(function (arg0) {
             const ret = VecDataBlockUINT8.__wrap(arg0);
             return addHeapObject(ret);
-        };
-        imports.wbg.__wbg_version_new = function(arg0) {
+        }, arguments) };
+        imports.wbg.__wbg_version_new = function() { return logError(function (arg0) {
             const ret = Version.__wrap(arg0);
             return addHeapObject(ret);
-        };
+        }, arguments) };
         imports.wbg.__wbindgen_array_new = function() {
             const ret = [];
             return addHeapObject(ret);
@@ -2331,12 +2616,16 @@ let wasm_bindgen;
         imports.wbg.__wbindgen_bigint_get_as_i64 = function(arg0, arg1) {
             const v = getObject(arg1);
             const ret = typeof(v) === 'bigint' ? v : undefined;
+            if (!isLikeNone(ret)) {
+                _assertBigInt(ret);
+            }
             getDataViewMemory0().setBigInt64(arg0 + 8 * 1, isLikeNone(ret) ? BigInt(0) : ret, true);
             getDataViewMemory0().setInt32(arg0 + 4 * 0, !isLikeNone(ret), true);
         };
         imports.wbg.__wbindgen_boolean_get = function(arg0) {
             const v = getObject(arg0);
             const ret = typeof(v) === 'boolean' ? (v ? 1 : 0) : 2;
+            _assertNum(ret);
             return ret;
         };
         imports.wbg.__wbindgen_cb_drop = function(arg0) {
@@ -2346,12 +2635,13 @@ let wasm_bindgen;
                 return true;
             }
             const ret = false;
+            _assertBoolean(ret);
             return ret;
         };
-        imports.wbg.__wbindgen_closure_wrapper1326 = function(arg0, arg1, arg2) {
-            const ret = makeMutClosure(arg0, arg1, 266, __wbg_adapter_54);
+        imports.wbg.__wbindgen_closure_wrapper11123 = function() { return logError(function (arg0, arg1, arg2) {
+            const ret = makeMutClosure(arg0, arg1, 504, __wbg_adapter_54);
             return addHeapObject(ret);
-        };
+        }, arguments) };
         imports.wbg.__wbindgen_debug_string = function(arg0, arg1) {
             const ret = debugString(getObject(arg1));
             const ptr1 = passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
@@ -2365,35 +2655,43 @@ let wasm_bindgen;
         };
         imports.wbg.__wbindgen_in = function(arg0, arg1) {
             const ret = getObject(arg0) in getObject(arg1);
+            _assertBoolean(ret);
             return ret;
         };
         imports.wbg.__wbindgen_is_bigint = function(arg0) {
             const ret = typeof(getObject(arg0)) === 'bigint';
+            _assertBoolean(ret);
             return ret;
         };
         imports.wbg.__wbindgen_is_function = function(arg0) {
             const ret = typeof(getObject(arg0)) === 'function';
+            _assertBoolean(ret);
             return ret;
         };
         imports.wbg.__wbindgen_is_object = function(arg0) {
             const val = getObject(arg0);
             const ret = typeof(val) === 'object' && val !== null;
+            _assertBoolean(ret);
             return ret;
         };
         imports.wbg.__wbindgen_is_string = function(arg0) {
             const ret = typeof(getObject(arg0)) === 'string';
+            _assertBoolean(ret);
             return ret;
         };
         imports.wbg.__wbindgen_is_undefined = function(arg0) {
             const ret = getObject(arg0) === undefined;
+            _assertBoolean(ret);
             return ret;
         };
         imports.wbg.__wbindgen_jsval_eq = function(arg0, arg1) {
             const ret = getObject(arg0) === getObject(arg1);
+            _assertBoolean(ret);
             return ret;
         };
         imports.wbg.__wbindgen_jsval_loose_eq = function(arg0, arg1) {
             const ret = getObject(arg0) == getObject(arg1);
+            _assertBoolean(ret);
             return ret;
         };
         imports.wbg.__wbindgen_memory = function() {
@@ -2403,6 +2701,9 @@ let wasm_bindgen;
         imports.wbg.__wbindgen_number_get = function(arg0, arg1) {
             const obj = getObject(arg1);
             const ret = typeof(obj) === 'number' ? obj : undefined;
+            if (!isLikeNone(ret)) {
+                _assertNum(ret);
+            }
             getDataViewMemory0().setFloat64(arg0 + 8 * 1, isLikeNone(ret) ? 0 : ret, true);
             getDataViewMemory0().setInt32(arg0 + 4 * 0, !isLikeNone(ret), true);
         };

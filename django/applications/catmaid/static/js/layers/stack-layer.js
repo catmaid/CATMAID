@@ -648,6 +648,11 @@
    */
   StackLayer.prototype.switchToMirror = function (mirrorId, force) {
     if (mirrorId === this.mirrorId && !force) return;
+    // If the referenced mirror doesn't exist and is no custom mirror, then
+    // don't attempt to switch.
+    if (this.stack.mirrors[mirrorId] === undefined && this.getCustomMirrorIds().indexOf(mirrorId) == -1) {
+      return;
+    }
     var newStackLayer = this.constructCopy({mirrorId: mirrorId});
     var layerKey = this.stackViewer.getLayerKey(this);
     this.stackViewer.replaceStackLayer(layerKey, newStackLayer);

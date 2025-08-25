@@ -294,6 +294,9 @@ Miscellaneous:
 - Block image datasets like N5 or Neuroglancer now don't lead to errors anymore
   when their size isn't anymore a multiple of the block size.
 
+- Restoring saved stack layer settings: a UI hang-up with fixed, caused by
+  endlessly switching mirrors to a non-existent mirror ID.
+
 ## Maintenance updates
 
 - Node distance measurements: computation of straight line distance has been

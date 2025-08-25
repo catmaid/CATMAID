@@ -392,14 +392,6 @@ let wasm_bindgen;
         return getFloat64ArrayMemory0().subarray(ptr / 8, ptr / 8 + len);
     }
 
-    let stack_pointer = 128;
-
-    function addBorrowedObject(obj) {
-        if (stack_pointer == 1) throw new Error('out of js stack');
-        heap[--stack_pointer] = obj;
-        return stack_pointer;
-    }
-
     function _assertClass(instance, klass) {
         if (!(instance instanceof klass)) {
             throw new Error(`expected instance of ${klass.name}`);
@@ -411,6 +403,14 @@ let wasm_bindgen;
         getBigUint64ArrayMemory0().set(arg, ptr / 8);
         WASM_VECTOR_LEN = arg.length;
         return ptr;
+    }
+
+    let stack_pointer = 128;
+
+    function addBorrowedObject(obj) {
+        if (stack_pointer == 1) throw new Error('out of js stack');
+        heap[--stack_pointer] = obj;
+        return stack_pointer;
     }
     function __wbg_adapter_54(arg0, arg1, arg2) {
         _assertNum(arg0);

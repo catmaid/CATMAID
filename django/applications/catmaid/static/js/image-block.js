@@ -78,7 +78,9 @@
 
       return blockPromise
         .then(block_data => {
-          for (let {block, etag, gridPosition} of block_data) {
+          for (let block_entry of block_data) {
+            if (!block_entry) continue;
+            let {block, etag, gridPosition} = block_entry;
             if (!block || !etag || !gridPosition) continue;
             let blockKey = [zoomLevel, ...gridPosition].join('/');
             this._stateIDs.set(blockKey, etag);
@@ -101,7 +103,9 @@
           () => this.source.readBlock(...zoomBlockCoord));
 
       return blockPromise
-          .then(({block, etag}) => {
+          .then(block_data => {
+            if (!block_data) return undefined;
+            const {block, etag} = block_data;
             this._stateIDs.set(blockKey, etag);
             this._cache.set(blockKey, block);
             this.queue.dispatch();

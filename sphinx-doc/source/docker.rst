@@ -9,6 +9,15 @@ locally, but no added data is persisted after a restart. With Docker-compose
 however, it is possible to keep added data. In both variants, a superuser is
 created by default with the username "admin" and the password "admin".
 
+.. warning::
+
+    Please be advised that if you use ``docker`` or ``docker-compose`` to deploy
+    CATMAID, you likely need to take extra steps to ensure the security of the
+    server. In its default configuration, Docker will make published ports
+    available on all interfaces, bypassing the UFW
+    firewall <https://github.com/chaifeng/ufw-docker>`_. Make sure you read this,
+    if you are using UFW (like e.g. on Ubuntu).
+
 CATMAID demo with Docker
 ------------------------
 

@@ -197,7 +197,7 @@ class WritableStackListView(APIView):
         """
         project = Project.objects.get(pk=project_id)
         info = []
-        for writable_stack in project.writable_stacks.all():
+        for writable_stack in project.writable_stacks.all().order_by('name'):
             info.append({
                 'id': writable_stack.id,
                 'user_id': writable_stack.user_id,

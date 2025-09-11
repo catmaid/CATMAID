@@ -9,6 +9,7 @@ from math import cos, sin, radians
 import os
 import os.path
 import math
+import msgpack
 import numpy as np
 from PIL import Image as PILImage, TiffImagePlugin
 import requests
@@ -969,37 +970,60 @@ def write_block(request:HttpRequest, project_id=None, writable_stack_id=None) ->
 
     dataset_size = writable_stack.metadata.get('dataset_size')
     if not dataset_size:
-        raise ValueError('Need dataset_size parameter in writable stack metadata')
+        raise ValueError('Need parameter "dataset_size" in writable stack metadata')
 
-    data = request.POST.get('data')
-    if not data:
-        raise ValueError('Need data')
-    data = np.array(json.loads(data)).transpose([2, 1, 0])
+    compressed_data = request.POST.get('data')
+    if not compressed_data:
+        raise ValueError('Need parameter "data"')
 
-    data_bounds_json = request.POST.get('data_bounds')
-    if not data_bounds_json:
+    scale_level = request.POST.get('scale_level')
+    if scale_level is None:
+        raise ValueError('Need parameter "scale_level"')
+
+    data_bounds = get_request_list(request.POST, "data_bounds", map_fn=int)
+    if not data_bounds:
         raise ValueError('Need data_bounds paramaeter')
-    data_bounds = json.loads(data_bounds_json)
     if not isinstance(data_bounds, list) or len(data_bounds) != 2:
         raise ValueError('The data_bounds parameter needs to be a list of two lists')
     if not isinstance(data_bounds[0], list) or len(data_bounds[0]) != len(dataset_size):
-        raise ValueError('The first data_bounds list  needs to be a list with the correct dimensionality')
+        raise ValueError('The first data_bounds list needs to be a list with the correct dimensionality')
     if not isinstance(data_bounds[1], list) or len(data_bounds[1]) != len(dataset_size):
-        raise ValueError('The first data_bounds list  needs to be a list with the correct dimensionality')
+        raise ValueError('The first data_bounds list needs to be a list with the correct dimensionality')
 
-    dataset = writable_stack.metadata.get('dataset', 'volumes/main')
+    dataset = writable_stack.metadata.get('dataset', '')
     dtype = writable_stack.metadata.get('dtype', 'float64')
     compression_name = writable_stack.metadata.get('compression', 'GZIP')
     compression = getattr(pyn5.CompressionType, compression_name)
     compression_opts = writable_stack.metadata.get('compression_opts', -1)
     block_size = writable_stack.metadata.get('block_size', [1, 1, 1])
 
-    # TODO: Try to create only if not yet present
-    pyn5.create_dataset(writable_stack.path, dataset, dataset_size,
-                        block_size, dtype.upper())
+    compression = request.POST.get('compression')
+    if not compression or compression == 'raw':
+        block_data = json.loads(f'[{compressed_data}]')
+    elif compression == 'msgpack':
+        byte_list = bytes(json.loads(f'[{compressed_data}]'))
+        block_data = msgpack.unpackb(byte_list)
+    else:
+        raise ValueError(f'Unsupported compression: {compression}')
 
-    n5 = pyn5.open(writable_stack.path, dataset, dtype.upper(), False)
-    pyn5.write(n5, (np.array(data_bounds[0]), np.array(data_bounds[1])), data, dtype)
+    # We expect data to be a list of lists of lists, where X is the outer list,
+    # Y the second level and Z the last level.
+    data = np.array(block_data).reshape(block_size)
+
+    # TODO: Try to create only if not yet present
+    full_path = os.path.join(settings.MEDIA_ROOT,
+                                settings.MEDIA_WRITABLE_STACK_SUBDIRECTORY,
+                                writable_stack.path)
+    try:
+        pyn5.create_dataset(full_path, dataset, dataset_size,
+                            block_size, dtype.upper())
+    except ValueError:
+        # Assume the dataset exists already
+        pass
+
+    dataset += f"s{scale_level}"
+    n5 = pyn5.open(full_path, dataset, dtype.lower(), False)
+    pyn5.write(n5, (np.array(data_bounds[0]), np.array(data_bounds[1]) + 1), data, dtype)
 
     writable_stack.metadata['last_update_time'] = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
     writable_stack.metadata['last_update_bounds'] = data_bounds

@@ -385,9 +385,12 @@
         });
     }
 
-    writeBlock(projectId, writableStackId, zoomLevel, x, y, z, block, format='n5') {
+    writeBlock(projectId, zoomLevel, x, y, z, block) {
       let blockCoord = CATMAID.tools.permute([x, y, z], this.recipDimPerm);
-      return this._blockCache.writeBlock(projectId, writableStackId, zoomLevel, ...blockCoord, block, format);
+      // First, write to cache to update UI
+      // TODO: Introduce pinning so that this block isn't removed until it is
+      // written to server?
+      this._blockCache.setBlock(zoomLevel, ...blockCoord, block);
     }
 
     _sliceBlock(block, blockZ) {

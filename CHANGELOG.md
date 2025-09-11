@@ -48,6 +48,12 @@ Data sources:
 - Neuroglancer Precomputed URLs that start with `gs://` are rewritten on the fly
   to use Google Cloud storage get API requess, improving CORS support.
 
+Painting tool:
+
+- A new tool allows to create per-user N5 files by painting on the dataset. This
+  tool needs to be enabled for users that should have it available (admin
+  interface).
+
 Cropping tool:
 
 - Neuroglancer Precomputed datasets (sharded and unsharded) are now supported

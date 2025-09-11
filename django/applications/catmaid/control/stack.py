@@ -281,7 +281,20 @@ class WritableStackListView(APIView):
         # Create N5 skeleton manually, because the cloud-volume files don't seem
         # to be compatible.
         root_attributes = {
-            "n5": "2.1.3"
+            "n5": "2.1.3",
+            "pixelResolution": {
+                "unit": "um",
+                "dimensions": [
+                    metadata['resolution'][0],
+                    metadata['resolution'][1],
+                    metadata['resolution'][2],
+                ]
+            },
+            "downsamplingFactors": [[
+                scale_level.x,
+                scale_level.y,
+                scale_level.z,
+            ] for scale_level in stack.downsample_factors]
         }
         scale_attributes = []
         for n, scale_level in enumerate(stack.downsample_factors):

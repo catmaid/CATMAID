@@ -82,6 +82,8 @@
     let isDrawing = false;
     // All currently available writable stacks for the active stack viewer.
     let writableStacks = new Map();
+    // A central deduplicator is used for writing operations
+    this.writeDeduper = new CATMAID.CoalescingPromiseDeduplicator();
 
     const actions = [];
 
@@ -336,6 +338,13 @@
      */
     this.getActiveNodeStackViewer = function() {
       return activeStackViewer;
+    };
+
+    /**
+     * Return the presently active writable stack (if any).
+     */
+    this.getActiveWritableStack = function() {
+      return activeWritableStack;
     };
 
     /**

@@ -14,6 +14,7 @@
     // The stack viewer is needed by the PixiLayer constructor
     this.stackViewer = stackViewer;
     this.dataLayer = dataLayer;
+    this.paintingTool = tool;
     //CATMAID.PixiLayer.call(this);
 
     this.view = document.createElement('canvas');
@@ -186,8 +187,9 @@
 
     // Draw a circle into the data layer's cache
     if (!(this.dataLayer instanceof CATMAID.PixiImageBlockLayer)) {
-      CATMAID.warn('Painting data layer has wrong layer type');
-      return;
+      const msg = 'Painting data layer has wrong layer type';
+      CATMAID.warn(msg);
+      return Promise.reject(CATMAID.ValueError(msg));
     }
 
     // Convert screen coordinates to voxel coordinates. Convert voxel
@@ -244,13 +246,16 @@
       Math.floor(voxelPosZ /  blockSize[2]),
     ];
 
+    // FIXME: This should be handled more nicely
+    if (blockCoord[0] < 0 || blockCoord[1] < 0) {
+      return Promise.resolve();
+    }
+
     // Assume block is in cache
-    this.dataLayer._readBlock(this.stackViewer.s, ...blockCoord)
+    return this.dataLayer._readBlock(this.stackViewer.s, ...blockCoord)
       .then((block) => {
         if (!block) {
-          // No block found in cache and on server
-          CATMAID.msg('success', 'A new block is created, because no existing block is found');
-          // TODO: Init new block
+          // No block found in cache and on server, create new block
           const backgroundValue = 0;
           block = nj.zeros(blockSize, dataType);
           block.assign(backgroundValue, false);
@@ -272,17 +277,70 @@
         for (let x = -halfBrushSize; x <= halfBrushSize; x++) {
           for (let y = -halfBrushSize; y <= halfBrushSize; y++) {
             const sqDist = x * x + y * y;
-            if (sqDist <= sqBrushSize) {
+            if (sqDist <= sqBrushSize && (relVoxelPos[0] + x) >= 0 && (relVoxelPos[1] + y) >= 0) {
               block.set(relVoxelPos[0] + x, relVoxelPos[1] + y, relVoxelPos[2], this.value);
             }
           }
         }
 
-        // Write block back to server. This is done asynchronously in regular
-        // intervals (if changes happen).
-        return this.dataLayer.writeBlock(project.id, this.stackViewer.s, zoom, ...blockCoord, block);
-      })
-      .catch(CATMAID.handleError);
+        const projectId = project.id;
+
+        // Write block to data layer cache, to display it quickly.
+        // TODO: Pin unsaved changed blocks in cache, because cache is used
+        // below to get latest actual block data.
+        this.dataLayer.writeBlock(projectId, zoom, ...blockCoord, block);
+
+        const activeWritableStackId = this.paintingTool.getActiveWritableStack();
+
+        if (!activeWritableStackId) {
+          CATMAID.warn('No active writable stack selected');
+          return;
+        }
+
+        // Second, write to back-end asynchronously. De-duplicate request to write
+        // data back and queue the write request. For this, always use latest
+        // block data available. This is done instead of regular write
+        // operations (like every minute). # TODO: Test if this is reasonable.
+        const url = `${projectId}/writable-stacks/${activeWritableStackId}/write-block`;
+        return this.paintingTool.writeDeduper.dedup(
+          `${url}-${blockCoord.join('-')}`,
+          () => {
+            const getMostRecentBlock = this.dataLayer._readBlock(this.stackViewer.s, ...blockCoord);
+
+            return getMostRecentBlock.then(mostRecentBlock => {
+              return CATMAID.fetch({
+                  url: url,
+                  method: 'POST',
+                  data: {
+                    scale_level: 0,
+                    //compression: 'raw',
+                    //data: mostRecentBlock.tolist().join(','),
+                    compression: 'msgpack',
+                    // msgpack data is sent as string for now.
+                    // TODO: Send all parameters as single JSON.
+                    data: msgpack.encode(mostRecentBlock.tolist()).join(','),
+                    data_bounds: [
+                      [
+                        blockCoord[0] * blockSize[0],
+                        blockCoord[1] * blockSize[1],
+                        blockCoord[2] * blockSize[2],
+                      ],
+                      [
+                        (blockCoord[0] + 1) * blockSize[0] - 1,
+                        (blockCoord[1] + 1) * blockSize[1] - 1,
+                        (blockCoord[2] + 1) * blockSize[2] - 1,
+                      ]
+                    ],
+                  },
+                  api: this.api,
+                })
+                .then(response => {
+                  console.log(response);
+                });
+            });
+          })
+          .catch(CATMAID.handleError);
+      });
   };
 
   // Export layer into CATMAID namespace

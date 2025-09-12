@@ -304,14 +304,14 @@ class StackMirrorForm(forms.ModelForm):
 
 class ProjectStackInline(admin.TabularInline):
     model = ProjectStack
-    extra = 1
+    extra = 0
     max_num = 20
     raw_id_fields = ("stack",)
 
 
 class StackStackGroupInline(admin.TabularInline):
     model = StackStackGroup
-    extra = 1
+    extra = 0
     max_num = 10
     raw_id_fields = ('stack_group',)
     verbose_name = 'Stack group member'
@@ -321,7 +321,7 @@ class StackStackGroupInline(admin.TabularInline):
 class StackMirrorInline(admin.TabularInline):
     model = StackMirror
     form = StackMirrorForm
-    extra = 1
+    extra = 0
     max_num = 10
     verbose_name = 'Stack mirror'
     verbose_name_plural = 'Stack mirrors'

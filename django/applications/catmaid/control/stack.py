@@ -298,16 +298,26 @@ class WritableStackListView(APIView):
         }
         scale_attributes = []
         for n, scale_level in enumerate(stack.downsample_factors):
+            dimensions = [
+                int(metadata['dataset_size'][0] / scale_level.x),
+                int(metadata['dataset_size'][1] / scale_level.y),
+                int(metadata['dataset_size'][2] / scale_level.z),
+            ]
+            resolution = [
+                metadata['resolution'][0] / scale_level.x,
+                metadata['resolution'][1] / scale_level.y,
+                metadata['resolution'][2] / scale_level.z,
+            ]
             scale_attributes.append({
                 "dataType": metadata['dtype'],
                 "compression": {
                     "type": encoding,
                 },
                 "blockSize": metadata['block_size'],
-                "dimensions": metadata['dataset_size'],
+                "dimensions": dimensions,
                 "pixelResolution": {
                     "unit": "um",
-                    "dimensions": metadata['resolution'],
+                    "dimensions": resolution,
                 },
                 "downsamplingFactors": [
                     scale_level.x,

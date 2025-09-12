@@ -1021,7 +1021,7 @@ def write_block(request:HttpRequest, project_id=None, writable_stack_id=None) ->
         # Assume the dataset exists already
         pass
 
-    dataset += f"s{scale_level}"
+    dataset += f"{'/' if len(dataset) else ''}s{scale_level}"
     n5 = pyn5.open(full_path, dataset, dtype.lower(), False)
     pyn5.write(n5, (np.array(data_bounds[0]), np.array(data_bounds[1]) + 1), data, dtype)
 

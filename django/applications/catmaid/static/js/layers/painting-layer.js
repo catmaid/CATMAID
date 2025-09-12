@@ -207,19 +207,14 @@
 
     // Convert screen coordinates to voxel coordinates. Convert voxel
     // coordinates into block coordinates.
+    let zoom = this.stackViewer.s;
     const screenPosition = this.stackViewer.screenPosition();
-    const voxelPosX = screenPosition.left +
-        x / this.stackViewer.scale / this.stackViewer.primaryStack.anisotropy(0).x;
-    const voxelPosY = screenPosition.top  +
-        y / this.stackViewer.scale / this.stackViewer.primaryStack.anisotropy(0).y;
+    const voxelPosX = (screenPosition.left +
+        x * Math.pow(2, zoom) / this.stackViewer.primaryStack.anisotropy(0).x) / Math.pow(2, zoom);
+    const voxelPosY = (screenPosition.top  +
+        y * Math.pow(2, zoom) / this.stackViewer.primaryStack.anisotropy(0).y) / Math.pow(2, zoom);
     const voxelPosZ = this.stackViewer.z;
 
-    const datasetSize = activeWritableStack.metadata.dataset_size;
-    if (!datasetSize) {
-      throw new CATMAID.ValueError('Need writable stacke metadata field: dataset_size');
-    }
-
-    let zoom = this.stackViewer.s;
     var mag = 1.0;
 
     //var anisotropy = this.dataLayer.stack.anisotropy(zoom);
@@ -255,9 +250,17 @@
       }
     }
 
-    // TODO: Maybe better get from active writable stack?
-    const blockSize = this.dataLayer.tileSource.blockSize(this.stackViewer.s);
+    // Use meta data from data layer, because it actually shows the
+    // server-side N5 file.
     const dataType = this.dataLayer.tileSource.dataType();
+    const blockSize = this.dataLayer.tileSource.blockSize(this.stackViewer.s);
+    const blockCoordBounds = this.dataLayer.tileSource.blockCoordBounds(zoom);
+    // The +1 is needed, because the bounds are inclusice.
+    const datasetSize = [
+      (blockCoordBounds.max[0] - blockCoordBounds.min[0] + 1) * blockSize[0],
+      (blockCoordBounds.max[1] - blockCoordBounds.min[1] + 1) * blockSize[1],
+      (blockCoordBounds.max[2] - blockCoordBounds.min[2] + 1) * blockSize[2],
+    ];
     const blockShape = [
       datasetSize[0] / blockSize[0],
       datasetSize[1] / blockSize[1],
@@ -300,8 +303,7 @@
                 method: 'POST',
                 parallel: true,
                 data: {
-                  // TODO: Allow other scale levels
-                  scale_level: 0,
+                  scale_level: bS,
                   //compression: 'raw',
                   //data: mostRecentBlock.tolist().join(','),
                   compression: 'msgpack',

@@ -341,10 +341,17 @@
     };
 
     /**
+     * Return the ID of the presently active writable stack (if any).
+     */
+    this.getActiveWritableStackId = function() {
+      return activeWritableStack;
+    };
+
+    /**
      * Return the presently active writable stack (if any).
      */
     this.getActiveWritableStack = function() {
-      return activeWritableStack;
+      return activeWritableStack ? writableStacks.get(activeWritableStack) : null;
     };
 
     /**

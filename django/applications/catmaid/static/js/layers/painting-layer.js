@@ -153,8 +153,13 @@
 
   /**
    * Paint into data layer with current settings.
+   *
+   * @param shiftX float Shift painting by this amount in X.
+   * @param shiftY float Shift painting by this amount in Y.
    */
-  PaintingLayer.prototype.paintAt = function(x, y, prevX, prevY) {
+  PaintingLayer.prototype.paintAt = function(x, y, prevX, prevY, shiftX=0, shiftY=0) {
+    const projectId = project.id;
+
     if (prevX === undefined || prevX === null) {
       prevX = x;
     }
@@ -185,6 +190,14 @@
       }
     }
 
+    const activeWritableStack = this.paintingTool.getActiveWritableStack();
+    const activeWritableStackId = this.paintingTool.getActiveWritableStackId();
+
+    if (!activeWritableStackId || !activeWritableStack) {
+      CATMAID.warn('No active writable stack selected');
+      return;
+    }
+
     // Draw a circle into the data layer's cache
     if (!(this.dataLayer instanceof CATMAID.PixiImageBlockLayer)) {
       const msg = 'Painting data layer has wrong layer type';
@@ -200,6 +213,11 @@
     const voxelPosY = screenPosition.top  +
         y / this.stackViewer.scale / this.stackViewer.primaryStack.anisotropy(0).y;
     const voxelPosZ = this.stackViewer.z;
+
+    const datasetSize = activeWritableStack.metadata.dataset_size;
+    if (!datasetSize) {
+      throw new CATMAID.ValueError('Need writable stacke metadata field: dataset_size');
+    }
 
     let zoom = this.stackViewer.s;
     var mag = 1.0;
@@ -237,8 +255,14 @@
       }
     }
 
+    // TODO: Maybe better get from active writable stack?
     const blockSize = this.dataLayer.tileSource.blockSize(this.stackViewer.s);
     const dataType = this.dataLayer.tileSource.dataType();
+    const blockShape = [
+      datasetSize[0] / blockSize[0],
+      datasetSize[1] / blockSize[1],
+      datasetSize[2] / blockSize[2],
+    ];
 
     let blockCoord = [
       Math.floor(voxelPosX /  blockSize[0]),
@@ -251,17 +275,62 @@
       return Promise.resolve();
     }
 
+    let ensureBlock = (block) => {
+      if (!block) {
+        // No block found in cache and on server, create new block
+        const backgroundValue = 0;
+        block = nj.zeros(blockSize, dataType);
+        block.assign(backgroundValue, false);
+        // TODO: Needed?
+        block = block.transpose(...this.dataLayer.tileSource.sliceDims);
+      }
+      return block;
+    };
+
+    let writeBlock = (bS, bX, bY, bZ, block) => {
+      const url = `${projectId}/writable-stacks/${activeWritableStackId}/write-block`;
+      return this.paintingTool.writeDeduper.dedup(
+        `${url}-${bX}-${bY}-${bZ}-${bS}`,
+        () => {
+          const getMostRecentBlock = this.dataLayer._readBlock(bS, bX, bY, bZ);
+
+          return getMostRecentBlock.then(mostRecentBlock => {
+            return CATMAID.fetch({
+                url: url,
+                method: 'POST',
+                data: {
+                  // TODO: Allow other scale levels
+                  scale_level: 0,
+                  //compression: 'raw',
+                  //data: mostRecentBlock.tolist().join(','),
+                  compression: 'msgpack',
+                  // msgpack data is sent as string for now.
+                  // TODO: Send all parameters as single JSON.
+                  data: msgpack.encode(mostRecentBlock.tolist()).join(','),
+                  data_bounds: [
+                    [
+                      bX * blockSize[0],
+                      bY * blockSize[1],
+                      bZ * blockSize[2],
+                    ],
+                    [
+                      (bX + 1) * blockSize[0] - 1,
+                      (bY + 1) * blockSize[1] - 1,
+                      (bZ + 1) * blockSize[2] - 1,
+                    ]
+                  ],
+                },
+                api: this.api,
+              });
+          });
+        })
+        .catch(CATMAID.handleError);
+    };
+
     // Assume block is in cache
     return this.dataLayer._readBlock(this.stackViewer.s, ...blockCoord)
       .then((block) => {
-        if (!block) {
-          // No block found in cache and on server, create new block
-          const backgroundValue = 0;
-          block = nj.zeros(blockSize, dataType);
-          block.assign(backgroundValue, false);
-          // TODO: Needed?
-          block = block.transpose(...this.dataLayer.tileSource.sliceDims);
-        }
+        block = ensureBlock(block);
 
         // Update block data and write to cache if not already there. The block is
         // a nj.NdArray instance.
@@ -274,72 +343,93 @@
         // Draw a coarse circle
         const halfBrushSize = Math.floor(this.brushSize / 2.0);
         const sqBrushSize = halfBrushSize * halfBrushSize;
+        // Remember painting requests into adjacent blocks by a key of block
+        // coordinates (x,y) and the data to paint.
+        const adjacentBlockPainting = new Map();
+        const seenLocations = new Set();
         for (let x = -halfBrushSize; x <= halfBrushSize; x++) {
           for (let y = -halfBrushSize; y <= halfBrushSize; y++) {
             const sqDist = x * x + y * y;
-            if (sqDist <= sqBrushSize && (relVoxelPos[0] + x) >= 0 && (relVoxelPos[1] + y) >= 0) {
-              block.set(relVoxelPos[0] + x, relVoxelPos[1] + y, relVoxelPos[2], this.value);
+            const curPos = [
+              relVoxelPos[0] + x + shiftX,
+              relVoxelPos[1] + y + shiftY,
+            ];
+            if (sqDist <= sqBrushSize) {
+              if (curPos[0] < 0 ||
+                  curPos[1] < 0 ||
+                  curPos[0] >= blockSize[0] ||
+                  curPos[1] >= blockSize[1])
+              {
+                // Paint in adjacent block with the following block coordinate
+                let adjBlockCoord = [
+                  blockCoord[0] + Math.floor(curPos[0] / blockSize[0]),
+                  blockCoord[1] + Math.floor(curPos[1] / blockSize[1]),
+                ];
+                // If this block coordinate is outside of the dataset
+                // dimensions, ignore it.
+                if (adjBlockCoord[0] < 0 ||
+                    adjBlockCoord[1] < 0 ||
+                    adjBlockCoord[0] > blockShape[0] ||
+                    adjBlockCoord[1] > blockShape[1]) {
+                  continue;
+                }
+                let adjBlockKey = `${adjBlockCoord[0]},${adjBlockCoord[1]}`;
+                let adjBlock = adjacentBlockPainting.get(adjBlockKey);
+                if (!adjBlock) {
+                  adjBlock = [];
+                  adjacentBlockPainting.set(adjBlockKey, adjBlock);
+                }
+                // Don't save same position twice
+                const adjLocationString = `${curPos[0]}-${curPos[1]}-${relVoxelPos[2]}`;
+                if (!seenLocations.has(adjLocationString)) {
+                  adjBlock.push([
+                      CATMAID.tools.mod(curPos[0], blockSize[0]),
+                      CATMAID.tools.mod(curPos[1], blockSize[1]),
+                      relVoxelPos[2]
+                  ]);
+                  seenLocations.add(adjLocationString);
+                }
+              } else {
+                block.set(curPos[0], curPos[1], relVoxelPos[2], this.value);
+              }
             }
           }
         }
-
-        const projectId = project.id;
 
         // Write block to data layer cache, to display it quickly.
         // TODO: Pin unsaved changed blocks in cache, because cache is used
         // below to get latest actual block data.
         this.dataLayer.writeBlock(projectId, zoom, ...blockCoord, block);
 
-        const activeWritableStackId = this.paintingTool.getActiveWritableStack();
-
-        if (!activeWritableStackId) {
-          CATMAID.warn('No active writable stack selected');
-          return;
-        }
-
         // Second, write to back-end asynchronously. De-duplicate request to write
         // data back and queue the write request. For this, always use latest
         // block data available. This is done instead of regular write
         // operations (like every minute). # TODO: Test if this is reasonable.
-        const url = `${projectId}/writable-stacks/${activeWritableStackId}/write-block`;
-        return this.paintingTool.writeDeduper.dedup(
-          `${url}-${blockCoord.join('-')}`,
-          () => {
-            const getMostRecentBlock = this.dataLayer._readBlock(this.stackViewer.s, ...blockCoord);
+        const blockWritePromises = [
+          writeBlock(this.stackViewer.s, ...blockCoord, block)
+        ];
 
-            return getMostRecentBlock.then(mostRecentBlock => {
-              return CATMAID.fetch({
-                  url: url,
-                  method: 'POST',
-                  data: {
-                    scale_level: 0,
-                    //compression: 'raw',
-                    //data: mostRecentBlock.tolist().join(','),
-                    compression: 'msgpack',
-                    // msgpack data is sent as string for now.
-                    // TODO: Send all parameters as single JSON.
-                    data: msgpack.encode(mostRecentBlock.tolist()).join(','),
-                    data_bounds: [
-                      [
-                        blockCoord[0] * blockSize[0],
-                        blockCoord[1] * blockSize[1],
-                        blockCoord[2] * blockSize[2],
-                      ],
-                      [
-                        (blockCoord[0] + 1) * blockSize[0] - 1,
-                        (blockCoord[1] + 1) * blockSize[1] - 1,
-                        (blockCoord[2] + 1) * blockSize[2] - 1,
-                      ]
-                    ],
-                  },
-                  api: this.api,
-                })
-                .then(response => {
-                  console.log(response);
-                });
-            });
-          })
-          .catch(CATMAID.handleError);
+        // Paint in adjacent blocks:
+        for (let [key, paintingPositions] of adjacentBlockPainting) {
+          // We don't expect many entries here, so the following should be okay.
+          let [adjX, adjY] = key.split(',').map(Number);
+          // We currently assume only planar painting
+          let adjZ = blockCoord[2];
+          blockWritePromises.push(
+              this.dataLayer._readBlock(this.stackViewer.s, adjX, adjY, adjZ)
+              .then(adjBlock => {
+                  adjBlock = ensureBlock(adjBlock);
+                  for (let [paintX, paintY, paintZ] of paintingPositions) {
+                    adjBlock.set(paintX, paintY, paintZ, this.value);
+                  }
+                  // Write block back to cache and back-end
+                  this.dataLayer.writeBlock(projectId, zoom, adjX, adjY, adjZ, adjBlock);
+                  return writeBlock(this.stackViewer.s, adjX, adjY, adjZ, adjBlock);
+              })
+          );
+        }
+
+        return Promise.all(blockWritePromises);
       });
   };
 

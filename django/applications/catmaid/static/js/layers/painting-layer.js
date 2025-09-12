@@ -298,6 +298,7 @@
             return CATMAID.fetch({
                 url: url,
                 method: 'POST',
+                parallel: true,
                 data: {
                   // TODO: Allow other scale levels
                   scale_level: 0,

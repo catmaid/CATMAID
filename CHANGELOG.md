@@ -252,6 +252,9 @@ Miscellaneous:
   is loaded. It won't be displayed anymore when simply the front page is opened
   without a project being loaded.
 
+- The import/export widget now can export treenode archives and connector
+  archives as multipage TIFF files.
+
 ### Bug fixes
 
 - Neuron Search: neurons that don't have any annotations are now returned as
@@ -302,6 +305,9 @@ Miscellaneous:
 
 - Restoring saved stack layer settings: a UI hang-up with fixed, caused by
   endlessly switching mirrors to a non-existent mirror ID.
+
+- Treenode/connector export: the X, Y and Z radius now properly limit the width
+  and height of the image. Before, the maximum X, Y and Z was short one pixel.
 
 ## Maintenance updates
 

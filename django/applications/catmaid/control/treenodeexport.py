@@ -12,7 +12,7 @@ from django.http import HttpRequest, JsonResponse
 from django.db.models import Count
 
 from catmaid.control.authentication import requires_user_role
-from catmaid.control.common import get_relation_to_id_map, id_generator
+from catmaid.control.common import get_relation_to_id_map, id_generator, get_request_bool
 from catmaid.control.cropping import (collect_stack_mirros, CropJob,
                                       extract_substack, ImageRetrievalError)
 from catmaid.models import ClassInstanceClassInstance, TreenodeConnector, \
@@ -29,7 +29,7 @@ class SkeletonExportJob:
     """ A container with data needed for exporting things related to skeletons.
     """
     def __init__(self, user, project_id, stack_id, skeleton_ids,
-            x_radius, y_radius, z_radius, sample):
+            x_radius, y_radius, z_radius, sample, one_file_per_slice):
         # Sanity checks
         if not skeleton_ids:
             raise Exception("Please specify at least on skeleton ID")
@@ -46,11 +46,10 @@ class SkeletonExportJob:
             raise Exception("The x_radius, y_radius and z_radius parameters have " \
                     "to be numbers!")
         try:
-            # Expect a boolean or a number
-            sample = bool(int(sample))
+            # Expect a boolean
+            sample = bool(sample)
         except (ValueError, TypeError) as e:
-            raise ValueError("The sample parameter has to be a number or a" \
-                    "boolean!")
+            raise ValueError("The sample parameter has to be a boolean!")
 
         # Store data
         self.user = user
@@ -61,6 +60,7 @@ class SkeletonExportJob:
         self.y_radius = y_radius
         self.z_radius = z_radius
         self.sample = sample
+        self.one_file_per_slice = one_file_per_slice
 
 class TreenodeExporter:
     def __init__(self, job):
@@ -153,34 +153,46 @@ class TreenodeExporter:
         """ Exports a treenode. Expects the output path to exist
         and be writable.
         """
+        stack = Stack.objects.get(id=self.job.stack_id)
+
         # Calculate bounding box for current connector
         x_min = treenode.location_x - self.job.x_radius
-        x_max = treenode.location_x + self.job.x_radius
         y_min = treenode.location_y - self.job.y_radius
-        y_max = treenode.location_y + self.job.y_radius
         z_min = treenode.location_z - self.job.z_radius
-        z_max = treenode.location_z + self.job.z_radius
+        # Because the max values are exclusive, we have to add one step in
+        # physical coordinates.
+        x_max = treenode.location_x + self.job.x_radius + stack.resolution.x
+        y_max = treenode.location_y + self.job.y_radius + stack.resolution.y
+        z_max = treenode.location_z + self.job.z_radius + stack.resolution.z
         rotation_cw = 0
         zoom_level = 0
 
-        # Create a single file for each section (instead of a mulipage TIFF)
-        stack = Stack.objects.get(id=self.job.stack_id)
         stack_mirror_ids = collect_stack_mirros([self.job.stack_id])
         crop_self = CropJob(self.job.user, self.job.project_id,
                 stack_mirror_ids, x_min, x_max, y_min, y_max, z_min, z_max,
                 rotation_cw, zoom_level, single_channel=True)
         cropped_stack = extract_substack(crop_self)
-        # Save each file in output path
+
+        # Create a single file for each section (instead of a mulipage TIFF)
         output_path = self.create_path(treenode)
-        for i, img in enumerate(cropped_stack):
-            # Save image in output path, named after the treenode ID and the
-            # image center's coordinates, rounded to full integers.
-            x = int(treenode.location_x + 0.5)
-            y = int(treenode.location_y + 0.5)
-            z = int(z_min + i * stack.resolution.z + 0.5)
+        x = int(treenode.location_x + 0.5)
+        y = int(treenode.location_y + 0.5)
+        if self.job.one_file_per_slice:
+            # Save each file in output path
+            for i, img in enumerate(cropped_stack):
+                # Save image in output path, named after the treenode ID and the
+                # image center's coordinates, rounded to full integers.
+                z = int(z_min + i * stack.resolution.z + 0.5)
+                image_name = f"{treenode.id}-{x}-{y}-{z}.tiff"
+                treenode_image_path = os.path.join(output_path, image_name)
+                img.save(treenode_image_path)
+        else:
+            z = int(treenode.location_z + 0.5)
             image_name = f"{treenode.id}-{x}-{y}-{z}.tiff"
             treenode_image_path = os.path.join(output_path, image_name)
-            img.save(treenode_image_path)
+            metadata = crop_self.create_tiff_metadata(len(cropped_stack))
+            cropped_stack[0].save(treenode_image_path, compression="raw", save_all=True,
+                    append_images=cropped_stack[1:], tiffinfo=metadata)
 
     def post_process(self, nodes) -> None:
         """ Create a meta data file for all the nodes passed (usually all of the
@@ -330,34 +342,47 @@ class ConnectorExporter(TreenodeExporter):
         and writable.
         """
         connector = connector_link.connector
+        stack = Stack.objects.get(id=self.job.stack_id)
 
         # Calculate bounding box for current connector
         x_min = connector.location_x - self.job.x_radius
-        x_max = connector.location_x + self.job.x_radius
         y_min = connector.location_y - self.job.y_radius
-        y_max = connector.location_y + self.job.y_radius
         z_min = connector.location_z - self.job.z_radius
-        z_max = connector.location_z + self.job.z_radius
+        # Because the max values are exclusive, we have to add one step in
+        # physical coordinates.
+        x_max = connector.location_x + self.job.x_radius + stack.resolution.x
+        y_max = connector.location_y + self.job.y_radius + stack.resolution.y
+        z_max = connector.location_z + self.job.z_radius + stack.resolution.z
         rotation_cw = 0
         zoom_level = 0
 
         # Create a single file for each section (instead of a mulipage TIFF)
         stack_mirror_ids = collect_stack_mirros([self.job.stack_id])
-        crop_self = CropJob(self.job.user, stack_mirror_ids,
-                self.job.stack_id, x_min, x_max, y_min, y_max, z_min, z_max,
+        crop_self = CropJob(self.job.user, self.job.project_id, stack_mirror_ids,
+                x_min, x_max, y_min, y_max, z_min, z_max,
                 rotation_cw, zoom_level, single_channel=True)
         cropped_stack = extract_substack(crop_self)
-        # Save each file in output path
-        connector_path = self.create_path(connector_link)
-        for i, img in enumerate(cropped_stack):
-            # Save image in output path, named after the image center's coordinates,
-            # rounded to full integers.
-            x = int(connector.location_x + 0.5)
-            y = int(connector.location_y + 0.5)
-            z = int(z_min + i * crop_self.stacks[0].resolution.z + 0.5)
+
+        # Create a single file for each section (instead of a mulipage TIFF)
+        output_path = self.create_path(connector_link)
+        x = int(connector.location_x + 0.5)
+        y = int(connector.location_y + 0.5)
+        if self.job.one_file_per_slice:
+            # Save each file in output path
+            for i, img in enumerate(cropped_stack):
+                # Save image in output path, named after the treenode ID and the
+                # image center's coordinates, rounded to full integers.
+                z = int(z_min + i * stack.resolution.z + 0.5)
+                image_name = f"{x}_{y}_{z}.tiff"
+                connector_image_path = os.path.join(output_path, image_name)
+                img.save(connector_image_path)
+        else:
+            z = int(connector.location_z + 0.5)
             image_name = f"{x}_{y}_{z}.tiff"
-            connector_image_path = os.path.join(connector_path, image_name)
-            img.write(connector_image_path)
+            connector_image_path = os.path.join(output_path, image_name)
+            metadata = crop_self.create_tiff_metadata(len(cropped_stack))
+            cropped_stack[0].save(connector_image_path, compression="raw", save_all=True,
+                    append_images=cropped_stack[1:], tiffinfo=metadata)
 
     def post_process(self, nodes) -> None:
         pass
@@ -470,11 +495,13 @@ def create_request_based_export_job(request, project_id):
     y_radius = request.POST.get('y_radius', None)
     z_radius = request.POST.get('z_radius', None)
     # Determine if a sample should be created
-    sample = request.POST.get('sample', None)
+    sample = get_request_bool(request.POST, 'sample', False)
+    # Whether to export one file per slice
+    one_file_per_slice = get_request_bool(request.POST, 'one_file_per_slice', False)
 
     # Create a new export job
     return SkeletonExportJob(request.user, project_id, stack_id, skeleton_ids,
-            x_radius, y_radius, z_radius, sample)
+            x_radius, y_radius, z_radius, sample, one_file_per_slice)
 
 @requires_user_role(UserRole.Browse)
 def export_connectors(request:HttpRequest, project_id=None) -> JsonResponse:

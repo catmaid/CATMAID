@@ -1280,6 +1280,7 @@ annotations, neuron name, connectors or partner neurons.
     dialog.z_in_sections = true;
     dialog.xy_radius = 100;
     dialog.z_radius = connector_export ? 10 : 0;
+    dialog.one_file_per_slice = false;
 
     // Add user interface
     dialog.appendMessage('Please select a source from where to get the ' +
@@ -1340,6 +1341,17 @@ annotations, neuron name, connectors or partner neurons.
       z_radius.parentNode.style.display = 'flex';
     }
 
+    // Add checkbox to select if one file per slice should be exported.
+    var one_file_per_slice_cb_p = document.createElement('p');
+    var one_file_per_slice_cb_l = document.createElement('label');
+    var one_file_per_slice_cb = document.createElement('input');
+    one_file_per_slice_cb.setAttribute('type', 'checkbox');
+    one_file_per_slice_cb_l.appendChild(one_file_per_slice_cb);
+    one_file_per_slice_cb_l.appendChild(document.createTextNode(
+        'Export one file per slice (instead of one multi-page TIFF per node)'));
+    one_file_per_slice_cb_p.appendChild(one_file_per_slice_cb_l);
+    dialog.dialog.appendChild(one_file_per_slice_cb_p);
+
     // Display total extent
     var extent_info_p = document.createElement('p');
     var extent_info = document.createTextNode('');
@@ -1349,19 +1361,19 @@ annotations, neuron name, connectors or partner neurons.
     // Add checkbox to create sample data for one connector
     var sample_cb_p = document.createElement('p');
     var sample_cb_l = document.createElement('label');
-    sample_cb_l.appendChild(document.createTextNode(
-        'Create single ' + entity + ' sample: '));
     var sample_cb = document.createElement('input');
     sample_cb.setAttribute('type', 'checkbox');
     sample_cb_l.appendChild(sample_cb);
+    sample_cb_l.appendChild(document.createTextNode(
+        'Create single ' + entity + ' sample: '));
     sample_cb_p.appendChild(sample_cb_l);
     dialog.dialog.appendChild(sample_cb_p);
 
     // Updates info text line
     var update_info = function() {
       // Get XY extent
-      var xy_extent_px = 2 * dialog.xy_radius;
-      var xy_extent_nm = 2 * dialog.xy_radius;
+      var xy_extent_px = 2 * dialog.xy_radius + 1;
+      var xy_extent_nm = 2 * dialog.xy_radius + stack.resolution.x;
       if (dialog.xy_in_px) {
         // Round pixel extent up, if XY is in nm mode
         xy_extent_nm = Math.round(xy_extent_px * stack.resolution.x);
@@ -1430,7 +1442,8 @@ annotations, neuron name, connectors or partner neurons.
         x_radius: dialog.xy_radius,
         y_radius: dialog.xy_radius,
         z_radius: dialog.z_radius,
-        sample: sample_cb.checked ? 1 : 0,
+        sample: sample_cb.checked,
+        one_file_per_slice: one_file_per_slice_cb.checked,
       };
       if (dialog.xy_in_px) {
         query_data.x_radius = Math.round(query_data.x_radius * stack.resolution.x);
@@ -1451,7 +1464,7 @@ annotations, neuron name, connectors or partner neurons.
         .catch(CATMAID.handleError);
     };
 
-    dialog.show(500, 'auto', true);
+    dialog.show(550, 'auto', true);
     update_info();
   }
 

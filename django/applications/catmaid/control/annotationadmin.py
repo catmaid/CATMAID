@@ -45,6 +45,8 @@ class SourceTypeForm(forms.Form):
             help_text="Should neuron annotations be imported?")
     import_tags = forms.BooleanField(initial=True, required=False,
             help_text="Should neuron node tags be imported?")
+    import_volumes = forms.BooleanField(initial=True, required=False,
+            help_text="Should volumes/meshes be imported?")
 
 
 class FileBasedImportForm(forms.Form):
@@ -154,7 +156,8 @@ class ImportingWizard(SessionWizardView):
             for p in projects:
                 copy_annotations(p.id, target_project.id,
                         scd['import_treenodes'], scd['import_connectors'],
-                        scd['import_annotations'], scd['import_tags'])
+                        scd['import_annotations'], scd['import_tags'],
+                        scd['import_volumes'])
 
         return render(self.request, IMPORT_TEMPLATES['done'])
 

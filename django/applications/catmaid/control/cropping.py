@@ -155,6 +155,8 @@ class CropJob(object):
             'zoomlevel': self.zoom_level,
             'rotation_cw': self.rotation_cw,
             'ref_stack_id': self.ref_stack.id,
+            'project_id': self.project.id
+            'project_name': self.project.title
         }
         artist_meta.update(bb)
         ifd[TiffImagePlugin.ARTIST] = json.dumps(artist_meta)

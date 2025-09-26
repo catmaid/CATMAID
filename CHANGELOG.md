@@ -299,6 +299,9 @@ Miscellaneous:
   pixels could appear on the right side and the bottom. This is fixed now and
   the entire space of the exported image is used correctly.
 
+- Cropping: tool: exported TIFF files now also include the project ID and title
+  in their metadata entries.
+
 - Review widget: fast reviewing using the W key sometimes raised an error
   regarding a missing intersection. This is fixed now (#2296)
 

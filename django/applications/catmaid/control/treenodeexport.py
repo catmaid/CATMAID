@@ -15,8 +15,8 @@ from catmaid.control.authentication import requires_user_role
 from catmaid.control.common import get_relation_to_id_map, id_generator, get_request_bool
 from catmaid.control.cropping import (collect_stack_mirros, CropJob,
                                       extract_substack, ImageRetrievalError)
-from catmaid.models import ClassInstanceClassInstance, TreenodeConnector, \
-        Message, User, UserRole, Stack, Treenode
+from catmaid.models import (ClassInstanceClassInstance, TreenodeConnector,
+                            Message, Project, User, UserRole, Stack, Treenode)
 
 from celery import shared_task
 
@@ -196,8 +196,12 @@ class TreenodeExporter:
 
     def post_process(self, nodes) -> None:
         """ Create a meta data file for all the nodes passed (usually all of the
-        ones queries before). This file is a table with the following columns:
+        ones queries before). This file is called nodes.csv and is a table with
+        the following columns:
         <treenode id> <parent id> <#presynaptic sites> <#postsynaptic sites> <x> <y> <z>
+
+        Additionally, a file metadata.json is created, which contains general
+        information on the referenced dataset.
         """
         # Get pre- and post synaptic sites
         presynaptic_to_rel = self.relation_map['presynaptic_to']
@@ -236,15 +240,26 @@ class TreenodeExporter:
             ls.append(line)
 
         # Save metdata for each skeleton to files
+        project = Project.objects.get(id=self.job.project_id)
+        image_stacks = list(map(lambda s: s.title, project.stacks.all()))
         for skid, metadata in skid_to_metadata.items():
             path = self.skid_to_neuron_folder[skid]
-            with open(os.path.join(path, 'metadata.csv'), 'w') as f:
+            with open(os.path.join(path, 'nodes.csv'), 'w') as f:
                 f.write("This CSV file contains meta data for CATMAID skeleton " \
-                        "%s. The columns represent the following data:\n" % skid)
+                        f"{skid}. The columns represent the following data:\n")
                 f.write("treenode-id, parent-id, # presynaptic sites, " \
                         "# postsynaptic sites, x, y, z\n")
                 for line in metadata:
-                    f.write("%s\n" % line)
+                    f.write(f"{line}\n")
+            with open(os.path.join(path, 'metadata.json'), 'w') as f:
+                f.write(json.dumps({
+                    'project_id': project.id,
+                    'project_name': project.title,
+                    'skeleton_id': skid,
+                    'user_id': self.job.user.id,
+                    'user_name': self.job.user.username,
+                    'image_stacks': image_stacks,
+                }, indent=4))
 
 class ConnectorExporter(TreenodeExporter):
     """ Most of the infrastructure can be used for both treenodes and

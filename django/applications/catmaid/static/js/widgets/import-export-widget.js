@@ -73,12 +73,14 @@ the selected neurons.
     The generated <em>tar.gz</em> archive contains one folder for every
     selected neuron, named after its ID. Such a folder contains image files for
     every treenode of the neuron's skeleton(s), named <em>treenode-id.tiff</em>.
-    Along those files a meta data file, named <em>metadata.csv</em>, is created.
-    It contains a table with meta data for every treenode ID (first column). The
-    remaining columns are <em>parent-id</em>, <em># presynaptic sites</em>,
-    <em># postsynaptic sites</em>, <em>x</em>, <em>y</em> and <em>z</em>. The
-    root node has no parent and its entry will have <em>null</em> in the
-    corresponding field in the meta data file.
+    Along those files two meta data files are created, named <em>nodes.csv</em>
+    and <em>metadata.json</em>. The former contains a table with meta data for
+    every treenode ID (first column). The remaining columns are
+    <em>parent-id</em>, <em># presynaptic sites</em>, <em># postsynaptic
+    sites</em>, <em>x</em>, <em>y</em> and <em>z</em>. The root node has no
+    parent and its entry will have <em>null</em> in the corresponding field in
+    the meta data file. The latter metadata file contains information on the
+    project, image stacks and exporting user.
   </li>
   <li>
     <a id='export-connector-archive' href='#'>

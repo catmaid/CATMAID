@@ -301,9 +301,10 @@ class CATMAIDConfig(AppConfig):
         # Initialize additional environment variables
         setup_matplotib_env()
 
-        # Init R interface, which is used by some parts of CATMAID
+        # Init R interface, which is used by some parts of CATMAID. Don't show
+        # start-up message.
         if r_available:
-            rpy2.rinterface_lib.embedded.set_initoptions(('rpy2', '--no-save',
+            rpy2.rinterface_lib.embedded.set_initoptions(('rpy2', '--quiet', '--no-save',
                     '--no-restore', '--no-init-file', '--no-environ', '--max-ppsize=500000'))
             rinterface.initr()
 

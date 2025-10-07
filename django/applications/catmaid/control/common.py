@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
 import json
+import logging
 import random
 import requests
 import string
+import sys
 
 from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
 
@@ -414,3 +416,22 @@ def get_last_concept_id():
         SELECT last_value FROM concept_id_seq;
     """)
     return cursor.fetchone()[0]
+
+
+def set_log_level(logger, verbosity=1):
+    """This sets the log level of the passed in logger according to the
+    management command verbosity.
+    """
+    handler = logging.StreamHandler(sys.stdout)
+    logger.addHandler(handler)
+
+    if verbosity == 0:
+        logger.setLevel(logging.WARN)
+    elif verbosity == 1:
+        logger.setLevel(logging.INFO)
+    elif verbosity > 1:
+        logger.setLevel(logging.DEBUG)
+
+    if verbosity > 2:
+        # Enable statements that reach the root logger.
+        logging.getLogger().setLevel(logging.DEBUG)

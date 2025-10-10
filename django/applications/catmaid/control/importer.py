@@ -32,9 +32,10 @@ from guardian.shortcuts import get_perms_for_model, assign_perm
 
 from catmaid.apps import get_system_user
 from catmaid.models import (BrokenSlice, Class, Relation, ClassClass, Location, Volume,
-        ClassInstance, Project, ClassInstanceClassInstance, Stack, StackGroup, DeepLink,
+        ClassInstance, Project, ClassInstanceClassInstance, Stack, StackGroup, DeepLink, Point,
         StackStackGroup, ProjectStack, StackClassInstance, StackGroupClassInstance, StackGroupRelation,
-        StackMirror, TILE_SOURCE_TYPE_CHOICES, User, Treenode, Connector, Concept, SkeletonSummary)
+        StackMirror, TILE_SOURCE_TYPE_CHOICES, User, Treenode, Connector, Concept, SkeletonSummary,
+        RegionOfInterest)
 from catmaid.fields import Double3D
 from catmaid.control.annotationadmin import copy_annotations
 from catmaid.control.common import urljoin, is_valid_host
@@ -1755,10 +1756,31 @@ class GenericImporter(AbstractImporter):
     def transform_volume(self, volume):
         """
         Update the volume locations of the passed in
-        volume object according to the stored transform.
+        volume object according to the stored transform. This is somewhat hacky,
+        because we parse and write the the geometry representation of the volume
+        directly. At the time of writing there was no convenient way to do this
+        in an alternative fashion.
+
+        We expect geometry data like this:
+
+        TIN Z (((18347.2525117247 15120.551976926 15240.0,18347.2525117247 27120.551976926 15240.0,30347.2525117247 15120.551976926 15240.0,18347.2525117247 15120.551976926 15240.0)),((30347.2525117247 15120.551976926 15240.0,18347.2525117247 27120.551976926 15240.0,30347.2525117247 27120.551976926 15240.0,30347.2525117247 15120.551976926 15240.0)))
         """
         if self.transform and self.reference_stack:
-            pass
+            triangle_data = volume.geometry.replace('TIN Z ', '').replace('(((', '').replace(')))', '') \
+                    .replace('))', ']').replace('((', '[').split('],[')
+            triangles = list(map(lambda t: list(map(lambda c: list(map(lambda n: float(n), c.split(' '))), t.split(','))), triangle_data))
+
+            for triangle_coords in triangles:
+                for c in triangle_coords:
+                    # Assume csv-z-slice type for now
+                    z_index = int(c[2] / self.reference_stack.resolution.z)
+                    xy_shift = self.transform[z_index]
+                    c[0] += xy_shift[0]
+                    c[1] += xy_shift[1]
+
+            # Convert array to TIN WKT again
+            wkt_data = 'TIN Z (' + ','.join(map(lambda t: '((' + ','.join(list(map(lambda c: ' '.join(list(map(str, c))), t))) + '))', triangles)) + ')'
+            volume.geometry = wkt_data
 
         return volume
 
@@ -1935,18 +1957,18 @@ class GenericImporter(AbstractImporter):
                 import_objects_by_type_and_id, existing_classes)
 
         # Apply an optional transformation to all location information that can
-        # currently be imported: treenode, connector, location, deep link, volume
+        # currently be imported: treenode, connector, location, deep link,
+        # point, ROI and volume
         if self.transform:
             n_transformed = 0
             logger.info('Applying stored transformation')
-            single_location_types = [Treenode, Connector, Location, DeepLink]
+            single_location_types = [Treenode, Connector, Location, DeepLink, Point, RegionOfInterest]
             for location_type in single_location_types:
                 location_objects = objects_to_save.get(location_type, [])
                 for lo in location_objects:
                     self.transform_single_location(lo.object)
                     n_transformed += 1
 
-            # TODO: Volume isn't updated yet
             volume_objects = objects_to_save.get(Volume, [])
             for vo in volume_objects:
                 self.transform_volume(vo.object)

@@ -26,16 +26,9 @@
 
         <div class="aligned">
         {{ wizard.management_form }}
-        {% for field in wizard.form %}
-            <div class="form-row">
-                {{ field.label_tag }}
-                {{ field }}
-                <div class="help">{{ field.help_text|safe }}</div>
-            </div>
-        {% endfor %}
+        {{ wizard.form }}
         </div>
-
-      <div class="submit-row">
+        <div class="submit-row">
           <p>
           {% if wizard.steps.prev %}
               <button name="wizard_goto_step" type="submit" value="{{ wizard.steps.first }}">{% trans "first step" %}</button>

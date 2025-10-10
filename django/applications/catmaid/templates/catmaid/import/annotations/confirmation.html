@@ -20,6 +20,8 @@
         <th># Annotations</th>
         <th># Annotation links</th>
         <th># Tags</th>
+        <th># Tag links</th>
+        <th># Volumes</th>
       </tr>
       {% for s in stats %}
         <tr>
@@ -29,6 +31,8 @@
           <td>{{ s.nannotations }}</td>
           <td>{{ s.nannotationlinks }}</td>
           <td>{{ s.ntags }}</td>
+          <td>{{ s.ntaglinks }}</td>
+          <td>{{ s.nvolumes }}</td>
         </tr>
       {% endfor %}
     </table>

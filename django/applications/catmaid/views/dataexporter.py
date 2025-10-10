@@ -11,7 +11,7 @@ from django.shortcuts import redirect
 from formtools.wizard.views import SessionWizardView
 
 from catmaid.models import Project
-from catmaid.management.commands.catmaid_export_data import Exporter
+from catmaid.control.exporter import FileExporter
 
 from django.conf import settings
 
@@ -111,7 +111,7 @@ class CatmaidDataExportWizard(SessionWizardView):
         }
 
         logger.info("Export project data ...")
-        exporter = Exporter(source_project, options)
+        exporter = FileExporter(source_project, options)
         exporter.export()
         logger.info("Export project data finished.")
 

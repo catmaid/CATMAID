@@ -260,6 +260,12 @@ Miscellaneous:
 - The import/export widget now can export treenode archives and connector
   archives as multipage TIFF files.
 
+- Admin: the tool "Import annotations and tracing data" has been renamed to
+  "Import/copy/transform tracing data". It now uses the same logic as the managmenet
+  commands catmaid_export_data and catmaid_import_data, which are well tested.
+  With this tool is possible to clone existing projects, including tracing data,
+  and transform all location data in the process using a CSV file.
+
 ### Bug fixes
 
 - Neuron Search: neurons that don't have any annotations are now returned as

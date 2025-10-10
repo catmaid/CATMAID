@@ -2078,3 +2078,23 @@ class FavoriteProject(NonCascadingUserFocusedModel):
 
     class Meta:
         db_table = "catmaid_favorite_project"
+
+
+class ImportTask(NonCascadingUserFocusedModel):
+
+    class StatusOptions(models.TextChoices):
+        Created = ('created', 'Created')
+        Started = ('running', 'Running')
+        Success = ('success', 'Success')
+        Error = ('error', 'Error')
+
+    description = models.CharField()
+    metadata = models.JSONField(blank=True, default=dict)
+    import_log = models.TextField(blank=True, default="")
+    import_time = models.FloatField(blank=True, default=0)
+    status = models.CharField(blank=True,
+       choices=StatusOptions.choices,
+       default=StatusOptions.Created)
+
+    class Meta:
+        db_table = "catmaid_import_task"

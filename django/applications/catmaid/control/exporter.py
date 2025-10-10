@@ -115,6 +115,29 @@ class ExportAnnotation(Enum):
 class Exporter():
 
     def __init__(self, project, options):
+        """
+        Create a new basic exporter that exports data from the passed in project
+        with the provided options. Optionsa are decleared as a dictionary with
+        the following fields:
+
+        {
+          export_treenodes: True,
+          connector_mode: ConnectorMode,
+          export_annotations: True,
+          export_tags: True,
+          allowed_tags: True,
+          export_users: True,
+          export_volumes: True,
+          export_public_deep_links: True,
+          export_exportable_deep_links: True,
+          required_annotations: [],
+          excluded_annotations: [],
+          volume_annotations: [],
+          annotation_annotations: [],
+          settings_meta_annotation: [],
+          exclusion_is_final: False
+        }
+        """
         set_log_level(logger, options.get('verbosity', 1))
 
         self.project = project
@@ -446,7 +469,7 @@ class Exporter():
         if entities.count() == 0:
             raise CommandError("No matching neurons found")
 
-        print("Will export %s neurons" % entities.count())
+        logger.info("Will export %s neurons" % entities.count())
         if not self.run_noninteractive:
             start_export = ask_to_continue()
             if not start_export:
@@ -992,6 +1015,7 @@ class Exporter():
             deep_links = DeepLink.objects.filter(project_id=self.project.id, is_public=True)
             seen_deep_links.update([link.id for link in deep_links])
             logger.info(f'Exporting {len(deep_links)} public deep links')
+            # FIXME: Include referenced skeletons, treenodes and connectors
             self.to_serialize.append(deep_links)
 
         # Exportable deep links
@@ -1001,6 +1025,7 @@ class Exporter():
             deep_links = list(filter(lambda x: x.id not in seen_deep_links, deep_links))
             seen_deep_links.update([link.id for link in deep_links])
             logger.info(f'Exporting {n_exportable_deep_links} exportable deep links ({len(deep_links)} are not already prev. included)')
+            # FIXME: Include referenced skeletons, treenodes and connectors
             self.to_serialize.append(deep_links)
 
         # Export users, either completely or in a reduced form
@@ -1038,9 +1063,22 @@ class Exporter():
         """
         try:
             self.collect_data()
-
             data = list(chain(*self.to_serialize))
+            CurrentSerializer = serializers.get_serializer(self.format)
+            serializer = CurrentSerializer()
+            return serializer.serialize(data)
+        except Exception as e:
+            if self.show_traceback:
+                raise
+            raise CommandError("Unable to serialize database: %s" % e)
 
+
+class FileExporter(Exporter):
+
+    def export(self):
+        try:
+            self.collect_data()
+            data = list(chain(*self.to_serialize))
             CurrentSerializer = serializers.get_serializer(self.format)
             serializer = CurrentSerializer()
 

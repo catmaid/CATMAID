@@ -16,5 +16,5 @@ def set_log_level(logger, verbosity=1):
         logger.setLevel(logging.DEBUG)
 
     if verbosity > 2:
-        # Enable statements taht reach the root logger.
+        # Enable statements that reach the root logger.
         logging.getLogger().setLevel(logging.DEBUG)

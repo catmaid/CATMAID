@@ -5,6 +5,7 @@ import glob
 import json
 import os.path
 import requests
+import progressbar
 from typing import Any, List, DefaultDict, Dict, Set, Tuple
 import urllib
 import yaml
@@ -30,8 +31,8 @@ from guardian.models import Permission
 from guardian.shortcuts import get_perms_for_model, assign_perm
 
 from catmaid.apps import get_system_user
-from catmaid.models import (BrokenSlice, Class, Relation, ClassClass,
-        ClassInstance, Project, ClassInstanceClassInstance, Stack, StackGroup,
+from catmaid.models import (BrokenSlice, Class, Relation, ClassClass, Location, Volume,
+        ClassInstance, Project, ClassInstanceClassInstance, Stack, StackGroup, DeepLink,
         StackStackGroup, ProjectStack, StackClassInstance, StackGroupClassInstance, StackGroupRelation,
         StackMirror, TILE_SOURCE_TYPE_CHOICES, User, Treenode, Connector, Concept, SkeletonSummary)
 from catmaid.fields import Double3D
@@ -40,6 +41,10 @@ from catmaid.control.common import urljoin, is_valid_host
 from catmaid.control.classification import get_classification_links_qs, \
         link_existing_classification, ClassInstanceClassInstanceProxy
 from catmaid.control.edge import rebuild_edge_tables, rebuild_edges_selectively
+
+
+import logging
+logger = logging.getLogger(__name__)
 
 
 TEMPLATES = {"pathsettings": "catmaid/import/setup_path.html",
@@ -1441,7 +1446,12 @@ class AbstractImporter(ABC):
     def import_data(self):
         pass
 
-class FileImporter(AbstractImporter):
+    @abstractmethod
+    def load_data(self):
+        pass
+
+
+class GenericImporter(AbstractImporter):
     def __init__(self, source, target, user, options):
         super().__init__(source, target, user, options)
         self.create_unknown_users = options['create_unknown_users']
@@ -1450,8 +1460,10 @@ class FileImporter(AbstractImporter):
         self.user_map = dict(User.objects.all().values_list('username', 'id'))
         self.user_id_map = dict((v,k) for k,v in self.user_map.items())
         self.preserve_ids = options['preserve_ids']
-
-        self.format = 'json'
+        self.import_deeplinks = options.get('import_deeplinks', True)
+        self.transform = options.get('transform')
+        reference_stack_id = options.get('reference_stack_id')
+        self.reference_stack = Stack.objects.get(id=reference_stack_id) if reference_stack_id is not None else None
 
         # Map user IDs to newly created users
         self.created_unknown_users = dict()
@@ -1712,6 +1724,44 @@ class FileImporter(AbstractImporter):
             if hasattr(obj, 'editor_id'):
                 obj.editor = self.user
 
+    def load_data(self):
+        # Map data types to lists of object of the respective type
+        import_data:DefaultDict[Any, List] = defaultdict(list)
+        n_objects = 0
+        logger.info("Loading data from memory")
+        loaded_data = serializers.deserialize('json', self.source)
+        for deserialized_object in progressbar.progressbar(loaded_data,
+                max_value=progressbar.UnknownLength, redirect_stdout=True):
+            obj = deserialized_object.object
+            import_data[type(obj)].append(deserialized_object)
+            n_objects += 1
+
+        return import_data, n_objects
+
+    def transform_single_location(self, location):
+        """
+        Update the fields location_x, location_y and location_z of the passed in
+        object according to the stored transform.
+        """
+        if self.transform and self.reference_stack:
+            # Assume csv-z-slice type for now
+            z_index = int(location.location_z / self.reference_stack.resolution.z)
+            xy_shift = self.transform[z_index]
+            location.location_x += xy_shift[0]
+            location.location_y += xy_shift[1]
+
+        return location
+
+    def transform_volume(self, volume):
+        """
+        Update the volume locations of the passed in
+        volume object according to the stored transform.
+        """
+        if self.transform and self.reference_stack:
+            pass
+
+        return volume
+
     @transaction.atomic
     def import_data(self):
         """ Imports data from a file and overrides its properties, if wanted.
@@ -1733,19 +1783,8 @@ class FileImporter(AbstractImporter):
         mapped_user_ids:Set = set()
         mapped_user_target_ids:Set = set()
 
-        # Map data types to lists of object of the respective type
-        import_data:DefaultDict[Any, List] = defaultdict(list)
-        n_objects = 0
-
         # Read the file and sort by type
-        logger.info(f"Loading data from {self.source}")
-        with open(self.source, "r") as data:
-            loaded_data = serializers.deserialize(self.format, data)
-            for deserialized_object in progressbar.progressbar(loaded_data,
-                    max_value=progressbar.UnknownLength, redirect_stdout=True):
-                obj = deserialized_object.object
-                import_data[type(obj)].append(deserialized_object)
-                n_objects += 1
+        import_data, n_objects = self.load_data()
 
         if n_objects == 0:
             raise CommandError("Nothing to import, no importable data found")
@@ -1790,6 +1829,7 @@ class FileImporter(AbstractImporter):
 
         n_reused = 0
         n_moved = 0
+        n_ignored_deeplinks = 0
         append_only = not self.preserve_ids
         need_separate_import = []
         objects_to_save:DefaultDict[Any, List] = defaultdict(list)
@@ -1798,6 +1838,10 @@ class FileImporter(AbstractImporter):
             # Allow user reference updates in CATMAID objects
             if object_type not in user_updatable_classes:
                 need_separate_import.append(object_type)
+                continue
+
+            if not self.import_deeplinks and object_type == DeepLink:
+                n_ignored_deeplinks += 1
                 continue
 
             # Stores in append-only mode import IDs and links them to the
@@ -1890,6 +1934,25 @@ class FileImporter(AbstractImporter):
         self.reset_ids(user_updatable_classes, objects_to_save,
                 import_objects_by_type_and_id, existing_classes)
 
+        # Apply an optional transformation to all location information that can
+        # currently be imported: treenode, connector, location, deep link, volume
+        if self.transform:
+            n_transformed = 0
+            logger.info('Applying stored transformation')
+            single_location_types = [Treenode, Connector, Location, DeepLink]
+            for location_type in single_location_types:
+                location_objects = objects_to_save.get(location_type, [])
+                for lo in location_objects:
+                    self.transform_single_location(lo.object)
+                    n_transformed += 1
+
+            # TODO: Volume isn't updated yet
+            volume_objects = objects_to_save.get(Volume, [])
+            for vo in volume_objects:
+                self.transform_volume(vo.object)
+                n_transformed += 1
+            logger.info(f'- Transformed {n_transformed} objects')
+
         other_tasks = set(objects_to_save.keys()) - set(ordered_save_tasks)
         for object_type in ordered_save_tasks + list(other_tasks):
             objects = objects_to_save.get(object_type)
@@ -1916,7 +1979,7 @@ class FileImporter(AbstractImporter):
                     already_imported_usernames = import_usernames - not_imported_usernames
 
                     if already_imported_usernames:
-                        print("The following usernames are mapped to " +
+                        logger.info("The following usernames are mapped to " +
                                 "existing users, but the import data " +
                                 "also contains objects for these users: " +
                                 ", ".join(already_imported_usernames))
@@ -1944,6 +2007,7 @@ class FileImporter(AbstractImporter):
             FROM auth_user;
         ''')
 
+        # FIXME: Get the trigger code from a shared module.
         cursor.execute("""
             CREATE TRIGGER on_insert_treenode_update_summary_and_edges
             AFTER INSERT ON treenode
@@ -1961,6 +2025,8 @@ class FileImporter(AbstractImporter):
             FOR EACH STATEMENT EXECUTE PROCEDURE on_delete_treenode_update_summary_and_edges();
         """)
 
+        logger.info(f'Ignored objects:\n- DeepLink: { n_ignored_deeplinks}')
+
         n_imported_treenodes = len(import_objects_by_type_and_id.get(Treenode, []))
         n_imported_connectors = len(import_objects_by_type_and_id.get(Connector, []))
 
@@ -1972,7 +2038,7 @@ class FileImporter(AbstractImporter):
                 logger.info("No edge table update needed")
 
             if n_imported_treenodes:
-                logger.info("Updating skeleton summary tables")
+                logger.info(f"Updating skeleton summary table for project {self.target.id}")
                 cursor.execute("""
                     SELECT refresh_skeleton_summary_table_for_project(%(project_id)s);
                 """, {
@@ -2046,6 +2112,28 @@ class FileImporter(AbstractImporter):
                 })
             else:
                 logger.info('No skeleton summary table updated needed')
+    logger.info('Import finished')
+
+class FileImporter(GenericImporter):
+
+    def __init__(self, source, target, user, options):
+        super().__init__(source, target, user, options)
+        self.format = 'json'
+
+    def load_data(self):
+        # Map data types to lists of object of the respective type
+        import_data:DefaultDict[Any, List] = defaultdict(list)
+        n_objects = 0
+        logger.info(f"Loading data from {self.source}")
+        with open(self.source, "r") as data:
+            loaded_data = serializers.deserialize(self.format, data)
+            for deserialized_object in progressbar.progressbar(loaded_data,
+                    max_value=progressbar.UnknownLength, redirect_stdout=True):
+                obj = deserialized_object.object
+                import_data[type(obj)].append(deserialized_object)
+                n_objects += 1
+
+        return import_data, n_objects
 
 
 class InternalImporter(AbstractImporter):

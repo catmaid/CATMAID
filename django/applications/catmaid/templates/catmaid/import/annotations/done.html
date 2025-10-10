@@ -25,7 +25,7 @@
         {% endfor %}
         </ul>
     {% else %}
-        <p>All selected projects have been added to CATMAID:</p>
+        <p>The import task has been queued and will be executed on the server.</p>
         <p><ul>
         {% for p in imported_projects %}
             <li>{{ p.name }}</li>

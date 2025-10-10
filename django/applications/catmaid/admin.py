@@ -26,7 +26,7 @@ from catmaid.models import (Project, DataView, Stack, InterpolatableSection,
         ProjectStack, UserProfile, BrokenSlice, StackClassInstance, Relation,
         ClassInstance, Class, StackGroup, StackStackGroup, StackMirror,
         PointCloud, GroupInactivityPeriod, GroupInactivityPeriodContact,
-        WritableStack)
+        WritableStack, ImportTask)
 from catmaid.control.importer import importer_admin_view
 from catmaid.control.classificationadmin import classification_admin_view
 from catmaid.control.annotationadmin import ImportingWizard
@@ -525,6 +525,11 @@ class GroupInactivityPeriodAdmin(admin.ModelAdmin):
     inlines = [GroupInactivityPeriodContactGroupInline]
 
 
+class ImportTaskAdmin(admin.ModelAdmin):
+    model = ImportTask
+    list_display = ('id', 'description', 'status', 'user', 'creation_time')
+
+
 def color(self):
     try:
         up = UserProfile.objects.get(user=self)
@@ -548,6 +553,7 @@ admin.site.register(ProjectStack, ProjectStackAdmin)
 admin.site.register(StackMirror, StackMirrorAdmin)
 admin.site.register(PointCloud, PointCloudAdmin)
 admin.site.register(WritableStack, WritableStackAdmin)
+admin.site.register(ImportTask, ImportTaskAdmin)
 
 # Replace the user admin view with custom view
 admin.site.register(User, CustomUserAdmin)
@@ -556,7 +562,7 @@ admin.site.register(GroupInactivityPeriod, GroupInactivityPeriodAdmin)
 admin.site.register(Site)
 
 # Register additional views
-admin.site.register_view('annotationimporter', 'Import annotations and tracing data',
+admin.site.register_view('annotationimporter', 'Import/copy/transform tracing data',
                          view=ImportingWizard.as_view())
 admin.site.register_view('importer', 'Import projects and image stacks',
                          view=importer_admin_view)

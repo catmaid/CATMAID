@@ -1,17 +1,26 @@
-# -*- coding: utf-8 -*-
+import logging
 
 from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
+from io import StringIO
+from celery import shared_task
+from celery.utils.log import get_task_logger
+import time
+import csv
 
 from django import forms
 from django.conf import settings
-from django.db import connection
+from django.core.exceptions import ValidationError
+from django.db import connection, transaction
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import render
 
 from formtools.wizard.views import SessionWizardView
 
-from catmaid.models import Class, ClassInstance, ClassInstanceClassInstance
-from catmaid.models import Connector, Project, Relation, Treenode
+from catmaid.apps import get_system_user
+from catmaid.control.exporter import Exporter, ConnectorMode
+from catmaid.models import (Class, ClassInstance, ClassInstanceClassInstance,
+                            Connector, ImportTask, Project, Relation, Stack,
+                            Treenode, Volume)
 
 SOURCE_TYPE_CHOICES = [
     ('file', 'Local file'),
@@ -22,21 +31,26 @@ IMPORT_TEMPLATES = {
     "sourcetypeselection": "catmaid/import/annotations/setup_source.html",
     "projectimport": "catmaid/import/annotations/setup.html",
     "fileimport": "catmaid/import/annotations/setup.html",
+    "transform": "catmaid/import/annotations/transform.html",
     "confirmation": "catmaid/import/annotations/confirmation.html",
     "done": "catmaid/import/annotations/done.html",
 }
+
+TRANSFORM_TYPE_CHOICES = [
+    ('csv-z-slices', 'A CSV file with a X and Y transformation column'),
+]
 
 
 class SourceTypeForm(forms.Form):
     """ A form to select basic properties on the data to be
     imported.
     """
-    source_type = forms.ChoiceField(choices=SOURCE_TYPE_CHOICES,
-            widget=forms.RadioSelect(), help_text="The source type defines "
-            "where the data to import comes from")
     target_project = forms.ModelChoiceField(required=True,
         help_text="The project the data will be imported into.",
         queryset=Project.objects.all().exclude(pk=settings.ONTOLOGY_DUMMY_PROJECT_ID))
+    source_type = forms.ChoiceField(choices=SOURCE_TYPE_CHOICES,
+            widget=forms.RadioSelect(), help_text="The source type defines "
+            "where the data to import comes from")
     import_treenodes = forms.BooleanField(initial=True, required=False,
             help_text="Should treenodes be imported?")
     import_connectors = forms.BooleanField(initial=True, required=False,
@@ -53,9 +67,33 @@ class FileBasedImportForm(forms.Form):
     pass
 
 
+class TransformImportForm(forms.Form):
+    apply_transform = forms.BooleanField(initial=False, required=False,
+            help_text="Should the transformation below be applied to call coordinates?")
+    reference_stack = forms.ModelChoiceField(required=True,
+        help_text="The project the data will be imported into.",
+        queryset=Stack.objects.all())
+    x_factor = forms.FloatField(initial=1.0, required=False, help_text="A factor that is multiplied to each X shift")
+    y_factor = forms.FloatField(initial=1.0, required=False, help_text="A factor that is multiplied to each Y shift")
+    delimiter = forms.CharField(initial=',', required=False, help_text="The delimiter used in the transform CSV")
+    transform_type = forms.ChoiceField(choices=TRANSFORM_TYPE_CHOICES, required=True, help_text="The type of tranformaton")
+    transform_text = forms.CharField(widget=forms.Textarea, label='Transform',
+                                     required=False, help_text="The transform is "
+                                     "expected to be in a CSV format with two columns, "
+                                     "represenging the X/Y shift of each node.")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # TODO: filter only linked stacks
+        # source_project_ids self.get_cleaned_data_for_step('projectselection')['projects']
+        #         selected_projects = [ self.projects[p] for p in selected_paths ]
+        # self.fields['reference_stack'].queryset = self.fields['reference_stack'].queryset.filter(
+        #         projectstack__project_id__in=source_project_ids)
+
+
 class ProjectBasedImportForm(forms.Form):
     """ Display a list of available projects."""
-    projects = forms.ModelMultipleChoiceField(required=False,
+    source_projects = forms.ModelMultipleChoiceField(required=False,
         widget=forms.CheckboxSelectMultiple(attrs={'class': 'autoselectable'}),
         help_text="Only data from selected projects will be imported.",
         queryset=Project.objects.all().exclude(pk=settings.ONTOLOGY_DUMMY_PROJECT_ID))
@@ -68,11 +106,112 @@ class ConfirmationForm(forms.Form):
     """
     pass
 
+
 def get_source_type(wizard) -> str:
     """ Test whether the project import form should be shown."""
     cleaned_data = wizard.get_cleaned_data_for_step('sourcetypeselection') \
         or {'source_type': SOURCE_TYPE_CHOICES[0]}
     return cleaned_data['source_type']
+
+
+@shared_task()
+def async_project_copy_job(import_task_id) -> str:
+
+        from catmaid.control.importer import GenericImporter
+        task_logger = get_task_logger(__name__)
+
+        task_logger.info(f'Starting work on import task {import_task_id}')
+
+        # An async task will run the management commands catmaid_export_data
+        # catmaid import_data. Transformations happen as part of the import.
+        import_task = ImportTask.objects.get(id=import_task_id)
+        scd = import_task.metadata
+        start_time = time.perf_counter()
+
+        import_task.status = ImportTask.StatusOptions.Started
+        import_task.save()
+
+        # Get a copy of the log output to store with the task.
+        log_stream = StringIO()
+        log_handler = logging.StreamHandler(log_stream)
+        task_logger.addHandler(log_handler)
+
+        try:
+            if scd["source_type"] == 'project':
+
+                target_project = Project.objects.get(id=scd['target_project_id'])
+                projects = Project.objects.filter(id__in=scd['source_project_ids'])
+                final_project_materialization_update = len(projects) > 1
+                connector_mode = ConnectorMode.IntraConnectorsAndPlaceholders \
+                        if scd['import_connectors'] else ConnectorMode.NoConnectors
+                for n, p in enumerate(projects):
+                    # Update materializations in last iteration
+                    update_materializations = n == (len(projects) - 1)
+                    #update_materializations = False
+
+                    export_options = {
+                        'run_noninteractive': True,
+                        'export_treenodes': scd['import_treenodes'],
+                        'connector_mode': connector_mode,
+                        'export_annotations': scd['import_annotations'],
+                        'export_tags': scd['import_tags'],
+                        'allowed_tags': None,
+                        'export_users': True,
+                        'export_volumes': scd['import_volumes'],
+                        'export_public_deep_links': False, # FIXME
+                        'export_exportable_deep_links': False, # FIXME,
+                        'required_annotations': [],
+                        'excluded_annotations': [],
+                        'volume_annotations': None,
+                        'annotation_annotations': None,
+                        'settings_meta_annotation': None,
+                        'exclusion_is_final': False,
+                    }
+
+                    # Export project data
+                    task_logger.info(f'Exporting data from project {p}')
+                    exporter = Exporter(p, export_options)
+                    project_data = exporter.export()
+
+                    import_options = {
+                        'create_unknown_users': False,
+                        'auto_name_unknown_users': True,
+                        'preserve_ids': False,
+                        'map_users': True,
+                        'map_user_ids': True,
+                        'analyze_db': True,
+                        'update_project_materializations': update_materializations,
+                        'stdout': log_stream,
+                        'logger': task_logger,
+                        'username_mapping': {},
+                    }
+
+                    if scd['apply_transform']:
+                        import_options['transform'] = scd['transform']
+                        import_options['reference_stack_id'] = scd['reference_stack_id']
+
+                    # Import project data into new project
+                    task_logger.info(f'Importing into project {target_project}')
+                    override_user = get_system_user()
+                    importer = GenericImporter(project_data, target_project,
+                                        override_user, import_options)
+                    with transaction.atomic():
+                        importer.import_data()
+
+                import_task.import_log = log_stream.getvalue()
+                import_task.status = ImportTask.StatusOptions.Success
+            else:
+                import_task.import_log = f'Unsupported source type: {scd["source_type"]}'
+                import_task.status = ImportTask.StatusOptions.Error
+        except Exception as err:
+            task_logger.removeHandler(log_handler)
+            import_task.import_log = f"{log_stream.getvalue()}\n{err}"
+            import_task.status = ImportTask.StatusOptions.Error
+
+        import_task.import_time = time.perf_counter() - start_time
+        import_task.save()
+        task_logger.info(f'Finished import in {import_task.import_time} seconds')
+
 
 class ImportingWizard(SessionWizardView):
     """ With the help of the importing wizard it is possible to import neurons
@@ -86,6 +225,7 @@ class ImportingWizard(SessionWizardView):
         ("sourcetypeselection", SourceTypeForm),
         ("projectimport", ProjectBasedImportForm),
         ("fileimport", FileBasedImportForm),
+        ("transform", TransformImportForm),
         ("confirmation", ConfirmationForm),
     ]
 
@@ -100,13 +240,18 @@ class ImportingWizard(SessionWizardView):
         collect some statistics on it.
         """
         context = super().get_context_data(form=form, **kwargs)
-        if self.steps.current == 'confirmation':
+        if self.steps.current == 'sourcetypeselection':
+            import_tasks = ImportTask.objects.filter(user=self.request.user).order_by('-edition_time')
+            context.update({
+                'running_import_tasks': import_tasks[:5],
+            })
+        elif self.steps.current == 'confirmation':
             stats = []
             # Load all wanted information from the selected projects
             scd = self.get_cleaned_data_for_step('sourcetypeselection')
             if scd["source_type"] == 'project':
-                projects = self.get_cleaned_data_for_step('projectimport')['projects']
-                for p in projects:
+                source_projects = self.get_cleaned_data_for_step('projectimport')['source_projects']
+                for p in source_projects:
                     ps = {
                         'source': "%s (%s)" % (p.title, p.id),
                         'ntreenodes': 0,
@@ -114,22 +259,43 @@ class ImportingWizard(SessionWizardView):
                         'nannotations': 0,
                         'nannotationlinks': 0,
                         'ntags': 0,
+                        'ntaglinks': 0,
+                        'nvolumes': 0,
                     }
                     if scd['import_treenodes']:
                         ps['ntreenodes'] = Treenode.objects.filter(project=p).count()
                     if scd['import_connectors']:
                         ps['nconnectors'] = Connector.objects.filter(project=p).count()
                     if scd['import_annotations']:
-                        annotation = Class.objects.filter(project=p,
-                                class_name="annotation")
-                        annotated_with = Relation.objects.filter(project=p,
-                                relation_name="annotated_with")
-                        ps['nannotations'] = ClassInstance.objects.filter(
-                                project=p, class_column=annotation).count()
-                        ps['nannotationlinks'] = ClassInstanceClassInstance.objects.filter(
-                                project=p, relation=annotated_with).count()
+                        try:
+                            annotation = Class.objects.get(project=p,
+                                    class_name="annotation")
+                            ps['nannotations'] = ClassInstance.objects.filter(
+                                    project=p, class_column=annotation).count()
+                        except Class.DoesNotExist:
+                            pass
+                        try:
+                            annotated_with = Relation.objects.get(project=p,
+                                    relation_name="annotated_with")
+                            ps['nannotationlinks'] = ClassInstanceClassInstance.objects.filter(
+                                    project=p, relation=annotated_with).count()
+                        except Relation.DoesNotExist:
+                            pass
                     if scd['import_tags']:
-                        pass
+                        try:
+                            tag = Class.objects.get(project=p, class_name="label")
+                            ps['ntags'] = ClassInstance.objects.filter(
+                                    project=p, class_column=annotation).count()
+                        except Class.DoesNotExist:
+                            pass
+                        try:
+                            labeled_as = Relation.objects.get(project=p, relation_name="labeled_as")
+                            ps['ntaglinks'] = ClassInstanceClassInstance.objects.filter(
+                                    project=p, relation=labeled_as).count()
+                        except Relation.DoesNotExist:
+                            pass
+                    if scd['import_volumes']:
+                        ps['nvolumes'] = Volume.objects.filter(project=p).count()
 
                     stats.append(ps)
 
@@ -149,15 +315,51 @@ class ImportingWizard(SessionWizardView):
         """
         # Load all wanted information from the selected projects
         scd = self.get_cleaned_data_for_step('sourcetypeselection')
+
+        # Check transformation
+        transform_data = self.get_cleaned_data_for_step('transform')
+        apply_transform = transform_data['apply_transform']
+        reference_stack = transform_data['reference_stack']
+        x_factor = transform_data['x_factor']
+        y_factor = transform_data['y_factor']
+        delimiter = transform_data['delimiter']
+        transform_data_type = transform_data['transform_type']
+        transform_text = transform_data['transform_text'].replace('\r\n', '\n').replace('\r', '\n')
+        transform = []
+
+        if apply_transform:
+            if transform_data_type == 'csv-z-slices':
+                with StringIO(transform_text) as transform_stream:
+                    reader = csv.reader(transform_stream, delimiter=delimiter)
+                    transform = list(map(lambda xy: [x_factor * float(xy[0]),
+                                                     y_factor * float(xy[1])],
+                                        reader))
+            else:
+                raise ValidationError(f"Unknown transform data type: {transform_data_type}")
+
         target_project = scd['target_project']
 
-        if scd["source_type"] == 'project':
-            projects = self.get_cleaned_data_for_step('projectimport')['projects']
-            for p in projects:
-                copy_annotations(p.id, target_project.id,
-                        scd['import_treenodes'], scd['import_connectors'],
-                        scd['import_annotations'], scd['import_tags'],
-                        scd['import_volumes'])
+        import_task = ImportTask.objects.create(
+                project_id=target_project.id,
+                user=self.request.user,
+                description="Import task",
+                metadata={
+                    'source_type': 'project',
+                    'source_project_ids': list(map(lambda p: p.id,
+                        self.get_cleaned_data_for_step('projectimport')['source_projects'])),
+                    'target_project_id': target_project.id,
+                    'import_treenodes': scd['import_treenodes'],
+                    'import_connectors': scd['import_connectors'],
+                    'import_annotations': scd['import_annotations'],
+                    'import_tags': scd['import_tags'],
+                    'import_volumes': scd['import_volumes'],
+                    'apply_transform': apply_transform,
+                    'transform': transform,
+                    'reference_stack_id': reference_stack.id,
+                })
+
+        # Make sure the created import task is available
+        transaction.on_commit(lambda: async_project_copy_job.delay(import_task.id))
 
         return render(self.request, IMPORT_TEMPLATES['done'])
 

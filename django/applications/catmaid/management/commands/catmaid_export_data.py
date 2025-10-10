@@ -1,4 +1,4 @@
-from catmaid.control.exporter import Exporter, ConnectorMode
+from catmaid.control.exporter import FileExporter, ConnectorMode
 from catmaid.control.tracing import known_tags
 from catmaid.models import Project
 from catmaid.util import str2bool, str2list
@@ -143,7 +143,7 @@ class Command(BaseCommand):
             logger.info("Excluding skeletons with the following annotation: " +
                   ", ".join(options['excluded_annotations']))
 
-        exporter = Exporter(source, options)
+        exporter = FileExporter(source, options)
         exporter.export()
 
         logger.info("Finished export, result written to: %s" % exporter.target_file)

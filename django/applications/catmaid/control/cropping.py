@@ -867,7 +867,7 @@ def export_stack_to_n5(project_id, stack_id, stack_mirror_id=None, name=None,
     t = ProjectStack.objects.get(
             project_id=project_id, stack_id=stack.id).translation
 
-    # In contrast tu X and Y, dimension Z seems to be inclusive
+    # In contrast to X and Y, dimension Z seems to be inclusive
     job = CropJob(get_system_user(), project_id, stack_mirror_ids,
                 x_min=t.x+(bounds[0][0]*rx), x_max=t.x+(bounds[1][0]*rx),
                 y_min=t.y+(bounds[0][1]*ry), y_max=t.y+(bounds[1][1]*ry),

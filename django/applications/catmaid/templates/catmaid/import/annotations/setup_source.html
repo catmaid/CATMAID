@@ -3,10 +3,35 @@
 {% block setup_content %}
     <p>This tool assists you with importing data into your CATMAID instance.
     The first step is to declare a source for the data to be imported into an
-    <strong>existing</strong> project on this instance. Please be aware that
-    importing data can take a while and your HTTP connection might be dropped
-    before the import can successfully finish, causing the import to be canceled
-    altogether. In this event, you should resort to importing using the
-    management command "copy_annotations".</p>
+    <strong>existing</strong> project on this instance. Project imports are
+    performed asynchronously by the server. This means after submitting an
+    import task, you can close this website. The table below shows all active
+    impot tasks.</p>
+    <br />
+    <h3>Active import tasks</h3>
+    <hr />
+    {% if running_import_tasks.length == 0 %}
+    <p>There are currently no active import tasks.</p>
+    {% else %}
+    <p>The following import tasks are currently active:</p>
+    <table>
+      <tr>
+        <th>ID</th>
+        <th>Description</th>
+        <th>Status</th>
+        <th>Start time</th>
+      </tr>
+    {% for task in running_import_tasks %}
+      <tr>
+        <td>{{ task.id }}</td>
+        <td>{{ task.description }}</td>
+        <td>{{ task.status }}</td>
+        <td>{{ task.creation_time }}</td>
+      </tr>
+    {% endfor %}
+    </table>
+    {% endif %}
+    <br />
+    <h3>New import task</h3>
     <hr />
 {% endblock %}

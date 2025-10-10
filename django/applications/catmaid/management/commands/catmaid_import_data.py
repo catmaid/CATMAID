@@ -1,7 +1,5 @@
 import argparse
-import inspect
 import logging
-import progressbar
 from typing import Type
 
 from catmaid.control.importer import AbstractImporter, InternalImporter, FileImporter
@@ -92,6 +90,9 @@ class Command(BaseCommand):
         parser.add_argument('--volumes', dest='import_volumes',
                 type=str2bool, nargs='?', const=True, default=True,
                 help='Import volumes from source')
+        parser.add_argument('--deeplinks', dest='import_deeplinks',
+                type=str2bool, nargs='?', const=True, default=True,
+                help='Import deep links from source')
         parser.add_argument('--map-users', dest='map_users', default=True,
                 const=True, type=lambda x: (str(x).lower() == 'true'), nargs='?',
                 help='Use existing user if username matches')
@@ -138,7 +139,8 @@ class Command(BaseCommand):
                 return p
 
     def handle(self, *args, **options):
-        set_log_level(logger, options.get('verbosity', 1))
+        local_logger = args['logger'] if 'logger' in args else logger
+        set_log_level(local_logger, options.get('verbosity', 1))
         if options['map_users'] and options['user']:
             raise CommandError("Can't override users and map users at the " +
                     "same time, use --user or --map-users.")
@@ -150,30 +152,30 @@ class Command(BaseCommand):
         # Give some information about the import
         will_import = []
         wont_import = []
-        for t in ('treenodes', 'connectors', 'annotations', 'tags'):
+        for t in ('treenodes', 'connectors', 'annotations', 'tags', 'deeplinks'):
             if options.get('import_' + t):
                 will_import.append(t)
             else:
                 wont_import.append(t)
 
         if will_import:
-            logger.info("Will import: " + ", ".join(will_import))
+            local_logger.info("Will import: " + ", ".join(will_import))
         else:
-            logger.info("Nothing selected for import")
+            local_logger.info("Nothing selected for import")
             return
 
         if wont_import:
-            logger.info("Won't import: " + ", ".join(wont_import))
+            local_logger.info("Won't import: " + ", ".join(wont_import))
 
         # Read soure and target
         if options['source']:
             try:
                 source = Project.objects.get(pk=int(options['source']))
-                logger.info("Using internal importer")
+                local_logger.info("Using internal importer")
                 Importer: Type[AbstractImporter] = InternalImporter
             except ValueError:
                 source = options['source']
-                logger.info("Using file importer")
+                local_logger.info("Using file importer")
                 Importer = FileImporter
         else:
             source = self.ask_for_project('source')
@@ -186,16 +188,16 @@ class Command(BaseCommand):
         override_user = None
         if options['user']:
             override_user = User.objects.get(pk=options['user'])
-            logger.info(f'All imported objects will be owned by user "{override_user.username}"')
+            local_logger.info(f'All imported objects will be owned by user "{override_user.username}"')
         else:
             if options['map_users']:
-                logger.info("Users referenced in import will be mapped to "
+                local_logger.info("Users referenced in import will be mapped to "
                         "existing users if the username matches")
             if options['map_user_ids']:
-                logger.info("Users referenced only as ID in import will be "
+                local_logger.info("Users referenced only as ID in import will be "
                         "mapped to existing users with matching IDs.")
             if options['create_unknown_users']:
-                logger.info("Unknown users will be created")
+                local_logger.info("Unknown users will be created")
 
             if not options['map_users'] and not options['create_unknown_users'] \
                     and not options['map_user_ids']:
@@ -211,7 +213,7 @@ class Command(BaseCommand):
 
         if options['analyze_db']:
             cursor = connection.cursor()
-            logger.info("Updating database statistics")
+            local_logger.info("Updating database statistics")
             cursor.execute("ANALYZE")
 
-        logger.info("Finished import into project with ID %s" % importer.target.id)
+        local_logger.info("Finished import into project with ID %s" % importer.target.id)

@@ -6,6 +6,7 @@ from celery import shared_task
 from celery.utils.log import get_task_logger
 import time
 import csv
+import traceback
 
 from django import forms
 from django.conf import settings
@@ -205,7 +206,7 @@ def async_project_copy_job(import_task_id) -> str:
                 import_task.status = ImportTask.StatusOptions.Error
         except Exception as err:
             task_logger.removeHandler(log_handler)
-            import_task.import_log = f"{log_stream.getvalue()}\n{err}"
+            import_task.import_log = f"{log_stream.getvalue()}\n{err}\n{traceback.format_exc()}"
             import_task.status = ImportTask.StatusOptions.Error
 
         import_task.import_time = time.perf_counter() - start_time

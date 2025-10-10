@@ -1,0 +1,52 @@
+{% extends "catmaid/import/annotations/setup.html" %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <script type="text/javascript">
+    document.addEventListener("DOMContentLoaded",function(){
+      const fileInput = document.getElementById("transform-file");
+      const fileContentDisplay = document.getElementById("id_transform-transform_text");
+      const messageDisplay = document.getElementById("message");
+
+      fileInput.addEventListener("change", handleFileSelection);
+      function handleFileSelection(event) {
+        const file = event.target.files[0];
+        fileContentDisplay.textContent = ""; // Clear previous file content
+        messageDisplay.textContent = ""; // Clear previous messages
+
+        // Validate file existence and type
+        if (!file) {
+          showMessage("No file selected. Please choose a file.", "error");
+          return;
+        }
+
+        // Read the file
+        const reader = new FileReader();
+        reader.onload = () => {
+          fileContentDisplay.textContent = reader.result;
+        };
+        reader.onerror = () => {
+          showMessage("Error reading the file. Please try again.", "error");
+        };
+        reader.readAsText(file);
+      }
+
+      // Displays a message to the user
+      function showMessage(message, type) {
+        messageDisplay.textContent = message;
+        messageDisplay.style.color = type === "error" ? "red" : "green";
+      }
+    });
+  </script>
+{% endblock %}
+
+{% block setup_content %}
+    <p>Optionally, you can apply a transformation during the import. All
+    coordinates will be transformed accordingly.</p>
+    <p>You can optionally load a transformation file by clicking here:
+    <input type="file" id="transform-file" name="filename">
+    </p>
+    <div id="message"></div>
+    <hr />
+
+{% endblock %}

@@ -1739,7 +1739,7 @@ class GenericImporter(AbstractImporter):
 
         return import_data, n_objects
 
-    def transform_single_location(self, location):
+    def transform_single_location(self, location, clamped_locations):
         """
         Update the fields location_x, location_y and location_z of the passed in
         object according to the stored transform.
@@ -1747,13 +1747,16 @@ class GenericImporter(AbstractImporter):
         if self.transform and self.reference_stack:
             # Assume csv-z-slice type for now
             z_index = int(location.location_z / self.reference_stack.resolution.z)
+            if z_index >= len(self.transform) or z_index < 0:
+                clamped_locations[z_index] += 1
+                z_index = len(self.transform) - 1
             xy_shift = self.transform[z_index]
             location.location_x += xy_shift[0]
             location.location_y += xy_shift[1]
 
         return location
 
-    def transform_volume(self, volume):
+    def transform_volume(self, volume, clamped_locations):
         """
         Update the volume locations of the passed in
         volume object according to the stored transform. This is somewhat hacky,
@@ -1774,6 +1777,9 @@ class GenericImporter(AbstractImporter):
                 for c in triangle_coords:
                     # Assume csv-z-slice type for now
                     z_index = int(c[2] / self.reference_stack.resolution.z)
+                    if z_index >= len(self.transform) or z_index < 0:
+                        clamped_locations[z_index] += 1
+                        z_index = len(self.transform) - 1
                     xy_shift = self.transform[z_index]
                     c[0] += xy_shift[0]
                     c[1] += xy_shift[1]
@@ -1961,19 +1967,24 @@ class GenericImporter(AbstractImporter):
         # point, ROI and volume
         if self.transform:
             n_transformed = 0
+            clamped_locations = defaultdict(int)
             logger.info('Applying stored transformation')
             single_location_types = [Treenode, Connector, Location, DeepLink, Point, RegionOfInterest]
             for location_type in single_location_types:
                 location_objects = objects_to_save.get(location_type, [])
                 for lo in location_objects:
-                    self.transform_single_location(lo.object)
+                    self.transform_single_location(lo.object, clamped_locations)
                     n_transformed += 1
 
             volume_objects = objects_to_save.get(Volume, [])
             for vo in volume_objects:
-                self.transform_volume(vo.object)
+                self.transform_volume(vo.object, clamped_locations)
                 n_transformed += 1
-            logger.info(f'- Transformed {n_transformed} objects')
+            if len(clamped_locations):
+                clamp_info = ', '.join(map(lambda x: f'{x[0]}: {x[1]}', clamped_locations.items()))
+                logger.info(f'- Transformed {n_transformed} objects, clamped Z indices: {clamp_info}')
+            else:
+                logger.info(f'- Transformed {n_transformed} objects, no location clamped')
 
         other_tasks = set(objects_to_save.keys()) - set(ordered_save_tasks)
         for object_type in ordered_save_tasks + list(other_tasks):

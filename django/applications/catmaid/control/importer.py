@@ -1749,10 +1749,11 @@ class GenericImporter(AbstractImporter):
             z_index = int(location.location_z / self.reference_stack.resolution.z)
             if z_index >= len(self.transform) or z_index < 0:
                 clamped_locations[z_index] += 1
-                z_index = len(self.transform) - 1
-            xy_shift = self.transform[z_index]
-            location.location_x += xy_shift[0]
-            location.location_y += xy_shift[1]
+                z_index = 0 if z_index < 0 else len(self.transform) - 1
+            xyz_shift = self.transform[z_index]
+            location.location_x += xyz_shift[0]
+            location.location_y += xyz_shift[1]
+            location.location_z += xyz_shift[2]
 
         return location
 
@@ -1779,10 +1780,11 @@ class GenericImporter(AbstractImporter):
                     z_index = int(c[2] / self.reference_stack.resolution.z)
                     if z_index >= len(self.transform) or z_index < 0:
                         clamped_locations[z_index] += 1
-                        z_index = len(self.transform) - 1
-                    xy_shift = self.transform[z_index]
-                    c[0] += xy_shift[0]
-                    c[1] += xy_shift[1]
+                        z_index = 0 if z_index < 0 else len(self.transform) - 1
+                    xyz_shift = self.transform[z_index]
+                    c[0] += xyz_shift[0]
+                    c[1] += xyz_shift[1]
+                    c[2] += xyz_shift[2]
 
             # Convert array to TIN WKT again
             wkt_data = 'TIN Z (' + ','.join(map(lambda t: '((' + ','.join(list(map(lambda c: ' '.join(list(map(str, c))), t))) + '))', triangles)) + ')'

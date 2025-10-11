@@ -76,6 +76,10 @@ class TransformImportForm(forms.Form):
         queryset=Stack.objects.all())
     x_factor = forms.FloatField(initial=1.0, required=False, help_text="A factor that is multiplied to each X shift")
     y_factor = forms.FloatField(initial=1.0, required=False, help_text="A factor that is multiplied to each Y shift")
+    z_factor = forms.FloatField(initial=1.0, required=False, help_text="A factor that is multiplied to each Z shift")
+    x_offset = forms.FloatField(initial=0.0, required=False, help_text="A offset that is added to each X shift")
+    y_offset = forms.FloatField(initial=0.0, required=False, help_text="A offset that is added to each Y shift")
+    z_offset = forms.FloatField(initial=0.0, required=False, help_text="A offset that is added to each Z shift")
     delimiter = forms.CharField(initial=',', required=False, help_text="The delimiter used in the transform CSV")
     transform_type = forms.ChoiceField(choices=TRANSFORM_TYPE_CHOICES, required=True, help_text="The type of tranformaton")
     transform_text = forms.CharField(widget=forms.Textarea, label='Transform',
@@ -323,6 +327,10 @@ class ImportingWizard(SessionWizardView):
         reference_stack = transform_data['reference_stack']
         x_factor = transform_data['x_factor']
         y_factor = transform_data['y_factor']
+        z_factor = transform_data['z_factor']
+        x_offset = transform_data['x_offset']
+        y_offset = transform_data['y_offset']
+        z_offset = transform_data['z_offset']
         delimiter = transform_data['delimiter']
         transform_data_type = transform_data['transform_type']
         transform_text = transform_data['transform_text'].replace('\r\n', '\n').replace('\r', '\n')
@@ -332,8 +340,9 @@ class ImportingWizard(SessionWizardView):
             if transform_data_type == 'csv-z-slices':
                 with StringIO(transform_text) as transform_stream:
                     reader = csv.reader(transform_stream, delimiter=delimiter)
-                    transform = list(map(lambda xy: [x_factor * float(xy[0]),
-                                                     y_factor * float(xy[1])],
+                    transform = list(map(lambda xy: [x_factor * float(xy[0]) + x_offset,
+                                                     y_factor * float(xy[1]) + y_offset,
+                                                     z_offset],
                                         reader))
             else:
                 raise ValidationError(f"Unknown transform data type: {transform_data_type}")

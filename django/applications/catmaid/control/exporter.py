@@ -1072,6 +1072,26 @@ class Exporter():
                 raise
             raise CommandError("Unable to serialize database: %s" % e)
 
+    def get_precomputed_stats(self):
+        """
+        Return a dictionary with precomputed stats, named after the table they
+        refer to: catmaid_skeleton_summary.
+        """
+        cursor = connection.cursor()
+        cursor.execute("""
+            SELECT skeleton_id, project_id, last_summary_update,
+                original_creation_time, last_edition_time, num_nodes,
+                cable_length, last_editor_id, num_imported_nodes
+            FROM catmaid_skeleton_summary
+            WHERE project_id = %(project_id)s;
+        """, {
+            'project_id': self.project.id
+        })
+        skeleton_summary = cursor.fetchall()
+        return {
+            'catmaid_skeleton_summary': skeleton_summary,
+        }
+
 
 class FileExporter(Exporter):
 

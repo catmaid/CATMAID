@@ -9,6 +9,7 @@ import progressbar
 from typing import Any, List, DefaultDict, Dict, Set, Tuple
 import urllib
 import yaml
+from psycopg2.extras import execute_values
 
 
 from django import forms
@@ -1465,6 +1466,7 @@ class GenericImporter(AbstractImporter):
         self.transform = options.get('transform')
         reference_stack_id = options.get('reference_stack_id')
         self.reference_stack = Stack.objects.get(id=reference_stack_id) if reference_stack_id is not None else None
+        self.precomputed_stats = options.get('precomputed_stats')
 
         # Map user IDs to newly created users
         self.created_unknown_users = dict()
@@ -2073,12 +2075,35 @@ class GenericImporter(AbstractImporter):
                 logger.info("No edge table update needed")
 
             if n_imported_treenodes:
-                logger.info(f"Updating skeleton summary table for project {self.target.id}")
-                cursor.execute("""
-                    SELECT refresh_skeleton_summary_table_for_project(%(project_id)s);
-                """, {
-                    "project_id": self.target.id,
-                })
+                if self.precomputed_stats and \
+                        'catmaid_skeleton_summary' in self.precomputed_stats:
+                    skeleton_summary = self.precomputed_stats['catmaid_skeleton_summary']
+                    logger.info(f"Using pre-computed stats in skeleton summary table for project {self.target.id}")
+                    logger.info("- Updating IDs referenced in summary")
+                    imported_class_instances = import_objects_by_type_and_id[ClassInstance]
+                    # Update referenced skeleton ID and project
+                    skeleton_summary = list(map(lambda s: (
+                            imported_class_instances.get(s[0]).id,
+                            self.target.id,
+                            s[2], s[3], s[4], s[5], s[6], s[7], s[8]
+                        ),
+                        skeleton_summary))
+
+                    logger.info("- Inserting summary stats")
+                    execute_values(cursor, """
+                        INSERT INTO catmaid_skeleton_summary
+                            (skeleton_id, project_id, last_summary_update,
+                            original_creation_time, last_edition_time, num_nodes,
+                            cable_length, last_editor_id, num_imported_nodes)
+                        VALUES %s;
+                    """, skeleton_summary)
+                else:
+                    logger.info(f"Updating skeleton summary table for project {self.target.id}")
+                    cursor.execute("""
+                        SELECT refresh_skeleton_summary_table_for_project(%(project_id)s);
+                    """, {
+                        "project_id": self.target.id,
+                    })
             else:
                 logger.info("No skeleton summary update needed")
 

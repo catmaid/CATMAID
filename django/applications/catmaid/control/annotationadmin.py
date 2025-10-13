@@ -109,7 +109,10 @@ class ProjectBasedImportForm(forms.Form):
 class ConfirmationForm(forms.Form):
     """ Displays a summary of the data to be imported.
     """
-    pass
+    transfer_stats = forms.BooleanField(initial=False, required=False,
+            help_text="If the length and number of nodes of the cloned skeltons "
+            "didn't change, transferring stats can speed aup the cloning process "
+            "significantly.")
 
 
 def get_source_type(wizard) -> str:
@@ -177,6 +180,8 @@ def async_project_copy_job(import_task_id) -> str:
                     task_logger.info(f'Exporting data from project {p}')
                     exporter = Exporter(p, export_options)
                     project_data = exporter.export()
+                    precomputed_stats = exporter.get_precomputed_stats() \
+                            if scd['transfer_stats'] else dict()
 
                     import_options = {
                         'create_unknown_users': False,
@@ -189,6 +194,7 @@ def async_project_copy_job(import_task_id) -> str:
                         'stdout': log_stream,
                         'logger': task_logger,
                         'username_mapping': {},
+                        'precomputed_stats': precomputed_stats,
                     }
 
                     if scd['apply_transform']:
@@ -198,6 +204,7 @@ def async_project_copy_job(import_task_id) -> str:
                     # Import project data into new project
                     task_logger.info(f'Importing into project {target_project}')
                     override_user = get_system_user()
+                    computed_stats = None
                     importer = GenericImporter(project_data, target_project,
                                         override_user, import_options)
                     with transaction.atomic():
@@ -322,6 +329,8 @@ class ImportingWizard(SessionWizardView):
         scd = self.get_cleaned_data_for_step('sourcetypeselection')
 
         # Check transformation
+        confirmation_data = self.get_cleaned_data_for_step('confirmation')
+        transfer_stats = confirmation_data['transfer_stats']
         transform_data = self.get_cleaned_data_for_step('transform')
         apply_transform = transform_data['apply_transform']
         reference_stack = transform_data['reference_stack']
@@ -366,6 +375,7 @@ class ImportingWizard(SessionWizardView):
                     'apply_transform': apply_transform,
                     'transform': transform,
                     'reference_stack_id': reference_stack.id,
+                    'transfer_stats': transfer_stats,
                 })
 
         # Make sure the created import task is available

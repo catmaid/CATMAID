@@ -1437,11 +1437,12 @@ def import_projects(user, pre_projects, tags, permissions,
 
 
 class AbstractImporter(ABC):
-    def __init__(self, source, target, user, options):
+    def __init__(self, source, target, user, options, custom_logger=None):
         self.source = source
         self.target = target
         self.options = options
         self.user = user
+        self.logger = custom_logger or logger
         super().__init__()
 
     @abstractmethod
@@ -1454,8 +1455,8 @@ class AbstractImporter(ABC):
 
 
 class GenericImporter(AbstractImporter):
-    def __init__(self, source, target, user, options):
-        super().__init__(source, target, user, options)
+    def __init__(self, source, target, user, options, custom_logger=None):
+        super().__init__(source, target, user, options, custom_logger)
         self.create_unknown_users = options['create_unknown_users']
         self.auto_name_unknown_users = options['auto_name_unknown_users']
         self.next_auto_name_id = 1
@@ -1538,7 +1539,7 @@ class GenericImporter(AbstractImporter):
                     elif self.create_unknown_users:
                         user = created_users.get(obj_username)
                         if not user:
-                            logger.info("Created new inactive user: " + obj_username)
+                            self.logger.info("Created new inactive user: " + obj_username)
                             user = User.objects.create(username=obj_username)
                             user.is_active = False
                             user.save()
@@ -1555,11 +1556,11 @@ class GenericImporter(AbstractImporter):
                     user = self.created_unknown_users.get(obj_user_ref_id)
                     if not user:
                         if self.auto_name_unknown_users:
-                            logger.info("Creating new inactive user for imported " +
+                            self.logger.info("Creating new inactive user for imported " +
                                     f"user ID {obj_user_ref_id}. No name information was " +
                                     "available and CATMAID will generate a name.")
                         else:
-                            logger.info("Creating new inactive user for imported " +
+                            self.logger.info("Creating new inactive user for imported " +
                                     f"user ID {obj_user_ref_id}. No name information was " +
                                     "available, please enter a new username.")
                         while True:
@@ -1571,9 +1572,9 @@ class GenericImporter(AbstractImporter):
                             else:
                                 new_username = input("New username: ").strip()
                                 if not new_username:
-                                    logger.info("Please enter a valid username")
+                                    self.logger.info("Please enter a valid username")
                                 elif self.user_map.get(new_username):
-                                    logger.info(f"The username '{new_username}' " +
+                                    self.logger.info(f"The username '{new_username}' " +
                                             "exists already, choose a different one")
                                 else:
                                     break
@@ -1599,7 +1600,7 @@ class GenericImporter(AbstractImporter):
         be created when the object is saved. At the same time an index is
         created that allows per-type lookups of foreign key fields
         """
-        logger.info("Building foreign key update index")
+        self.logger.info("Building foreign key update index")
         # Build index for foreign key fields in models. For each type, map
         # each foreign key name to a model class.
         fk_index:DefaultDict[Any, Dict] = defaultdict(dict)
@@ -1617,7 +1618,7 @@ class GenericImporter(AbstractImporter):
                 # Get the database column name for this field
                 class_index[field.attname] = field.related_model
 
-        logger.info("Updating foreign keys to imported objects with new IDs")
+        self.logger.info("Updating foreign keys to imported objects with new IDs")
         all_classes:Dict = dict()
         all_classes.update(existing_classes)
         updated_fk_ids = 0
@@ -1677,7 +1678,7 @@ class GenericImporter(AbstractImporter):
             # need therefore a second iteration of reference updates after all
             # treenodes have been saved and new IDs are available.
             if map_treenodes and object_type == Treenode:
-                logger.info('Mapping parent IDs of treenodes to imported data')
+                self.logger.info('Mapping parent IDs of treenodes to imported data')
                 imported_objects_by_id = import_objects_by_type_and_id[Treenode]
                 for obj, parent_id in progressbar.progressbar(imported_parent_nodes,
                         max_value=len(imported_parent_nodes),
@@ -1711,7 +1712,7 @@ class GenericImporter(AbstractImporter):
                                 skeleton_id=obj.id, defaults={'last_editor': last_editor})
                         explicitly_created_summaries += 1
 
-        logger.info("".join([f"{updated_fk_ids} foreign key references updated, {unchanged_fk_ids} did not ",
+        self.logger.info("".join([f"{updated_fk_ids} foreign key references updated, {unchanged_fk_ids} did not ",
                 f"require change, {explicitly_created_summaries} skeleton summaries were created"]))
 
     def override_fields(self, obj):
@@ -1732,7 +1733,7 @@ class GenericImporter(AbstractImporter):
         # Map data types to lists of object of the respective type
         import_data:DefaultDict[Any, List] = defaultdict(list)
         n_objects = 0
-        logger.info("Loading data from memory")
+        self.logger.info("Loading data from memory")
         loaded_data = serializers.deserialize('json', self.source)
         for deserialized_object in progressbar.progressbar(loaded_data,
                 max_value=progressbar.UnknownLength, redirect_stdout=True):
@@ -1835,22 +1836,22 @@ class GenericImporter(AbstractImporter):
         created_users:Dict = dict()
         if User in import_data:
             import_users = dict((u.object.id, u) for u in import_data[User])
-            logger.info(f"Found {len(import_users)} referenceable users in import data")
+            self.logger.info(f"Found {len(import_users)} referenceable users in import data")
         else:
             import_users = dict()
-            logger.info("Found no referenceable users in import data")
+            self.logger.info("Found no referenceable users in import data")
 
         username_mapping = {}
         for m in self.options['username_mapping'] or []:
             username_mapping[m[0]] = m[1]
-            logger.info(f'Mapping import user "{m[0]}" to target user "{m[1]}"')
+            self.logger.info(f'Mapping import user "{m[0]}" to target user "{m[1]}"')
 
         # Get CATMAID model classes, which are the ones we want to allow
         # optional modification of user, project and ID fields.
         app = apps.get_app_config('catmaid')
         user_updatable_classes = set(app.get_models())
 
-        logger.info(f"Adjusting {n_objects} import objects to target database")
+        self.logger.info(f"Adjusting {n_objects} import objects to target database")
 
         # Needed for name uniquness of classes, class_instances and relations
         existing_classes = dict(Class.objects.filter(project_id=self.target.id) \
@@ -1962,13 +1963,13 @@ class GenericImporter(AbstractImporter):
                 objects_to_save[object_type].append(deserialized_object)
 
         if len(created_users) > 0:
-            logger.info("Created {} new users: {}".format(len(created_users),
+            self.logger.info("Created {} new users: {}".format(len(created_users),
                     ", ".join(sorted([u.username for u in created_users.values()]))))
         else:
-            logger.info("No unmapped users imported")
+            self.logger.info("No unmapped users imported")
 
         # Finally save all objects. Make sure they are saved in order:
-        logger.info(f"Storing {n_objects - n_reused} database objects including {n_moved} moved objects, reusing additional {n_reused} existing objects")
+        self.logger.info(f"Storing {n_objects - n_reused} database objects including {n_moved} moved objects, reusing additional {n_reused} existing objects")
 
         # In append-only mode, the foreign keys to objects with changed IDs have
         # to be updated. In preserve-ids mode only IDs to classes and relations
@@ -1983,7 +1984,7 @@ class GenericImporter(AbstractImporter):
         if self.transform:
             n_transformed = 0
             clamped_locations = defaultdict(int)
-            logger.info('Applying stored transformation')
+            self.logger.info('Applying stored transformation')
             single_location_types = [Treenode, Connector, Location, DeepLink, Point, RegionOfInterest]
             for location_type in single_location_types:
                 location_objects = objects_to_save.get(location_type, [])
@@ -1997,20 +1998,20 @@ class GenericImporter(AbstractImporter):
                 n_transformed += 1
             if len(clamped_locations):
                 clamp_info = ', '.join(map(lambda x: f'{x[0]}: {x[1]}', clamped_locations.items()))
-                logger.info(f'- Transformed {n_transformed} objects, clamped Z indices: {clamp_info}')
+                self.logger.info(f'- Transformed {n_transformed} objects, clamped Z indices: {clamp_info}')
             else:
-                logger.info(f'- Transformed {n_transformed} objects, no location clamped')
+                self.logger.info(f'- Transformed {n_transformed} objects, no location clamped')
 
         other_tasks = set(objects_to_save.keys()) - set(ordered_save_tasks)
         for object_type in ordered_save_tasks + list(other_tasks):
             objects = objects_to_save.get(object_type)
             if objects:
-                logger.info("- Importing objects of type " + object_type.__name__)
+                self.logger.info("- Importing objects of type " + object_type.__name__)
                 for deserialized_object in progressbar.progressbar(objects,
                         max_value=len(objects), redirect_stdout=True):
                     deserialized_object.save()
 
-        logger.info("- Importing all other objects")
+        self.logger.info("- Importing all other objects")
         for other_model in progressbar.progressbar(need_separate_import,
                 max_value=len(need_separate_import), redirect_stdout=True):
             other_objects = import_data[other_model]
@@ -2027,19 +2028,19 @@ class GenericImporter(AbstractImporter):
                     already_imported_usernames = import_usernames - not_imported_usernames
 
                     if already_imported_usernames:
-                        logger.info("The following usernames are mapped to " +
+                        self.logger.info("The following usernames are mapped to " +
                                 "existing users, but the import data " +
                                 "also contains objects for these users: " +
                                 ", ".join(already_imported_usernames))
                         ignore_users = ask_yes_no("Skip those users in input "
                                 "data and don't import them? [y/n]")
                         if ignore_users:
-                            logger.info("Won't import mapped users: " +
+                            self.logger.info("Won't import mapped users: " +
                                     ", ".join(already_imported_usernames))
                             other_objects = [u for u in other_objects \
                                     if u.object.username not in already_imported_usernames]
                         else:
-                            logger.info("Will import all listed users in import data")
+                            self.logger.info("Will import all listed users in import data")
 
             for deserialized_object in other_objects:
                 if deserialized_object.object.username in created_users.keys():
@@ -2073,24 +2074,24 @@ class GenericImporter(AbstractImporter):
             FOR EACH STATEMENT EXECUTE PROCEDURE on_delete_treenode_update_summary_and_edges();
         """)
 
-        logger.info(f'Ignored objects:\n- DeepLink: { n_ignored_deeplinks}')
+        self.logger.info(f'Ignored objects:\n- DeepLink: { n_ignored_deeplinks}')
 
         n_imported_treenodes = len(import_objects_by_type_and_id.get(Treenode, []))
         n_imported_connectors = len(import_objects_by_type_and_id.get(Connector, []))
 
         if self.options.get('update_project_materializations'):
             if n_imported_treenodes or n_imported_connectors:
-                logger.info(f"Updating edge tables for project {self.target.id}")
-                rebuild_edge_tables(project_ids=[self.target.id], log=lambda msg: logger.info(msg))
+                self.logger.info(f"Updating edge tables for project {self.target.id}")
+                rebuild_edge_tables(project_ids=[self.target.id], log=lambda msg: self.logger.info(msg))
             else:
-                logger.info("No edge table update needed")
+                self.logger.info("No edge table update needed")
 
             if n_imported_treenodes:
                 if self.precomputed_stats and \
                         'catmaid_skeleton_summary' in self.precomputed_stats:
                     skeleton_summary = self.precomputed_stats['catmaid_skeleton_summary']
-                    logger.info(f"Using pre-computed stats in skeleton summary table for project {self.target.id}")
-                    logger.info("- Updating IDs referenced in summary")
+                    self.logger.info(f"Using pre-computed stats in skeleton summary table for project {self.target.id}")
+                    self.logger.info("- Updating IDs referenced in summary")
                     imported_class_instances = import_objects_by_type_and_id[ClassInstance]
                     # Update referenced skeleton ID and project
                     skeleton_summary = list(map(lambda s: (
@@ -2100,7 +2101,7 @@ class GenericImporter(AbstractImporter):
                         ),
                         skeleton_summary))
 
-                    logger.info("- Inserting summary stats")
+                    self.logger.info("- Inserting summary stats")
                     execute_values(cursor, """
                         INSERT INTO catmaid_skeleton_summary
                             (skeleton_id, project_id, last_summary_update,
@@ -2109,23 +2110,23 @@ class GenericImporter(AbstractImporter):
                         VALUES %s;
                     """, skeleton_summary)
                 else:
-                    logger.info(f"Updating skeleton summary table for project {self.target.id}")
+                    self.logger.info(f"Updating skeleton summary table for project {self.target.id}")
                     cursor.execute("""
                         SELECT refresh_skeleton_summary_table_for_project(%(project_id)s);
                     """, {
                         "project_id": self.target.id,
                     })
             else:
-                logger.info("No skeleton summary update needed")
+                self.logger.info("No skeleton summary update needed")
 
         elif self.options.get('update_instance_materializations'):
             if n_imported_treenodes or n_imported_connectors:
-                logger.info(f"Updating edge tables for project {self.target.id}")
-                rebuild_edge_tables(project_ids=[self.target.id], log=lambda msg: logger.info(msg))
+                self.logger.info(f"Updating edge tables for project {self.target.id}")
+                rebuild_edge_tables(project_ids=[self.target.id], log=lambda msg: self.logger.info(msg))
             else:
-                logger.info("No edge table update needed")
+                self.logger.info("No edge table update needed")
 
-            logger.info('Recreating skeleton summary table for entire CATMAID instance')
+            self.logger.info('Recreating skeleton summary table for entire CATMAID instance')
             cursor.execute("""
                 -- Will TRUNCATE the catmaid_skeleton_summary table and
                 -- require an exclusive table lock, make sure we can get it by
@@ -2135,7 +2136,7 @@ class GenericImporter(AbstractImporter):
                 SELECT refresh_skeleton_summary_table();
             """)
         else:
-            logger.info("Finding imported skeleton IDs and connector IDs")
+            self.logger.info("Finding imported skeleton IDs and connector IDs")
 
             connector_ids:List = []
             connectors = objects_to_save.get(Connector)
@@ -2166,24 +2167,25 @@ class GenericImporter(AbstractImporter):
                         skeleton_ids.append(ci.id)
 
             if skeleton_ids or connector_ids:
-                logger.info(f"Updating edge tables for {len(skeleton_ids)} skeleton(s) " + \
+                self.logger.info(f"Updating edge tables for {len(skeleton_ids)} skeleton(s) " + \
                             f"and {len(connector_ids)} connector(s)")
-                rebuild_edges_selectively(skeleton_ids, connector_ids, log=lambda msg: logger.info(msg))
+                rebuild_edges_selectively(skeleton_ids, connector_ids, log=lambda msg: self.logger.info(msg))
             else:
-                logger.info("No materialization to update: no skeleton IDs or " \
+                self.logger.info("No materialization to update: no skeleton IDs or " \
                         "connector IDs found in imported data")
 
             # Skeleton summary
             if skeleton_ids:
-                logger.info('Recreating skeleton summary table entries for imported skeletons')
+                self.logger.info('Recreating skeleton summary table entries for imported skeletons')
                 cursor.execute("""
                     SELECT refresh_skeleton_summary_table_selectively(%(skeleton_ids)s);
                 """, {
                     'skeleton_ids': skeleton_ids,
                 })
             else:
-                logger.info('No skeleton summary table updated needed')
-    logger.info('Import finished')
+                self.logger.info('No skeleton summary table updated needed')
+        self.logger.info('Import finished')
+
 
 class FileImporter(GenericImporter):
 
@@ -2195,7 +2197,7 @@ class FileImporter(GenericImporter):
         # Map data types to lists of object of the respective type
         import_data:DefaultDict[Any, List] = defaultdict(list)
         n_objects = 0
-        logger.info(f"Loading data from {self.source}")
+        self.logger.info(f"Loading data from {self.source}")
         with open(self.source, "r") as data:
             loaded_data = serializers.deserialize(self.format, data)
             for deserialized_object in progressbar.progressbar(loaded_data,

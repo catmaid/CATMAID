@@ -180,7 +180,8 @@ def async_project_copy_job(import_task_id) -> str:
 
                     # Export project data
                     task_logger.info(f'Exporting data from project {p}')
-                    exporter = Exporter(p, export_options)
+                    exporter = Exporter(p, export_options,
+                                        custom_logger=task_logger)
                     project_data = exporter.export()
                     precomputed_stats = exporter.get_precomputed_stats() \
                             if scd['transfer_stats'] else dict()
@@ -208,7 +209,8 @@ def async_project_copy_job(import_task_id) -> str:
                     task_logger.info(f'Importing into project {target_project}')
                     override_user = None
                     importer = GenericImporter(project_data, target_project,
-                                        override_user, import_options)
+                                        override_user, import_options,
+                                        custom_logger=task_logger)
                     with transaction.atomic():
                         importer.import_data()
 

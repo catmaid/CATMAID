@@ -114,7 +114,7 @@ class ExportAnnotation(Enum):
 
 class Exporter():
 
-    def __init__(self, project, options):
+    def __init__(self, project, options, custom_logger=None):
         """
         Create a new basic exporter that exports data from the passed in project
         with the provided options. Optionsa are decleared as a dictionary with
@@ -138,7 +138,8 @@ class Exporter():
           exclusion_is_final: False
         }
         """
-        set_log_level(logger, options.get('verbosity', 1))
+        self.logger = custom_logger or logger
+        set_log_level(self.logger, options.get('verbosity', 1))
 
         self.project = project
         self.options = options
@@ -223,7 +224,7 @@ class Exporter():
             neuron_info, num_total_records = get_annotated_entities(self.project.id,
                     query_params, relations, classes, ['neuron'], with_skeletons=True)
 
-            logger.info(f"Found {num_total_records} neurons with the following exclusion annotations: {', '.join(self.excluded_annotations)}")
+            self.logger.info(f"Found {num_total_records} neurons with the following exclusion annotations: {', '.join(self.excluded_annotations)}")
 
             exclude_skeleton_id_constraints = set(chain.from_iterable(
                     [n['skeleton_ids'] for n in neuron_info]))
@@ -263,7 +264,7 @@ class Exporter():
             settings_annotations, num_total_records = get_annotated_entities(self.project.id,
                     query_params, relations, classes, ['annotation'])
 
-            logger.info(f"Found {num_total_records} annotations with the "
+            self.logger.info(f"Found {num_total_records} annotations with the "
                     f"following settings meta-annotations: {self.settings_meta_annotation}")
 
             set_annotation_map = dict([(n['name'], n['id']) for n in settings_annotations])
@@ -278,7 +279,7 @@ class Exporter():
             settings_annotations_map = get_annotation_to_id_map(
                     self.project.id, settings_annotation_names, relations, classes)
 
-            logger.info(f"Found {len(settings_annotations_map)} used "
+            self.logger.info(f"Found {len(settings_annotations_map)} used "
                     f"settings annotations: {', '.join(settings_annotations_map.keys())}")
 
             # For each of these annotations, collect all annotated neurons and
@@ -292,7 +293,7 @@ class Exporter():
                 settings_neuron_info, num_total_records = get_annotated_entities(self.project.id,
                         query_params, relations, classes, ['neuron'], with_skeletons=True)
 
-                logger.info(f"Found {num_total_records} neurons with the "
+                self.logger.info(f"Found {num_total_records} neurons with the "
                   f"following settings meta-annotations: {se_name}")
 
                 skeleton_ids_with_settings:List = \
@@ -375,7 +376,7 @@ class Exporter():
                         export_settings['connectors'][skeleton_id] = connector_settings
                         n_updated_connectors += 1
 
-                logger.info(f'Updated export settings for set "{se_name}" '
+                self.logger.info(f'Updated export settings for set "{se_name}" '
                         f'({len(skeleton_ids_with_settings)} skeletons) based on annotations for '
                         f'treenodes ({n_updated_treenodes} neurons), '
                         f'tags ({n_updated_tags} neurons), '
@@ -401,7 +402,7 @@ class Exporter():
             neuron_info, num_total_records = get_annotated_entities(self.project.id,
                     query_params, relations, classes, ['neuron'], with_skeletons=True)
 
-            logger.info(f"Found {num_total_records} neurons with the following annotations: {', '.join(self.required_annotations)}")
+            self.logger.info(f"Found {num_total_records} neurons with the following annotations: {', '.join(self.required_annotations)}")
 
             skeleton_id_constraints:Optional[List] = list(chain.from_iterable([n['skeleton_ids'] for n in neuron_info]))
             neuron_ids = [n['id'] for n in neuron_info]
@@ -469,7 +470,7 @@ class Exporter():
         if entities.count() == 0:
             raise CommandError("No matching neurons found")
 
-        logger.info("Will export %s neurons" % entities.count())
+        self.logger.info("Will export %s neurons" % entities.count())
         if not self.run_noninteractive:
             start_export = ask_to_continue()
             if not start_export:
@@ -516,35 +517,35 @@ class Exporter():
                 n_default_connector_skeletons = len(connector_skeletons)
 
                 connector_link_lists = []
-                logger.info('Marking connector links for export for individual neuron sets')
+                self.logger.info('Marking connector links for export for individual neuron sets')
                 for se_name, se_id in set_annotation_map.items():
                     settings_neuron_info = settings_neuron_infos.get(se_id)
                     if settings_neuron_info is None:
-                        logger.error(f'Could not find export setting info for set annotation {se_name} with ID {se_id}')
+                        self.logger.error(f'Could not find export setting info for set annotation {se_name} with ID {se_id}')
                         continue
 
                     skeleton_ids = settings_neuron_info['skeleton_ids']
                     connector_setting = settings_neuron_info['connector_settings']
 
                     if connector_setting == ExportAnnotation.ConnectorsOnlyIntra:
-                        logger.info(f'Allowing only intra-set connector links export for neuron set "{se_name}" (ID: {se_id}, # skeletons: {len(skeleton_ids)})')
+                        self.logger.info(f'Allowing only intra-set connector links export for neuron set "{se_name}" (ID: {se_id}, # skeletons: {len(skeleton_ids)})')
                         # Remove this neuron set from the general set of connector skeletons
                         connector_skeletons = connector_skeletons - set(skeleton_ids)
                     elif connector_setting == ExportAnnotation.ConnectorsNo:
-                        logger.info(f'Skipping connector link export for neuron set "{se_name}" (ID: {se_id}, # skeletons: {len(skeleton_ids)})')
+                        self.logger.info(f'Skipping connector link export for neuron set "{se_name}" (ID: {se_id}, # skeletons: {len(skeleton_ids)})')
                         connector_skeletons = connector_skeletons - set(skeleton_ids)
                         n_skeletons_ignored_for_connectors += len(skeleton_ids)
                         continue
                     elif connector_setting is None:
-                        logger.info(f'Applying no connector link constraints for neuron set "{se_name}" (ID: {se_id}, # skeletons: {len(skeleton_ids)}, Default: {self.connector_mode})')
+                        self.logger.info(f'Applying no connector link constraints for neuron set "{se_name}" (ID: {se_id}, # skeletons: {len(skeleton_ids)}, Default: {self.connector_mode})')
                         continue
                     else:
-                        logger.info(f'Allowing regular connectivity for neuron set "{se_name}" (ID: {se_id}, # skeletons: {len(skeleton_ids)})')
+                        self.logger.info(f'Allowing regular connectivity for neuron set "{se_name}" (ID: {se_id}, # skeletons: {len(skeleton_ids)})')
 
                     connector_link_lists.append(TreenodeConnector.objects \
                             .filter(project=self.project, skeleton_id__in=skeleton_ids) \
                             .values_list('id', 'connector', 'treenode'))
-                    logger.info(f'Current number of connector links: {len(connector_link_lists[-1])}')
+                    self.logger.info(f'Current number of connector links: {len(connector_link_lists[-1])}')
 
                 # Add remaining export skeletons that didn't have any explicit constraint.
                 connector_link_lists.append(TreenodeConnector.objects \
@@ -559,7 +560,7 @@ class Exporter():
                 connector_ids = set(c for _,c,_ in connector_links)
                 self.to_serialize.append(Connector.objects.filter(
                         id__in=connector_ids))
-                logger.info(f'Exporting {len(connector_ids)} connectors '
+                self.logger.info(f'Exporting {len(connector_ids)} connectors '
                         f'({n_skeletons_ignored_for_connectors} explicitly ignored) '
                         f'with {len(connector_links)} links')
 
@@ -663,10 +664,10 @@ class Exporter():
                 if all_annotation_links:
                     self.to_serialize.append(all_annotation_links)
 
-                logger.info(f"Exporting {len(all_annotations)} annotations " + \
+                self.logger.info(f"Exporting {len(all_annotations)} annotations " + \
                             f"and {len(all_annotation_links)} annotation links")#: {', '.join([a.name for a in all_annotations])}")
                 if self.annotation_annotations:
-                    logger.info("Only annotations in hierarchy of the following " + \
+                    self.logger.info("Only annotations in hierarchy of the following " + \
                                 f"annotations are exported: {', '.join(self.annotation_annotations)}")
 
             # Export tags
@@ -746,22 +747,22 @@ class Exporter():
             if tags:
                 tag_names = sorted(set(t.name for t in tags))
                 if self.allowed_tags is None:
-                    logger.info('All tags are allowed for export')
+                    self.logger.info('All tags are allowed for export')
                 else:
-                    logger.info(f'Allowed tags: {", ".join(self.allowed_tags)}')
-                logger.info(f"Exporting {len(tags)} tags, part of {tag_links.count()} links: {', '.join(tag_names)}")
+                    self.logger.info(f'Allowed tags: {", ".join(self.allowed_tags)}')
+                self.logger.info(f"Exporting {len(tags)} tags, part of {tag_links.count()} links: {', '.join(tag_names)}")
 
                 self.to_serialize.append(tags)
                 self.to_serialize.append(tag_links)
                 self.to_serialize.append(tag_links_connectors)
             else:
-                logger.info(f"Exporting {len(tags)} tags and {tag_links.count()} (skeleton) and {tag_links_connectors.count()} (connector) tag links")
+                self.logger.info(f"Exporting {len(tags)} tags and {tag_links.count()} (skeleton) and {tag_links_connectors.count()} (connector) tag links")
 
             # TODO: Export reviews
         else:
             # TODO: Add support for export annotations
             if n_export_settings > 0:
-                logger.warn('Export settings are currently only supported for '
+                self.logger.warn('Export settings are currently only supported for '
                         f'annotation based exports. Found {n_export_settings} '
                         'export setting annotations')
 
@@ -820,7 +821,7 @@ class Exporter():
                                    relation=relations.get('model_of')).values_list('class_instance_b', flat=True)
                     annotation_links = annotation_links.exclude(class_instance_a__in=exclude_neuron_ids)
 
-                logger.info('Exporting all annotations')
+                self.logger.info('Exporting all annotations')
 
                 self.to_serialize.append(annotations)
                 self.to_serialize.append(annotation_links)
@@ -847,7 +848,7 @@ class Exporter():
             neurons = set([link.class_instance_b_id for link in neuron_links])
 
             exported_tids = set(treenodes.values_list('id', flat=True))
-            logger.info(f"Exporting {len(exported_tids)} treenodes in {n_skeletons} skeletons and {len(neurons)} neurons")
+            self.logger.info(f"Exporting {len(exported_tids)} treenodes in {n_skeletons} skeletons and {len(neurons)} neurons")
 
         # Get current maximum concept ID
         cursor = connection.cursor()
@@ -869,7 +870,7 @@ class Exporter():
                 extra_tids = connector_tids - exported_tids
 
                 connector_export_settings = export_settings['connectors']
-                logger.info(f"Exporting {len(extra_tids)} placeholder nodes")
+                self.logger.info(f"Exporting {len(extra_tids)} placeholder nodes")
 
                 placeholder_treenodes = Treenode.objects.prefetch_related(
                         'treenodeconnector_set').filter(id__in=extra_tids)
@@ -960,7 +961,7 @@ class Exporter():
                         original_placeholder_nodes.append(pt)
 
                 # Find treenodes
-                logger.info(f"Exported {len(original_placeholder_nodes)} "
+                self.logger.info(f"Exported {len(original_placeholder_nodes)} "
                         "placeholder nodes with original context, and "
                         f"{n_new_placeholder_context} placeholder nodes with a new "
                         "context.")
@@ -1003,18 +1004,18 @@ class Exporter():
             if volume_ids:
                 volumes = Volume.objects.filter(pk__in=volume_ids,
                         project_id=self.project.id)
-                logger.info("Exporting {} volumes: {}".format(
+                self.logger.info("Exporting {} volumes: {}".format(
                         len(volumes), ', '.join(v.name for v in volumes)))
                 self.to_serialize.append(volumes)
             else:
-                logger.info("No volumes found to export")
+                self.logger.info("No volumes found to export")
 
         # Public deep links
         seen_deep_links = set()
         if self.export_public_deep_links:
             deep_links = DeepLink.objects.filter(project_id=self.project.id, is_public=True)
             seen_deep_links.update([link.id for link in deep_links])
-            logger.info(f'Exporting {len(deep_links)} public deep links')
+            self.logger.info(f'Exporting {len(deep_links)} public deep links')
             # FIXME: Include referenced skeletons, treenodes and connectors
             self.to_serialize.append(deep_links)
 
@@ -1024,7 +1025,7 @@ class Exporter():
             n_exportable_deep_links = len(deep_links)
             deep_links = list(filter(lambda x: x.id not in seen_deep_links, deep_links))
             seen_deep_links.update([link.id for link in deep_links])
-            logger.info(f'Exporting {n_exportable_deep_links} exportable deep links ({len(deep_links)} are not already prev. included)')
+            self.logger.info(f'Exporting {n_exportable_deep_links} exportable deep links ({len(deep_links)} are not already prev. included)')
             # FIXME: Include referenced skeletons, treenodes and connectors
             self.to_serialize.append(deep_links)
 
@@ -1044,7 +1045,7 @@ class Exporter():
                 date_joined=u.date_joined) \
                 for u in User.objects.filter(pk__in=seen_user_ids)]
         if self.export_users:
-            logger.info("Exporting {} users: {}".format(len(users),
+            self.logger.info("Exporting {} users: {}".format(len(users),
                     ", ".join([u.username for u in users])))
             self.to_serialize.append(users)
         else:
@@ -1054,7 +1055,7 @@ class Exporter():
                 reduced_user = ReducedInfoUser(id=u.id, username=u.username,
                         password=make_password(User.objects.make_random_password()))
                 reduced_users.append(reduced_user)
-            logger.info("Exporting {} users in reduced form with random passwords: {}".format(len(reduced_users),
+            self.logger.info("Exporting {} users in reduced form with random passwords: {}".format(len(reduced_users),
                     ", ".join([u.username for u in reduced_users])))
             self.to_serialize.append(reduced_users)
 

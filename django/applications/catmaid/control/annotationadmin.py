@@ -212,11 +212,11 @@ def async_project_copy_job(import_task_id) -> str:
                     with transaction.atomic():
                         importer.import_data()
 
-                import_task.import_log = log_stream.getvalue()
                 import_task.status = ImportTask.StatusOptions.Success
+                task_logger.info(f'Finished import in {import_task.import_time} seconds')
+                import_task.import_log = log_stream.getvalue()
             else:
-                import_task.import_log = f'Unsupported source type: {scd["source_type"]}'
-                import_task.status = ImportTask.StatusOptions.Error
+                raise ValueError(f'Unsupported source type: {scd["source_type"]}')
         except Exception as err:
             task_logger.removeHandler(log_handler)
             import_task.import_log = f"{log_stream.getvalue()}\n{err}\n{traceback.format_exc()}"
@@ -224,7 +224,6 @@ def async_project_copy_job(import_task_id) -> str:
 
         import_task.import_time = time.perf_counter() - start_time
         import_task.save()
-        task_logger.info(f'Finished import in {import_task.import_time} seconds')
 
 
 class ImportingWizard(SessionWizardView):

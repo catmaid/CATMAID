@@ -74,6 +74,8 @@ class TransformImportForm(forms.Form):
     reference_stack = forms.ModelChoiceField(required=True,
         help_text="The project the data will be imported into.",
         queryset=Stack.objects.all())
+    transform_in_project_space = forms.BooleanField(initial=False, required=False,
+            help_text="Are transformation vectors provided in physical space?")
     x_factor = forms.FloatField(initial=1.0, required=False, help_text="A factor that is multiplied to each X shift")
     y_factor = forms.FloatField(initial=1.0, required=False, help_text="A factor that is multiplied to each Y shift")
     z_factor = forms.FloatField(initial=1.0, required=False, help_text="A factor that is multiplied to each Z shift")
@@ -192,14 +194,15 @@ def async_project_copy_job(import_task_id) -> str:
                         'analyze_db': True,
                         'update_project_materializations': update_materializations,
                         'stdout': log_stream,
-                        'logger': task_logger,
                         'username_mapping': {},
                         'precomputed_stats': precomputed_stats,
+                        'update_edition_time': False,
                     }
 
                     if scd['apply_transform']:
                         import_options['transform'] = scd['transform']
                         import_options['reference_stack_id'] = scd['reference_stack_id']
+                        import_options['transform_in_project_space'] = scd['transform_in_project_space']
 
                     # Import project data into new project
                     task_logger.info(f'Importing into project {target_project}')
@@ -375,6 +378,7 @@ class ImportingWizard(SessionWizardView):
                     'transform': transform,
                     'reference_stack_id': reference_stack.id,
                     'transfer_stats': transfer_stats,
+                    'transform_in_project_space': transform_data['transform_in_project_space'],
                 })
 
         # Make sure the created import task is available

@@ -218,6 +218,9 @@ Import/Export widget:
   metadata.csv before. The second one is new and contains information on the
   project, stacks and exporting user.
 
+- Importing skeletons from a remote CATMAID server using annotations doesn't
+  raise an error about a missing function anymore.
+
 Miscellaneous:
 
 - The built-in API docs (/apis endpoint) now supports deep links, which allows
@@ -289,9 +292,6 @@ Miscellaneous:
 - Venn diagram widget: all selections are cleared when clicking on the
   background.
 
-- Import/export widget: importing skeletons from a remote CATMAID server using
-  annotations doesn't raise an error about a missing function anymore.
-
 - NBLAST computation: avoid crash when set of not cached target DPS objects is
   None.
 
@@ -322,6 +322,8 @@ Miscellaneous:
 
 - Treenode/connector export: the X, Y and Z radius now properly limit the width
   and height of the image. Before, the maximum X, Y and Z was short one pixel.
+
+- Export/import management commands: reviews are now exported/imported as well.
 
 ## Maintenance updates
 

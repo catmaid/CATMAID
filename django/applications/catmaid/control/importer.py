@@ -36,7 +36,7 @@ from catmaid.models import (BrokenSlice, Class, Relation, ClassClass, Location, 
         ClassInstance, Project, ClassInstanceClassInstance, Stack, StackGroup, DeepLink, Point,
         StackStackGroup, ProjectStack, StackClassInstance, StackGroupClassInstance, StackGroupRelation,
         StackMirror, TILE_SOURCE_TYPE_CHOICES, User, Treenode, Connector, Concept, SkeletonSummary,
-        RegionOfInterest)
+        RegionOfInterest, Review)
 from catmaid.fields import Double3D
 from catmaid.control.annotationadmin import copy_annotations
 from catmaid.control.common import urljoin, is_valid_host
@@ -1464,6 +1464,7 @@ class GenericImporter(AbstractImporter):
         self.user_id_map = dict((v,k) for k,v in self.user_map.items())
         self.preserve_ids = options['preserve_ids']
         self.import_deeplinks = options.get('import_deeplinks', True)
+        self.import_reviews = options.get('import_reviews', True)
         self.transform = options.get('transform')
         reference_stack_id = options.get('reference_stack_id')
         self.reference_stack = Stack.objects.get(id=reference_stack_id) if reference_stack_id is not None else None
@@ -1880,6 +1881,7 @@ class GenericImporter(AbstractImporter):
         n_reused = 0
         n_moved = 0
         n_ignored_deeplinks = 0
+        n_ignored_reviews = 0
         append_only = not self.preserve_ids
         need_separate_import = []
         objects_to_save:DefaultDict[Any, List] = defaultdict(list)
@@ -1892,6 +1894,9 @@ class GenericImporter(AbstractImporter):
 
             if not self.import_deeplinks and object_type == DeepLink:
                 n_ignored_deeplinks += 1
+                continue
+            elif not self.import_reviews and object_type == Review:
+                n_ignored_reviews += 1
                 continue
 
             # Stores in append-only mode import IDs and links them to the
@@ -2080,7 +2085,9 @@ class GenericImporter(AbstractImporter):
             FOR EACH STATEMENT EXECUTE PROCEDURE on_delete_treenode_update_summary_and_edges();
         """)
 
-        self.logger.info(f'Ignored objects:\n- DeepLink: { n_ignored_deeplinks}')
+        self.logger.info('Ignored objects:\n'
+                f'- DeepLink: {n_ignored_deeplinks}\n'
+                f'- Reviews: {n_ignored_reviews}')
 
         n_imported_treenodes = len(import_objects_by_type_and_id.get(Treenode, []))
         n_imported_connectors = len(import_objects_by_type_and_id.get(Connector, []))

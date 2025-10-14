@@ -20,8 +20,8 @@ from formtools.wizard.views import SessionWizardView
 from catmaid.apps import get_system_user
 from catmaid.control.exporter import Exporter, ConnectorMode
 from catmaid.models import (Class, ClassInstance, ClassInstanceClassInstance,
-                            Connector, ImportTask, Project, Relation, Stack,
-                            Treenode, Volume)
+                            Connector, ImportTask, Project, Relation, Review,
+                            Stack, Treenode, Volume)
 
 SOURCE_TYPE_CHOICES = [
     ('file', 'Local file'),
@@ -62,6 +62,8 @@ class SourceTypeForm(forms.Form):
             help_text="Should neuron node tags be imported?")
     import_volumes = forms.BooleanField(initial=True, required=False,
             help_text="Should volumes/meshes be imported?")
+    import_reviews = forms.BooleanField(initial=True, required=False,
+            help_text="Should reviews be imported?")
 
 
 class FileBasedImportForm(forms.Form):
@@ -171,6 +173,7 @@ def async_project_copy_job(import_task_id) -> str:
                         'export_volumes': scd['import_volumes'],
                         'export_public_deep_links': False, # FIXME
                         'export_exportable_deep_links': False, # FIXME,
+                        'export_reviews': scd['import_reviews'],
                         'required_annotations': [],
                         'excluded_annotations': [],
                         'volume_annotations': None,
@@ -378,6 +381,7 @@ class ImportingWizard(SessionWizardView):
                     'import_annotations': scd['import_annotations'],
                     'import_tags': scd['import_tags'],
                     'import_volumes': scd['import_volumes'],
+                    'import_reviews': scd['import_reviews'],
                     'apply_transform': apply_transform,
                     'transform': transform,
                     'reference_stack_id': reference_stack.id,

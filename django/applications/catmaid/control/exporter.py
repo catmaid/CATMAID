@@ -13,7 +13,7 @@ from catmaid.control.tracing import check_tracing_setup, known_tags
 from catmaid.control.volume import find_volumes
 from catmaid.models import (Class, ClassInstance, ClassInstanceClassInstance,
         ConnectorClassInstance, DeepLink, Relation, Connector, Project, Treenode,
-        TreenodeClassInstance, TreenodeConnector, User, ReducedInfoUser,
+        TreenodeClassInstance, TreenodeConnector, User, ReducedInfoUser, Review,
         ExportUser, Volume)
 from catmaid.util import str2bool, str2list
 from django.db import connection
@@ -130,6 +130,7 @@ class Exporter():
           export_volumes: True,
           export_public_deep_links: True,
           export_exportable_deep_links: True,
+          export_reviews: False,
           required_annotations: [],
           excluded_annotations: [],
           volume_annotations: [],
@@ -148,6 +149,7 @@ class Exporter():
         self.export_annotations = options['export_annotations']
         self.export_public_deep_links = options['export_public_deep_links']
         self.export_exportable_deep_links = options['export_exportable_deep_links']
+        self.export_reviews = options['export_reviews']
         self.export_tags = options['export_tags']
         self.allowed_tags = options['allowed_tags']
 
@@ -238,6 +240,7 @@ class Exporter():
             'connectors': defaultdict(lambda: self.connector_mode),
             'annotations': defaultdict(lambda: self.export_annotations),
             'tags': defaultdict(lambda: self.export_tags),
+            'reviews': defaultdict(lambda: self.export_reviews),
         }
 
         if self.settings_meta_annotation:
@@ -830,10 +833,6 @@ class Exporter():
                     self.to_serialize.append(ConnectorClassInstance.objects.filter(project=self.project,
                         relation_id=relations['annotated_with']))
 
-
-            # TODO: Export reviews
-
-
         # Export referenced neurons and skeletons
         exported_tids:Set = set()
         if treenodes:
@@ -849,6 +848,11 @@ class Exporter():
 
             exported_tids = set(treenodes.values_list('id', flat=True))
             self.logger.info(f"Exporting {len(exported_tids)} treenodes in {n_skeletons} skeletons and {len(neurons)} neurons")
+
+            if self.export_reviews:
+                reviews = Review.objects.filter(skeleton_id__in=treenode_skeleton_ids)
+                self.to_serialize.append(reviews)
+                self.logger.info(f"Exporting {len(reviews)} reviews on exported treenodes")
 
         # Get current maximum concept ID
         cursor = connection.cursor()

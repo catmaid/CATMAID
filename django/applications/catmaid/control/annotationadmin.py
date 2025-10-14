@@ -82,6 +82,7 @@ class TransformImportForm(forms.Form):
     x_offset = forms.FloatField(initial=0.0, required=False, help_text="A offset that is added to each X shift")
     y_offset = forms.FloatField(initial=0.0, required=False, help_text="A offset that is added to each Y shift")
     z_offset = forms.FloatField(initial=0.0, required=False, help_text="A offset that is added to each Z shift")
+    z_lookup_offset = forms.IntegerField(initial=0, required=False, help_text="An offset that is added to each Z look-up index. Slices before won't be transformed.")
     delimiter = forms.CharField(initial=',', required=False, help_text="The delimiter used in the transform CSV")
     transform_type = forms.ChoiceField(choices=TRANSFORM_TYPE_CHOICES, required=True, help_text="The type of tranformaton")
     transform_text = forms.CharField(widget=forms.Textarea, label='Transform',
@@ -204,6 +205,7 @@ def async_project_copy_job(import_task_id) -> str:
                         import_options['transform'] = scd['transform']
                         import_options['reference_stack_id'] = scd['reference_stack_id']
                         import_options['transform_in_project_space'] = scd['transform_in_project_space']
+                        import_options['transform_z_lookup_offset'] = scd['transform_z_lookup_offset']
 
                     # Import project data into new project
                     task_logger.info(f'Importing into project {target_project}')
@@ -343,6 +345,7 @@ class ImportingWizard(SessionWizardView):
         x_offset = transform_data['x_offset']
         y_offset = transform_data['y_offset']
         z_offset = transform_data['z_offset']
+        z_lookup_offset = transform_data['z_lookup_offset']
         delimiter = transform_data['delimiter']
         transform_data_type = transform_data['transform_type']
         transform_text = transform_data['transform_text'].replace('\r\n', '\n').replace('\r', '\n')
@@ -380,6 +383,7 @@ class ImportingWizard(SessionWizardView):
                     'reference_stack_id': reference_stack.id,
                     'transfer_stats': transfer_stats,
                     'transform_in_project_space': transform_data['transform_in_project_space'],
+                    'transform_z_lookup_offset': transform_data['z_lookup_offset'],
                 })
 
         # Make sure the created import task is available

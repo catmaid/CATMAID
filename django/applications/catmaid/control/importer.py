@@ -1468,6 +1468,7 @@ class GenericImporter(AbstractImporter):
         reference_stack_id = options.get('reference_stack_id')
         self.reference_stack = Stack.objects.get(id=reference_stack_id) if reference_stack_id is not None else None
         self.transform_in_project_space = options.get('transform_in_project_space', False)
+        self.transform_z_lookup_offset = options.get('transform_z_lookup_offset', 0)
         self.precomputed_stats = options.get('precomputed_stats')
 
         # Map user IDs to newly created users
@@ -1750,10 +1751,13 @@ class GenericImporter(AbstractImporter):
         """
         if self.transform and self.reference_stack:
             # Assume csv-z-slice type for now
-            z_index = int(location.location_z / self.reference_stack.resolution.z)
+            z_index = int(location.location_z / self.reference_stack.resolution.z) \
+                    + self.transform_z_lookup_offset
+            # Don't transform data outside of transform index
             if z_index >= len(self.transform) or z_index < 0:
                 clamped_locations[z_index] += 1
-                z_index = 0 if z_index < 0 else len(self.transform) - 1
+                return location
+
             xyz_shift = self.transform[z_index]
             if self.transform_in_project_space:
                 location.location_x += xyz_shift[0] * self.reference_stack.resolution.x
@@ -1786,10 +1790,12 @@ class GenericImporter(AbstractImporter):
             for triangle_coords in triangles:
                 for c in triangle_coords:
                     # Assume csv-z-slice type for now
-                    z_index = int(c[2] / self.reference_stack.resolution.z)
+                    z_index = int(c[2] / self.reference_stack.resolution.z) \
+                            + self.transform_z_lookup_offset
                     if z_index >= len(self.transform) or z_index < 0:
                         clamped_locations[z_index] += 1
-                        z_index = 0 if z_index < 0 else len(self.transform) - 1
+                        continue
+
                     xyz_shift = self.transform[z_index]
                     if self.transform_in_project_space:
                         c[0] += xyz_shift[0] * self.reference_stack.resolution.x

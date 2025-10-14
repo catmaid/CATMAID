@@ -20,16 +20,15 @@
   <p>Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</p>
 
   <form action="" method="post">{% csrf_token %}
-    <div class="module">
       {% block setup_content %}
       {% endblock %}
 
-        <div class="aligned">
+        <table>
         {{ wizard.management_form }}
         {{ wizard.form }}
-        </div>
+        </table>
+
         <div class="submit-row">
-          <p>
           {% if wizard.steps.prev %}
               <button name="wizard_goto_step" type="submit" value="{{ wizard.steps.first }}">{% trans "first step" %}</button>
               <button name="wizard_goto_step" type="submit" value="{{ wizard.steps.prev }}">{% trans "prev step" %}</button>
@@ -39,10 +38,7 @@
         {% else %}
           <input type="submit" value="import"/>
         {% endif %}
-          </p>
-          </p>
       </div>
-    </div>
   </form>
 </div>
 {% endblock %}

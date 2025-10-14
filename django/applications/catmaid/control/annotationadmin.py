@@ -64,6 +64,8 @@ class SourceTypeForm(forms.Form):
             help_text="Should volumes/meshes be imported?")
     import_reviews = forms.BooleanField(initial=True, required=False,
             help_text="Should reviews be imported?")
+    import_deeplinks = forms.BooleanField(initial=True, required=False,
+            help_text="Should deep-links be imported?")
 
 
 class FileBasedImportForm(forms.Form):
@@ -171,8 +173,8 @@ def async_project_copy_job(import_task_id) -> str:
                         'allowed_tags': None,
                         'export_users': True,
                         'export_volumes': scd['import_volumes'],
-                        'export_public_deep_links': False, # FIXME
-                        'export_exportable_deep_links': False, # FIXME,
+                        'export_public_deep_links': scd['import_deeplinks'],
+                        'export_exportable_deep_links': scd['import_deeplinks'],
                         'export_reviews': scd['import_reviews'],
                         'required_annotations': [],
                         'excluded_annotations': [],
@@ -382,6 +384,7 @@ class ImportingWizard(SessionWizardView):
                     'import_tags': scd['import_tags'],
                     'import_volumes': scd['import_volumes'],
                     'import_reviews': scd['import_reviews'],
+                    'import_deeplinks': scd['import_deeplinks'],
                     'apply_transform': apply_transform,
                     'transform': transform,
                     'reference_stack_id': reference_stack.id,

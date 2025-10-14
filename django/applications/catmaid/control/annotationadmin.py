@@ -203,8 +203,7 @@ def async_project_copy_job(import_task_id) -> str:
 
                     # Import project data into new project
                     task_logger.info(f'Importing into project {target_project}')
-                    override_user = get_system_user()
-                    computed_stats = None
+                    override_user = None
                     importer = GenericImporter(project_data, target_project,
                                         override_user, import_options)
                     with transaction.atomic():

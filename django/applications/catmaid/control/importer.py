@@ -1761,13 +1761,13 @@ class GenericImporter(AbstractImporter):
 
             xyz_shift = self.transform[z_index]
             if self.transform_in_project_space:
-                location.location_x += xyz_shift[0] * self.reference_stack.resolution.x
-                location.location_y += xyz_shift[1] * self.reference_stack.resolution.y
-                location.location_z += xyz_shift[2] * self.reference_stack.resolution.z
-            else:
                 location.location_x += xyz_shift[0]
                 location.location_y += xyz_shift[1]
                 location.location_z += xyz_shift[2]
+            else:
+                location.location_x += xyz_shift[0] * self.reference_stack.resolution.x
+                location.location_y += xyz_shift[1] * self.reference_stack.resolution.y
+                location.location_z += xyz_shift[2] * self.reference_stack.resolution.z
 
         return location
 
@@ -1799,13 +1799,13 @@ class GenericImporter(AbstractImporter):
 
                     xyz_shift = self.transform[z_index]
                     if self.transform_in_project_space:
-                        c[0] += xyz_shift[0] * self.reference_stack.resolution.x
-                        c[1] += xyz_shift[1] * self.reference_stack.resolution.y
-                        c[2] += xyz_shift[2] * self.reference_stack.resolution.z
-                    else:
                         c[0] += xyz_shift[0]
                         c[1] += xyz_shift[1]
                         c[2] += xyz_shift[2]
+                    else:
+                        c[0] += xyz_shift[0] * self.reference_stack.resolution.x
+                        c[1] += xyz_shift[1] * self.reference_stack.resolution.y
+                        c[2] += xyz_shift[2] * self.reference_stack.resolution.z
 
             # Convert array to TIN WKT again
             wkt_data = 'TIN Z (' + ','.join(map(lambda t: '((' + ','.join(list(map(lambda c: ' '.join(list(map(str, c))), t))) + '))', triangles)) + ')'

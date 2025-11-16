@@ -12,7 +12,7 @@
     "mkdirp": "0.5.1",
     "optimist": "0.6.1",
     "qunit": "^2.9.2",
-    "redoc-cli": "^0.9.12",
+    "redoc-cli": "^0.13.21",
     "sinon": "5.0.7"
   },
   "dependencies": {},

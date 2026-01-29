@@ -194,3 +194,24 @@ have different workarounds, each of which will be discussed below.
       --staging \
       -a ualpn \
       -d www.example.com renew
+
+Rogue uWSGI processes accumulate over time that each need 100% CPU
+------------------------------------------------------------------
+
+This can of course have various explanations. One reason we ran into on a Ubuntu
+24.04 server is explained here. If more issues like this appear, they will be
+added here as well.
+
+After a while more and more rogue ``uWSGI`` worker processes started to appear.
+They could be killed manually, but would otherwise accumulate and make the
+system unresponsive after a while. This was related to the system logging
+infrastructure restarting on occasion (journald), resulting in a ``SIGPIPE`` to
+all processes that use the systemd logging service. If ``uWSGI`` is set up like
+this, it will receive a ``SIGPIPE`` signal, too.
+
+By default, ``uWSGI`` tries to handle this signal by logging it, which ends up
+in a broken pipe, which in turn also raises a ``SIGPIPE``, leading into an
+infinite loop.
+
+To fix this, the ``uWSGI`` option ``ignore-sigpipe=true`` should be set,
+allowing ``uWSGI`` to ignore ``SIGPIPE`` signals.

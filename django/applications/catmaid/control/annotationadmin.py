@@ -132,107 +132,107 @@ def get_source_type(wizard) -> str:
 @shared_task()
 def async_project_copy_job(import_task_id) -> str:
 
-        from catmaid.control.importer import GenericImporter
-        task_logger = get_task_logger(__name__)
+    from catmaid.control.importer import GenericImporter
+    task_logger = get_task_logger(__name__)
 
-        task_logger.info(f'Starting work on import task {import_task_id}')
+    task_logger.info(f'Starting work on import task {import_task_id}')
 
-        # An async task will run the management commands catmaid_export_data
-        # catmaid import_data. Transformations happen as part of the import.
-        import_task = ImportTask.objects.get(id=import_task_id)
-        scd = import_task.metadata
-        start_time = time.perf_counter()
+    # An async task will run the management commands catmaid_export_data
+    # catmaid import_data. Transformations happen as part of the import.
+    import_task = ImportTask.objects.get(id=import_task_id)
+    scd = import_task.metadata
+    start_time = time.perf_counter()
 
-        import_task.status = ImportTask.StatusOptions.Started
-        import_task.save()
+    import_task.status = ImportTask.StatusOptions.Started
+    import_task.save()
 
-        # Get a copy of the log output to store with the task.
-        log_stream = StringIO()
-        log_handler = logging.StreamHandler(log_stream)
-        task_logger.addHandler(log_handler)
+    # Get a copy of the log output to store with the task.
+    log_stream = StringIO()
+    log_handler = logging.StreamHandler(log_stream)
+    task_logger.addHandler(log_handler)
 
-        try:
-            if scd["source_type"] == 'project':
+    try:
+        if scd["source_type"] == 'project':
 
-                target_project = Project.objects.get(id=scd['target_project_id'])
-                projects = Project.objects.filter(id__in=scd['source_project_ids'])
-                final_project_materialization_update = len(projects) > 1
-                connector_mode = ConnectorMode.IntraConnectorsAndPlaceholders \
-                        if scd['import_connectors'] else ConnectorMode.NoConnectors
-                for n, p in enumerate(projects):
-                    # Update materializations in last iteration
-                    update_materializations = n == (len(projects) - 1)
-                    #update_materializations = False
+            target_project = Project.objects.get(id=scd['target_project_id'])
+            projects = Project.objects.filter(id__in=scd['source_project_ids'])
+            final_project_materialization_update = len(projects) > 1
+            connector_mode = ConnectorMode.IntraConnectorsAndPlaceholders \
+                    if scd['import_connectors'] else ConnectorMode.NoConnectors
+            for n, p in enumerate(projects):
+                # Update materializations in last iteration
+                update_materializations = n == (len(projects) - 1)
+                #update_materializations = False
 
-                    export_options = {
-                        'run_noninteractive': True,
-                        'export_treenodes': scd['import_treenodes'],
-                        'connector_mode': connector_mode,
-                        'export_annotations': scd['import_annotations'],
-                        'export_tags': scd['import_tags'],
-                        'allowed_tags': None,
-                        'export_users': True,
-                        'export_volumes': scd['import_volumes'],
-                        'export_public_deep_links': scd['import_deeplinks'],
-                        'export_exportable_deep_links': scd['import_deeplinks'],
-                        'export_reviews': scd['import_reviews'],
-                        'required_annotations': [],
-                        'excluded_annotations': [],
-                        'volume_annotations': None,
-                        'annotation_annotations': None,
-                        'settings_meta_annotation': None,
-                        'exclusion_is_final': False,
-                    }
+                export_options = {
+                    'run_noninteractive': True,
+                    'export_treenodes': scd['import_treenodes'],
+                    'connector_mode': connector_mode,
+                    'export_annotations': scd['import_annotations'],
+                    'export_tags': scd['import_tags'],
+                    'allowed_tags': None,
+                    'export_users': True,
+                    'export_volumes': scd['import_volumes'],
+                    'export_public_deep_links': scd['import_deeplinks'],
+                    'export_exportable_deep_links': scd['import_deeplinks'],
+                    'export_reviews': scd['import_reviews'],
+                    'required_annotations': [],
+                    'excluded_annotations': [],
+                    'volume_annotations': None,
+                    'annotation_annotations': None,
+                    'settings_meta_annotation': None,
+                    'exclusion_is_final': False,
+                }
 
-                    # Export project data
-                    task_logger.info(f'Exporting data from project {p}')
-                    exporter = Exporter(p, export_options,
-                                        custom_logger=task_logger)
-                    project_data = exporter.export()
-                    precomputed_stats = exporter.get_precomputed_stats() \
-                            if scd['transfer_stats'] else dict()
+                # Export project data
+                task_logger.info(f'Exporting data from project {p}')
+                exporter = Exporter(p, export_options,
+                                    custom_logger=task_logger)
+                project_data = exporter.export()
+                precomputed_stats = exporter.get_precomputed_stats() \
+                        if scd['transfer_stats'] else dict()
 
-                    import_options = {
-                        'create_unknown_users': False,
-                        'auto_name_unknown_users': True,
-                        'preserve_ids': False,
-                        'map_users': True,
-                        'map_user_ids': True,
-                        'analyze_db': True,
-                        'update_project_materializations': update_materializations,
-                        'stdout': log_stream,
-                        'username_mapping': {},
-                        'precomputed_stats': precomputed_stats,
-                        'update_edition_time': False,
-                    }
+                import_options = {
+                    'create_unknown_users': False,
+                    'auto_name_unknown_users': True,
+                    'preserve_ids': False,
+                    'map_users': True,
+                    'map_user_ids': True,
+                    'analyze_db': True,
+                    'update_project_materializations': update_materializations,
+                    'stdout': log_stream,
+                    'username_mapping': {},
+                    'precomputed_stats': precomputed_stats,
+                    'update_edition_time': False,
+                }
 
-                    if scd['apply_transform']:
-                        import_options['transform'] = scd['transform']
-                        import_options['reference_stack_id'] = scd['reference_stack_id']
-                        import_options['transform_in_project_space'] = scd['transform_in_project_space']
-                        import_options['transform_z_lookup_offset'] = scd['transform_z_lookup_offset']
+                if scd['apply_transform']:
+                    import_options['transform'] = scd['transform']
+                    import_options['reference_stack_id'] = scd['reference_stack_id']
+                    import_options['transform_in_project_space'] = scd['transform_in_project_space']
+                    import_options['transform_z_lookup_offset'] = scd['transform_z_lookup_offset']
 
-                    # Import project data into new project
-                    task_logger.info(f'Importing into project {target_project}')
-                    override_user = None
-                    importer = GenericImporter(project_data, target_project,
-                                        override_user, import_options,
-                                        custom_logger=task_logger)
-                    with transaction.atomic():
-                        importer.import_data()
+                # Import project data into new project
+                task_logger.info(f'Importing into project {target_project}')
+                override_user = None
+                importer = GenericImporter(project_data, target_project,
+                                    override_user, import_options,
+                                    custom_logger=task_logger)
+                with transaction.atomic():
+                    importer.import_data()
 
-                import_task.status = ImportTask.StatusOptions.Success
-                task_logger.info(f'Finished import in {import_task.import_time} seconds')
-                import_task.import_log = log_stream.getvalue()
-            else:
-                raise ValueError(f'Unsupported source type: {scd["source_type"]}')
-        except Exception as err:
-            task_logger.removeHandler(log_handler)
-            import_task.import_log = f"{log_stream.getvalue()}\n{err}\n{traceback.format_exc()}"
-            import_task.status = ImportTask.StatusOptions.Error
+            import_task.status = ImportTask.StatusOptions.Success
+            task_logger.info(f'Finished import in {import_task.import_time} seconds')
+            import_task.import_log = log_stream.getvalue()
+        else:
+            raise ValueError(f'Unsupported source type: {scd["source_type"]}')
+    except Exception as err:
+        task_logger.removeHandler(log_handler)
+        import_task.import_log = f"{log_stream.getvalue()}\n{err}\n{traceback.format_exc()}"
+        import_task.status = ImportTask.StatusOptions.Error
 
-        import_task.import_time = time.perf_counter() - start_time
-        import_task.save()
+    import_task.import_time = time.perf_counter() - start_time
+    import_task.save()
 
 
 class ImportingWizard(SessionWizardView):

@@ -151,37 +151,4 @@ django/applications/catmaid/static/libs/catmaid/synapse_clustering.js: line 349,
 
 django/applications/catmaid/static/libs/catmaid/time-series.js: line 19, col 12, 'returnMaxTime' is defined but never used.
 
-django/applications/catmaid/static/libs/catmaid/volumes.js: line 613, col 9, 'abs' is defined but never used.
-django/applications/catmaid/static/libs/catmaid/volumes.js: line 805, col 15, 'dSimplicesT' is defined but never used.
-
-django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 8, col 9, It's not necessary to initialize 'wasm' to 'undefined'.
-django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 35, col 188, Missing semicolon.
-django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 37, col 76, Unnecessary semicolon.
-django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 55, col 154, Missing semicolon.
-django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 137, col 67, Missing semicolon.
-django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 1942, col 5, 'async functions' is only available in ES8 (use 'esversion: 8').
-django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 1979, col 22, Missing semicolon.
-django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 1987, col 22, Missing semicolon.
-django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 1991, col 22, Missing semicolon.
-django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2007, col 22, Missing semicolon.
-django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2026, col 22, Missing semicolon.
-django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2030, col 22, Missing semicolon.
-django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2118, col 22, Missing semicolon.
-django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2131, col 34, The array literal notation [] is preferable.
-django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2157, col 35, The object literal notation {} is preferable.
-django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2171, col 22, Missing semicolon.
-django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2175, col 22, Missing semicolon.
-django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2226, col 22, Missing semicolon.
-django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2333, col 39, 'BigInt' is only available in ES11 (use 'esversion: 11').
-django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2371, col 53, 'BigInt' is only available in ES11 (use 'esversion: 11').
-django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2469, col 36, Missing semicolon.
-django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2471, col 107, Missing semicolon.
-django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2488, col 5, 'async functions' is only available in ES8 (use 'esversion: 8').
-django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2494, col 52, Missing semicolon.
-django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm.js: line 2496, col 122, Missing semicolon.
-
-django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm_worker.js: line 28, col 43, 'use_cache' is defined but never used.
-django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm_worker.js: line 57, col 43, 'use_cache' is defined but never used.
-django/applications/catmaid/static/libs/ngpre-wasm/ngpre_wasm_worker.js: line 57, col 54, '_' is defined but never used.
-
-143 errors
+113 errors

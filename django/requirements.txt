@@ -25,7 +25,7 @@ progressbar2==4.5.0
 psycopg2-binary==2.9.10; platform_python_implementation != 'PyPy'
 psycopg2cffi==2.9.0;  platform_python_implementation == 'PyPy'
 python-dateutil==2.9.0
-pytz==2025.2
+pytz==2026.2
 PyYAML==6.0.2
 requests==2.32.4
 scipy==1.14.1; platform_python_implementation != 'PyPy' and python_version >= '3.10'

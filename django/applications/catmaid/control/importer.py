@@ -23,6 +23,7 @@ from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.contenttypes.models import ContentType
 from django.core import serializers
 from django.core.exceptions import ValidationError
+from django.core.management.base import CommandError
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 
@@ -35,7 +36,7 @@ from catmaid.apps import get_system_user
 from catmaid.models import (BrokenSlice, Class, Relation, ClassClass, Location, Volume,
         ClassInstance, Project, ClassInstanceClassInstance, Stack, StackGroup, DeepLink, Point,
         StackStackGroup, ProjectStack, StackClassInstance, StackGroupClassInstance, StackGroupRelation,
-        StackMirror, TILE_SOURCE_TYPE_CHOICES, User, Treenode, Connector, Concept, SkeletonSummary,
+        StackMirror, TILE_SOURCE_TYPE_CHOICES, Treenode, Connector, Concept, SkeletonSummary,
         RegionOfInterest, Review)
 from catmaid.fields import Double3D
 from catmaid.control.annotationadmin import copy_annotations
@@ -43,6 +44,7 @@ from catmaid.control.common import urljoin, is_valid_host
 from catmaid.control.classification import get_classification_links_qs, \
         link_existing_classification, ClassInstanceClassInstanceProxy
 from catmaid.control.edge import rebuild_edge_tables, rebuild_edges_selectively
+from catmaid.management.commands.common import ask_yes_no
 
 
 import logging
@@ -2110,9 +2112,8 @@ class GenericImporter(AbstractImporter):
                     skeleton_summary = list(map(lambda s: (
                             imported_class_instances.get(s[0]).id,
                             self.target.id,
-                            s[2], s[3], s[4], s[5], s[6], s[7], s[8]
-                        ),
-                        skeleton_summary))
+                            s[2], s[3], s[4], s[5], s[6], s[7], s[8]),
+                            skeleton_summary))
 
                     self.logger.info("- Inserting summary stats")
                     execute_values(cursor, """

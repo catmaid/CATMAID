@@ -610,7 +610,6 @@
    */
   CATMAID.sphereIsEmpty = function(center, radiusSq, points) {
     radiusSq -= 0.0001; // Allow points on surface
-    var abs = Math.abs;
     var d = center.length;
     for (var i=0, max=points.length; i<max; ++i) {
       var dSq = 0;
@@ -802,7 +801,6 @@
           // if and only if all its d-dimensional super-simplices are part of the
           // alpha-complex.
           var dSimplexIndicesT = dSimplexMap[t];
-          var dSimplicesT = dSimplexIndicesT.map(indexToContent, dSimplices);
           var maxDsa = dMeta.r[dSimplexIndicesT[0]];
           for (var ds=1, dsmax=dSimplexIndicesT.length; ds<dsmax; ++ds) {
             var dsa = dMeta.r[dSimplexIndicesT[ds]];

@@ -289,6 +289,7 @@ class HistoryTableTests(TransactionTestCase):
         'nblast_skeleton_source_type',
         'node_grid_cache_cell',
         'node_grid_cache',
+        'catmaid_import_task',
         'catmaid_transaction_info',
         'catmaid_stats_summary',
         'catmaid_skeleton_summary',

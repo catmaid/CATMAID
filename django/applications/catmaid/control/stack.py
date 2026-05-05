@@ -186,6 +186,12 @@ def stack_groups(request:HttpRequest, project_id=None, stack_id=None) -> JsonRes
     return JsonResponse(result)
 
 
+def get_writable_stack_path(stack_path):
+    return os.path.join(settings.MEDIA_ROOT,
+                        settings.MEDIA_WRITABLE_STACK_SUBDIRECTORY,
+                        stack_path)
+
+
 class WritableStackListView(APIView):
     """Access to writable stacks."""
 
@@ -274,9 +280,7 @@ class WritableStackListView(APIView):
 
         # Create initial N5 file
         encoding = 'raw'
-        full_path = os.path.join(settings.MEDIA_ROOT,
-                                 settings.MEDIA_WRITABLE_STACK_SUBDIRECTORY,
-                                 writable_stack.path)
+        full_path = get_writable_stack_path(writable_stack.path)
 
         # Create N5 skeleton manually, because the cloud-volume files don't seem
         # to be compatible.

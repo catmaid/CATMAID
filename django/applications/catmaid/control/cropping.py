@@ -30,6 +30,7 @@ from catmaid.control.common import (id_generator, get_request_bool,
         get_request_list)
 from catmaid.control.tile import get_tile_source
 from catmaid.control.message import notify_user
+from catmaid.control.stack import get_writable_stack_path
 
 from celery import shared_task
 from io import BytesIO
@@ -1011,19 +1012,18 @@ def write_block(request:HttpRequest, project_id=None, writable_stack_id=None) ->
     # We expect data to be a list of lists of lists, where X is the outer list,
     # Y the second level and Z the last level.
     data = np.array(block_data).reshape(block_size)
+    dataset += f"{'/' if len(dataset) else ''}s{scale_level}"
 
     # TODO: Try to create only if not yet present
-    full_path = os.path.join(settings.MEDIA_ROOT,
-                                settings.MEDIA_WRITABLE_STACK_SUBDIRECTORY,
-                                writable_stack.path)
+    full_path = get_writable_stack_path(writable_stack.path)
+    dataset_path = os.path.join(full_path, dataset)
     try:
         pyn5.create_dataset(full_path, dataset, dataset_size,
                             block_size, dtype.upper())
-    except ValueError:
-        # Assume the dataset exists already
+    except ValueError as e:
+        # TODO: Assume the dataset exists already
         pass
 
-    dataset += f"{'/' if len(dataset) else ''}s{scale_level}"
     n5 = pyn5.open(full_path, dataset, dtype.lower(), False)
     pyn5.write(n5, (np.array(data_bounds[0]), np.array(data_bounds[1]) + 1), data, dtype)
 

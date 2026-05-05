@@ -180,7 +180,8 @@
       "comment": "<p>&copy;2009 <a href=\"http://people.epfl.ch/graham.knott\">Graham Knott</a>.</p> <p>Public INCF data set available at the <a href=\"http://www.incf.org/about/nodes/switzerland/data\">Swiss INCF Node</a>.</p>",
       "resolution": "(5.000, 5.000, 9.000)",
       "dimension": "(2048, 1536, 460)",
-      "description": ""
+      "description": "",
+      "downsample_factors": ["(1, 1, 1)"]
     }
   },
   {

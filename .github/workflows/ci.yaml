@@ -41,7 +41,7 @@ jobs:
       fail-fast: false
       matrix:
         # For PyPy use 'pypy-3.10'. It is disabled by default due to long build times.
-        python-version: ['3.10']
+        python-version: ['3.10', '3.11']
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2

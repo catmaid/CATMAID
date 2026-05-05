@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 LABEL maintainer="Andrew Champion <andrew.champion@gmail.com>, Tom Kazimiers <tom@voodoo-arts.net>"
 
 # For building the image, let dpkg/apt know that we install and configure
@@ -12,20 +12,21 @@ RUN apt-get update -y \
     && apt-get install -y apt-utils apt-transport-https ca-certificates gnupg \
     && apt-get install -y gawk wget software-properties-common \
     && apt-get update -y \
+    && add-apt-repository ppa:deadsnakes/ppa \
     && wget --quiet -O - "https://keys.openpgp.org/vks/v1/by-fingerprint/0A9AF2115F4687BD29803A206B73A36E6026DFCA" | gpg --dearmor | tee /usr/share/keyrings/com.rabbitmq.team.gpg > /dev/null \
-    && wget --quiet -O - "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0xf77f1eda57ebb1cc" | gpg --dearmor | tee /usr/share/keyrings/net.launchpad.ppa.rabbitmq.erlang.gpg > /dev/null \
-    && echo "deb [signed-by=/usr/share/keyrings/net.launchpad.ppa.rabbitmq.erlang.gpg] http://ppa.launchpad.net/rabbitmq/rabbitmq-erlang/ubuntu jammy main" > /etc/apt/sources.list.d/rabbitmq.list \
-    && wget --quiet -O - "https://packagecloud.io/rabbitmq/rabbitmq-server/gpgkey" | gpg --dearmor | tee /usr/share/keyrings/io.packagecloud.rabbitmq.gpg > /dev/null \
-    && echo "deb [signed-by=/usr/share/keyrings/io.packagecloud.rabbitmq.gpg] https://packagecloud.io/rabbitmq/rabbitmq-server/ubuntu jammy main" >> /etc/apt/sources.list.d/rabbitmq.list \
+    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/com.rabbitmq.team.gpg] https://deb1.rabbitmq.com/rabbitmq-erlang/ubuntu/noble noble main" > /etc/apt/sources.list.d/rabbitmq.list \
+    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/com.rabbitmq.team.gpg] https://deb2.rabbitmq.com/rabbitmq-erlang/ubuntu/noble noble main" >> /etc/apt/sources.list.d/rabbitmq.list \
     && wget --quiet -O - https://postgresql.org/media/keys/ACCC4CF8.asc > /usr/share/keyrings/apt.postgresql.org.asc \
-    && echo "deb [signed-by=/usr/share/keyrings/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt jammy-pgdg main" >> /etc/apt/sources.list.d/pgdg.list \
+    && echo "deb [signed-by=/usr/share/keyrings/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt noble-pgdg main" >> /etc/apt/sources.list.d/pgdg.list \
     && wget --quiet -O - "https://nginx.org/keys/nginx_signing.key" | gpg --dearmor | tee /usr/share/keyrings/org.nginx.gpg > /dev/null \
-    && echo "deb [signed-by=/usr/share/keyrings/org.nginx.gpg] http://nginx.org/packages/ubuntu/ jammy nginx" >> /etc/apt/sources.list.d/nginx.list \
+    && echo "deb [signed-by=/usr/share/keyrings/org.nginx.gpg] http://nginx.org/packages/ubuntu/ noble nginx" >> /etc/apt/sources.list.d/nginx.list \
     && wget --quiet -O - "https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc" | gpg --dearmor | tee /usr/share/keyrings/cran.gpg > /dev/null \
-    && echo "deb [signed-by=/usr/share/keyrings/cran.gpg] https://cloud.r-project.org/bin/linux/ubuntu jammy-cran40/" >> /etc/apt/sources.list.d/cran.list \
+    && echo "deb [signed-by=/usr/share/keyrings/cran.gpg] https://cloud.r-project.org/bin/linux/ubuntu noble-cran40/" >> /etc/apt/sources.list.d/cran.list \
     && apt-get update -y \
     && apt-get install -y python3.10 python3.10-venv python3.10-dev git python3-pip \
+    && apt-get install -y rabbitmq-server \
     && apt-get install -y postgresql-13 postgresql-13-postgis-3 \
+    && apt-get install -y rabbitmq-server \
     && apt-get install -y nginx supervisor \
     && apt-get install -y rabbitmq-server \
     && apt-get install -y r-base r-base-dev mesa-common-dev libglu1-mesa-dev \
@@ -39,9 +40,9 @@ RUN apt-get update -y  \
 # Set the locale
 RUN sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && \
     locale-gen
-ENV LANG en_US.UTF-8
-ENV LANGUAGE en_US:en
-ENV LC_ALL en_US.UTF-8
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US:en
+ENV LC_ALL=en_US.UTF-8
 
 COPY django/requirements.txt django/requirements-async.txt django/requirements-doc.txt django/requirements-optional.txt django/requirements-production.txt /home/django/
 

@@ -175,7 +175,9 @@ class ProjectsApiTests(CatmaidApiTestCase):
                         literal_eval(s['dimension']))
                 self.assertEqual(literal_eval(str(stack.resolution)),
                         literal_eval(s['resolution']))
-                self.assertEqual(stack.downsample_factors, s['downsample_factors'])
+                downsample_factors = list(map(str, stack.downsample_factors)) \
+                        if stack.downsample_factors else None
+                self.assertEqual(downsample_factors, s['downsample_factors'])
                 self.assertEqual(stack.metadata, s['metadata'])
                 self.assertEqual(stack.comment, s['comment'])
                 self.assertEqual(stack.attribution, s['attribution'])

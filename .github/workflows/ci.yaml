@@ -18,6 +18,7 @@ jobs:
           pip install "$(grep -E '^mypy' django/requirements-test.txt)"
         name: Install lint tools
       - run: flake8 --statistics --count django
+      - run: npm run typecheck:mypy
       - run: npm run typecheck:mypy-diff
         name: Ensure mypy errors against blessed failures
 

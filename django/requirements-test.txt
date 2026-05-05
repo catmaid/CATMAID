@@ -1,7 +1,7 @@
 django-migration-testcase==0.0.15
 selenium==4.27.1
 sauceclient==1.0.0
-mypy==1.13; platform_python_implementation != 'PyPy'
+mypy==1.20.2; platform_python_implementation != 'PyPy'
 flake8==7.1.1
 pytest==8.2.1
 h5py_like==0.6.0

@@ -160,6 +160,8 @@ Stack viewer:
   It can be used to estimate the field of view, assuming a film gauge of 35mm
   (currently not adjustable).
 
+- Picking (Shift + Click) of volumes/meshes works again.
+
 Graph widget:
 
 - A new view tab contains now settings related to the graph display and

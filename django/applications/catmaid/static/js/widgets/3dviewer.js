@@ -6038,6 +6038,7 @@
     var idMap = {};
     var skeletonIdMap = {};
     var skeletonMap = {};
+    let volumeMap = {};
     var submit = new CATMAID.submitterFn();
     var originalMaterials = new Map();
     var originalVisibility = {};
@@ -6075,9 +6076,24 @@
     var ambientLight = new THREE.AmbientLight(0xffffff);
     this.scene.project.add(ambientLight);
 
-    // Hide volumes if they aren't include in picking
+    // Hide volumes if they aren't included in picking
     let originalVolumeVisibility = new Map();
-    if (!o.volume_location_picking) {
+    if (o.volume_location_picking) {
+      for (let volumeId of this.loadedVolumes.keys()) {
+        let volume = this.loadedVolumes.get(volumeId);
+        for (let i=0; i<volume.meshes.length; ++i) {
+          color++;
+          let mesh = volume.meshes[i];
+          originalMaterials.set(mesh, mesh.material);
+          mesh.material = new THREE.MeshBasicMaterial({
+            color: color,
+            side: THREE.DoubleSide
+          });
+          idMap[color] = 'volume';
+          volumeMap[color] = volume;
+        }
+      }
+    } else {
       for (let volumeId of this.loadedVolumes.keys()) {
         let volume = this.loadedVolumes.get(volumeId);
         for (let i=0; i<volume.meshes.length; ++i) {
@@ -6335,7 +6351,16 @@
     }
 
     // Reset volumes to original visibility
-    if (!o.volume_location_picking) {
+    if (o.volume_location_picking) {
+      for (let volumeId of this.loadedVolumes.keys()) {
+        let volume = this.loadedVolumes.get(volumeId);
+        for (let i=0; i<volume.meshes.length; ++i) {
+          let mesh = volume.meshes[i];
+          let material = originalMaterials.get(mesh);
+          mesh.material = material;
+        }
+      }
+    } else {
       for (let volumeId of this.loadedVolumes.keys()) {
         let volume = this.loadedVolumes.get(volumeId);
         for (let i=0; i<volume.meshes.length; ++i) {
@@ -6380,7 +6405,7 @@
       id = 'skeleton';
     }
 
-    // Re-render scene to apply reset environment.
+    // Re-render scene to reset environment.
     this.view.renderer.setRenderTarget(null);
     this.view.renderer.render(this.scene, camera);
 
@@ -6390,6 +6415,22 @@
       if ('zplane' === id) {
         // Intersect ray with z plane to get location
         var intersection = this.getIntersectionWithRay(xs, ys, x, camera, [zplane]);
+        if (intersection) {
+          return {
+            type: 'location',
+            location: {
+              x: Math.round(intersection.point.x),
+              y: Math.round(intersection.point.y),
+              z: Math.round(intersection.point.z)
+            }
+          };
+        } else {
+          return null;
+        }
+      } else if ('volume' === id) {
+        let volume = volumeMap[colorId];
+        // Intersect ray with z plane to get location
+        var intersection = this.getIntersectionWithRay(xs, ys, x, camera, volume.meshes);
         if (intersection) {
           return {
             type: 'location',

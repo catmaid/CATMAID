@@ -9,11 +9,11 @@ import errno
 
 # This variable contains a reference version of the current code-base. It is
 # updated by release and dev-cycle scripts.
-BASE_VERSION = '2021.12.21-dev'
+BASE_VERSION = '2026.05.06'
 # This commit is the reference commit of the BASE_VERSION above. Technically, it
 # is the commit right before the BASE_VERSION, because the release script will
 # change these fields and onlt create the actual release commit after the changes.
-BASE_COMMIT = '5e2c7a82890fe274291b231e5ae0ea3491d7d8c1'
+BASE_COMMIT = '0a1b1452f961457bf6cc8ebe379bb737950128bf'
 # These file is created as part of our Docker build and is looked at as
 # fall-back, should no git environment be available. The VERSION_INFO_PATH file
 # contains the "git describe" output of the build environment.

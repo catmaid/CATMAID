@@ -1,5 +1,6 @@
-## Under development
+## 2026.05.06
 
+Contributors: Chris Barnes, Dan Bumbarger, Albert Cardona, Andrew Champion, Rob Court, Stephan Gerhard, Pat Gunn, Tom Kazimiers, Mohinta2892
 ### Notes
 
 - This version requires Python 3.9+. Python 3.10 is recommended.

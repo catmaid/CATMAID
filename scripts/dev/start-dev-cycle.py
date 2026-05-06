@@ -82,7 +82,7 @@ def start_dev_cycle(catmaid_folder):
     """Prepare changelog and documentation for a new development cycle.
     """
     git = sh.git.bake(_cwd=catmaid_folder)
-    project_root = git("rev-parse", "--show-toplevel").stdout.decode('utf-8').replace('\n', '')
+    project_root = git("rev-parse", "--show-toplevel").replace('\n', '')
     log("CATMAID directory: {}".format(project_root))
 
     # Add new header to CHANGELOG

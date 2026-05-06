@@ -3,4 +3,4 @@ pandas==2.3.2
 h5py==3.14.0; platform_python_implementation != "PyPy"
 cloud-volume==12.5.0
 molesq==0.4.0
-pyn5 @ git+https://github.com/tomka/rust-pyn5@d8a1697
+pyn5 @ git+https://github.com/tomka/rust-pyn5@c1935f926

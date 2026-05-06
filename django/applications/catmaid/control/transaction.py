@@ -132,16 +132,16 @@ class TransactionSkeletonView(APIView):
         transaction.
         ---
         parameters:
-        transaction_id:
-            type: integer
-            required: true
-            description: Transaction ID in question
-            paramType: form
-        execution_time:
-            type: string
-            required: true
-            description: Execution time of the transaction
-            paramType: form
+            transaction_id:
+                type: integer
+                required: true
+                description: Transaction ID in question
+                paramType: form
+            execution_time:
+                type: string
+                required: true
+                description: Execution time of the transaction
+                paramType: form
         """
         transaction_id = request.GET.get('transaction_id', None)
         if not transaction_id:

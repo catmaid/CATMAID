@@ -102,44 +102,44 @@ class UserAnalyticsAPIView(APIView):
         </ul>
         ---
         parameters:
-        - name: userid
-            description: The id of the user to get information on
-            type: integer
-            paramType: form
-        - name: start
-            description: |
-                Start date of request time frame in the form YYYY-MM-DD. Defaults
-                to seven days ago from today.
-            type: string
-            paramType: form
-        - name: end
-            description: |
-                End date of request time frame in the form YYYY-MM-DD. Defaults to
-                today/now.
-            type: string
-            paramType: form
-        - name: max_inactivity
-            description: Number of minutes of inactivity, before a pause is assumed.
-            type: integer
-            paramType: form
-        - name: all_writes
-            description: |
-                Whether info ann all types of write events should be returned,
-                including annotating neurons, renaming neurons or editing tags.
-                True by default.
-            type: bool
-            paramType: form
-            required: false
-            defaultValue: true
-        - name: with_active_bouts
-            description: |
-                Whether all active bouts should be returned. This can be
-                potentially a large list.
-                False by default.
-            type: bool
-            paramType: form
-            required: false
-            defaultValue: false
+            - name: userid
+              description: The id of the user to get information on
+              type: integer
+              paramType: form
+            - name: start
+              description: |
+                  Start date of request time frame in the form YYYY-MM-DD. Defaults
+                  to seven days ago from today.
+              type: string
+              paramType: form
+            - name: end
+              description: |
+                  End date of request time frame in the form YYYY-MM-DD. Defaults to
+                  today/now.
+              type: string
+              paramType: form
+            - name: max_inactivity
+              description: Number of minutes of inactivity, before a pause is assumed.
+              type: integer
+              paramType: form
+            - name: all_writes
+              description: |
+                  Whether info ann all types of write events should be returned,
+                  including annotating neurons, renaming neurons or editing tags.
+                  True by default.
+              type: bool
+              paramType: form
+              required: false
+              defaultValue: true
+            - name: with_active_bouts
+              description: |
+                  Whether all active bouts should be returned. This can be
+                  potentially a large list.
+                  False by default.
+              type: bool
+              paramType: form
+              required: false
+              defaultValue: false
         """
         time_zone = pytz.utc
 

@@ -183,8 +183,8 @@ def _open_leaves(project_id, skeleton_id, tnid=None):
     # Iterate end nodes to find which are open.
     nearest = []
     end_tags = ['uncertain continuation', 'not a branch', 'soma',
-                r'^(?i)(really|uncertain|anterior|posterior)?\s?ends?$']
-    end_regex = re.compile('(?:' + ')|(?:'.join(end_tags) + ')')
+                r'^(really|uncertain|anterior|posterior)?\s?ends?$']
+    end_regex = re.compile('(?i)(?:' + ')|(?:'.join(end_tags) + ')')
 
     for row in cursor.fetchall():
         node_id = row[0]

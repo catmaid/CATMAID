@@ -4,6 +4,11 @@
 
 ### Features and enhancements
 
+Miscellaneous:
+
+- The compact-skeleton APIs now support a boolean with_edition_times parameter
+  (default: false). If true, treenodes, connectors and tags are returned with
+  their edition time.
 
 
 ### Bug fixes

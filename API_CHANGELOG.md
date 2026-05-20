@@ -10,7 +10,13 @@ None.
 
 ### Modifications
 
-None.
+- `GET|POST /{project_id}/skeletons/compact-detail`:
+  The new parameter 'with_edition_times' can now be used to return the edition
+  time for every returned treenode, connector and labe/tag.
+
+- `GET /{project_id}/skeletons/{skeleton_id}/compact-detail`:
+  The new parameter 'with_edition_times' can now be used to return the edition
+  time for every returned treenode, connector and labe/tag.
 
 ### Deprecations
 

@@ -320,6 +320,13 @@ def compact_skeleton_detail(request:HttpRequest, project_id=None, skeleton_id=No
       type: boolean
       defaultValue: true
       paramType: form
+    - name: with_edition_times
+      description: |
+        Whether all result elements should contain also the latest edition time.
+      required: false
+      type: boolean
+      defaultValue: "false"
+      paramType: form
     type:
     - type: array
       items:
@@ -336,13 +343,14 @@ def compact_skeleton_detail(request:HttpRequest, project_id=None, skeleton_id=No
     with_reviews = get_request_bool(request.GET, "with_reviews", False)
     with_annotations = get_request_bool(request.GET, "with_annotations", False)
     with_user_info = get_request_bool(request.GET, "with_user_info", False)
+    with_edition_times = get_request_bool(request.GET, "with_edition_times", False)
     return_format = request.GET.get('format', 'json')
     ordered = get_request_bool(request.GET, "ordered", False)
 
     result = _compact_skeleton(project_id, skeleton_id, with_connectors,
                                with_tags, with_history, with_merge_history,
                                with_reviews, with_annotations, with_user_info,
-                               ordered)
+                               ordered, with_edition_times=with_edition_times)
 
     if return_format == 'msgpack':
         data = msgpack.packb(result)
@@ -375,12 +383,13 @@ def compact_skeleton(request:HttpRequest, project_id=None, skeleton_id=None,
     with_reviews = get_request_bool(request.GET, "with_reviews", False)
     with_annotations = get_request_bool(request.GET, "with_annotations", False)
     with_user_info = get_request_bool(request.GET, "with_user_info", False)
+    with_edition_times = get_request_bool(request.GET, "with_edition_times", False)
     ordered = get_request_bool(request.GET, "ordered", False)
 
     result = _compact_skeleton(project_id, skeleton_id, with_connectors,
                                with_tags, with_history, with_merge_history,
                                with_reviews, with_annotations, with_user_info,
-                               ordered)
+                               ordered, with_edition_times=with_edition_times)
 
     return JsonResponse(result, safe=False,
             json_dumps_params={
@@ -479,6 +488,13 @@ def compact_skeleton_detail_many(request:HttpRequest, project_id=None) -> Union[
       type: boolean
       defaultValue: "false"
       paramType: form
+    - name: with_edition_times
+      description: |
+        Whether all result elements should contain also the latest edition time.
+      required: false
+      type: boolean
+      defaultValue: "false"
+      paramType: form
     type:
     - type: array
       items:
@@ -494,6 +510,7 @@ def compact_skeleton_detail_many(request:HttpRequest, project_id=None) -> Union[
     with_reviews = get_request_bool(request.POST, "with_reviews", False)
     with_annotations = get_request_bool(request.POST, "with_annotations", False)
     with_user_info = get_request_bool(request.POST, "with_user_info", False)
+    with_edition_times = get_request_bool(request.POST, "with_edition_times", False)
     return_format = request.POST.get('format', 'json')
     ordered = get_request_bool(request.POST, "ordered", False)
 
@@ -504,7 +521,8 @@ def compact_skeleton_detail_many(request:HttpRequest, project_id=None) -> Union[
     for skeleton_id in skeleton_ids:
         skeletons[skeleton_id] = _compact_skeleton(project_id, skeleton_id,
                 with_connectors, with_tags, with_history, with_merge_history,
-                with_reviews, with_annotations, with_user_info, ordered)
+                with_reviews, with_annotations, with_user_info, ordered,
+                with_edition_times=with_edition_times)
 
     result = {
         "skeletons": skeletons
@@ -523,7 +541,7 @@ def compact_skeleton_detail_many(request:HttpRequest, project_id=None) -> Union[
 def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
         with_tags=True, with_history=False, with_merge_history=True,
         with_reviews=False, with_annotations=False, with_user_info=False,
-        ordered=False, scale=None) -> Tuple[Tuple, Tuple, DefaultDict[Any, List], List, List]:
+        ordered=False, scale=None, with_edition_times=False) -> Tuple[Tuple, Tuple, DefaultDict[Any, List], List, List]:
     """Get a compact treenode representation of a skeleton
 
     The returned data can optionally with the history of individual nodes and
@@ -558,13 +576,14 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
         cursor.execute('''
             SELECT id, parent_id, user_id,
                 location_x{scale}, location_y{scale}, location_z{scale},
-                radius{scale}, confidence
+                radius{scale}, confidence {edition_time}
             FROM treenode
             WHERE skeleton_id = %(skeleton_id)s
             {order}
         '''.format(**{
             'order': 'ORDER BY id' if ordered else '',
             'scale': '*%(scale)s' if scale else '',
+            'edition_time': ', edition_time' if with_edition_times else '',
         }), {
             'skeleton_id': skeleton_id,
             'scale': scale,
@@ -684,7 +703,7 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
             cursor.execute('''
                 SELECT tc.treenode_id, tc.connector_id, tc.relation_id,
                     c.location_x{scale}, c.location_y{scale}, c.location_z{scale}
-                    {user_select}
+                    {user_select}{edition_time}
                 FROM treenode_connector tc,
                     connector c
                 WHERE tc.skeleton_id = %(skeleton_id)s
@@ -693,6 +712,7 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
             '''.format(**{
                 'user_select': user_select,
                 'scale': '*%(scale)s' if scale else '',
+                'edition_time': ', c.edition_time' if with_edition_times else '',
             }), {
                 'skeleton_id': skeleton_id,
                 'pre_id': pre,
@@ -800,6 +820,7 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
             'history_suffix': history_suffix,
             'user_select': user_select,
             'order': 'ORDER BY tci.treenode_id ASC' if ordered else '',
+            'edition_time': ', c.edition_time' if with_edition_times else '',
         }), {
             'skeleton_id': skeleton_id,
             'relation_id': relations['labeled_as'],

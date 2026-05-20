@@ -18,6 +18,10 @@ None.
   The new parameter 'with_edition_times' can now be used to return the edition
   time for every returned treenode, connector and labe/tag.
 
+- `POST /{project_id}/skeletons/reroot`:
+  A successful reroot operation now returns also the new root node's edition
+  time.
+
 ### Deprecations
 
 None.

@@ -10,6 +10,7 @@ Miscellaneous:
   (default: false). If true, treenodes, connectors and tags are returned with
   their edition time.
 
+- The skeleton reroot API now also returns the new root node's edition time.
 
 ### Bug fixes
 

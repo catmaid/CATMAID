@@ -2233,9 +2233,20 @@ def review_status(request:HttpRequest, project_id=None) -> JsonResponse:
     return JsonResponse(status)
 
 
+@api_view(['POST'])
 @requires_user_role(UserRole.Annotate)
 def reroot_skeleton(request:HttpRequest, project_id=None) -> JsonResponse:
-    """ Any user with an Annotate role can reroot any skeleton.
+    """ Make a particular treenode the new root node of the skeleton.
+
+    Any user with an Annotate role can reroot any skeleton. Returns the ID of
+    the new root ID, the skeleton ID and the new edition timestamp.
+    ---
+    parameters:
+        - name: treenode_id
+          description: IDs of the new root node
+          required: true
+          type: integer
+          paramType: form
     """
     treenode_id = request.POST.get('treenode_id', None)
     treenode = _reroot_skeleton(treenode_id, project_id)
@@ -2247,8 +2258,11 @@ def reroot_skeleton(request:HttpRequest, project_id=None) -> JsonResponse:
             insert_into_log(project_id, request.user.id, 'reroot_skeleton',
                             location, 'Rerooted skeleton for '
                             'treenode with ID %s' % treenode.id)
-            return JsonResponse({'newroot': treenode.id,
-                                 'skeleton_id': treenode.skeleton_id})
+            return JsonResponse({
+                'newroot': treenode.id,
+                'skeleton_id': treenode.skeleton_id,
+                'edition_time': treenode.edition_time,
+            })
         # Else, already root
         raise ValueError(f'Node #{treenode_id} is already root!')
     except Exception as e:

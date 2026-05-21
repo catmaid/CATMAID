@@ -11,6 +11,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import connection
 
+from catmaid.consumers import msg_all
 from catmaid.control.edge import get_intersected_grid_cells
 from catmaid.control.node import (get_configured_node_providers,
         GridCachedNodeProvider, Postgis3dNodeProvider, update_grid_cell)
@@ -45,6 +46,7 @@ class GridWorker():
         # Batch of grids to update during one run
         updated_cells = 0
         updated_grids = set()
+        updated_cell_refs = []
         for update in updates:
             g = grid_map[update['grid_id']]
             w_i, h_i, d_i = update['x'], update['y'], update['z']
@@ -61,20 +63,33 @@ class GridWorker():
             if g.hidden_last_editor_id:
                 params['hidden_last_editor_id'] = int(g.hidden_last_editor_id)
 
-            added = update_grid_cell(g.project_id, g.id, w_i, h_i, d_i,
+            updated = update_grid_cell(g.project_id, g.id, w_i, h_i, d_i,
                     g.cell_width, g.cell_height, g.cell_depth,
                     params, g.allow_empty, g.n_lod_levels, g.lod_min_bucket_size,
                     g.lod_strategy, g.has_json_data, g.has_json_text_data,
                     g.has_msgpack_data, provider=provider, cursor=cursor,
                     delete_empty=True)
 
-            if added:
+            if updated:
                 updated_cells += 1
                 updated_grids.add(g.id)
+                updated_cell_refs.add([{
+                    'project_id': g.project_id,
+                    'grid_id', g.id,
+                    'x': w_i,
+                    'y': h_i,
+                    'z': d_i,
+                })
 
                 # TODO: delete in batches
                 DirtyNodeGridCacheCell.objects.filter(grid_id=g.id, x_index=w_i,
                         y_index=h_i, z_index=d_i).delete()
+
+        # Optionally, let users know about updated cells
+        if settings.SPATIAL_UPDATE_CLIENT_NOTIFICATIONS:
+            msg_all('grid-cache-update', {
+                'updated_cells': updated_cell_refs,
+            })
 
         logger.debug(f'Updated {updated_cells} grid cell(s) in {len(updated_grids)} grid cache(s)')
 

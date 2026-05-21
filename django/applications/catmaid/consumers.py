@@ -11,6 +11,9 @@ from channels.layers import get_channel_layer
 logger = logging.getLogger(__name__)
 
 
+broadcast_group_name = 'broadcast'
+
+
 def get_user_group_name(user_id):
     return f"updates-{user_id}"
 
@@ -24,8 +27,9 @@ class UpdateConsumer(WebsocketConsumer):
         if not self.channel_layer:
             logger.error("UpdateConsumer: can't handle WebSockets connection, no channels layer")
             return
-        # Add user to the matching user group
+        # Add user to the matching user group and to broadcast group
         user = self.scope["user"]
+        async_to_sync(self.channel_layer.group_add)(broadcast_group_name, self.channel_name)
         async_to_sync(self.channel_layer.group_add)(get_user_group_name(user.id), self.channel_name)
         self.accept()
 
@@ -37,6 +41,7 @@ class UpdateConsumer(WebsocketConsumer):
             logger.error("UpdateConsumer: can't handle WebSockets disconnect, no channels layer")
             return
         user = self.scope["user"]
+        async_to_sync(self.channel_layer.group_discard)(broadcast_group_name, self.channel_name)
         async_to_sync(self.channel_layer.group_discard)(get_user_group_name(user.id), self.channel_name)
 
     def receive(self, *, text_data):
@@ -125,3 +130,43 @@ def publish_message_to_broker(message, routing_key):
             routing_key=routing_key,
             retry=False,
         )
+
+
+def msg_all(event_name, data:str="", data_type:str="text", is_raw_data:bool=False,
+        ignore_missing:bool=True) -> None:
+    """Send a message to a user. This message will contain a dictionary with the
+    field <data_type> with content <data> if raw data is requested, otherwise
+    with a dictionary. Its fields are "event" for the <event_name> and "payload"
+    for <data>."""
+    if is_raw_data:
+        payload = data
+    else:
+        payload = json.dumps({
+            "event": event_name,
+            "payload": data
+        })
+    # Broadcast to listening sockets
+    try:
+        logger.info('attempting send broadcast msg')
+        if is_in_celery_task():
+            logger.info('sending broadcast msg from celery task')
+            publish_message_to_broker({
+                'type': 'user.message',
+                'data': payload,
+            }, broadcast_group_name)
+        else:
+            channel_layer = get_channel_layer()
+            # Without any channel layer, there is no point in trying to send a
+            # message.
+            if not channel_layer:
+                return
+            logger.info('sending msg')
+            async_to_sync(channel_layer.group_send)(broadcast_group_name, {
+                'type': 'user.message',
+                'data': payload,
+            })
+    except KeyError as e:
+        if ignore_missing:
+            pass
+        else:
+            raise e

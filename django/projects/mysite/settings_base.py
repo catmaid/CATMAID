@@ -535,6 +535,10 @@ DEFAULT_CACHE_GRID_CELL_DEPTH = 40
 # connector links).
 SPATIAL_UPDATE_NOTIFICATIONS = False
 
+# Specifies whether grid cache update workser will notify all clients about
+# recomputed dirty cells using WebSockets.
+SPATIAL_UPDATE_CLIENT_NOTIFICATIONS = True
+
 # On statup, the default client instance settings can be populated based on a
 # JSON string, representing a list of objects with a "key" field and a "value"
 # field. These settings will only be applied if they exist already.

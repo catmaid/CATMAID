@@ -12,6 +12,10 @@ Miscellaneous:
 
 - The skeleton reroot API now also returns the new root node's edition time.
 
+- Grid cache worker: send broadcast message after updates using WebSockets. This
+  can be disabled by settin `SPATIAL_UPDATE_CLIENT_NOTIFICATIONS = False` in
+  `settings.py`.
+
 ### Bug fixes
 
 

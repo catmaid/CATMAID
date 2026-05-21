@@ -1571,6 +1571,11 @@ var project;
           client.check_messages(true);
         }
       ], [
+        'grid-cache-update',
+        function (client, payload) {
+          // Ignore for now
+        }
+      ], [
         'unknown',
         function(message) {
           var report = "An unknown message has been received" +

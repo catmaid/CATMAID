@@ -787,6 +787,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result:Dict[str, Any] = {
+                'edition_time': '2011-12-09T08:01:48.933Z',
                 'newroot': 2394,
                 'skeleton_id': 2388}
         self.assertEqual(expected_result, parsed_response)
@@ -1027,6 +1028,7 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         self.assertStatus(response)
         parsed_response = json.loads(response.content.decode('utf-8'))
         expected_result = {
+                'edition_time': '2011-12-05T13:51:36.955Z',
                 'newroot': 407,
                 'skeleton_id': 373}
         self.assertEqual(expected_result, parsed_response)

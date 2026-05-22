@@ -33,7 +33,7 @@ django/applications/catmaid/control/skeleton.py:7: error: Library stubs not inst
 django/applications/catmaid/control/skeleton.py:7: error: Library stubs not installed for "dateutil"  [import-untyped]
 django/applications/catmaid/control/skeleton.py:11: error: Library stubs not installed for "pytz"  [import-untyped]
 django/applications/catmaid/control/skeleton.py:11: note: Hint: "python3 -m pip install types-pytz"
-django/applications/catmaid/control/skeleton.py:504: error: Need type annotation for "rev"  [var-annotated]
+django/applications/catmaid/control/skeleton.py:505: error: Need type annotation for "rev"  [var-annotated]
 django/lib/custom_swagger_schema.py:8: error: Library stubs not installed for "yaml"  [import-untyped]
 django/applications/catmaid/views/userimporter.py:3: error: Library stubs not installed for "requests"  [import-untyped]
 django/applications/catmaid/views/userimporter.py:5: error: Module "django" has no attribute "forms"  [attr-defined]

@@ -4,7 +4,7 @@ import logging
 import select
 import signal
 import time
-from typing import Dict, List, Set
+from typing import Dict, List, Set, Any
 
 
 from django.conf import settings
@@ -46,7 +46,7 @@ class GridWorker():
         # Batch of grids to update during one run
         updated_cells = 0
         updated_grids = set()
-        updated_cell_refs = []
+        updated_cell_refs: List[Any] = []
         for update in updates:
             g = grid_map[update['grid_id']]
             w_i, h_i, d_i = update['x'], update['y'], update['z']
@@ -73,7 +73,7 @@ class GridWorker():
             if updated:
                 updated_cells += 1
                 updated_grids.add(g.id)
-                updated_cell_refs.add([{
+                updated_cell_refs.append([{
                     'project_id': g.project_id,
                     'grid_id': g.id,
                     'x': w_i,

@@ -75,7 +75,7 @@ class GridWorker():
                 updated_grids.add(g.id)
                 updated_cell_refs.add([{
                     'project_id': g.project_id,
-                    'grid_id', g.id,
+                    'grid_id': g.id,
                     'x': w_i,
                     'y': h_i,
                     'z': d_i,

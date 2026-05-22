@@ -51,6 +51,8 @@ class GridWorker():
             g = grid_map[update['grid_id']]
             w_i, h_i, d_i = update['x'], update['y'], update['z']
 
+            # Lock dirty cell
+
             params = {
                 'project_id': g.project_id,
                 'limit': settings.NODE_LIST_MAXIMUM_COUNT,
@@ -68,7 +70,7 @@ class GridWorker():
                     params, g.allow_empty, g.n_lod_levels, g.lod_min_bucket_size,
                     g.lod_strategy, g.has_json_data, g.has_json_text_data,
                     g.has_msgpack_data, provider=provider, cursor=cursor,
-                    delete_empty=True)
+                    delete_empty=True, ignore_locked=True)
 
             if updated:
                 updated_cells += 1

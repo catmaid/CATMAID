@@ -2158,7 +2158,7 @@ def update_grid_cell(project_id, grid_id, w_i, h_i, d_i, cell_width,
         cell_height, cell_depth, params, allow_empty, lod_levels,
         lod_bucket_size, lod_strategy, update_json_cache,
         update_json_text_cache, update_msgpack_cache, provider=None,
-        cursor=None, delete_empty=True) -> bool:
+        cursor=None, delete_empty=True, ignore_locked=True) -> bool:
     params['left'] = w_i * cell_width
     params['right'] = (w_i + 1) * cell_width
     params['top'] = h_i * cell_height
@@ -2171,6 +2171,35 @@ def update_grid_cell(project_id, grid_id, w_i, h_i, d_i, cell_width,
 
     if not cursor:
         cursor = connection.cursor()
+
+    # Put a lock on this grid cache_cell. If ignore_locked is true, this update
+    # call is canceled if no lock can be acquired right away.
+    try:
+        cursor.execute(f"""
+            SELECT grid_id
+            FROM node_grid_cache_cell
+            WHERE grid_id = %(grid_id)s AND x_index = %(x_index)s AND
+                y_index = %(y_index)s AND z_index = %(z_index)s
+            FOR ${'' if delete_empty and not allow_empty else 'NO KEY'} UPDATE
+            ${'NOWAIT' if ignore_locked else ''}
+            LIMIT 1;
+        """, {
+            'grid_id': grid_id,
+            'x_index': w_i,
+            'y_index': h_i,
+            'z_index': d_i,
+        })
+    except e as Error:
+        logger.error(e)
+        # We couldn't get the lock.
+        if ignore_locked:
+            return True
+        pass
+
+    n_cells = cursor.fetchall()[0]
+    if n_cells == 0:
+        # If this cell is already locked,
+        return
 
     result_tuple = _node_list_tuples_query(params, project_id, provider,
             include_labels=True)

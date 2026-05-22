@@ -79,7 +79,7 @@ class GridWorker():
                     'x': w_i,
                     'y': h_i,
                     'z': d_i,
-                })
+                }])
 
                 # TODO: delete in batches
                 DirtyNodeGridCacheCell.objects.filter(grid_id=g.id, x_index=w_i,

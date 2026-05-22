@@ -43,7 +43,8 @@ from catmaid.control.common import (insert_into_log, get_class_to_id_map,
         get_request_list, Echo, get_last_concept_id)
 from catmaid.history import record_request_action as record_view
 from catmaid.control.link import LINK_TYPES
-from catmaid.control.neuron import _delete_if_empty
+from catmaid.control.neuron import _delete_if_empty, _get_all_skeletons_of_neuron, \
+        _delete_neuron_as_user
 from catmaid.control.annotation import (annotations_for_skeleton,
         create_annotation_query, _annotate_entities, _update_neuron_annotations,
         clear_annotations)
@@ -5149,3 +5150,57 @@ class SkeletonIdDetails(APIView):
             'skeleton_updated': updated_skeleton,
             'neuron_updated': updated_neuron,
         })
+
+
+@api_view(['POST'])
+@requires_user_role(UserRole.Annotate)
+def delete_skeleton(request:HttpRequest, project_id, skeleton_id):
+    """
+    Delete a skeleton, by default altogether with its neuron, should it be the
+    only skeleton modeling the neuron. If there is more than one skeleton
+    modeling the neuron, this request is only successful if
+    `delete_multi_skeleton_neurons = true`. Otherwise an error is raised.
+    ---
+    parameters:
+      - name: project_id
+        description: Project to operate in
+        type: integer
+        paramType: path
+        required: true
+      - name: skeleton_id
+        description: Skeleton to delete
+        type: integer
+        paramType: path
+        required: true
+      - name: delete_multi_skeleton_neurons
+        description: |
+            (Optional) Whether or not to delete the neuron, if it has no other
+            skeletons modeling it. (Default: false)
+        required: false
+        type: boolean
+        paramType: form
+        defaultValue: false
+    """
+    delete_multi_skeleton_neurons = get_request_bool(request.POST,
+            'delete_multi_skeleton_neurons', False)
+
+    skeleton_id = int(skeleton_id)
+    neuron_id = _get_neuronname_from_skeletonid( project_id, skeleton_id)['neuronid']
+    skeleton_ids = _get_all_skeletons_of_neuron(project_id, neuron_id)
+
+    if len(skeleton_ids) > 1 and not delete_multi_skeleton_neurons:
+        raise ValueError(f'Neuron {neuron_id} is modeled by more skeletons than '
+                f'{skeleton_id}, won\'t delete by default.')
+    elif len(skeleton_ids) == 0:
+        raise ValueError(f'Neuron {neuron_id} doesn\'t appear to have skeletons.')
+    elif skeleton_ids[0] != skeleton_id:
+        raise ValueError(f'The skeleton modeling neuron {neuron_id} has a '
+            f'different ID ({skeleton_ids[0]}) than the one passed in '
+            f'({skeleton_id}).')
+
+    deleted_skeleton_ids = _delete_neuron_as_user(request.user, project_id, neuron_id)
+
+    return JsonResponse({
+        'skeleton_ids': list(deleted_skeleton_ids),
+        'success': "Deleted neuron #%s as well as its skeletons and annotations." % neuron_id
+    })

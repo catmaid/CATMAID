@@ -140,14 +140,24 @@ def _delete_if_empty(neuron_id) -> bool:
         ClassInstance.objects.filter(pk=neuron_id).delete()
     return is_empty
 
+
 @requires_user_role(UserRole.Annotate)
 def delete_neuron(request:HttpRequest, project_id=None, neuron_id=None) -> JsonResponse:
     """ Deletes a neuron if and only if two things are the case: 1. The user
     ownes all treenodes of the skeleton modeling the neuron in question and
     2. The neuron is not annotated by other users.
     """
+    deleted_skeleton_ids = _delete_neuron_as_user(request.user, project_id, neuron_id)
+
+    return JsonResponse({
+        'skeleton_ids': list(deleted_skeleton_ids),
+        'success': "Deleted neuron #%s as well as its skeletons and annotations." % neuron_id
+    })
+
+
+def _delete_neuron_as_user(user, project_id, neuron_id):
     # Make sure the user can edit the neuron in general
-    can_edit_class_instance_or_fail(request.user, neuron_id, 'neuron')
+    can_edit_class_instance_or_fail(user, neuron_id, 'neuron')
 
     # Create class and relation dictionaries
     classes = dict(Class.objects.filter(
@@ -162,10 +172,10 @@ def delete_neuron(request:HttpRequest, project_id=None, neuron_id=None) -> JsonR
                     'class_instance_a', flat=True)
     for skid in skeleton_ids:
         others_nodes = Treenode.objects.filter(skeleton_id=skid).exclude(
-                user_id=request.user.id).values_list('id', flat=True)
+                user_id=user.id).values_list('id', flat=True)
         if others_nodes:
             try:
-                can_edit_all_or_fail(request.user, others_nodes, 'treenode')
+                can_edit_all_or_fail(user, others_nodes, 'treenode')
             except Exception:
                 raise Exception("You don't have permission to remove all " \
                         "treenodes of skeleton %s modeling this neuron. The " \
@@ -178,7 +188,7 @@ def delete_neuron(request:HttpRequest, project_id=None, neuron_id=None) -> JsonR
                     'id', flat=True))
     if annotation_ids:
         try:
-            can_edit_all_or_fail(request.user, annotation_ids,
+            can_edit_all_or_fail(user, annotation_ids,
                     'class_instance_class_instance')
         except Exception:
             raise Exception("You don't have permission to remove all " \
@@ -232,14 +242,12 @@ def delete_neuron(request:HttpRequest, project_id=None, neuron_id=None) -> JsonR
         ''', (skid, project_id) * 7)
 
     # Insert log entry and refer to position of the first skeleton's root node
-    insert_into_log(project_id, request.user.id, 'remove_neuron', root_location,
+    insert_into_log(project_id, user.id, 'remove_neuron', root_location,
             'Deleted neuron %s and skeleton(s) %s.' % (neuron_id,
                     ', '.join([str(s) for s in skeleton_ids])))
 
-    return JsonResponse({
-        'skeleton_ids': list(skeleton_ids),
-        'success': "Deleted neuron #%s as well as its skeletons and annotations." % neuron_id
-    })
+    return list(skeleton_ids)
+
 
 @requires_user_role(UserRole.Annotate)
 def give_neuron_to_other_user(request:HttpRequest, project_id=None, neuron_id=None) -> JsonResponse:

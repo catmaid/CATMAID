@@ -16,6 +16,8 @@ Miscellaneous:
   can be disabled by settin `SPATIAL_UPDATE_CLIENT_NOTIFICATIONS = False` in
   `settings.py`.
 
+- A convenience API was added to delete a neuron using its skeleton ID only.
+
 ### Bug fixes
 
 

@@ -16,7 +16,8 @@ from catmaid.control.annotation import _annotate_entities, annotations_for_skele
 from catmaid.control.skeleton import _get_neuronname_from_skeletonid
 from catmaid.models import (
     ClassInstance, ClassInstanceClassInstance, Log, Review, TreenodeConnector,
-    ReviewerWhitelist, Treenode, User, ClientDatastore, ClientData
+    ReviewerWhitelist, Treenode, User, ClientDatastore, ClientData,
+    TreenodeClassInstance
 )
 
 from .common import CatmaidApiTestCase, CatmaidApiTransactionTestCase
@@ -1975,3 +1976,30 @@ class SkeletonsApiTransactionTests(CatmaidApiTransactionTestCase):
         # skeleton.
         n_skeleton_nodes = Treenode.objects.filter(skeleton_id=post_force_update_skeleton_id_2).count()
         self.assertEqual(n_skeleton_nodes, n_orig_skeleton_nodes)
+
+    def test_skeleton_deletion(self):
+        self.fake_authentication()
+        skeleton_id = 1
+        neuron_id = 2
+
+        count_logs = lambda: Log.objects.all().count()
+        log_count = count_logs()
+
+        response = self.client.post(
+            '/%d/skeletons/%s/delete' % (self.test_project_id, skeleton_id))
+        self.assertStatus(response)
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        expected_response = {
+                'success': "Deleted neuron #2 as well as its skeletons and annotations.",
+                "skeleton_ids": [skeleton_id]}
+        self.assertEqual(parsed_response, expected_response)
+
+        self.assertEqual(0, Treenode.objects.filter(skeleton_id=skeleton_id).count())
+        self.assertEqual(0, ClassInstanceClassInstance.objects.filter(class_instance_b=neuron_id).count())
+        self.assertEqual(0, ClassInstance.objects.filter(id=skeleton_id).count())
+        self.assertEqual(0, ClassInstance.objects.filter(id=neuron_id).count())
+        self.assertEqual(0, TreenodeClassInstance.objects.filter(class_instance=skeleton_id).count())
+        # This is a TCI related to a treenode included in the skeleton
+        self.assertEqual(0, TreenodeClassInstance.objects.filter(id=353).count())
+
+        self.assertEqual(log_count + 1, count_logs())

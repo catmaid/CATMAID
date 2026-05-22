@@ -345,6 +345,7 @@ urlpatterns += [
     re_path(r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/sampler-count$', skeleton.sampler_count),
     re_path(r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/cable-length$', skeleton.cable_length),
     re_path(r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/neuron-details$', skeleton.neurondetails),
+    re_path(r'^(?P<project_id>\d+)/skeletons/(?P<skeleton_id>\d+)/delete$', skeleton.delete_skeleton),
     re_path(r'^(?P<project_id>\d+)/skeleton/split$', record_view("skeletons.split")(skeleton.split_skeleton)),
     re_path(r'^(?P<project_id>\d+)/skeleton/ancestry$', skeleton.skeleton_ancestry),
     re_path(r'^(?P<project_id>\d+)/skeleton/join$', record_view("skeletons.merge")(skeleton.join_skeleton)),

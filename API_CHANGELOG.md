@@ -6,7 +6,11 @@ included in this changelog.
 
 ### Additions
 
-None.
+- `POST /{project_id}/skeletons/{skeleton_id}/delete`:
+  Delete a skeleton along with its neuron (like calling /delete on the neuron).
+  The neuron is by default only deleted if the skeleton was the only model of
+  the neuron. If the parameter `delete_multi_skeleton_neurons = true` then
+  neurons are also deleted, if they are modeled by multiple skeletons.
 
 ### Modifications
 

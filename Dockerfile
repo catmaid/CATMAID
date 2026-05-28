@@ -25,7 +25,7 @@ RUN apt-get update -y \
     && apt-get update -y \
     && apt-get install -y python3.10 python3.10-venv python3.10-dev git python3-pip \
     && apt-get install -y rabbitmq-server \
-    && apt-get install -y postgresql-13 postgresql-13-postgis-3 \
+    && apt-get install -y postgresql-17 postgresql-17-postgis-3 \
     && apt-get install -y rabbitmq-server \
     && apt-get install -y nginx supervisor \
     && apt-get install -y rabbitmq-server \

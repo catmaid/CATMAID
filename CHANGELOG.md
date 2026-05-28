@@ -18,6 +18,8 @@ Miscellaneous:
 
 - A convenience API was added to delete a neuron using its skeleton ID only.
 
+- The Docker image now uses Postgres 17 and PostGIS 3.5.
+
 ### Bug fixes
 
 

@@ -144,20 +144,20 @@ class Exporter():
 
         self.project = project
         self.options = options
-        self.export_treenodes = options['export_treenodes']
+        self.export_treenodes = options.get('export_treenodes', True)
         self.connector_mode = options['connector_mode']
-        self.export_annotations = options['export_annotations']
-        self.export_public_deep_links = options['export_public_deep_links']
-        self.export_exportable_deep_links = options['export_exportable_deep_links']
-        self.export_reviews = options['export_reviews']
-        self.export_tags = options['export_tags']
-        self.allowed_tags = options['allowed_tags']
+        self.export_annotations = options.get('export_annotations', True)
+        self.export_public_deep_links = options.get('export_public_deep_links', False)
+        self.export_exportable_deep_links = options.get('export_exportable_deep_links', False)
+        self.export_reviews = options.get('export_reviews', False)
+        self.export_tags = options.get('export_tags', True)
+        self.allowed_tags = options.get('allowed_tags', False)
 
         if self.allowed_tags is True:
             self.allowed_tags = list(known_tags)
 
-        self.export_users = options['export_users']
-        self.export_volumes = options['export_volumes']
+        self.export_users = options.get('export_users', False)
+        self.export_volumes = options.get('export_volumes', False)
         # If in use, annotations annotated with this meta annotation are
         # expected to be also annotated with settings meta-annotations. They
         # also define for each set of neurons and can be annotated with
@@ -171,12 +171,12 @@ class Exporter():
         # are used. If however "export: annotations" is used, annotations will
         # be exported for the respective neurons, regardless of the global
         # default.
-        self.settings_meta_annotation = options['settings_meta_annotation']
-        self.required_annotations = options['required_annotations']
-        self.excluded_annotations = options['excluded_annotations']
-        self.volume_annotations = options['volume_annotations']
-        self.annotation_annotations = options['annotation_annotations']
-        self.exclusion_is_final = options['exclusion_is_final']
+        self.settings_meta_annotation = options.get('settings_meta_annotation', None)
+        self.required_annotations = options.get('required_annotations', [])
+        self.excluded_annotations = options.get('excluded_annotations', [])
+        self.volume_annotations = options.get('volume_annotations', [])
+        self.annotation_annotations = options.get('annotation_annotations', [])
+        self.exclusion_is_final = options.get('exclusion_is_final', False)
         if 'run_noninteractive' in options:
             self.run_noninteractive = options['run_noninteractive']
         else:

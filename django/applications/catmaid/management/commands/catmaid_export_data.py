@@ -44,6 +44,9 @@ class Command(BaseCommand):
         parser.add_argument('--users', dest='export_users',
                 type=str2bool, nargs='?', const=True, default=False,
                 help='Export users from source')
+        parser.add_argument('--reviews', dest='export_reviews',
+                type=str2bool, nargs='?', const=True, default=False,
+                help='Export reviews from source')
         parser.add_argument('--volumes', dest='export_volumes',
                 type=str2bool, nargs='?', const=True, default=False,
                 help='Export volumes from source. More constraints can be ' +
@@ -103,7 +106,7 @@ class Command(BaseCommand):
         # Give some information about the export
         will_export = []
         wont_export = []
-        for t in ('treenodes', 'annotations', 'tags', 'volumes'):
+        for t in ('treenodes', 'annotations', 'tags', 'volumes', 'reviews'):
             if options['export_' + t]:
                 will_export.append(t)
             else:

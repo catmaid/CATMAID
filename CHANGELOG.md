@@ -20,6 +20,8 @@ Miscellaneous:
 
 - The Docker image now uses Postgres 17 and PostGIS 3.5.
 
+- Reviews can now be exported from the catmaid_exportdata management command.
+
 ### Bug fixes
 
 

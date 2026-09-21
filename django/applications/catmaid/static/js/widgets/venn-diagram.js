@@ -271,7 +271,10 @@
         }
 
         const label = $('#venn_diagram_sel' + self.widgetID);
-        if (intersecting.length > 1) {
+        if (0 === intersecting.length) {
+            // #2235: nothing survived intersection testing, so nothing to do.
+            return;
+        } else if (intersecting.length > 1) {
             self.selected = search.models;
             var size = Object.keys(self.selected).length;
             label.text("intersection with " + size + " neuron" + (1 === size ? "" : "s") + ".");

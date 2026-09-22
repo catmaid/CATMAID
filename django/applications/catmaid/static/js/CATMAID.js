@@ -35,7 +35,7 @@
       }
     });
 
-    var generalErrorMessage = 'An error occured in CATMAID and the current ' +
+    var generalErrorMessage = 'An error occurred in CATMAID and the current ' +
         'action can\'t be completed. You can try to reload the widget or ' +
         'tool you just used.';
 

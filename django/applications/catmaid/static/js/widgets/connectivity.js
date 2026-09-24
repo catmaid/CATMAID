@@ -1245,8 +1245,8 @@
         render: (data, type, row, meta) => {
           let selectedIndex = (ts.partnerSet.thresholds[ts.type][row] || 1) - 1;
           let options = selectedIndex == 1 ? maxThresholdOptions[max] :
-              new Array(max).fill().map((_, j) => `<option value='${i+1}'${j == selectedIndex ? ' selected' : ''}>${j+1}</option>`).join('');
-          return `<select class='threshold' data-partner-set-id='${ts.partnerSet.id}' data-type='${ts.type} data-skeleton-id='${row}>${options}</select>`;
+              new Array(max).fill().map((_, j) => `<option value='${j+1}'${j == selectedIndex ? ' selected' : ''}>${j+1}</option>`).join('');
+          return `<select class='threshold' data-partner-set-id='${ts.partnerSet.id}' data-type='${ts.type}' data-skeleton-id='${row}'>${options}</select>`;
         },
       });
     });

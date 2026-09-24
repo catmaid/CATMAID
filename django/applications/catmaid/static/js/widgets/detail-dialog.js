@@ -14,8 +14,8 @@
      */
     var DetailDialog = function(text, detail, title, metaMsg, id) {
       id = id || "detail-dialog-confirm";
-      title= title || "An error occured";
-      metaMsg = metaMsg || "Several errors have occured";
+      title= title || "An error occurred";
+      metaMsg = metaMsg || "Several errors have occurred";
       this.dialog = document.getElementById(id);
       if (null === this.dialog) {
         this.dialog = document.createElement('div');

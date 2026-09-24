@@ -2325,7 +2325,7 @@ def _reroot_skeleton(treenode_id, project_id):
         new_confidence = rootnode.confidence
         node = first_parent
 
-        response_on_error = 'An error occured while rerooting.'
+        response_on_error = 'An error occurred while rerooting.'
         while True:
             # Store current values to be used in next iteration
             parent, confidence = nodes[node]

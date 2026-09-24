@@ -115,11 +115,11 @@
 
       // If the error was handled, don't print console message or show a dialog.
       if (!handled) {
-        console.log('[Submitter] An unhandled error occured');
+        console.log('[Submitter] An unhandled error occurred');
         console.log(error, q);
         if (!q.quiet) {
           var err = (error && error.error) ? CATMAID.parseErrorResponse(error) :
-            new CATMAID.Error('An unknown error occured');
+            new CATMAID.Error('An unknown error occurred');
           CATMAID.handleError(err);
         }
       }

@@ -7,8 +7,8 @@
      * default. The dialog allows to expand it, however.
      */
     var ErrorDialog = function(text, detail) {
-      var title = "An error occured";
-      var metaMsg = "Several errors have occured";
+      var title = "An error occurred";
+      var metaMsg = "Several errors have occurred";
       var id = "error-dialog-confirm";
 
       // Prepend CATMAID version to error details, if any

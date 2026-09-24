@@ -610,7 +610,7 @@ def process_crop_job(job: CropJob, create_message=True) -> str:
         # Create the sub-stack
         cropped_stack = extract_substack(job)
         # Save the resulting micro_stack to a temporary location
-        no_error_occured = True
+        no_error_occurred = True
         error_message = ""
         # Only produce an image if parts of stacks are within the output
         if len(cropped_stack) > 0:
@@ -635,11 +635,11 @@ def process_crop_job(job: CropJob, create_message=True) -> str:
             else:
                 raise ValueError(f'Unknown output format: {job.output_format}')
         else:
-            no_error_occured = False
+            no_error_occurred = False
             error_message = "A region outside the stack has been selected. " \
                     "Therefore, no image was produced."
     except (IOError, OSError, ValueError) as e:
-        no_error_occured = False
+        no_error_occurred = False
         error_message = str(e)
         # Delete the file if parts of it have been written already
         if os.path.exists( job.output_path ):
@@ -654,7 +654,7 @@ def process_crop_job(job: CropJob, create_message=True) -> str:
         msg = Message()
         msg.user = user
         msg.read = False
-        if no_error_occured:
+        if no_error_occurred:
             file_name = os.path.basename( job.output_path )
             url = os.path.join( settings.CATMAID_URL, "crop/download/" + file_name + "/")
             msg.title = "Microstack finished"
@@ -672,7 +672,7 @@ def process_crop_job(job: CropJob, create_message=True) -> str:
 
         notify_user(user.id, msg.id, msg.title)
 
-    return job.output_path if no_error_occured else error_message
+    return job.output_path if no_error_occurred else error_message
 
 def start_asynch_process(job) -> JsonResponse:
     """ It launches the data extraction and sub-stack building as a seperate process.

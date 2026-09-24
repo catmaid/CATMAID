@@ -441,10 +441,10 @@ def process_export_job(exporter) -> str:
                     f.write("%s %s %s\n" % (node.id, eu[0], eu[1]))
     except IOError as e:
         msg = "The export of the data set has been aborted, because an " \
-                "error occured: %s" % str(e)
+                "error occurred: %s" % str(e)
         exporter.create_message("The %s export failed" % exporter.entity_name,
                 msg, '#')
-        return "An error occured during the %s export: %s" % \
+        return "An error occurred during the %s export: %s" % \
                 (exporter.entity_name, str(e))
 
     # Give an exporter the chance to do some postprocessing
@@ -464,7 +464,7 @@ def process_export_job(exporter) -> str:
     url = os.path.join(settings.CATMAID_URL, settings.MEDIA_URL,
             settings.MEDIA_TREENODE_SUBDIRECTORY, tarfile_name)
     if error_urls:
-        error_msg = " However, errors occured during the export of some " \
+        error_msg = " However, errors occurred during the export of some " \
                 "images and an error log is available in the archive."
     else:
         error_msg = ""

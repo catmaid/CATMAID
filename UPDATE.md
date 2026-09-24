@@ -1,7 +1,12 @@
 Some CATMAID versions require manual changes to an existing setup. Below these
 and other administration related changes are listed in order.
 
+
 ## Under development
+
+- This version requires Python 3.10, 3.11 or 3.12.
+
+## 2026.05.06
 
 - This version requires Python 3.8+.
 

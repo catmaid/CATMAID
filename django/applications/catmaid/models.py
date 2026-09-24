@@ -65,6 +65,7 @@ class UserRole(object):
     CreateDeepLinks = 'CreateDeepLinks'
 
 class Project(models.Model):
+    id = models.AutoField(primary_key=True)
     title = models.TextField()
     comment = models.TextField(blank=True, null=True)
     stacks = models.ManyToManyField("Stack",
@@ -142,6 +143,7 @@ TILE_SOURCE_TYPE_DESCRIPTIONS = {
 TILE_SOURCE_TYPE_CHOICES = [(t.value, f'{t.value}: {TILE_SOURCE_TYPE_DESCRIPTIONS[t]}') for t in TileSourceTypes]
 
 class Stack(models.Model):
+    id = models.AutoField(primary_key=True)
     title = models.TextField(help_text="Descriptive title of this stack.")
     dimension = Integer3DField(help_text="The pixel dimensionality of the "
             "stack.")
@@ -195,6 +197,7 @@ class Stack(models.Model):
 
 
 class StackMirror(models.Model):
+    id = models.AutoField(primary_key=True)
     stack = models.ForeignKey(Stack, on_delete=models.CASCADE)
     title = models.TextField(help_text="Descriptive title of this stack mirror.")
     image_base = models.TextField(help_text="Fully qualified URL where the "
@@ -247,6 +250,7 @@ class StackMirror(models.Model):
 
 
 class ProjectStack(models.Model):
+    id = models.AutoField(primary_key=True)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     stack = models.ForeignKey(Stack, on_delete=models.CASCADE)
     translation = Double3DField(default=(0, 0, 0))
@@ -262,7 +266,7 @@ class ProjectStack(models.Model):
 class WritableStack(models.Model):
     """A stack reference tied to a user, which can be modified by that user.
     """
-
+    id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE,
                                 related_name='writable_stacks')
@@ -471,6 +475,7 @@ class ClassInstanceClassInstance(models.Model):
         db_table = "class_instance_class_instance"
 
 class BrokenSlice(models.Model):
+    id = models.AutoField(primary_key=True)
     stack = models.ForeignKey(Stack, on_delete=models.CASCADE)
     index = models.IntegerField()
 
@@ -482,6 +487,7 @@ class BrokenSlice(models.Model):
 
 
 class InterpolatableSection(models.Model):
+    id = models.AutoField(primary_key=True)
     """Opposed to the broken slice, an interpolated slice is not supposed to be
     removed, but data on it can be interpolated if the user chooses so to
     improve visualization. In general, data has to be expected at this location.
@@ -520,6 +526,7 @@ class ClassClass(models.Model):
 
 
 class Message(models.Model):
+    id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     time = models.DateTimeField(default=timezone.now)
     read = models.BooleanField(default=False)
@@ -532,6 +539,7 @@ class Message(models.Model):
 
 
 class ClientDatastore(models.Model):
+    id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=255, unique=True, validators=[
             RegexValidator(r'^[\w-]+$',
                            'Only alphanumeric characters and hyphens are allowed.')])
@@ -541,6 +549,7 @@ class ClientDatastore(models.Model):
 
 
 class ClientData(models.Model):
+    id = models.AutoField(primary_key=True)
     datastore = models.ForeignKey(ClientDatastore, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE, blank=True, null=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
@@ -596,6 +605,7 @@ class NonCascadingUserFocusedModel(models.Model):
 
 
 class Textlabel(models.Model):
+    id = models.AutoField(primary_key=True)
     type = models.CharField(max_length=32)
     text = models.TextField(default="Edit this text ...")
     colour = RGBAField(default=(1, 0.5, 0, 1))
@@ -613,6 +623,7 @@ class Textlabel(models.Model):
 
 
 class TextlabelLocation(models.Model):
+    id = models.AutoField(primary_key=True)
     textlabel = models.ForeignKey(Textlabel, on_delete=models.CASCADE)
     location = Double3DField()
     deleted = models.BooleanField(default=False)
@@ -663,6 +674,7 @@ class Point(UserFocusedModel):
 
 
 class SuppressedVirtualTreenode(UserFocusedModel):
+    id = models.AutoField(primary_key=True)
     child = models.ForeignKey(Treenode, on_delete=models.CASCADE)
     location_coordinate = models.FloatField()
     orientation = models.SmallIntegerField(choices=((0, 'z'), (1, 'y'), (2, 'x')))
@@ -763,6 +775,7 @@ class ReviewerWhitelist(models.Model):
     """ This model represents that a user trusts the reviews of a partciular
     reviewer for a specific project created after a specified time.
     """
+    id = models.AutoField(primary_key=True)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     reviewer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='+')
@@ -777,6 +790,7 @@ class Volume(UserFocusedModel):
     """A three-dimensional volume in project space. Implemented as PostGIS
     Geometry type.
     """
+    id = models.AutoField(primary_key=True)
     editor = models.ForeignKey(User, on_delete=models.CASCADE,
                                related_name='editor', db_column='editor_id')
     name = models.CharField(max_length=255)
@@ -987,6 +1001,7 @@ class StackClassInstance(models.Model):
 
 
 class StackGroupRelation(models.Model):
+    id = models.AutoField(primary_key=True)
     name = models.TextField(max_length=80)
 
     class Meta:
@@ -997,6 +1012,7 @@ class StackGroupRelation(models.Model):
 
 
 class StackGroup(models.Model):
+    id = models.AutoField(primary_key=True)
     title = models.TextField(default="", max_length=80)
     comment = models.TextField(blank=True, null=True,
             help_text="A comment that describes the stack group.")
@@ -1009,6 +1025,7 @@ class StackGroup(models.Model):
 
 
 class StackStackGroup(models.Model):
+    id = models.AutoField(primary_key=True)
     group_relation = models.ForeignKey(StackGroupRelation, on_delete=models.CASCADE)
     stack = models.ForeignKey(Stack, on_delete=models.CASCADE)
     stack_group = models.ForeignKey(StackGroup, on_delete=models.CASCADE)
@@ -1046,6 +1063,7 @@ class PointSet(NonCascadingUserFocusedModel):
     """Store a set of points. A non-cascading user focused model is used,
     because cascading deletes are handled on the database level.
     """
+    id = models.AutoField(primary_key=True)
     name = models.TextField()
     description = models.TextField()
     points = ArrayField(models.FloatField())
@@ -1063,6 +1081,7 @@ class NblastSample(NonCascadingUserFocusedModel):
     [sample 1 type, sample 1 id, sample 2 type, sample 2 id] with type being
     either 0, 1 or 2 for neuron, pointcloud and pointset respectively.
     """
+    id = models.AutoField(primary_key=True)
     name = models.TextField()
     sample_neurons = ArrayField(models.IntegerField())
     sample_pointclouds = ArrayField(models.IntegerField())
@@ -1083,6 +1102,7 @@ class NblastConfig(NonCascadingUserFocusedModel):
     focused model is used, because cascading deletes are handled on the database
     level.
     """
+    id = models.AutoField(primary_key=True)
     name = models.TextField()
     status = models.TextField()
     distance_breaks = ArrayField(models.FloatField(
@@ -1117,6 +1137,7 @@ class NblastSimilarity(NonCascadingUserFocusedModel):
     cloud IDs). A non-cascading user focused model is used, because cascading
     deletes are handled on the database level as well.
     """
+    id = models.AutoField(primary_key=True)
     name = models.TextField()
     status = models.TextField()
     config = models.ForeignKey(NblastConfig, on_delete=models.DO_NOTHING)
@@ -1156,7 +1177,7 @@ class PointCloud(NonCascadingUserFocusedModel):
     relation. A non-cascading user focused model is used, because cascading
     deletes are handled on the database level as well.
     """
-
+    id = models.AutoField(primary_key=True)
     name = models.TextField()
     description = models.TextField(default="")
     source_path = models.TextField(default="")
@@ -1199,6 +1220,7 @@ class PointCloudPoint(models.Model):
     """Links a point to a pointcloud for a particular project. Referential
     integretry (delete cascade) is taken care of by the database.
     """
+    id = models.AutoField(primary_key=True)
     project = models.ForeignKey(Project, on_delete=models.DO_NOTHING)
     pointcloud = models.ForeignKey(PointCloud, on_delete=models.DO_NOTHING)
     point = models.ForeignKey(Point, on_delete=models.DO_NOTHING)
@@ -1212,6 +1234,7 @@ class ImageData(NonCascadingUserFocusedModel):
     non-cascading user focused model is used, because cascading deletes are
     handled on the database level as well.
     """
+    id = models.AutoField(primary_key=True)
     name = models.TextField()
     description = models.TextField(default="")
     source_path = models.TextField(default="")
@@ -1226,6 +1249,7 @@ class PointCloudImageData(models.Model):
     """Links a piece of image data to a point cloud. Referential integretry
     (delete cascade) is taken care of by the database.
     """
+    id = models.AutoField(primary_key=True)
     project = models.ForeignKey(Project, on_delete=models.DO_NOTHING)
     pointcloud = models.ForeignKey(PointCloud, on_delete=models.DO_NOTHING)
     image_data = models.ForeignKey(ImageData, on_delete=models.DO_NOTHING)
@@ -1274,6 +1298,7 @@ class Log(UserFocusedModel):
 
 
 class DataViewType(models.Model):
+    id = models.AutoField(primary_key=True)
     title = models.TextField()
     code_type = models.TextField()
     comment = models.TextField(blank=True, null=True)
@@ -1286,6 +1311,7 @@ class DataViewType(models.Model):
 
 
 class DataView(models.Model):
+    id = models.AutoField(primary_key=True)
     title = models.TextField()
     data_view_type = models.ForeignKey(DataViewType, on_delete=models.CASCADE)
     config = models.TextField(default="{}")
@@ -1336,6 +1362,7 @@ class DataView(models.Model):
 
 
 class SamplerState(models.Model):
+    id = models.AutoField(primary_key=True)
     name = models.TextField()
     description = models.TextField()
 
@@ -1358,6 +1385,7 @@ class Sampler(UserFocusedModel):
 
 
 class SamplerIntervalState(models.Model):
+    id = models.AutoField(primary_key=True)
     name = models.TextField()
     description = models.TextField()
 
@@ -1366,6 +1394,7 @@ class SamplerIntervalState(models.Model):
 
 
 class SamplerInterval(UserFocusedModel):
+    id = models.AutoField(primary_key=True)
     domain = models.ForeignKey('SamplerDomain', db_index=True, on_delete=models.CASCADE)
     interval_state = models.ForeignKey(SamplerIntervalState, db_index=True, on_delete=models.CASCADE)
     # Integrety od start and end node are handled by the database. We don't want
@@ -1381,6 +1410,7 @@ class SamplerInterval(UserFocusedModel):
 
 
 class SamplerConnectorState(models.Model):
+    id = models.AutoField(primary_key=True)
     name = models.TextField()
     description = models.TextField()
 
@@ -1389,6 +1419,7 @@ class SamplerConnectorState(models.Model):
 
 
 class SamplerConnector(UserFocusedModel):
+    id = models.AutoField(primary_key=True)
     interval = models.ForeignKey('SamplerInterval', db_index=True, on_delete=models.CASCADE)
     connector = models.ForeignKey('Connector', db_index=True, on_delete=models.CASCADE)
     connector_state = models.ForeignKey(SamplerConnectorState, db_index=True, on_delete=models.CASCADE)
@@ -1398,6 +1429,7 @@ class SamplerConnector(UserFocusedModel):
 
 
 class SamplerDomainType(models.Model):
+    id = models.AutoField(primary_key=True)
     name = models.TextField()
     description = models.TextField()
 
@@ -1406,6 +1438,7 @@ class SamplerDomainType(models.Model):
 
 
 class SamplerDomain(UserFocusedModel):
+    id = models.AutoField(primary_key=True)
     sampler = models.ForeignKey(Sampler, on_delete=models.CASCADE)
     start_node = models.ForeignKey(Treenode, on_delete=models.CASCADE)
     domain_type = models.ForeignKey(SamplerDomainType, db_index=True, on_delete=models.CASCADE)
@@ -1416,6 +1449,7 @@ class SamplerDomain(UserFocusedModel):
 
 
 class SamplerDomainEnd(models.Model):
+    id = models.AutoField(primary_key=True)
     domain = models.ForeignKey(SamplerDomain, on_delete=models.CASCADE, db_index=True)
     end_node = models.ForeignKey(Treenode, on_delete=models.CASCADE)
 
@@ -1456,6 +1490,7 @@ class DataSource(NonCascadingUserFocusedModel):
     class Meta:
         db_table = "data_source"
 
+    id = models.AutoField(primary_key=True)
     name = models.TextField(blank=True, null=True, default=None)
     url = models.TextField(blank=False)
     source_project_id = models.IntegerField(null=False)
@@ -1512,6 +1547,7 @@ class StatsSummary(models.Model):
         db_table = "catmaid_stats_summary"
         unique_together = (("project", "user", "date"),)
 
+    id = models.AutoField(primary_key=True)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     date = models.DateTimeField(default=timezone.now, db_index=True)
@@ -1529,6 +1565,7 @@ class StatsSummary(models.Model):
         return f"Stats summary for {self.user} on {self.date}"
 
 class NodeQueryCache(models.Model):
+    id = models.AutoField(primary_key=True)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     orientation = models.IntegerField(default=0, null=False)
     depth = models.FloatField(null=True)
@@ -1543,6 +1580,7 @@ class NodeQueryCache(models.Model):
 
 
 class NodeGridCache(models.Model):
+    id = models.AutoField(primary_key=True)
     project = models.ForeignKey(Project, on_delete=models.DO_NOTHING)
     orientation = models.IntegerField(default=0, null=False)
     cell_width = models.IntegerField(null=False)
@@ -1630,6 +1668,7 @@ class UserProfile(models.Model):
     """ A class that stores a set of custom user preferences.
     See: http://digitaldreamer.net/blog/2010/12/8/custom-user-profile-and-extend-user-admin-django/
     """
+    id = models.AutoField(primary_key=True)
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     independent_ontology_workspace_is_default = models.BooleanField(default=False)
     show_text_label_tool = models.BooleanField(default=False)
@@ -1799,6 +1838,7 @@ class GroupInactivityPeriod(models.Model):
     so, they are set to inactive. An optional reason can be specified as well as
     a set of contact users.
     """
+    id = models.AutoField(primary_key=True)
     # The database will perform cascading deletes
     group = models.ForeignKey(Group, on_delete=models.DO_NOTHING,
             help_text='This inactivity period applies to users of this group.')
@@ -1816,6 +1856,7 @@ class GroupInactivityPeriod(models.Model):
 class GroupInactivityPeriodContact(models.Model):
     """A contact person for a particular deactivation group.
     """
+    id = models.AutoField(primary_key=True)
     # The database will perform cascading deletes
     inactivity_period = models.ForeignKey(GroupInactivityPeriod, on_delete=models.DO_NOTHING,
             help_text='The inactivity period the linked user should act as contact person for.')
@@ -1987,6 +2028,7 @@ class DeepLink(NonCascadingUserFocusedModel):
     """Stores a view into a project using some predefined settings. Cascading
     deletes are taken care of in the database.
     """
+    id = models.AutoField(primary_key=True)
     alias = models.TextField(blank=True, null=True)
     is_public = models.BooleanField(default=False)
     is_exportable = models.BooleanField(default=False)
@@ -2022,6 +2064,7 @@ class DeepLinkStack(NonCascadingUserFocusedModel):
     """Links a stack to a deep links. Cascading deletes are taken care of
     in the database.
     """
+    id = models.AutoField(primary_key=True)
     deep_link = models.ForeignKey(DeepLink, related_name='stacks', on_delete=models.DO_NOTHING)
     stack = models.ForeignKey(Stack, on_delete=models.DO_NOTHING)
     zoom_level = models.FloatField(default=0)
@@ -2034,6 +2077,7 @@ class DeepLinkStackGroup(NonCascadingUserFocusedModel):
     """Links a stack group to a deep links. Cascading deletes are taken care of
     in the database.
     """
+    id = models.AutoField(primary_key=True)
     deep_link = models.ForeignKey(DeepLink, related_name='stack_groups', on_delete=models.DO_NOTHING)
     stack_group = models.ForeignKey(StackGroup, on_delete=models.DO_NOTHING)
     zoom_levels = ArrayField(models.FloatField())
@@ -2048,6 +2092,7 @@ class ProjectToken(NonCascadingUserFocusedModel):
     students in a class to make it easy to sign up and somewhat secure by using
     a shared secret. It is similar to an invitation code.
     """
+    id = models.AutoField(primary_key=True)
     name = models.TextField()
     token = models.UUIDField(default=uuid.uuid4, editable=False)
     needs_approval = models.BooleanField(default=False)
@@ -2061,6 +2106,7 @@ class ProjectToken(NonCascadingUserFocusedModel):
 class UserProjectToken(models.Model):
     """Represents the list of known tokens for each user.
     """
+    id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, on_delete=models.DO_NOTHING)
     project_token = models.ForeignKey(ProjectToken, on_delete=models.DO_NOTHING)
     enabled = models.BooleanField(default=True)
@@ -2074,6 +2120,7 @@ class UserProjectToken(models.Model):
 
 class FavoriteProject(NonCascadingUserFocusedModel):
 
+    id = models.AutoField(primary_key=True)
     rank = models.FloatField(default=0)
 
     class Meta:
@@ -2088,6 +2135,7 @@ class ImportTask(NonCascadingUserFocusedModel):
         Success = ('success', 'Success')
         Error = ('error', 'Error')
 
+    id = models.AutoField(primary_key=True)
     description = models.CharField()
     metadata = models.JSONField(blank=True, default=dict)
     import_log = models.TextField(blank=True, default="")

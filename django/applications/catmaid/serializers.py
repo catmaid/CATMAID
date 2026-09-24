@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-from django.utils import timezone
+from datetime import timezone
 from rest_framework.serializers import ModelSerializer, DateTimeField
 from catmaid.models import ClassInstance, DataSource, Point, Volume
 

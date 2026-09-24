@@ -257,7 +257,7 @@ def setup_matplotib_env():
 
 
 class CATMAIDConfig(AppConfig):
-    default_auto_field = 'django.db.models.AutoField'
+    default_auto_field = 'django.db.models.BigAutoField'
     name = 'catmaid'
     verbose_name = "CATMAID"
 

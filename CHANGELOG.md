@@ -1,6 +1,9 @@
 ## Under development
 
+### Notes
 
+- The minimum supported Python Version is now 3.10. Additionally, version 3.11
+  and 3.12 are supported.
 
 ### Features and enhancements
 

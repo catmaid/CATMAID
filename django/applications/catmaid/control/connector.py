@@ -680,7 +680,7 @@ def create_connector(request:HttpRequest, project_id=None) -> JsonResponse:
 @requires_user_role(UserRole.Annotate)
 def delete_connector(request:HttpRequest, project_id=None) -> JsonResponse:
     if 'connector_id' not in request.POST:
-        raise ValueError('The POST parameter connector_id is required'
+        raise ValueError('The POST parameter connector_id is required')
     connector_id = int(request.POST["connector_id"])
     can_edit_or_fail(request.user, connector_id, 'connector')
 

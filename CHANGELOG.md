@@ -25,6 +25,8 @@ Miscellaneous:
 
 - Reviews can now be exported from the catmaid_exportdata management command.
 
+- Adding and removing tags is now synchronized across all open tracing layers.
+
 ### Bug fixes
 
 

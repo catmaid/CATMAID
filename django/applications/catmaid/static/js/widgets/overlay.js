@@ -6527,8 +6527,14 @@ var SkeletonAnnotations = {};
         var command = new CATMAID.AddTagsToNodeCommand(tracingOverlay.projectId,
             nodeId, nodeType, labels, deleteExisting, tracingOverlay.api);
         // Make sure a tracing layer update is done after execute and undo
-        command.postAction = tracingOverlay.updateNodes.bind(tracingOverlay,
-           undefined, undefined, undefined);
+        command.postAction = () => {
+          for (let key in CATMAID.TracingOverlay.prototype._instances) {
+            let overlays = CATMAID.TracingOverlay.prototype._instances[key];
+            for (let overlay of overlays) {
+              overlay.updateNodes();
+            }
+          }
+        };
         return CATMAID.commands.execute(command);
       }).then(function(result) {
         if (result.deletedLabels.length > 0) {

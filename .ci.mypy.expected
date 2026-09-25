@@ -77,4 +77,4 @@ django/applications/catmaid/history.py:3: error: Library stubs not installed for
 django/applications/catmaid/control/stack.py:8: error: Library stubs not installed for "requests"  [import-untyped]
 django/applications/catmaid/control/node.py:16: error: Library stubs not installed for "ujson"  [import-untyped]
 django/applications/catmaid/control/node.py:16: note: Hint: "python3 -m pip install types-ujson"
-Found 64 errors in 39 files (checked 340 source files)
+Found 64 errors in 39 files (checked 341 source files)

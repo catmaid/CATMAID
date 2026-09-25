@@ -6,6 +6,9 @@ and other administration related changes are listed in order.
 
 - This version requires Python 3.10, 3.11 or 3.12.
 
+- If your settings.py includes a line like STATICFILES_STORAGE = ..., you need
+  to update this to STORAGES['staticfiles']['BACKEND'] = ...
+
 ## 2026.05.06
 
 - This version requires Python 3.8+.

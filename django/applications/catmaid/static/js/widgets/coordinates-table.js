@@ -279,6 +279,7 @@
 
   CoordinatesTable.prototype.GUI.prototype.clear = function() {
     if (this.datatable) {
+      // Reset pagination
       this.datatable.page(0);
     }
     this.update();
@@ -313,15 +314,17 @@ CoordinatesTable.prototype.GUI.prototype.init = function() {
       return {"title": name};
     }));
   } else {
-    let names = new Array(this.table.rows[0].length).fill({"title": "", "type": "text"});
+    let names = Array.from({length: this.table.rows[0].length}, function() {
+      return {"title": "", "type": "text"};
+    });
     let e = names[this.table.xField];
     e.title = "X";
     e.type = "numeric";
     e = names[this.table.yField];
     e.title = "Y";
     e.type = "numeric";
-    e = names[this.table.yField];
-    e.title = "Y";
+    e = names[this.table.zField];
+    e.title = "Z";
     e.type = "numeric";
     columnProps = columnProps.concat(names);
   }

@@ -85,7 +85,7 @@ commands in it (e.g. ``www-data`` can run ``git describe``).
 2. Install required Python packages
 ###################################
 
-We recommend the use of Python 3.8 or newer for production use. With a few
+We recommend the use of Python 3.10 or newer for production use. With a few
 limitations PyPy3 can be used as well (no cropping, no back-end plotting,
 no synapse clustering, no ontology clustering).
 
@@ -103,9 +103,9 @@ You can do this with the following command on Ubuntu
        :split: 75
        :splitend:  \
 
-Create a virtual environment based on the python binary at /usr/bin/python3.8:
+Create a virtual environment based on the python binary at /usr/bin/python3.10:
 
-    /usr/bin/python3.8 -m venv --prompt catmaid /home/alice/catmaid/django/env
+    /usr/bin/python3.10 -m venv --prompt catmaid /home/alice/catmaid/django/env
 
 Whenever you are working with this environment in a new shell, you need to
 

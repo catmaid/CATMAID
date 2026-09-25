@@ -6,7 +6,7 @@ set -x
 mkdir -p ~/.local/share
 
 # set up python environment
-python3.8 -m venv ~/catmaid-env
+python3.10 -m venv ~/catmaid-env
 source ~/catmaid-env/bin/activate
 echo "source ~/catmaid-env/bin/activate" >> ~/.bashrc
 

@@ -11,5 +11,5 @@ class TestSuiteRunner(DiscoverRunner):
     def setup_test_environment(self, **kwargs):
         '''Override staticfiles STORAGE and pipeline DEBUG.'''
         super().setup_test_environment(**kwargs)
-        settings.STORAGES['staticfiles'] = 'pipeline.storage.NonPackagingPipelineStorage'
+        settings.STORAGES['staticfiles']['BACKEND'] = 'pipeline.storage.NonPackagingPipelineStorage'
         pipeline_settings.DEBUG = True

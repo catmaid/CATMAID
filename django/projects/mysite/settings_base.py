@@ -398,7 +398,7 @@ STORAGES = {
     'staticfiles': {
         # We use django-pipeline to compress and reference JavaScript and CSS files. To
         # make Pipeline integrate with staticfiles (and therefore collecstatic calls)
-        # the STATICFILES_STORAGE variable has to be set to:
+        # the STORAGES["staticfiles"] field has to be set to:
         'BACKEND': 'pipeline.storage.PipelineManifestStorage',
     },
 }

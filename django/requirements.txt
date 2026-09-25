@@ -3,7 +3,7 @@ celery==5.4.0
 channels==4.3.2
 cssmin==0.2.0
 Cython==3.1.3
-Django==5.0.14
+Django==5.1.15
 django-adminplus==0.6
 django-allauth==65.19.4
 django-formtools==2.6.1

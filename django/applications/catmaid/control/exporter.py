@@ -20,11 +20,13 @@ from django.db import connection
 from django.core import serializers
 from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth.hashers import make_password
-
+import string
+import secrets
 
 import logging
 logger = logging.getLogger(__name__)
 
+alphabet = string.ascii_letters + string.digits
 
 def ask_to_continue():
     """ Return a valid project object.
@@ -44,6 +46,16 @@ def ask_to_continue():
         c = ask()
         if c is not None:
             return c
+
+
+def make_random_password(length=10):
+    while True:
+        password = ''.join(secrets.choice(alphabet) for i in range(length))
+        if (any(c.islower() for c in password)
+                and any(c.isupper() for c in password)
+                and sum(c.isdigit() for c in password) >= 3):
+            break
+    return password
 
 
 class ExportAnnotation(Enum):
@@ -1057,7 +1069,7 @@ class Exporter():
             reduced_users = []
             for u in users:
                 reduced_user = ReducedInfoUser(id=u.id, username=u.username,
-                        password=make_password(User.objects.make_random_password()))
+                        password=make_password(make_random_password()))
                 reduced_users.append(reduced_user)
             self.logger.info("Exporting {} users in reduced form with random passwords: {}".format(len(reduced_users),
                     ", ".join([u.username for u in reduced_users])))

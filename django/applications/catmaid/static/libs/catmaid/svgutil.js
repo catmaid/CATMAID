@@ -753,7 +753,11 @@
       .attr("fill", "none")
       .attr("d", function(d) { return line(d.xy); })
       .style("stroke", function(d) { return d.color; })
-      .style("stroke-width", function(d) { return d.stroke_width; });
+      .style("stroke-width", function(d) { return d.stroke_width; })
+      .on("mouseover", function(d) {
+        d3.select(this).select("title").text(d.name);
+      })
+      .append("title");
 
     // Insert the graphics for the axes (after the data, so that they draw on top)
     var xg = svg.append("g")
@@ -795,6 +799,27 @@
         .attr("dy", ".71em")
         .style("text-anchor", "end")
         .text(y_label);
+
+    var legend = svg.selectAll(".legend")
+      .data(lines)
+      .enter()
+        .append("g")
+        .attr("class", "legend")
+        .attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
+
+    legend.append("rect")
+      .attr("x", width - 18)
+      .attr("width", 18)
+      .attr("height", 18)
+      .style("fill", function(d) { return d.color; });
+
+    legend.append("text")
+      .attr("x", width - 20)
+      .attr("y", 9)
+      .attr("dy", ".35em")
+      .style("font-size", "11px")
+      .style("text-anchor", "end")
+      .text(function (d) { return d.name; });
 
     return svg;
   };

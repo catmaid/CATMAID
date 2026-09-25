@@ -56,17 +56,10 @@
         buttons.appendChild(clear);
       },
       createContent: function(content) {
+        var self = this;
         var tab = document.createElement('table');
         tab.setAttribute("id", "coordinates-table" + this.widgetID);
         tab.setAttribute("class", "coordinates-table");
-        tab.innerHTML =
-            '<thead>' +
-              '<tr>' +
-                '<th></th>' +
-              '</tr>' +
-            '</thead>' +
-            '<tbody>' +
-            '</tbody>';
         content.appendChild(tab);
 
         // Save CSV button
@@ -105,19 +98,19 @@
     return CATMAID.parseCSVFile(csvFile, ',', nLinesToSkip)
       .then(function(csvLines) {
         if (csvLines.length === 0) {
-          CATMAD.warn('CSV file does not contain any usable lines');
+          CATMAID.warn('CSV file does not contain any usable lines');
           return;
         }
 
         // Show dialog with first three lines
         let dialog = new CATMAID.OptionsDialog("Import CSV");
-        dialog.appendMessage("The first two lines of the file you are going to " +
+        dialog.appendMessage("The first three lines of the file you are going to " +
             "import are shown below. Please select the appropriate import options.");
         let tableContainer = document.createElement('div');
         tableContainer.classList.add('help');
         let table = document.createElement('table');
         table.style.width = "100%";
-        let nPreviewRows = csvLines.length > 1 ? 2 : 1;
+        let nPreviewRows = csvLines.length > 2 ? 3 : csvLines.length;
         for (var i=0; i<nPreviewRows; ++i) {
           let tr = document.createElement('tr');
           let data = csvLines[i];
@@ -135,8 +128,8 @@
         var nColumns = csvLines[0].length;
 
         var titleRowField = dialog.appendNumericField(
-          'Title row index (if any; 1 indexed)', 'csv-import-title-line',
-          1, 1, csvLines.length -1, 1);
+          'Title row index (0 for none; 1 indexed)', 'csv-import-title-line',
+          1, 0, csvLines.length -1, 1);
 
         // Add option to change line skipping
         var lineSkipField = dialog.appendNumericField(
@@ -157,7 +150,7 @@
           let titleRowIndex = parseInt(titleRowField.value, 10);
           let lineSkip = parseInt(lineSkipField.value, 10);
           if ((csvLines.length - lineSkip) <= 0) {
-            CATMAD.warn('CSV file does not contain any usable lines');
+            CATMAID.warn('CSV file does not contain any usable lines');
             return;
           }
 
@@ -168,10 +161,16 @@
 
           // Make sure all rows have at least 3 coordinates with valid numeric values
           var validRows = csvLines.filter(function(row, i) {
-            if (i === titleRowIndex -1) {
+            // The title row is a header, not a data row.
+            if (titleRowIndex > 0 && i === titleRowIndex - 1) {
               titleRow = row;
+              return false;
             }
             if (i < lineSkip) {
+              return false;
+            }
+            // Ignore blank rows (e.g. the empty row from a trailing newline) without warning.
+            if (row.every(function(cell) { return !cell || !cell.trim(); })) {
               return false;
             }
             let x = parseFloat(row[ix]), // 1-based
@@ -252,17 +251,7 @@
     // Download CSV
     var csvString = csvRows.join("\n");
     var blob = new Blob([csvString], { type: "text/csv" });
-    var url = URL.createObjectURL(blob);
-
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = 'coordinates_with_notes.csv';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(function() {
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-    }, 50);
+    saveAs(blob, "coordinates_with_notes.csv");
   };
 
   // === GUI modifications to add the Notes column ===
@@ -279,6 +268,7 @@
 
   CoordinatesTable.prototype.GUI.prototype.clear = function() {
     if (this.datatable) {
+      // Reset pagination
       this.datatable.page(0);
     }
     this.update();
@@ -306,22 +296,33 @@ CoordinatesTable.prototype.GUI.prototype.init = function() {
   }
   this.datatable = null;
 
+  // If the user opens and immediately closes the widget, there's no table,
+  // so bail out.
+  if (!this.table.rows.length) {
+    return;
+  }
+
   // Prepare titles for columns
   var columnProps = [{"title": ""}];
+  // ...already have a title row
   if (this.table.titleRow) {
     columnProps = columnProps.concat(this.table.titleRow.map(function(name) {
       return {"title": name};
     }));
-  } else {
-    let names = new Array(this.table.rows[0].length).fill({"title": "", "type": "text"});
+  }
+  // ...or build the title row
+  else {
+    let names = Array.from({length: this.table.rows[0].length}, function() {
+      return {"title": "", "type": "text"};
+    });
     let e = names[this.table.xField];
     e.title = "X";
     e.type = "numeric";
     e = names[this.table.yField];
     e.title = "Y";
     e.type = "numeric";
-    e = names[this.table.yField];
-    e.title = "Y";
+    e = names[this.table.zField];
+    e.title = "Z";
     e.type = "numeric";
     columnProps = columnProps.concat(names);
   }

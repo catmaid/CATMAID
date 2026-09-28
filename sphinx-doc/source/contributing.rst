@@ -4,7 +4,7 @@ Contributing to CATMAID
 =======================
 
 CATMAID is open source software and welcomes contributions. This document
-provides a brief overview of the structure of CATMAID and guidelines
+provides a brief overview of the structure of CATMAID and guidelines that
 contributing developers follow to help keep the codebase easy to understand and
 easy to extend.
 
@@ -27,7 +27,7 @@ by the server, retrieves and stores information about projects, image stacks,
 and annotations. The client frontend, which runs in the browser, provides an
 interface and suite of analysis tools which interact with the backend's HTTP
 API. The frontend also has its own APIs which allow new tools to be quickly
-constructed or expert users to perform novel analysis using the browser console.
+constructed or expert users to perform novel analyses using the browser console.
 
 The backend is written primarily in Python 3.8 using the Django web framework.
 Annotations and metadata about stacks are stored in a PostgreSQL database. Most
@@ -67,23 +67,23 @@ Backend
 
 All of the relevant backend code is in the ``django/applications/catmaid``
 folder. Within this folder, ``models.py`` defines the database schema and
-logical objects on which the back API operates, while ``urls.py`` maps URI
+logical objects on which the backend API operates, while ``urls.py`` maps URI
 endpoints in the API to Python methods. Both are useful starting points when
 locating particular functionality or determining where to add new functionality.
 In case an endpoint changes data, a transaction log entry is added. This way
 semantic information can be linked to individual database changes.
 
-Most of the API routes to the ``catmaid.control`` module and folder. Within this
-module API functions are organized into logical units like skeleton or
+Most of the API routes to the ``catmaid.control`` module and folder. API
+functions in this module are organized into logical units like skeleton or
 connector, which are grouped into corresponding Python modules. These often
 contain utility functions not exposed by the API that may be useful, so when
 developing a new API endpoint be sure to check related modules for reusable
 utilities.
 
 Back-end errors should always be signaled to the front-end with the help
-of Exceptions. Regardless whether an argument is missing, permissions are
-lacking or something went wrong otherwise. A dedicated middleware will catch
-them and return them in an expected format to the front-end.
+of exceptions, regardless of whether an argument is missing, permissions are
+lacking, or something went wrong otherwise. A dedicated middleware will catch
+these exceptions and return them in an expected format to the front-end.
 
 ..
     TODO: organization of controls/views, urls ("Where to look and where to add")
@@ -97,7 +97,8 @@ If developing frontend functionality, a good strategy is to start by running
 scripts in the browser console to quickly prototype and become familiar with
 client APIs. The `scripting wiki
 <https://github.com/catmaid/CATMAID/wiki/Scripting>`_ provides an introduction
-to these APIs and snippets for common scripting tasks.
+to these APIs and snippets for common scripting tasks, and
+:doc:`this page <frontend_architecture>` has more details on the front-end architecture.
 
 Javascript source files should be placed in the
 ``django/applications/catmaid/static/js`` folder. External libraries are located
@@ -117,14 +118,14 @@ to the ``static/libs`` folder must also be added to ``pipelinefiles.py``.
 
 Within the ``static/js`` folder and within the CATMAID frontend there is a
 distinction between *tools* and *widgets*. A tool contains a suite of
-annotations, interfaces and analyses. A widget, meanwhile, provides a single
+annotations, interfaces, and analyses. A widget, meanwhile, provides a single
 specific interface. Most likely you are familiar with a single tool in CATMAID,
-the tracing tool, but many widgets within the tracing tool, such as the 3D
+the tracing tool, but there are many widgets within the tracing tool, such as the 3D
 viewer, connectivity widget, and selection table.
 
 Widgets are generally prototyped objects that extend ``InstanceRegistry``, which
 provides an easy means to track open instances of a particular widget. Rather
-than construct their own DOM, most widgets' DOM is built by a corresponding
+than constructing their own DOM, most widgets' DOM is built by a corresponding
 method in ``WindowMaker``. ``WindowMaker`` binds events from the DOM it
 constructs to relevant handlers in the widget object.
 
@@ -163,7 +164,7 @@ All new code should include docstrings that follow `PEP257
 formatting
 <http://sphinxcontrib-napoleon.readthedocs.org/en/latest/example_google.html>`_.
 
-For consistency, python code will be linted using ``flake8``: the configuration can be found
+For consistency, Python code will be linted using ``flake8``: the configuration can be found
 `in the repository <https://github.com/clbarnes/CATMAID/blob/flake8-fixes/setup.cfg#L6>`_.
 Contributions which do not conform with those rules will fail CI checks.
 Several rules are ignored due to a large volume of non-compliant legacy code.
@@ -250,7 +251,7 @@ Date and time response values should be in UTC and formatted as ISO 8601.
 
 Endpoints containing write operations should be decorated with a ``record_view``
 decorator in ``urls.py``, which expects a label as argument. This label should
-follow the pattern ``resource.action`` and just like URI itself, the
+follow the pattern ``resource.action``, and just like URI itself, the
 ``resource`` is expected to be in its plural form. Make sure to follow this
 convention for new endpoints.
 
@@ -265,7 +266,7 @@ notable exceptions that:
 * CATMAID does not use any requirements/dependency libraries
 * CATMAID uses CamelCase namespace naming
 
-New javascript files should place all code inside an `IIFE
+New Javascript files should place all code inside an `IIFE
 <http://en.wikipedia.org/wiki/Immediately-invoked_function_expression>`_ to
 namespace it inside the ``CATMAID`` object and use `ES5 strict mode
 <https://developer.mozilla.org/en-
@@ -307,16 +308,16 @@ acceptable.
 Git
 ###
 
-Try to follow the `seven rules of great git commit messages
+Try to follow the `seven rules of great Git commit messages
 <http://chris.beams.io/posts/git-commit/#seven-rules>`_:
 
-#. Separate subject from body with a blank line
-#. Limit the subject line to 50 characters
-#. Capitalize the subject line
-#. Do not end the subject line with a period
-#. Use the imperative mood in the subject line
-#. Wrap the body at 72 characters
-#. Use the body to explain what and why vs. how
+#. Separate subject from body with a blank line.
+#. Limit the subject line to 50 characters.
+#. Capitalize the subject line.
+#. Do not end the subject line with a period.
+#. Use the imperative mood in the subject line.
+#. Wrap the body at 72 characters.
+#. Use the body to explain what and why vs. how.
 
 That said, always prefer clarity over dogma. The core CATMAID contributors break
 #2 frequently to keep messages descriptive (apologies to our VAX users). If a
@@ -360,7 +361,7 @@ Django tests are run through Django's admin commands::
         cd /<path_to_catmaid_install>/django/projects
         ./manage.py test catmaid.tests
 
-flake8 and mypy are installed along with other python development dependencies.
+flake8 and mypy are installed along with other Python development dependencies.
 Run them with::
 
     flake8 django
@@ -422,9 +423,9 @@ CATMAID's documentation can be built in various formats
 by navigating to the ``sphinx-doc`` directory and using `make <https://www.gnu.org/software/make/>`_.
 The default (i.e. ``make`` with no arguments) is HTML, which builds the documentation at sphinx-doc/build/html/index.html.
 
-Every build target can automatically be built when the source files change,
+Every build target can automatically be built when the source files change
 by using ``make watch-<target>``.
-Build the HTML docs, watch for changes, and serve the documentation at ``http://localhost:8889`` using ``make serve``.
+Use ``make serve`` to build the HTML docs, watch for changes, and serve the documentation at ``http://localhost:8889``.
 
 In-Client Documentation
 #######################

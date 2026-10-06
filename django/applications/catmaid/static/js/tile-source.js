@@ -147,7 +147,7 @@
         mode: 'cors',
         credentials: 'same-origin',
         headers: this.getRequestHeaders()});
-    corsReq = fetch(corsReq)
+    corsReq = fetch(corsReq, { credentials: 'include' })
       .then(function (response) {
         var contentHeader = response.headers.get('Content-Type');
         return [contentHeader && contentHeader.startsWith('image'),

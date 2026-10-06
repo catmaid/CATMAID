@@ -130,7 +130,7 @@
         {mode: 'cors', credentials: 'same-origin', headers: headers});
     this._queue.add(request);
     var remove = (function () { this._queue.delete(request); }).bind(this);
-    fetch(request)
+    fetch(request, { credentials: 'include' })
         .then(function (response) {
           return response.blob();
         })

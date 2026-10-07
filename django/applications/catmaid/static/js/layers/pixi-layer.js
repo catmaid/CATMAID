@@ -127,10 +127,13 @@
   Loader.prototype.add = function (url, headers, completionCallback) {
     var request = new Request(
         url,
-        {mode: 'cors', credentials: 'same-origin', headers: headers});
+        // With "credentials: include", we can also send e.g. cached HTTP Auth
+        // parameters from other origins to load image data from another server.
+        // Authorization is otherwise not included.
+        {mode: 'cors', credentials: 'include', headers: headers});
     this._queue.add(request);
     var remove = (function () { this._queue.delete(request); }).bind(this);
-    fetch(request, { credentials: 'include' })
+    fetch(request)
         .then(function (response) {
           return response.blob();
         })

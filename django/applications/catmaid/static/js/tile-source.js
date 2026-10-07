@@ -145,9 +145,12 @@
     var beforeCorsLoad = performance.now();
     var corsReq = new Request(url, {
         mode: 'cors',
-        credentials: 'same-origin',
+        // With "credentials: include", we can also send e.g. cached HTTP Auth
+        // parameters from other origins to load image data from another server.
+        // Authorization is otherwise not included.
+        credentials: 'include',
         headers: this.getRequestHeaders()});
-    corsReq = fetch(corsReq, { credentials: 'include' })
+    corsReq = fetch(corsReq)
       .then(function (response) {
         var contentHeader = response.headers.get('Content-Type');
         return [contentHeader && contentHeader.startsWith('image'),

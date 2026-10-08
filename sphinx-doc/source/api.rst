@@ -127,7 +127,7 @@ Python
 The lowest-friction way to access the CATMAID API using python is through the ``catpy`` package,
 which handles all of the boilerplate, includes a number of tools for working with CATMAID
 data, and is just a ``pip install catpy`` away.
-For more information, see `the catpy docs<https://catpy.readthedocs.io>`_.
+For more information, see `the catpy docs <https://catpy.readthedocs.io>`_.
 
 If for some reason you are unable to use ``catpy``,
 below is a minimal example of accessing the API of a CATMAID server

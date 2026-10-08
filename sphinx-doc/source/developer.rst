@@ -15,4 +15,5 @@ Developer Documentation
    models_state_commands
    ami
    extensions
+   frontend_architecture
    release

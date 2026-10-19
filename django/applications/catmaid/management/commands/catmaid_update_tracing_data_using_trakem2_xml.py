@@ -379,12 +379,22 @@ class CoordTransformer(object):
 
             log(f'  Found and transformed {len(locations)} locations, considering {len(reset_reviews_for)} locations for review reset, offset: {l.offset_x}, {l.offset_y}')
 
-            # Write points back into database
-            cursor.executemany("""
+            # Write points back into database, using a single statement. The
+            # transformed coordinates can be NumPy types, hence float().
+            cursor.execute("""
                 UPDATE location
-                SET location_x = %s, location_y = %s, editor_id = %s
-                WHERE id = %s
-            """, locations)
+                SET location_x = v.location_x, location_y = v.location_y,
+                    editor_id = v.editor_id
+                FROM unnest(%(location_x)s::real[], %(location_y)s::real[],
+                        %(editor_id)s::integer[], %(id)s::bigint[])
+                    v(location_x, location_y, editor_id, id)
+                WHERE location.id = v.id
+            """, {
+                'location_x': [float(loc[0]) for loc in locations],
+                'location_y': [float(loc[1]) for loc in locations],
+                'editor_id': [loc[2] for loc in locations],
+                'id': [loc[3] for loc in locations],
+            })
 
             n_reset_reviews = 0
             if self.review_reset_distance and reset_reviews_for:

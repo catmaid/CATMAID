@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 
 from collections import defaultdict, namedtuple
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from functools import partial
 import json
 from networkx import connected_components
-import pytz
 from typing import Any, DefaultDict, Dict, Iterable, List, Optional, Tuple
 
 from django.db.models import Count
@@ -70,13 +69,13 @@ def _evaluate_epochs(epochs, skeleton_id, tree, reviews, relations) -> List:
         reviewer_id, nodes = epoch
 
         # Range of the review epoch
-        start_date = datetime.max.replace(tzinfo=pytz.utc)
-        end_date = datetime.min.replace(tzinfo=pytz.utc)
+        start_date = datetime.max.replace(tzinfo=timezone.utc)
+        end_date = datetime.min.replace(tzinfo=timezone.utc)
 
         # Range for node creation, per user
         def default_dates():
-            return {'start': datetime.max.replace(tzinfo=pytz.utc),
-                    'end': datetime.min.replace(tzinfo=pytz.utc)}
+            return {'start': datetime.max.replace(tzinfo=timezone.utc),
+                    'end': datetime.min.replace(tzinfo=timezone.utc)}
         user_ranges:DefaultDict[Any, Dict[str, Any]] = defaultdict(default_dates)
 
         # Node counts per user

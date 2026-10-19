@@ -3,7 +3,7 @@
 import copy
 import datetime
 import json
-import pytz
+from zoneinfo import ZoneInfo
 
 from itertools import chain
 
@@ -131,15 +131,15 @@ class StatsApiTests(CatmaidApiTestCase):
         p = self.test_project_id
         summary_table = set(self.get_summary_table(cursor))
         expected_summary = set([
-            (datetime.datetime(2011, 11,  1, 12, 0, tzinfo=pytz.utc), 0, 0,  4, 0, 0, 0, 0, 0.0, 3, 5),
-            (datetime.datetime(2011,  9,  4,  7, 0, tzinfo=pytz.utc), 0, 0,  5, 0, 0, 0, 0, 0.0, 3, 3),
-            (datetime.datetime(2011,  9, 27,  7, 0, tzinfo=pytz.utc), 0, 0, 64, 0, 0, 0, 0, 0.0, 3, 3),
-            (datetime.datetime(2011, 10,  7,  7, 0, tzinfo=pytz.utc), 0, 0,  2, 0, 0, 0, 0, 0.0, 3, 3),
-            (datetime.datetime(2011, 11,  1, 12, 0, tzinfo=pytz.utc), 0, 0,  2, 0, 0, 0, 0, 0.0, 3, 2),
-            (datetime.datetime(2011, 12,  9,  8, 0, tzinfo=pytz.utc), 0, 0,  7, 0, 0, 0, 0, 0.0, 3, 3),
-            (datetime.datetime(2012,  7, 22, 16, 0, tzinfo=pytz.utc), 0, 0,  1, 0, 0, 0, 0, 0.0, 3, 3),
-            (datetime.datetime(2012,  7, 22, 19, 0, tzinfo=pytz.utc), 0, 0,  4, 0, 0, 0, 0, 0.0, 3, 3),
-            (datetime.datetime(2016,  3,  9, 18, 0, tzinfo=pytz.utc), 0, 0,  6, 0, 0, 0, 0, 0.0, 3, 3),
+            (datetime.datetime(2011, 11,  1, 12, 0, tzinfo=datetime.timezone.utc), 0, 0,  4, 0, 0, 0, 0, 0.0, 3, 5),
+            (datetime.datetime(2011,  9,  4,  7, 0, tzinfo=datetime.timezone.utc), 0, 0,  5, 0, 0, 0, 0, 0.0, 3, 3),
+            (datetime.datetime(2011,  9, 27,  7, 0, tzinfo=datetime.timezone.utc), 0, 0, 64, 0, 0, 0, 0, 0.0, 3, 3),
+            (datetime.datetime(2011, 10,  7,  7, 0, tzinfo=datetime.timezone.utc), 0, 0,  2, 0, 0, 0, 0, 0.0, 3, 3),
+            (datetime.datetime(2011, 11,  1, 12, 0, tzinfo=datetime.timezone.utc), 0, 0,  2, 0, 0, 0, 0, 0.0, 3, 2),
+            (datetime.datetime(2011, 12,  9,  8, 0, tzinfo=datetime.timezone.utc), 0, 0,  7, 0, 0, 0, 0, 0.0, 3, 3),
+            (datetime.datetime(2012,  7, 22, 16, 0, tzinfo=datetime.timezone.utc), 0, 0,  1, 0, 0, 0, 0, 0.0, 3, 3),
+            (datetime.datetime(2012,  7, 22, 19, 0, tzinfo=datetime.timezone.utc), 0, 0,  4, 0, 0, 0, 0, 0.0, 3, 3),
+            (datetime.datetime(2016,  3,  9, 18, 0, tzinfo=datetime.timezone.utc), 0, 0,  6, 0, 0, 0, 0, 0.0, 3, 3),
         ])
         # Add line for test import above, get date from actual summary table,
         # which seems more robust than assuming than guessing the date in other
@@ -859,13 +859,13 @@ class StatsApiTests(CatmaidApiTestCase):
         stats.populate_nodecount_stats_summary(self.test_project_id, cursor=cursor)
         p = self.test_project_id
         expected_summary = set([
-            (datetime.datetime(2017, 6, 1, 7, 0, tzinfo=pytz.utc), 0, 0, 1, 0, 0, 0, 0, 0.0, p, 1),
-            (datetime.datetime(2017, 6, 30, 22, 0, tzinfo=pytz.utc), 0, 0, 1, 0, 0, 0, 0, 0.0, p, 1),
-            (datetime.datetime(2017, 7, 2, 8, 0, tzinfo=pytz.utc), 0, 0, 1, 0, 0, 0, 0, 0.0, p, 1),
-            (datetime.datetime(2017, 8, 2, 8, 0, tzinfo=pytz.utc), 0, 0, 1, 0, 0, 0, 0, 0.0, p, 1),
-            (datetime.datetime(2017, 7, 1, 2, 0, tzinfo=pytz.utc), 0, 0, 1, 0, 0, 0, 0, 0.0, p, 3),
-            (datetime.datetime(2017, 7, 1, 7, 0, tzinfo=pytz.utc), 0, 0, 2, 0, 0, 0, 0, 0.0, p, 3),
-            (datetime.datetime(2017, 7, 1, 22, 0, tzinfo=pytz.utc), 0, 0, 1, 0, 0, 0, 0, 0.0, p, 3)
+            (datetime.datetime(2017, 6, 1, 7, 0, tzinfo=datetime.timezone.utc), 0, 0, 1, 0, 0, 0, 0, 0.0, p, 1),
+            (datetime.datetime(2017, 6, 30, 22, 0, tzinfo=datetime.timezone.utc), 0, 0, 1, 0, 0, 0, 0, 0.0, p, 1),
+            (datetime.datetime(2017, 7, 2, 8, 0, tzinfo=datetime.timezone.utc), 0, 0, 1, 0, 0, 0, 0, 0.0, p, 1),
+            (datetime.datetime(2017, 8, 2, 8, 0, tzinfo=datetime.timezone.utc), 0, 0, 1, 0, 0, 0, 0, 0.0, p, 1),
+            (datetime.datetime(2017, 7, 1, 2, 0, tzinfo=datetime.timezone.utc), 0, 0, 1, 0, 0, 0, 0, 0.0, p, 3),
+            (datetime.datetime(2017, 7, 1, 7, 0, tzinfo=datetime.timezone.utc), 0, 0, 2, 0, 0, 0, 0, 0.0, p, 3),
+            (datetime.datetime(2017, 7, 1, 22, 0, tzinfo=datetime.timezone.utc), 0, 0, 1, 0, 0, 0, 0, 0.0, p, 3)
         ])
         summary_table = set(self.get_summary_table(cursor))
         self.assertEqual(summary_table, expected_summary)
@@ -897,12 +897,12 @@ class StatsApiTests(CatmaidApiTestCase):
         stats.populate_cable_stats_summary(self.test_project_id, cursor=cursor)
         p = self.test_project_id
         expected_summary = set([
-            (datetime.datetime(2017, 6, 30, 22, 0, tzinfo=pytz.utc), 0, 0, 0, 0, 0, 0, 0, 10.0, p, 1),
-            (datetime.datetime(2017, 7, 2, 8, 0, tzinfo=pytz.utc), 0, 0, 0, 0, 0, 0, 0, 10.0, p, 1),
-            (datetime.datetime(2017, 8, 2, 8, 0, tzinfo=pytz.utc), 0, 0, 0, 0, 0, 0, 0, 10.0, p, 1),
-            (datetime.datetime(2017, 7, 1, 2, 0, tzinfo=pytz.utc), 0, 0, 0, 0, 0, 0, 0, 3.0, p, 3),
-            (datetime.datetime(2017, 7, 1, 7, 0, tzinfo=pytz.utc), 0, 0, 0, 0, 0, 0, 0, 2.0, p, 3),
-            (datetime.datetime(2017, 7, 1, 22, 0, tzinfo=pytz.utc), 0, 0, 0, 0, 0, 0, 0, 2.0, p, 3)
+            (datetime.datetime(2017, 6, 30, 22, 0, tzinfo=datetime.timezone.utc), 0, 0, 0, 0, 0, 0, 0, 10.0, p, 1),
+            (datetime.datetime(2017, 7, 2, 8, 0, tzinfo=datetime.timezone.utc), 0, 0, 0, 0, 0, 0, 0, 10.0, p, 1),
+            (datetime.datetime(2017, 8, 2, 8, 0, tzinfo=datetime.timezone.utc), 0, 0, 0, 0, 0, 0, 0, 10.0, p, 1),
+            (datetime.datetime(2017, 7, 1, 2, 0, tzinfo=datetime.timezone.utc), 0, 0, 0, 0, 0, 0, 0, 3.0, p, 3),
+            (datetime.datetime(2017, 7, 1, 7, 0, tzinfo=datetime.timezone.utc), 0, 0, 0, 0, 0, 0, 0, 2.0, p, 3),
+            (datetime.datetime(2017, 7, 1, 22, 0, tzinfo=datetime.timezone.utc), 0, 0, 0, 0, 0, 0, 0, 2.0, p, 3)
         ])
         summary_table = set(self.get_summary_table(cursor))
         self.assertEqual(summary_table, expected_summary)
@@ -970,11 +970,11 @@ class StatsApiTests(CatmaidApiTestCase):
         stats.populate_connector_stats_summary(self.test_project_id, cursor=cursor)
         p = self.test_project_id
         expected_summary = set([
-            (datetime.datetime(2017, 6, 30, 22, 0, tzinfo=pytz.utc), 1, 0, 0, 0, 0, 0, 0, 0.0, p, 1),
-            (datetime.datetime(2017, 7, 2, 8, 0, tzinfo=pytz.utc), 1, 0, 0, 0, 0, 0, 0, 0.0, p, 1),
-            (datetime.datetime(2017, 8, 2, 8, 0, tzinfo=pytz.utc), 2, 0, 0, 0, 0, 0, 0, 0.0, p, 1),
-            (datetime.datetime(2017, 7, 1, 7, 0, tzinfo=pytz.utc), 2, 0, 0, 0, 0, 0, 0, 0.0, p, 3),
-            (datetime.datetime(2017, 7, 1, 22, 0, tzinfo=pytz.utc), 1, 0, 0, 0, 0, 0, 0, 0.0, p, 3),
+            (datetime.datetime(2017, 6, 30, 22, 0, tzinfo=datetime.timezone.utc), 1, 0, 0, 0, 0, 0, 0, 0.0, p, 1),
+            (datetime.datetime(2017, 7, 2, 8, 0, tzinfo=datetime.timezone.utc), 1, 0, 0, 0, 0, 0, 0, 0.0, p, 1),
+            (datetime.datetime(2017, 8, 2, 8, 0, tzinfo=datetime.timezone.utc), 2, 0, 0, 0, 0, 0, 0, 0.0, p, 1),
+            (datetime.datetime(2017, 7, 1, 7, 0, tzinfo=datetime.timezone.utc), 2, 0, 0, 0, 0, 0, 0, 0.0, p, 3),
+            (datetime.datetime(2017, 7, 1, 22, 0, tzinfo=datetime.timezone.utc), 1, 0, 0, 0, 0, 0, 0, 0.0, p, 3),
         ])
         summary_table = set(self.get_summary_table(cursor))
         self.assertEqual(summary_table, expected_summary)
@@ -1027,21 +1027,21 @@ class StatsApiTests(CatmaidApiTestCase):
         stats.populate_review_stats_summary(self.test_project_id, cursor=cursor)
         p = self.test_project_id
         expected_summary = set([
-            (datetime.datetime(2017, 6, 1, 7, 0, tzinfo=pytz.utc), 0, 1, 0, 0, 0, 0, 0, 0.0, p, 1),
-            (datetime.datetime(2017, 6, 30, 22, 0, tzinfo=pytz.utc), 0, 1, 0, 0, 0, 0, 0, 0.0, p, 1),
-            (datetime.datetime(2017, 7, 2, 8, 0, tzinfo=pytz.utc), 0, 1, 0, 0, 0, 0, 0, 0.0, p, 1),
-            (datetime.datetime(2017, 8, 2, 8, 0, tzinfo=pytz.utc), 0, 1, 0, 0, 0, 0, 0, 0.0, p, 1),
-            (datetime.datetime(2017, 7, 1, 2, 0, tzinfo=pytz.utc), 0, 1, 0, 0, 0, 0, 0, 0.0, p, 3),
-            (datetime.datetime(2017, 7, 1, 7, 0, tzinfo=pytz.utc), 0, 2, 0, 0, 0, 0, 0, 0.0, p, 3),
-            (datetime.datetime(2017, 7, 1, 22, 0, tzinfo=pytz.utc), 0, 1, 0, 0, 0, 0, 0, 0.0, p, 3),
+            (datetime.datetime(2017, 6, 1, 7, 0, tzinfo=datetime.timezone.utc), 0, 1, 0, 0, 0, 0, 0, 0.0, p, 1),
+            (datetime.datetime(2017, 6, 30, 22, 0, tzinfo=datetime.timezone.utc), 0, 1, 0, 0, 0, 0, 0, 0.0, p, 1),
+            (datetime.datetime(2017, 7, 2, 8, 0, tzinfo=datetime.timezone.utc), 0, 1, 0, 0, 0, 0, 0, 0.0, p, 1),
+            (datetime.datetime(2017, 8, 2, 8, 0, tzinfo=datetime.timezone.utc), 0, 1, 0, 0, 0, 0, 0, 0.0, p, 1),
+            (datetime.datetime(2017, 7, 1, 2, 0, tzinfo=datetime.timezone.utc), 0, 1, 0, 0, 0, 0, 0, 0.0, p, 3),
+            (datetime.datetime(2017, 7, 1, 7, 0, tzinfo=datetime.timezone.utc), 0, 2, 0, 0, 0, 0, 0, 0.0, p, 3),
+            (datetime.datetime(2017, 7, 1, 22, 0, tzinfo=datetime.timezone.utc), 0, 1, 0, 0, 0, 0, 0, 0.0, p, 3),
         ])
         summary_table = set(self.get_summary_table(cursor))
         self.assertEqual(summary_table, expected_summary)
 
     def test_review_stats_summary_population_no_tz_offset(self):
-        time_zone = pytz.timezone('UTC')
-        start_date_utc = time_zone.localize(datetime.datetime(2017, 7, 1, 0, 0))
-        end_date_utc = time_zone.localize(datetime.datetime(2017, 8, 1, 0, 0))
+        time_zone = ZoneInfo('UTC')
+        start_date_utc = datetime.datetime(2017, 7, 1, 0, 0).replace(tzinfo=time_zone)
+        end_date_utc = datetime.datetime(2017, 8, 1, 0, 0).replace(tzinfo=time_zone)
         expected_stats = [
             (1, datetime.datetime(2017, 7, 2, 0, 0), 1),
             (3, datetime.datetime(2017, 7, 1, 0, 0), 4)
@@ -1057,11 +1057,11 @@ class StatsApiTests(CatmaidApiTestCase):
         self.assertEqual(review_stats, expected_stats)
 
     def test_review_stats_summary_population_with_tz_offset(self):
-        time_zone = pytz.timezone('America/New_York')
-        start_date_local = time_zone.localize(datetime.datetime(2017, 7, 1, 0, 0))
-        end_date_local = time_zone.localize(datetime.datetime(2017, 8, 1, 0, 0))
-        start_date_utc = start_date_local.astimezone(pytz.utc)
-        end_date_utc = end_date_local.astimezone(pytz.utc)
+        time_zone = ZoneInfo('America/New_York')
+        start_date_local = datetime.datetime(2017, 7, 1, 0, 0).replace(tzinfo=time_zone)
+        end_date_local = datetime.datetime(2017, 8, 1, 0, 0).replace(tzinfo=time_zone)
+        start_date_utc = start_date_local.astimezone(datetime.timezone.utc)
+        end_date_utc = end_date_local.astimezone(datetime.timezone.utc)
         expected_stats = [
             (1, datetime.datetime(2017, 7, 2, 0, 0), 1),
             (3, datetime.datetime(2017, 7, 1, 0, 0), 3)
@@ -1076,9 +1076,9 @@ class StatsApiTests(CatmaidApiTestCase):
         self.assertEqual(review_stats, expected_stats)
 
     def test_connector_stats_summary_population_no_tz_offset(self):
-        time_zone = pytz.timezone('UTC')
-        start_date_utc = time_zone.localize(datetime.datetime(2017, 7, 1, 0, 0))
-        end_date_utc = time_zone.localize(datetime.datetime(2017, 8, 1, 0, 0))
+        time_zone = ZoneInfo('UTC')
+        start_date_utc = datetime.datetime(2017, 7, 1, 0, 0).replace(tzinfo=time_zone)
+        end_date_utc = datetime.datetime(2017, 8, 1, 0, 0).replace(tzinfo=time_zone)
         expected_stats = [
             (1, datetime.datetime(2017, 7, 2, 0, 0), 1),
             (3, datetime.datetime(2017, 7, 1, 0, 0), 3)
@@ -1094,11 +1094,11 @@ class StatsApiTests(CatmaidApiTestCase):
         self.assertEqual(connector_stats, expected_stats)
 
     def test_connector_stats_summary_population_with_tz_offset(self):
-        time_zone = pytz.timezone('America/New_York')
-        start_date_local = time_zone.localize(datetime.datetime(2017, 7, 1, 0, 0))
-        end_date_local = time_zone.localize(datetime.datetime(2017, 8, 1, 0, 0))
-        start_date_utc = start_date_local.astimezone(pytz.utc)
-        end_date_utc = end_date_local.astimezone(pytz.utc)
+        time_zone = ZoneInfo('America/New_York')
+        start_date_local = datetime.datetime(2017, 7, 1, 0, 0).replace(tzinfo=time_zone)
+        end_date_local = datetime.datetime(2017, 8, 1, 0, 0).replace(tzinfo=time_zone)
+        start_date_utc = start_date_local.astimezone(datetime.timezone.utc)
+        end_date_utc = end_date_local.astimezone(datetime.timezone.utc)
         expected_stats = [
             (1, datetime.datetime(2017, 7, 2, 0, 0), 1),
             (3, datetime.datetime(2017, 7, 1, 0, 0), 3)
@@ -1113,9 +1113,9 @@ class StatsApiTests(CatmaidApiTestCase):
         self.assertEqual(connector_stats, expected_stats)
 
     def test_cable_stats_summary_population_no_tz_offset(self):
-        time_zone = pytz.timezone('UTC')
-        start_date_utc = time_zone.localize(datetime.datetime(2017, 7, 1, 0, 0))
-        end_date_utc = time_zone.localize(datetime.datetime(2017, 8, 1, 0, 0))
+        time_zone = ZoneInfo('UTC')
+        start_date_utc = datetime.datetime(2017, 7, 1, 0, 0).replace(tzinfo=time_zone)
+        end_date_utc = datetime.datetime(2017, 8, 1, 0, 0).replace(tzinfo=time_zone)
         expected_stats = [
             (1, datetime.datetime(2017, 7, 2, 0, 0), 10.0),
             (3, datetime.datetime(2017, 7, 1, 0, 0), 7.0)
@@ -1131,11 +1131,11 @@ class StatsApiTests(CatmaidApiTestCase):
         self.assertEqual(cable_stats, expected_stats)
 
     def test_cable_stats_summary_population_with_tz_offset(self):
-        time_zone = pytz.timezone('America/New_York')
-        start_date_local = time_zone.localize(datetime.datetime(2017, 7, 1, 0, 0))
-        end_date_local = time_zone.localize(datetime.datetime(2017, 8, 1, 0, 0))
-        start_date_utc = start_date_local.astimezone(pytz.utc)
-        end_date_utc = end_date_local.astimezone(pytz.utc)
+        time_zone = ZoneInfo('America/New_York')
+        start_date_local = datetime.datetime(2017, 7, 1, 0, 0).replace(tzinfo=time_zone)
+        end_date_local = datetime.datetime(2017, 8, 1, 0, 0).replace(tzinfo=time_zone)
+        start_date_utc = start_date_local.astimezone(datetime.timezone.utc)
+        end_date_utc = end_date_local.astimezone(datetime.timezone.utc)
         expected_stats = [
             (1, datetime.datetime(2017, 7, 2, 0, 0), 10.0),
             (3, datetime.datetime(2017, 7, 1, 0, 0), 4.0)
@@ -1150,9 +1150,9 @@ class StatsApiTests(CatmaidApiTestCase):
         self.assertEqual(cable_stats, expected_stats)
 
     def test_nodecount_stats_summary_population_no_tz_offset(self):
-        time_zone = pytz.timezone('UTC')
-        start_date_utc = time_zone.localize(datetime.datetime(2017, 7, 1, 0, 0))
-        end_date_utc = time_zone.localize(datetime.datetime(2017, 8, 1, 0, 0))
+        time_zone = ZoneInfo('UTC')
+        start_date_utc = datetime.datetime(2017, 7, 1, 0, 0).replace(tzinfo=time_zone)
+        end_date_utc = datetime.datetime(2017, 8, 1, 0, 0).replace(tzinfo=time_zone)
         expected_stats = [
             (1, datetime.datetime(2017, 7, 2, 0, 0), 1),
             (3, datetime.datetime(2017, 7, 1, 0, 0), 4)
@@ -1168,11 +1168,11 @@ class StatsApiTests(CatmaidApiTestCase):
         self.assertEqual(cable_stats, expected_stats)
 
     def test_nodecount_stats_summary_population_with_tz_offset(self):
-        time_zone = pytz.timezone('America/New_York')
-        start_date_local = time_zone.localize(datetime.datetime(2017, 7, 1, 0, 0))
-        end_date_local = time_zone.localize(datetime.datetime(2017, 8, 1, 0, 0))
-        start_date_utc = start_date_local.astimezone(pytz.utc)
-        end_date_utc = end_date_local.astimezone(pytz.utc)
+        time_zone = ZoneInfo('America/New_York')
+        start_date_local = datetime.datetime(2017, 7, 1, 0, 0).replace(tzinfo=time_zone)
+        end_date_local = datetime.datetime(2017, 8, 1, 0, 0).replace(tzinfo=time_zone)
+        start_date_utc = start_date_local.astimezone(datetime.timezone.utc)
+        end_date_utc = end_date_local.astimezone(datetime.timezone.utc)
         expected_stats = [
             (1, datetime.datetime(2017, 7, 2, 0, 0), 1),
             (3, datetime.datetime(2017, 7, 1, 0, 0), 3)

@@ -2,7 +2,7 @@
 
 import array
 from collections import defaultdict, deque
-from datetime import datetime
+from datetime import datetime, timezone
 from functools import partial
 import json
 import logging
@@ -10,7 +10,6 @@ from math import sqrt
 import msgpack
 import networkx as nx
 from psycopg2.extras import DateTimeTZRange
-import pytz
 import struct
 from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
 
@@ -1055,7 +1054,7 @@ def compact_arbor(request:HttpRequest, project_id=None, skeleton_id=None, with_n
 def _treenode_time_bins(skeleton_id=None) -> DefaultDict[Any, List]:
     """ Return a map of time bins (minutes) vs. list of nodes. """
     minutes:DefaultDict[Any, List] = defaultdict(list)
-    epoch = datetime.utcfromtimestamp(0).replace(tzinfo=pytz.utc)
+    epoch = datetime.fromtimestamp(0, timezone.utc)
 
     for row in Treenode.objects.filter(skeleton_id=int(skeleton_id)).values_list('id', 'creation_time'):
         minutes[int((row[1] - epoch).total_seconds() / 60)].append(row[0])

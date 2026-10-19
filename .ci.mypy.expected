@@ -26,29 +26,23 @@ django/applications/catmaid/views/dvid.py:5: error: Module "django" has no attri
 django/applications/catmaid/control/project.py:5: error: Library stubs not installed for "yaml"  [import-untyped]
 django/applications/catmaid/control/authentication.py:17: error: Module "django" has no attribute "forms"  [attr-defined]
 django/applications/catmaid/management/commands/catmaid_find_node_provider_config.py:9: error: Library stubs not installed for "ujson"  [import-untyped]
-django/applications/catmaid/control/user_evaluation.py:8: error: Library stubs not installed for "pytz"  [import-untyped]
 django/applications/catmaid/control/stats.py:4: error: Library stubs not installed for "dateutil"  [import-untyped]
-django/applications/catmaid/control/stats.py:7: error: Library stubs not installed for "pytz"  [import-untyped]
 django/applications/catmaid/control/skeleton.py:7: error: Library stubs not installed for "dateutil.parser"  [import-untyped]
 django/applications/catmaid/control/skeleton.py:7: error: Library stubs not installed for "dateutil"  [import-untyped]
-django/applications/catmaid/control/skeleton.py:11: error: Library stubs not installed for "pytz"  [import-untyped]
-django/applications/catmaid/control/skeleton.py:11: note: Hint: "python3 -m pip install types-pytz"
-django/applications/catmaid/control/skeleton.py:505: error: Need type annotation for "rev"  [var-annotated]
+django/applications/catmaid/control/skeleton.py:504: error: Need type annotation for "rev"  [var-annotated]
 django/lib/custom_swagger_schema.py:8: error: Library stubs not installed for "yaml"  [import-untyped]
 django/applications/catmaid/views/userimporter.py:3: error: Library stubs not installed for "requests"  [import-untyped]
 django/applications/catmaid/views/userimporter.py:5: error: Module "django" has no attribute "forms"  [attr-defined]
 django/applications/catmaid/views/dataexporter.py:3: error: Library stubs not installed for "requests"  [import-untyped]
 django/applications/catmaid/views/dataexporter.py:7: error: Module "django" has no attribute "forms"  [attr-defined]
 django/applications/catmaid/control/useranalytics.py:4: error: Library stubs not installed for "dateutil"  [import-untyped]
-django/applications/catmaid/control/useranalytics.py:8: error: Library stubs not installed for "pytz"  [import-untyped]
 django/applications/catmaid/control/tile.py:211: error: Module has no attribute "decodestring"  [attr-defined]
-django/applications/catmaid/control/skeletonexport.py:13: error: Library stubs not installed for "pytz"  [import-untyped]
-django/applications/catmaid/control/skeletonexport.py:69: error: Incompatible default for parameter "soma_markers" (default has type "None", parameter has type "list[str]")  [assignment]
-django/applications/catmaid/control/skeletonexport.py:69: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
-django/applications/catmaid/control/skeletonexport.py:69: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
-django/applications/catmaid/control/skeletonexport.py:198: error: Incompatible default for parameter "format" (default has type "None", parameter has type "str")  [assignment]
-django/applications/catmaid/control/skeletonexport.py:198: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
-django/applications/catmaid/control/skeletonexport.py:198: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+django/applications/catmaid/control/skeletonexport.py:68: error: Incompatible default for parameter "soma_markers" (default has type "None", parameter has type "list[str]")  [assignment]
+django/applications/catmaid/control/skeletonexport.py:68: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+django/applications/catmaid/control/skeletonexport.py:68: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
+django/applications/catmaid/control/skeletonexport.py:197: error: Incompatible default for parameter "format" (default has type "None", parameter has type "str")  [assignment]
+django/applications/catmaid/control/skeletonexport.py:197: note: PEP 484 prohibits implicit Optional. Accordingly, mypy has changed its default to no_implicit_optional=True
+django/applications/catmaid/control/skeletonexport.py:197: note: Use https://github.com/hauntsaninja/no_implicit_optional to automatically upgrade your codebase
 django/applications/catmaid/control/importer.py:7: error: Library stubs not installed for "requests"  [import-untyped]
 django/applications/catmaid/control/importer.py:11: error: Library stubs not installed for "yaml"  [import-untyped]
 django/applications/catmaid/control/importer.py:11: note: Hint: "python3 -m pip install types-PyYAML"
@@ -77,4 +71,4 @@ django/applications/catmaid/history.py:3: error: Library stubs not installed for
 django/applications/catmaid/control/stack.py:8: error: Library stubs not installed for "requests"  [import-untyped]
 django/applications/catmaid/control/node.py:16: error: Library stubs not installed for "ujson"  [import-untyped]
 django/applications/catmaid/control/node.py:16: note: Hint: "python3 -m pip install types-ujson"
-Found 64 errors in 39 files (checked 341 source files)
+Found 59 errors in 38 files (checked 341 source files)

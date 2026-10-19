@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone as dt_timezone
 from dateutil import parser as dateparser
 import json
 import os
-import pytz
+from zoneinfo import ZoneInfo
 import time
 from typing import Any, Dict
 
@@ -538,14 +538,14 @@ def stats_user_history(request:HttpRequest, project_id=None) -> JsonResponse:
         required: true
     """
     raw_time_zone = request.GET.get('time_zone', settings.TIME_ZONE)
-    time_zone = pytz.timezone(raw_time_zone)
+    time_zone = ZoneInfo(raw_time_zone)
     with_imports = get_request_bool(request.GET, 'with_imports', True)
 
     # Get the start date for the query, defaulting to 10 days ago.
     start_date = request.GET.get('start_date', None)
     if start_date:
         start_date = dateparser.parse(start_date)
-        start_date = time_zone.localize(start_date)
+        start_date = start_date.replace(tzinfo=time_zone)
     else:
         with timezone.override(time_zone):
             start_date = timezone.now() - timedelta(10)
@@ -554,7 +554,7 @@ def stats_user_history(request:HttpRequest, project_id=None) -> JsonResponse:
     end_date = request.GET.get('end_date', None)
     if end_date:
         end_date = dateparser.parse(end_date)
-        end_date = time_zone.localize(end_date)
+        end_date = end_date.replace(tzinfo=time_zone)
     else:
         with timezone.override(time_zone):
             end_date = timezone.now()
@@ -575,8 +575,8 @@ def stats_user_history(request:HttpRequest, project_id=None) -> JsonResponse:
         daydelta += 1
 
     # To query data with raw SQL we need the UTC version of start and end time
-    start_date_utc = start_date.astimezone(pytz.utc)
-    end_date_utc = end_date.astimezone(pytz.utc)
+    start_date_utc = start_date.astimezone(dt_timezone.utc)
+    end_date_utc = end_date.astimezone(dt_timezone.utc)
 
     all_users = User.objects.filter().values_list('id', flat=True)
     days = []
@@ -696,8 +696,7 @@ def select_node_stats(cursor, project_id, start_date_utc, end_date_utc,
         FROM all_treenodes t
         GROUP BY 1, 2
     ''', {
-        'tz': time_zone.zone,
-        'utc_offset': time_zone,
+        'tz': time_zone.key,
         'project_id': project_id,
         'start_date_utc': start_date_utc,
         'end_date_utc': end_date_utc,
@@ -763,7 +762,7 @@ def select_cable_stats(cursor, project_id, start_date_utc, end_date_utc,
             ROUND(SUM(l.cable_length))::float
         FROM all_cable_lengths l
         GROUP BY 1, 2
-    ''', dict(tz=time_zone.zone, project_id=project_id,
+    ''', dict(tz=time_zone.key, project_id=project_id,
             start_date_utc=start_date_utc, end_date_utc=end_date_utc,
             time_unit=time_unit))
 
@@ -836,8 +835,7 @@ def select_import_node_stats(cursor, project_id, start_date_utc, end_date_utc,
         FROM all_treenodes t
         GROUP BY 1, 2
     ''', {
-        'tz': time_zone.zone,
-        'utc_offset': time_zone,
+        'tz': time_zone.key,
         'project_id': project_id,
         'start_date_utc': start_date_utc,
         'end_date_utc': end_date_utc,
@@ -920,7 +918,7 @@ def select_import_cable_stats(cursor, project_id, start_date_utc, end_date_utc,
         FROM cable_info l
         GROUP BY 1, 2
     ''', {
-        'tz': time_zone.zone,
+        'tz': time_zone.key,
         'project_id': project_id,
         'start_date_utc': start_date_utc,
         'end_date_utc': end_date_utc,
@@ -987,7 +985,7 @@ def select_connector_stats(cursor, project_id, start_date_utc, end_date_utc,
         FROM all_connectors l
         GROUP BY 1, 2
     ''', {
-        'tz': time_zone.zone,
+        'tz': time_zone.key,
         'project_id': project_id,
         'start_date_utc': start_date_utc,
         'end_date_utc': end_date_utc,
@@ -1045,8 +1043,7 @@ def select_review_stats(cursor, project_id, start_date_utc, end_date_utc,
         FROM all_reviews r
         GROUP BY 1, 2
     ''', {
-        'tz': time_zone.zone,
-        'utc_offset': time_zone,
+        'tz': time_zone.key,
         'project_id': project_id,
         'start_date_utc': start_date_utc,
         'end_date_utc': end_date_utc,

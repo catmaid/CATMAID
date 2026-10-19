@@ -2,13 +2,12 @@
 
 from collections import defaultdict
 import csv
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from itertools import chain
 import dateutil.parser
 import json
 import math
 import networkx as nx
-import pytz
 import re
 from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
 
@@ -459,7 +458,7 @@ def contributor_statistics_multiple(request:HttpRequest, project_id=None, skelet
     n_time_bins = 0
     n_review_bins = 0
     n_multi_review_bins = 0
-    epoch = datetime.utcfromtimestamp(0).replace(tzinfo=pytz.utc)
+    epoch = datetime.fromtimestamp(0, timezone.utc)
 
     if not skeleton_ids:
         skeleton_ids = tuple(int(v) for k,v in request.POST.items() if k.startswith('skids['))

@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone as dt_timezone
 from dateutil import parser as dateparser
 import io
 import logging
 import numpy as np
-import pytz
 from typing import Any, Dict, List, Tuple
 
 from django.db import connection
@@ -141,7 +140,7 @@ class UserAnalyticsAPIView(APIView):
               required: false
               defaultValue: false
         """
-        time_zone = pytz.utc
+        time_zone = dt_timezone.utc
 
         project = get_object_or_404(Project, pk=project_id) if project_id else None
         if not (request.user.is_superuser or \
@@ -160,7 +159,7 @@ class UserAnalyticsAPIView(APIView):
         start_date = request.GET.get('start', None)
         if start_date:
             start_date = dateparser.parse(start_date)
-            start_date = time_zone.localize(start_date)
+            start_date = start_date.replace(tzinfo=time_zone)
         else:
             with timezone.override(time_zone):
                 start_date = timezone.now() - timedelta(7)
@@ -169,7 +168,7 @@ class UserAnalyticsAPIView(APIView):
         end_date = request.GET.get('end', None)
         if end_date:
             end_date = dateparser.parse(end_date)
-            end_date = time_zone.localize(end_date)
+            end_date = end_date.replace(tzinfo=time_zone)
         else:
             with timezone.override(time_zone):
                 end_date = timezone.now()
@@ -205,7 +204,7 @@ def plot_useranalytics(request:HttpRequest, project_id) -> HttpResponse:
     """ Creates an SVG image containing different plots for analzing the
     performance of individual users over time.
     """
-    time_zone = pytz.utc
+    time_zone = dt_timezone.utc
 
     userid = request.GET.get('userid', None)
     if not (userid and userid.strip()):
@@ -218,7 +217,7 @@ def plot_useranalytics(request:HttpRequest, project_id) -> HttpResponse:
     start_date = request.GET.get('start', None)
     if start_date:
         start_date = dateparser.parse(start_date)
-        start_date = time_zone.localize(start_date)
+        start_date = start_date.replace(tzinfo=time_zone)
     else:
         with timezone.override(time_zone):
             start_date = timezone.now() - timedelta(7)
@@ -227,7 +226,7 @@ def plot_useranalytics(request:HttpRequest, project_id) -> HttpResponse:
     end_date = request.GET.get('end', None)
     if end_date:
         end_date = dateparser.parse(end_date)
-        end_date = time_zone.localize(end_date)
+        end_date = end_date.replace(tzinfo=time_zone)
     else:
         with timezone.override(time_zone):
             end_date = timezone.now()

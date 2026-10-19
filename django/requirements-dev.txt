@@ -1,2 +1,1 @@
-django-devserver==0.8.0
-sh==1.11
+sh==2.2.2

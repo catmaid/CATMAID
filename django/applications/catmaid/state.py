@@ -109,8 +109,11 @@ def list_to_table(input_list, n=1) -> Tuple[str, Any]:
     if not args: # empty input_list or invalid n
         raise ValueError("Could't parse list argument in state check")
 
-    records_list_template = ','.join(['%s'] * len(args))
-    return (f"(VALUES {records_list_template})", args)
+    # psycopg doesn't expand tuples into rows, which is why each value gets
+    # its own placeholder.
+    row_template = '(' + ','.join(['%s'] * n) + ')'
+    records_list_template = ','.join([row_template] * len(args))
+    return (f"(VALUES {records_list_template})", [v for row in args for v in row])
 
 def has_only_truthy_values(element, n=2) -> bool:
     return n == len(element) and all(element)

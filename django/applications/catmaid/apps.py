@@ -22,7 +22,7 @@ from django.db.backends import signals as db_signals
 from django.contrib import auth
 from django.contrib.auth.management.commands import createsuperuser
 
-from psycopg2.extensions import register_adapter, adapt
+from psycopg.types.array import ListDumper
 
 try:
     import rpy2.rinterface as rinterface
@@ -42,6 +42,11 @@ def is_read_only():
     cursor = connection.cursor()
     cursor.execute("select pg_is_in_recovery()")
     return cursor.fetchone()[0]
+
+
+def register_set_dumper(sender, connection, **kwargs) -> None:
+    """Adapt Python sets like lists, i.e. as PostgreSQL arrays."""
+    connection.connection.adapters.register_dumper(set, ListDumper)
 
 
 def get_system_user(user_model=None):
@@ -441,7 +446,12 @@ class CATMAIDConfig(AppConfig):
             validate_project_setup(p.id, user.id, True, Class, Relation)
 
     def init_db_extras(self) -> None:
-        """Make sure we have communicated to psycopg2 that we need support for
+        """Make sure we have communicated to psycopg that we need support for
         some extra types.
         """
-        register_adapter(set, lambda x: adapt(list(x)))
+        # Django builds the adapters of new connections from a cached template,
+        # which doesn't see later changes to psycopg's global adapters. This
+        # is why the dumper is registered for each connection instead.
+        db_signals.connection_created.connect(register_set_dumper)
+        if connection.connection is not None:
+            register_set_dumper(sender=None, connection=connection)

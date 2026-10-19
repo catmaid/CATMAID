@@ -9,7 +9,7 @@ import logging
 from math import sqrt
 import msgpack
 import networkx as nx
-from psycopg2.extras import DateTimeTZRange
+from psycopg.types.range import Range
 import struct
 from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
 
@@ -36,10 +36,10 @@ except ImportError:
     logging.getLogger(__name__).warning("NeuroML module could not be loaded.")
 
 
-def default(obj:Union[DateTimeTZRange, datetime]) -> str:
+def default(obj:Union[Range, datetime]) -> str:
     """Default JSON serializer."""
 
-    if isinstance(obj, DateTimeTZRange):
+    if isinstance(obj, Range):
         l_bound = "[" if obj.lower_inc else "("
         u_bound = "]" if obj.upper_inc else ")"
         return f"{l_bound}{obj.lower},{obj.upper}{u_bound}"

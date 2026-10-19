@@ -2,7 +2,6 @@
 from collections import defaultdict
 import msgpack
 import progressbar
-import psycopg2
 import time
 from timeit import default_timer as timer
 from typing import Dict, List

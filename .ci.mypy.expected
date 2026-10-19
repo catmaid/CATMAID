@@ -3,7 +3,7 @@ django/projects/mysite/pipelinefiles.py:168: error: Incompatible types in assign
 django/projects/mysite/pipelinefiles.py:170: error: List item 0 has incompatible type "list[str]"; expected "str"  [list-item]
 django/lib/custom_rest_swagger_googledoc.py:19: error: Library stubs not installed for "docutils"  [import-untyped]
 django/lib/custom_rest_swagger_googledoc.py:19: note: Hint: "python3 -m pip install types-docutils"
-django/applications/catmaid/management/commands/catmaid_update_cache_tables.py:3: error: Library stubs not installed for "ujson"  [import-untyped]
+django/applications/catmaid/management/commands/catmaid_update_cache_tables.py:2: error: Library stubs not installed for "ujson"  [import-untyped]
 django/applications/catmaid/control/transaction.py:2: error: Library stubs not installed for "ujson"  [import-untyped]
 django/applications/catmaid/control/annotation.py:4: error: Library stubs not installed for "dateutil.parser"  [import-untyped]
 django/applications/catmaid/control/annotation.py:4: note: Hint: "python3 -m pip install types-python-dateutil"
@@ -12,7 +12,7 @@ django/applications/catmaid/control/annotation.py:4: note: See https://mypy.read
 django/applications/catmaid/control/annotation.py:4: error: Library stubs not installed for "dateutil"  [import-untyped]
 django/applications/catmaid/widgets.py:5: error: Module "django" has no attribute "forms"  [attr-defined]
 django/applications/catmaid/forms.py:3: error: Module "django" has no attribute "forms"  [attr-defined]
-django/applications/catmaid/fields.py:9: error: Module "django" has no attribute "forms"  [attr-defined]
+django/applications/catmaid/fields.py:7: error: Module "django" has no attribute "forms"  [attr-defined]
 django/applications/catmaid/management/commands/catmaid_import_from_trakem2.py:119: error: Need type annotation for "arealists" (hint: "arealists: list[<type>] = ...")  [var-annotated]
 django/applications/catmaid/management/commands/catmaid_import_from_trakem2.py:119: error: Argument 1 to "filter" has incompatible type "Callable[[Any], bool]"; expected "Callable[[Any], TypeGuard[Never]]"  [arg-type]
 django/applications/catmaid/management/commands/catmaid_import_from_trakem2.py:119: error: Argument 2 to "isinstance" has incompatible type "Any | None"; expected "_ClassInfo"  [arg-type]
@@ -25,11 +25,11 @@ django/applications/catmaid/views/image_block_source_importer.py:5: error: Modul
 django/applications/catmaid/views/dvid.py:5: error: Module "django" has no attribute "forms"  [attr-defined]
 django/applications/catmaid/control/project.py:5: error: Library stubs not installed for "yaml"  [import-untyped]
 django/applications/catmaid/control/authentication.py:17: error: Module "django" has no attribute "forms"  [attr-defined]
-django/applications/catmaid/management/commands/catmaid_find_node_provider_config.py:9: error: Library stubs not installed for "ujson"  [import-untyped]
-django/applications/catmaid/control/stats.py:4: error: Library stubs not installed for "dateutil"  [import-untyped]
+django/applications/catmaid/management/commands/catmaid_find_node_provider_config.py:8: error: Library stubs not installed for "ujson"  [import-untyped]
 django/applications/catmaid/control/skeleton.py:7: error: Library stubs not installed for "dateutil.parser"  [import-untyped]
 django/applications/catmaid/control/skeleton.py:7: error: Library stubs not installed for "dateutil"  [import-untyped]
 django/applications/catmaid/control/skeleton.py:504: error: Need type annotation for "rev"  [var-annotated]
+django/applications/catmaid/control/stats.py:4: error: Library stubs not installed for "dateutil"  [import-untyped]
 django/lib/custom_swagger_schema.py:8: error: Library stubs not installed for "yaml"  [import-untyped]
 django/applications/catmaid/views/userimporter.py:3: error: Library stubs not installed for "requests"  [import-untyped]
 django/applications/catmaid/views/userimporter.py:5: error: Module "django" has no attribute "forms"  [attr-defined]
@@ -46,10 +46,10 @@ django/applications/catmaid/control/skeletonexport.py:197: note: Use https://git
 django/applications/catmaid/control/importer.py:7: error: Library stubs not installed for "requests"  [import-untyped]
 django/applications/catmaid/control/importer.py:11: error: Library stubs not installed for "yaml"  [import-untyped]
 django/applications/catmaid/control/importer.py:11: note: Hint: "python3 -m pip install types-PyYAML"
-django/applications/catmaid/control/importer.py:15: error: Module "django" has no attribute "forms"  [attr-defined]
-django/applications/catmaid/control/importer.py:1249: error: Item "None" of "Any | None" has no attribute "save"  [union-attr]
-django/applications/catmaid/control/importer.py:1999: error: Need type annotation for "clamped_locations"  [var-annotated]
-django/applications/catmaid/control/importer.py:2113: error: Item "None" of "Any | None" has no attribute "id"  [union-attr]
+django/applications/catmaid/control/importer.py:14: error: Module "django" has no attribute "forms"  [attr-defined]
+django/applications/catmaid/control/importer.py:1248: error: Item "None" of "Any | None" has no attribute "save"  [union-attr]
+django/applications/catmaid/control/importer.py:1998: error: Need type annotation for "clamped_locations"  [var-annotated]
+django/applications/catmaid/control/importer.py:2112: error: Item "None" of "Any | None" has no attribute "id"  [union-attr]
 django/applications/catmaid/control/connector.py:95: error: Value of type "map[Any]" is not indexable  [index]
 django/applications/catmaid/control/connector.py:96: error: Value of type "map[Any]" is not indexable  [index]
 django/applications/catmaid/control/connector.py:97: error: Value of type "map[Any]" is not indexable  [index]
@@ -69,6 +69,6 @@ django/applications/catmaid/models.py:15: error: Module "django" has no attribut
 django/applications/catmaid/history.py:3: error: Library stubs not installed for "dateutil.parser"  [import-untyped]
 django/applications/catmaid/history.py:3: error: Library stubs not installed for "dateutil"  [import-untyped]
 django/applications/catmaid/control/stack.py:8: error: Library stubs not installed for "requests"  [import-untyped]
-django/applications/catmaid/control/node.py:16: error: Library stubs not installed for "ujson"  [import-untyped]
-django/applications/catmaid/control/node.py:16: note: Hint: "python3 -m pip install types-ujson"
+django/applications/catmaid/control/node.py:15: error: Library stubs not installed for "ujson"  [import-untyped]
+django/applications/catmaid/control/node.py:15: note: Hint: "python3 -m pip install types-ujson"
 Found 59 errors in 38 files (checked 341 source files)

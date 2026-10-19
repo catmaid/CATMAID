@@ -89,6 +89,10 @@ class Migration(migrations.Migration):
     previous version has been applied already.
     """
 
+    # The SQL below manages its own transactions (explicit BEGIN/COMMIT) and
+    # runs VACUUM, which can't run inside a transaction block.
+    atomic = False
+
     dependencies = [
         ('catmaid', '0087_add_nblast_normalization_mode'),
     ]

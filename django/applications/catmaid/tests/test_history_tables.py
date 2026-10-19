@@ -2,7 +2,7 @@
 
 import time
 
-from django.db import connection, transaction, InternalError
+from django.db import connection, transaction, ProgrammingError
 from django.test import TestCase, TransactionTestCase
 from guardian.shortcuts import assign_perm
 from catmaid import history
@@ -322,7 +322,7 @@ class HistoryTableTests(TransactionTestCase):
         table exceeds identifier limits imposed by Postgres.
         """
         cursor = connection.cursor()
-        with self.assertRaises(InternalError):
+        with self.assertRaises(ProgrammingError):
             cursor.execute("""
                 CREATE TABLE
                     a_very_very_long_table_name_which_is_pretty_close_to_63_chars (
@@ -1178,7 +1178,7 @@ class HistoryTableTests(TransactionTestCase):
         cursor.execute("""
             TRUNCATE "project" CASCADE;
             SELECT current_timestamp::text;
-        """, (project_details['id'],))
+        """)
         truncate_result = cursor.fetchone()
         truncate_timestamp = truncate_result[0]
         transaction.commit()
@@ -1289,7 +1289,7 @@ class HistoryTableTests(TransactionTestCase):
                 name text
             );
         """)
-        with self.assertRaises(InternalError):
+        with self.assertRaises(ProgrammingError):
             cursor.execute("""
                 SELECT create_history_table('_history_test_'::regclass);
             """)

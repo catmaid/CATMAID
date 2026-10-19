@@ -10,7 +10,6 @@ import msgpack
 import logging
 from PIL import Image, ImageDraw
 import progressbar
-import psycopg2.extras
 import struct
 from typing import Any, DefaultDict, Dict, List, Optional, Set, Tuple, Union
 import ujson
@@ -1844,7 +1843,7 @@ def update_cache(project_id, data_type, orientations, steps, node_limit=None,
                     ON CONFLICT (project_id, orientation, depth)
                     DO UPDATE SET msgpack_data = EXCLUDED.msgpack_data, update_time = EXCLUDED.update_time;
                 """, (project_id, orientation_id, z, lod_levels, lod_bucket_size,
-                        [None if not v else psycopg2.Binary(msgpack.packb(v)) for v in result_buckets]))
+                        [None if not v else msgpack.packb(v) for v in result_buckets]))
 
             z += step
 
@@ -2239,7 +2238,7 @@ def update_grid_cell(project_id, grid_id, w_i, h_i, d_i, cell_width,
             'x_index': w_i,
             'y_index': h_i,
             'z_index': d_i,
-            'data':  [None if not v else psycopg2.Binary(msgpack.packb(v)) for v in result_buckets],
+            'data':  [None if not v else msgpack.packb(v) for v in result_buckets],
         })
 
     return True

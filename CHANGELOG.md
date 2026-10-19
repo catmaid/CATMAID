@@ -5,6 +5,12 @@
 - The minimum supported Python Version is now 3.10. Additionally, version 3.11
   and 3.12 are supported.
 
+- The PostgreSQL driver psycopg2 has been replaced by psycopg 3. Make sure to
+  update the Python environment (`pip install -r django/requirements.txt`). The
+  `psycopg2`, `psycopg2-binary` and `psycopg2cffi` packages aren't needed
+  anymore and can be uninstalled. The database `ENGINE` setting
+  (`custom_postgresql_psycopg2`) doesn't need to be changed.
+
 ### Features and enhancements
 
 Miscellaneous:

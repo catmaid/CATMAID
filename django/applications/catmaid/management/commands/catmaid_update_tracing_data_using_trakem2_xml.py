@@ -13,7 +13,6 @@ from catmaid.control.edge import rebuild_edge_tables
 from catmaid.history import add_log_entry
 from catmaid.models import Project
 
-from psycopg2.extras import execute_batch
 from progressbar import progressbar
 from typing import Set
 
@@ -381,11 +380,11 @@ class CoordTransformer(object):
             log(f'  Found and transformed {len(locations)} locations, considering {len(reset_reviews_for)} locations for review reset, offset: {l.offset_x}, {l.offset_y}')
 
             # Write points back into database
-            execute_batch(cursor, """
+            cursor.executemany("""
                 UPDATE location
                 SET location_x = %s, location_y = %s, editor_id = %s
                 WHERE id = %s
-            """, locations, page_size=100)
+            """, locations)
 
             n_reset_reviews = 0
             if self.review_reset_distance and reset_reviews_for:

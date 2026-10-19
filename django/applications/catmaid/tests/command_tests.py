@@ -2,7 +2,7 @@
 
 from io import StringIO
 
-import mock
+from unittest import mock
 
 from rest_framework.authtoken.models import Token
 from django.core.management import call_command

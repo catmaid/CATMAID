@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 #!/usr/bin/env python
 
 # This is a small helper script revert a CATMAID
@@ -11,9 +9,6 @@
 
 # You will need to create a .pgpass file so that your password can be
 # found.
-
-# You may need to install psycopg2, e.g. with:
-#   sudo apt-get install python-psycopg2
 
 # Requires the file .catmaid-db to be present in your
 # home directory, with the following format:
@@ -28,7 +23,6 @@ import os
 from common import db_database, db_username, db_password
 from subprocess import Popen, check_call, PIPE
 import getpass
-from psycopg2 import IntegrityError
 from datetime import datetime
 
 if len(sys.argv) != 2:

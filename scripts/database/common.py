@@ -1,6 +1,5 @@
-# -*- coding: utf-8 -*-
 import sys
-import psycopg2
+import psycopg
 import os
 import yaml
 
@@ -10,7 +9,8 @@ else:
     path = os.path.join(os.environ['HOME'], '.catmaid-db')
 
 try:
-    conf = yaml.load(open(path))
+    with open(path) as f:
+        conf = yaml.safe_load(f)
 except:
     print('''Your %s file should look like:
 
@@ -28,8 +28,5 @@ db_database = conf['database']
 db_username = conf['username']
 db_password = conf['password']
 
-db_connection = psycopg2.connect(host=db_host,
-                                 port=db_port,
-                                 database=db_database,
-                                 user=db_username,
-                                 password=db_password)
+db_connection = psycopg.connect(host=db_host, port=db_port, dbname=db_database,
+                                user=db_username, password=db_password)

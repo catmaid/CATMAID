@@ -12,7 +12,7 @@ django-rest-swagger==2.2.0
 django-taggit==6.1.0
 djangorestframework==3.16.1
 kombu==5.4.2
-matplotlib==3.11.2; platform_python_implementation != 'PyPy'
+matplotlib==3.10.9; platform_python_implementation != 'PyPy'
 msgpack==1.2.3; platform_python_implementation != 'PyPy'
 networkx==3.0; platform_python_implementation != 'PyPy'
 networkx==2.5.1; platform_python_implementation == 'PyPy'

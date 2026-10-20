@@ -10,18 +10,6 @@ import mysite.utils as utils
 
 from celery.schedules import crontab
 
-try:
-    import psycopg2
-except ImportError:
-    # If psycopg2 is not installed, expect psycopg2cffi, which can be used with
-    # PyP. Make sure psycopg2cffi runs in compatibility mode so that it can be
-    # imported as psycopg2.
-    try:
-        from psycopg2cffi import compat
-        compat.register()
-    except ImportError:
-        raise ImportError("Need either psycopg2 or psycopg2cffi")
-
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Make Django root folder available

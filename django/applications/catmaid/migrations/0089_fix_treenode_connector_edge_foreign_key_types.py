@@ -83,6 +83,10 @@ class Migration(migrations.Migration):
     doesn't need a VACUUM FULL run.
     """
 
+    # The SQL below manages its own transactions (explicit BEGIN/COMMIT) and
+    # runs VACUUM, which can't run inside a transaction block.
+    atomic = False
+
     dependencies = [
         ('catmaid', '0088_connector_geom_fix_bigint'),
     ]

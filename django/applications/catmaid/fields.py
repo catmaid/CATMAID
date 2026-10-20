@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import psycopg2
-from psycopg2.extensions import register_adapter, adapt, AsIs
-from psycopg2.extras import CompositeCaster, register_composite
+from psycopg.types.composite import CompositeInfo, register_composite
 import re
 from typing import Any, ClassVar, Dict
 
@@ -23,9 +21,14 @@ from catmaid.widgets import Double3DWidget, Integer3DWidget, RGBAWidget, Downsam
 # Classes to support PostgreSQL composite types. Adapted from:
 # http://schinckel.net/2014/09/24/using-postgres-composite-types-in-django/
 
-class CompositeFactory(CompositeCaster):
-    def make(self, values):
-        return self.composite_python_class(**dict(zip(self.attnames, values)))
+def make_composite_object(values, info):
+    return info.python_type(**dict(zip(info.field_names, values)))
+
+def make_composite_sequence(obj, info):
+    # For safety, `composite_python_class` must have the same attributes as
+    # the composite type's fields, so that those can be escaped rather than
+    # relying on `__str__`.
+    return [getattr(obj, field) for field in info.field_names]
 
 _missing_types = {}
 
@@ -41,43 +44,26 @@ class CompositeMeta(type):
         klass = cls()
         db_type = klass.db_type(connection)
         if db_type:
-            try:
-                cls.python_type = register_composite(
-                    str(db_type),
-                    connection.cursor().cursor,
-                    globally=True,
-                    factory=klass.factory_class()
-                ).type
-            except psycopg2.ProgrammingError:
+            connection.ensure_connection()
+            info = CompositeInfo.fetch(connection.connection, str(db_type))
+            if info is None:
                 _missing_types[db_type] = cls
             else:
-                def adapt_composite(composite):
-                    # For safety, `composite_python_class` must have the same
-                    # attributes as the namedtuple `python_type`'s fields, so
-                    # that those can be escaped rather than relying on
-                    # `__str__`.
-                    return AsIs("(%s)::%s" % (
-                        ", ".join([
-                            adapt(getattr(composite, field)).getquoted().decode('utf-8') for field in cls.python_type._fields
-                        ]), db_type
-                    ))
-
-                register_adapter(cls.composite_python_class, adapt_composite)
+                # Registering on the connection (rather than globally) is
+                # enough, because new connections are handled by the
+                # connection_created signal handler below.
+                register_composite(info, connection.connection,
+                        cls.composite_python_class,
+                        make_object=make_composite_object,
+                        make_sequence=make_composite_sequence)
 
 
 class CompositeField(models.Field, metaclass=CompositeMeta):
     """Base class for PostgreSQL composite fields.
 
-    Rather than use psycopg2's default namedtuple types, adapt to a custom
+    Rather than use psycopg's default namedtuple types, adapt to a custom
     Python type in `composite_python_class` that takes fields as init kwargs.
     """
-
-    def factory_class(self):
-        newclass = type(
-            str('%sFactory' % type(self.composite_python_class).__name__),
-            (CompositeFactory,),
-            {'composite_python_class': self.composite_python_class})
-        return newclass
 
 
 composite_type_created = Signal()

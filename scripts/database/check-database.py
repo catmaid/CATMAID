@@ -4,10 +4,7 @@
 # This script checks your database for some common
 # inconsistencies or errors that may have arisen from
 # past bugs.
-
-# You may need to install psycopg2, e.g. with:
-#   sudo apt-get install python-psycopg2
-
+#
 # Requires the file .catmaid-db to be present in your
 # home directory, with the following format:
 #

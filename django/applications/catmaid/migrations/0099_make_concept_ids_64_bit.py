@@ -2928,6 +2928,10 @@ backward = """
 
 class Migration(migrations.Migration):
 
+    # The SQL below manages its own transactions (explicit BEGIN/COMMIT) and
+    # runs VACUUM, which can't run inside a transaction block.
+    atomic = False
+
     dependencies = [
         ('catmaid', '0098_make_primary_group_optional'),
     ]

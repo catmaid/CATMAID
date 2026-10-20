@@ -86,7 +86,7 @@ def search(request:HttpRequest, project_id=None) -> JsonResponse:
             matching_labels_set.add(row['name'])
             label_rows[row['id']] = row
 
-    # We need a list to pass it to psycopg2.
+    # We need a list to pass it to psycopg.
     matching_labels = list(matching_labels_set)
 
     # Find treenodes with label. Use the UPPER() function to be able to use the

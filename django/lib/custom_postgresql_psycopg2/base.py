@@ -28,6 +28,7 @@ ORM.
 """
 
 from django.db.backends.base.base import NO_DB_ALIAS
+from django.db.backends.postgresql.base import Cursor as PostgresCursor
 
 # CATMAID uses PostGIS, so we need to make sure we wrap the PostGIS backend
 from django.contrib.gis.db.backends.postgis.base import DatabaseWrapper as PostGISDatabaseWrapper
@@ -35,6 +36,19 @@ from django.contrib.gis.db.backends.postgis.operations import PostGISOperations
 
 import re
 import sys
+
+class Cursor(PostgresCursor):
+    """If a query consists of multiple statements, psycopg 3 makes the result
+    of the first statement available, whereas psycopg2 made the result of the
+    last one available. CATMAID's raw SQL relies on the psycopg2 behavior, e.g.
+    when a query modifies data and then selects something. This cursor
+    therefore moves to the last result after each execute().
+    """
+    def execute(self, query, params=None, **kwargs):
+        super().execute(query, params, **kwargs)
+        while self.nextset():
+            pass
+        return self
 
 class DatabaseError(Exception):
     pass
@@ -72,3 +86,10 @@ class DatabaseWrapper(PostGISDatabaseWrapper):
         # Don't override operations for Non-DB connections
         if kwargs.get('alias', '') != NO_DB_ALIAS:
             self.ops = DatabaseOperations(self)
+
+    def get_connection_params(self):
+        conn_params = super().get_connection_params()
+        # Only replace Django's default (client-side binding) cursor
+        if conn_params.get('cursor_factory') is PostgresCursor:
+            conn_params['cursor_factory'] = Cursor
+        return conn_params

@@ -9,7 +9,6 @@ import progressbar
 from typing import Any, List, DefaultDict, Dict, Set, Tuple
 import urllib
 import yaml
-from psycopg2.extras import execute_values
 
 
 from django import forms
@@ -2116,13 +2115,15 @@ class GenericImporter(AbstractImporter):
                             skeleton_summary))
 
                     self.logger.info("- Inserting summary stats")
-                    execute_values(cursor, """
-                        INSERT INTO catmaid_skeleton_summary
+                    with cursor.copy("""
+                        COPY catmaid_skeleton_summary
                             (skeleton_id, project_id, last_summary_update,
                             original_creation_time, last_edition_time, num_nodes,
                             cable_length, last_editor_id, num_imported_nodes)
-                        VALUES %s;
-                    """, skeleton_summary)
+                        FROM STDIN
+                    """) as copy:
+                        for row in skeleton_summary:
+                            copy.write_row(row)
                 else:
                     self.logger.info(f"Updating skeleton summary table for project {self.target.id}")
                     cursor.execute("""

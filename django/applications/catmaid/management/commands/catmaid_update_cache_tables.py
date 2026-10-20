@@ -1,5 +1,4 @@
 import msgpack
-import psycopg2
 import ujson
 
 from django.core.management.base import BaseCommand, CommandError

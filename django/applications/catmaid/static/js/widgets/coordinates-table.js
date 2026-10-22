@@ -4,6 +4,8 @@
   project
 */
 
+
+
 (function(CATMAID) {
 
   "use strict";
@@ -12,19 +14,23 @@
     this.widgetID = this.registerInstance();
     this.rows = [];
     this.titleRow = undefined;
-    this.ix = 0;
-    this.iy = 1;
-    this.iz = 2;
+    this.xField = 0;
+    this.yField = 1;
+    this.zField = 2;
+    this.notes = []; // Store notes per row
     this.gui = new this.GUI(this);
   };
+
+  var style = document.createElement('style');
+  style.textContent = ".ct-row-touched { background: #ffeeba !important; }";
+  document.head.appendChild(style);
+
 
   $.extend(CoordinatesTable.prototype, new InstanceRegistry());
 
   CoordinatesTable.prototype.getName = function() {
     return "Coordinates " + this.widgetID;
   };
-
-  CoordinatesTable.prototype.highlighting_color = "#ffb0fc"; // faint magenta
 
   CoordinatesTable.prototype.getWidgetConfiguration = function() {
     return {
@@ -50,15 +56,21 @@
         buttons.appendChild(clear);
       },
       createContent: function(content) {
+        var self = this;
         var tab = document.createElement('table');
         tab.setAttribute("id", "coordinates-table" + this.widgetID);
         tab.setAttribute("class", "coordinates-table");
-        tab.innerHTML =
-            '<thead>' +
-            '</thead>' +
-            '<tbody>' +
-            '</tbody>';
         content.appendChild(tab);
+
+        // Save CSV button
+        var saveBtn = document.createElement("button");
+        saveBtn.textContent = "Save as CSV";
+        saveBtn.id = "ct-save-csv-btn-" + this.widgetID;
+        saveBtn.style.margin = "8px";
+        saveBtn.onclick = function() {
+          self.exportCSV();
+        };
+        content.insertBefore(saveBtn, tab);
       },
       init: function(win, options) {},
       helpPath: 'coordinates-table.html',
@@ -72,6 +84,7 @@
 
   CoordinatesTable.prototype.clear = function(source_chain) {
     this.gui.clear();
+    this.notes = [];
   };
 
   CoordinatesTable.prototype.loadFromCSVFile = function(files) {
@@ -85,19 +98,19 @@
     return CATMAID.parseCSVFile(csvFile, ',', nLinesToSkip)
       .then(function(csvLines) {
         if (csvLines.length === 0) {
-          CATMAD.warn('CSV file does not contain any usable lines');
+          CATMAID.warn('CSV file does not contain any usable lines');
           return;
         }
 
         // Show dialog with first three lines
         let dialog = new CATMAID.OptionsDialog("Import CSV");
-        dialog.appendMessage("The first two lines of the file you are going to " +
+        dialog.appendMessage("The first three lines of the file you are going to " +
             "import are shown below. Please select the appropriate import options.");
         let tableContainer = document.createElement('div');
         tableContainer.classList.add('help');
         let table = document.createElement('table');
         table.style.width = "100%";
-        let nPreviewRows = csvLines.length > 1 ? 2 : 1;
+        let nPreviewRows = csvLines.length > 2 ? 3 : csvLines.length;
         for (var i=0; i<nPreviewRows; ++i) {
           let tr = document.createElement('tr');
           let data = csvLines[i];
@@ -115,8 +128,8 @@
         var nColumns = csvLines[0].length;
 
         var titleRowField = dialog.appendNumericField(
-          'Title row index (if any; 1 indexed)', 'csv-import-title-line',
-          1, 1, csvLines.length -1, 1);
+          'Title row index (0 for none; 1 indexed)', 'csv-import-title-line',
+          1, 0, csvLines.length -1, 1);
 
         // Add option to change line skipping
         var lineSkipField = dialog.appendNumericField(
@@ -137,7 +150,7 @@
           let titleRowIndex = parseInt(titleRowField.value, 10);
           let lineSkip = parseInt(lineSkipField.value, 10);
           if ((csvLines.length - lineSkip) <= 0) {
-            CATMAD.warn('CSV file does not contain any usable lines');
+            CATMAID.warn('CSV file does not contain any usable lines');
             return;
           }
 
@@ -148,10 +161,16 @@
 
           // Make sure all rows have at least 3 coordinates with valid numeric values
           var validRows = csvLines.filter(function(row, i) {
-            if (i === titleRowIndex -1) {
+            // The title row is a header, not a data row.
+            if (titleRowIndex > 0 && i === titleRowIndex - 1) {
               titleRow = row;
+              return false;
             }
             if (i < lineSkip) {
+              return false;
+            }
+            // Ignore blank rows (e.g. the empty row from a trailing newline) without warning.
+            if (row.every(function(cell) { return !cell || !cell.trim(); })) {
               return false;
             }
             let x = parseFloat(row[ix]), // 1-based
@@ -180,7 +199,7 @@
       .catch(CATMAID.handleError);
   };
 
-  CoordinatesTable.prototype.setData = function(titleRow, rows, ix, iy, iz) {
+  CoordinatesTable.prototype.setData = function(titleRow, rows, xField, yField, zField) {
     if (this.rows && this.rows.length > 0) {
       if (!confirm("Remove all rows and replace with new ones?")) {
         return;
@@ -189,14 +208,53 @@
 
     this.titleRow = titleRow;
     this.rows = rows;
-    this.ix = ix;
-    this.iy = iy;
-    this.iz = iz;
+    this.xField = xField;
+    this.yField = yField;
+    this.zField = zField;
+    this.notes = new Array(rows.length).fill(""); // Reset notes
 
     // Refresh the datatable
     this.gui.clear();
     this.gui.init();
   };
+
+  CoordinatesTable.prototype.exportCSV = function() {
+    var widgetID = this.widgetID;
+    var tableSel = "#coordinates-table" + widgetID;
+
+    // Get table headers
+    var headers = [];
+    $(tableSel + " thead tr th").each(function() {
+      headers.push($(this).text());
+    });
+    headers.push("Notes");
+
+    // Collect data for export
+    var csvRows = [headers.join(",")];
+
+    var self = this;
+    $(tableSel + " tbody tr").each(function(i) {
+      var row = [];
+      $(this).find("td").each(function(idx) {
+        var $cell = $(this);
+        // If it's the last column, add notes
+        if (idx === $(this).parent().find('td').length - 1) {
+          var note = $cell.find("input.ct-note").val() || "";
+          row.push('"' + note.replace(/"/g, '""') + '"');
+        } else {
+          row.push('"' + ($cell.text().trim().replace(/"/g, '""')) + '"');
+        }
+      });
+      csvRows.push(row.join(","));
+    });
+
+    // Download CSV
+    var csvString = csvRows.join("\n");
+    var blob = new Blob([csvString], { type: "text/csv" });
+    saveAs(blob, "coordinates_with_notes.csv");
+  };
+
+  // === GUI modifications to add the Notes column ===
 
   CoordinatesTable.prototype.GUI = function(table) {
     this.table = table;
@@ -221,91 +279,109 @@
   };
 
   CoordinatesTable.prototype.GUI.prototype.getTableInfo = function() {
-    // Could show amount when filtered, etc.
     return "Number of rows: " + this.table.rows.length;
   };
 
-  /**
-   * Remove all and initialize a new datatable that gets its content from the
-   * widget.
-   */
-  CoordinatesTable.prototype.GUI.prototype.init = function() {
-    // Update GUI state
-    var widgetID = this.table.widgetID;
+CoordinatesTable.prototype.GUI.prototype.init = function() {
+  var widgetID = this.table.widgetID;
+  var tableSelector = "table#coordinates-table" + widgetID;
+  if ($.fn.DataTable.isDataTable(tableSelector)) {
+    var datatable = $(tableSelector).DataTable();
+    if (datatable) {
+      this.page = datatable.page();
+      this.entriesPerPage = datatable.page.len();
+      this.order = datatable.order();
+      datatable.destroy();
+    }
+  }
+  this.datatable = null;
 
-    // Remember number of entries on page and destroy table, if it exists.
-    var tableSelector = "table#coordinates-table" + widgetID;
-    if ($.fn.DataTable.isDataTable(tableSelector)) {
-      var datatable = $(tableSelector).DataTable();
-      if (datatable) {
-        this.page = datatable.page();
-        this.entriesPerPage = datatable.page.len();
-        this.order = datatable.order(); // TODO this is in CoordinatesTable, not in GUI. Error is in SelectionTable as well
-        datatable.destroy();
+  // If the user opens and immediately closes the widget, there's no table,
+  // so bail out.
+  if (!this.table.rows.length) {
+    return;
+  }
+
+  // Prepare titles for columns
+  var columnProps = [{"title": ""}];
+  // ...already have a title row
+  if (this.table.titleRow) {
+    columnProps = columnProps.concat(this.table.titleRow.map(function(name) {
+      return {"title": name};
+    }));
+  }
+  // ...or build the title row
+  else {
+    let names = Array.from({length: this.table.rows[0].length}, function() {
+      return {"title": "", "type": "text"};
+    });
+    let e = names[this.table.xField];
+    e.title = "X";
+    e.type = "numeric";
+    e = names[this.table.yField];
+    e.title = "Y";
+    e.type = "numeric";
+    e = names[this.table.zField];
+    e.title = "Z";
+    e.type = "numeric";
+    columnProps = columnProps.concat(names);
+  }
+  // Add notes column
+  columnProps.push({title: "Notes"});
+
+  // Prepare row data for display: prepend index, add notes
+  var self = this;
+  var rowData = this.table.rows.map(function(row, i) {
+    return [i+1].concat(row, [self.table.notes[i] || ""]);
+  });
+
+  this.datatable = $("table#coordinates-table" + widgetID ).DataTable({
+    destroy: true,
+    dom: "lrptip",
+    paging: true,
+    displayStart: this.entriesPerPage * this.page,
+    pageLength: this.entriesPerPage,
+    lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
+    autoWidth: false,
+    order: this.order,
+    orderCellsTop: true,
+    columns: columnProps,
+    data: rowData
+  });
+
+  // Render input boxes in the Notes column and apply highlight if edited
+  $("table#coordinates-table" + widgetID + " tbody tr").each(function(i) {
+    var $notesCell = $(this).find("td").last();
+    var noteVal = self.table.notes[i] || "";
+    $notesCell.html('<input type="text" class="ct-note" style="width:90%" value="' + noteVal.replace(/"/g,'&quot;') + '">');
+    var $row = $(this);
+
+    // Highlight if there's a note
+    if (noteVal && noteVal.trim() !== "") {
+      $row.addClass('ct-row-touched');
+    }
+
+    $notesCell.find("input.ct-note").on("input", function() {
+      self.table.notes[i] = $(this).val();
+      if ($(this).val().trim() !== "") {
+        $row.addClass('ct-row-touched');
+      } else {
+        $row.removeClass('ct-row-touched');
       }
-    }
-    this.datatable = null;
-
-    // Prepare titles for columns
-    // First column is the index
-    var columnProps = [{"title": ""}];
-    if (this.table.titleRow) {
-      columnProps = columnProps.concat(this.table.titleRow.map(function(name) {
-        return {"title": name};
-      }));
-    } else {
-      let names = new Array(this.table.rows[0].length).fill({"title": "", "type": "text"});
-      let e = names[this.table.xField];
-      e.title = "X";
-      t.type = "numeric";
-      e = names[this.table.yField];
-      e.title = "Y";
-      t.type = "numeric";
-      e = names[this.table.yField];
-      e.title = "Y";
-      t.type = "numeric";
-      columProps = columnProps.concat(names);
-    }
-
-    // Prepare row data for display in the table: prepend the index
-    var rowData = this.table.rows.map(function(row, i) {
-      return [i+1].concat(row);
     });
+  });
 
-    this.datatable = $("table#coordinates-table" + widgetID ).DataTable({
-      destroy: true,
-      dom: "lrptip",
-      paging: true,
-      //infoCallback: this.getTableInfo.bind(this),
-      displayStart: this.entriesPerPage * this.page,
-      pageLength: this.entriesPerPage,
-      lengthMenu: [CATMAID.pageLengthOptions, CATMAID.pageLengthLabels],
-      autoWidth: false,
-      order: this.order,
-      orderCellsTop: true,
-      columns: columnProps,
-      data: rowData
-    });
-
-    var self = this;
-
-    // Click on a row to go to the coordinate
-    this.datatable.on('click', 'tbody tr', function() {
-      let row = self.datatable.row(this).data();
-      project.moveTo(row[self.table.iz + 1], // +1 because of the index column
-                     row[self.table.iy + 1],
-                     row[self.table.ix + 1]);
-      // Reset background color
-      $('tbody tr', self.datatable).css('background-color', '');
-      // Highlight this row
-      $(this).css('background-color', CoordinatesTable.prototype.highlighting_color);
-    });
+  // Highlight row on click and move to the coordinate
+  $("table#coordinates-table" + widgetID + " tbody").on("click", "tr", function() {
+    $(this).addClass('ct-row-touched');
+    let row = self.datatable.row(this).data();
+    project.moveTo(row[self.table.zField + 1], row[self.table.yField + 1], row[self.table.xField + 1]);
+  });
   };
 
   // Export coordinates table
   CATMAID.CoordinatesTable = CoordinatesTable;
 
-  // Register widget with CATMAID
   CATMAID.registerWidget({
     name: "Coordinates Table",
     description: "Manage lists of coordinates",

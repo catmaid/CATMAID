@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import json
+from datetime import datetime
 from typing import Dict, List, Sequence, Tuple
 import yaml
 
@@ -31,7 +32,7 @@ from catmaid.control.importer import importer_admin_view
 from catmaid.control.classificationadmin import classification_admin_view
 from catmaid.control.annotationadmin import ImportingWizard
 from catmaid.control.project import (delete_projects_and_stack_data,
-        delete_projects, export_project_data)
+        delete_projects, export_project_data, fork_project)
 from catmaid.views import (UseranalyticsView, UserProficiencyView,
         GroupMembershipHelper)
 from catmaid.views.dvid import DVIDImportWizard
@@ -66,6 +67,53 @@ def duplicate_action(modeladmin, request, queryset) -> None:
     for object in queryset:
         object.id = None
         object.save()
+
+
+@admin.action(
+    description = "Clone a CATMAID project including stack links, " +
+            "without volumes/meshes"
+)
+def clone_project_without_volumes(modeladmin, request, queryset) -> HttpResponse:
+    """
+    thiis will create a copy of each project in the queryset. the new projects
+    will be owned by the current user.
+    """
+    msg = clone_projects(queryset, request.user, False)
+    messages.add_message(request, messages.INFO, msg)
+
+
+@admin.action(
+    description = "Clone a CATMAID project including stack links, " +
+            "with (!) volumes/meshes"
+)
+def clone_project_with_volumes(modeladmin, request, queryset) -> None:
+    """
+    thiis will create a copy of each project in the queryset. the new projects
+    will be owned by the current user.
+    """
+
+    msg = clone_projects(queryset, request.user, True)
+    messages.add_message(request, messages.INFO, msg)
+
+
+def clone_projects(queryset, user, with_volumes):
+    copied_projects = []
+    n_created_links = 0
+    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    projects = list(queryset.all())
+    for project in projects:
+        name = f'{project.title} (Copy from {now})'
+        new_p, n_links, _ = fork_project(project.id, name, description="",
+                copy_volumes=with_volumes, add_to_favorites=True,
+                new_user=user)
+        copied_projects.append(new_p)
+        n_created_links += n_links
+
+    msg = (f'Cloned {len(copied_projects)} project(s) with{"" if with_volumes else "out"} '
+            f'volumes. New project ID(s): {", ".join(map(lambda x: str(x.id), projects))}. created {n_created_links} '
+            'stack/mirror links in total. Added to favorites.')
+
+    return msg
 
 
 @admin.action(
@@ -333,6 +381,7 @@ class ProjectAdmin(GuardedModelAdmin):
     inlines = [ProjectStackInline]
     save_as = True
     actions = (delete_projects_and_data, delete_projects_plus_stack_data,
+            clone_project_with_volumes, clone_project_without_volumes,
             duplicate_action, export_project_json_action,
             export_project_yaml_action)
 

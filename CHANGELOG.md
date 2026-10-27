@@ -33,6 +33,9 @@ Miscellaneous:
 
 - Adding and removing tags is now synchronized across all open tracing layers.
 
+- Admin: add project actions to clone a project with all its stack relations and
+  with/without volumes.
+
 ### Bug fixes
 
 

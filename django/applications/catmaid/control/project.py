@@ -678,13 +678,34 @@ def fork(request:HttpRequest, project_id) -> JsonResponse:
     project_token_default_perms = get_request_list(request.POST, 'project_token_default_permissions', [])
     add_to_favorites = get_request_bool(request.POST, 'add_to_favorites', True)
 
+    new_p, n_links, project_token_str = fork_project(project_id, name, description, copy_volumes,
+            create_project_token, project_token_approval_needed, project_token_default_perms,
+            add_to_favorites, new_user_id=request.user)
+
+    return JsonResponse({
+        'new_project_id': new_p.id,
+        'n_copied_stack_links': len(ps_links),
+        'project_token': project_token_str,
+    })
+
+
+def fork_project(project_id, name, description=None, copy_volumes=False,
+                 create_project_token=False,
+                 project_token_approval_needed=False,
+                 project_token_default_perms=[],
+                 add_to_favorites=True,
+                 new_user=None):
+
     current_p = get_object_or_404(Project, pk=project_id)
     new_p = get_object_or_404(Project, pk=project_id)
 
     new_p.id = None
     new_p.title = name
     new_p.comment = description
+    if new_user:
+        new_p.user = new_user
     new_p.save()
+
 
     # Copy all project-stack links
     ps_links = ProjectStack.objects.filter(project=current_p)
@@ -694,15 +715,15 @@ def fork(request:HttpRequest, project_id) -> JsonResponse:
         ps.save()
 
     # Assign read/write/import permissions for new fork
-    assign_perm('can_browse', request.user, new_p)
-    assign_perm('can_annotate', request.user, new_p)
-    assign_perm('can_import', request.user, new_p)
-    assign_perm('can_fork', request.user, new_p)
-    assign_perm('can_administer', request.user, new_p)
-    assign_perm('delete_project', request.user, new_p)
+    assign_perm('can_browse', new_user, new_p)
+    assign_perm('can_annotate', new_user, new_p)
+    assign_perm('can_import', new_user, new_p)
+    assign_perm('can_fork', new_user, new_p)
+    assign_perm('can_administer', new_user, new_p)
+    assign_perm('delete_project', new_user, new_p)
 
     # Creat basic classes and relations
-    validate_project_setup(new_p.id, request.user.id, fix=True)
+    validate_project_setup(new_p.id, new_user.id, fix=True)
 
     # If the source project is a tracing project, make the clone as well one.
     # A local import is used here to avoid a high potential for circular imports.
@@ -733,7 +754,7 @@ def fork(request:HttpRequest, project_id) -> JsonResponse:
         if unknown_permissions:
             raise ValueError(f'Unknown permissions: {", ".join(unknown_permissions)}')
         project_token = ProjectToken.objects.create(**{
-            'user_id': request.user.id,
+            'user_id': new_user.id,
             'project_id': new_p.id,
             'name': "",
             'needs_approval': project_token_approval_needed,
@@ -747,14 +768,10 @@ def fork(request:HttpRequest, project_id) -> JsonResponse:
     if add_to_favorites:
         FavoriteProject.objects.create(**{
             'project_id': new_p.id,
-            'user_id': request.user.id,
+            'user_id': new_user.id,
         })
 
-    return JsonResponse({
-        'new_project_id': new_p.id,
-        'n_copied_stack_links': len(ps_links),
-        'project_token': project_token_str,
-    })
+    return new_p.id, len(ps_links), project_token_str
 
 
 class ProjectDetail(APIView):

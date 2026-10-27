@@ -206,6 +206,9 @@
       w /= Math.abs(w); // Normalize w to {-1, 1}.
 
       if (e.ctrlKey || e.metaKey) { // Zoom.
+        // Sync to the viewer's scale so a stale slider value doesn't make
+        // the zoom jump to a previous level when switching focus (issue #1578).
+        self.slider_s.setByValue(self.stackViewer.s, true);
         self.slider_s.move(w, !e.shiftKey);
       } else { // Move sections.
         if (e.altKey) w *= Math.round(Math.pow(2, self.stackViewer.s));
@@ -408,7 +411,7 @@
 
     var smoothChangeScale = function (e, max_fps, step) {
       animateChange(e, max_fps, 'scale', function (callback) {
-        var val = self.slider_s.val + step;
+        var val = self.stackViewer.s + step;
         self.changeScale(val, callback);
       });
     };
@@ -497,6 +500,7 @@
           if (e.ctrlKey) {
             smoothChangeScale(e, Navigator.Settings.session.max_fps, e.shiftKey ? -0.01 : -0.05);
           } else {
+            self.slider_s.setByValue(self.stackViewer.s, true);
             self.slider_s.move(1, !e.shiftKey);
           }
           return true;
@@ -512,6 +516,7 @@
           if (e.ctrlKey) {
             smoothChangeScale(e, Navigator.Settings.session.max_fps, e.shiftKey ? 0.01 : 0.05);
           } else {
+            self.slider_s.setByValue(self.stackViewer.s, true);
             self.slider_s.move(-1, !e.shiftKey);
           }
           return true;

@@ -680,7 +680,7 @@ def fork(request:HttpRequest, project_id) -> JsonResponse:
 
     new_p, n_links, project_token_str = fork_project(project_id, name, description, copy_volumes,
             create_project_token, project_token_approval_needed, project_token_default_perms,
-            add_to_favorites, new_user_id=request.user)
+            add_to_favorites, new_user=request.user)
 
     return JsonResponse({
         'new_project_id': new_p.id,

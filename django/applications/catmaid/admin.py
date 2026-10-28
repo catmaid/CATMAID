@@ -70,8 +70,7 @@ def duplicate_action(modeladmin, request, queryset) -> None:
 
 
 @admin.action(
-    description = "Clone a CATMAID project including stack links, " +
-            "without volumes/meshes"
+    description = "Clone project with stack links, without volumes/meshes"
 )
 def clone_project_without_volumes(modeladmin, request, queryset) -> HttpResponse:
     """
@@ -83,8 +82,7 @@ def clone_project_without_volumes(modeladmin, request, queryset) -> HttpResponse
 
 
 @admin.action(
-    description = "Clone a CATMAID project including stack links, " +
-            "with (!) volumes/meshes"
+    description = "Clone project with stack links, with volumes/meshes"
 )
 def clone_project_with_volumes(modeladmin, request, queryset) -> None:
     """

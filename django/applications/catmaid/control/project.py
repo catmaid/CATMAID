@@ -684,7 +684,7 @@ def fork(request:HttpRequest, project_id) -> JsonResponse:
 
     return JsonResponse({
         'new_project_id': new_p.id,
-        'n_copied_stack_links': len(ps_links),
+        'n_copied_stack_links': n_links,
         'project_token': project_token_str,
     })
 

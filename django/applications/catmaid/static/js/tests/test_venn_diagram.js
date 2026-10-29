@@ -30,3 +30,19 @@ QUnit.test('Venn disjoint sets stay disjoint with weighted loss (#1203)', functi
     {sets: ['B', 'C'], size: 10}
   ]) < 0.01, 'unequal sizes: disjoint pair stays disjoint');
 });
+
+QUnit.test('Venn intersection selects skeletons in every group (#1203)', function (assert) {
+  var widget = Object.create(CATMAID.VennDiagram.prototype);
+  widget.groups = [
+    {models: {1: {id: 1}, 2: {id: 2}, 3: {id: 3}}},
+    {models: {1: {id: 1}, 2: {id: 2}}},
+    {models: {1: {id: 1}}}
+  ];
+
+  assert.deepEqual(Object.keys(widget.intersectGroupModels([0, 1, 2])), ['1'],
+      'triple intersection returns skeletons in all three groups');
+  assert.deepEqual(Object.keys(widget.intersectGroupModels([0, 1])), ['1', '2'],
+      'pairwise intersection returns skeletons in both groups');
+  assert.deepEqual(Object.keys(widget.intersectGroupModels([0, 2])), ['1'],
+      'intersection of groups 0 and 2');
+});

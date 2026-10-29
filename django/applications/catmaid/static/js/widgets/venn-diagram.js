@@ -90,6 +90,22 @@
       return this.selected;
   };
 
+  /**
+   * Return the skeletons present in every one of the given group indices
+   * (the exact intersection, not a union of pairwise overlaps).
+   */
+  VennDiagram.prototype.intersectGroupModels = function(indices) {
+    if (!indices.length) return {};
+    var result = $.extend({}, this.groups[indices[0]].models);
+    for (var i = 1; i < indices.length; ++i) {
+      var models = this.groups[indices[i]].models;
+      Object.keys(result).forEach(function(skid) {
+        if (!(skid in models)) delete result[skid];
+      });
+    }
+    return result;
+  };
+
   /** Appends skeletons as a group*/
   VennDiagram.prototype.append = function(models) {
       var visibleModels = Object.keys(models).reduce(function(o, skid) {
@@ -264,26 +280,15 @@
         }
 
         if (intersecting.length > 1) {
-            // Potential intersection (may be false due to layout impossibility)
-            var search = self.overlaps.reduce(function(r, overlap) {
-                if (0 === overlap.size) {
-                    r.n_empty += 1;
-                    return r;
-                }
-                if (   -1 !== intersecting.indexOf(overlap.sets[0])
-                    && -1 !== intersecting.indexOf(overlap.sets[1])) {
-                    Object.keys(overlap.common).reduce(function(models, skid) {
-                        models[skid] = overlap.common[skid];
-                        return models;
-                    }, r.models);
-                    return r;
-                }
-                return r;
-            }, {n_empty: 0, models: {}});
+            // Exact intersection: skeletons in every intersecting group, not
+            // the union of pairwise overlaps (which over-counts skeletons
+            // present in 3+ sets — #1203).
+            var search = self.intersectGroupModels(intersecting);
 
-            if (search.n_empty === intersecting.length -1 && 0 === Object.keys(search.models).length) {
-                // False intersection, it's a single group
-                intersecting = intersecting.filter(function(k) { return k > 0; });
+            // Visually overlapping circles with no shared skeletons select
+            // nothing.
+            if (0 === Object.keys(search).length) {
+                intersecting = [];
             }
         }
 
@@ -292,7 +297,7 @@
             // #2235: nothing survived intersection testing, so nothing to do.
             return;
         } else if (intersecting.length > 1) {
-            self.selected = search.models;
+            self.selected = search;
             var size = Object.keys(self.selected).length;
             label.text("intersection with " + size + " neuron" + (1 === size ? "" : "s") + ".");
         } else {

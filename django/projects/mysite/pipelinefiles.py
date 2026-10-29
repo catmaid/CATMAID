@@ -113,6 +113,11 @@ libraries_js = OrderedDict([
                     'cola.js', 'cytoscape-cola.js',
                     'dagre.js', 'cytoscape-dagre.js',
                     'springy.js', 'cytoscape-springy.js']),
+    # Cytoscape.js 3.x, exposed as cytoscape3 next to the 2.x version above
+    ('cytoscapejs3', ['cytoscape3-begin.js', 'cytoscape.js',
+                     'weaver.js', 'cytoscape-spread.js',
+                     'webcola.min.js', 'cytoscape3-webcola.js', 'cytoscape-cola.js',
+                     'cytoscape-dagre.js', 'cytoscape3-end.js']),
     ('jsnetworkx', ['*.js']),
     ('filesaver', ['*.js']),
     ('screw-filereader', ['*.js']),

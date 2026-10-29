@@ -188,24 +188,33 @@
         width = container.width() - margin.left - margin.right,
         height = container.height() - margin.top - margin.bottom;
 
-    var positions;
-    if (this.groups.length > 3) positions = venn.venn(this.sets, this.overlaps, {layoutFunction: venn.classicMDSLayout});
-    else positions = venn.venn(this.sets, this.overlaps);
+    var self = this;
 
-    var parameters = {
-        opacity: 0.4,
-        textStrokeColours: function() { return 'none'; },
-        textFillColours: (function(i) {
-            // To psychodelic:
-            // return '#' + this.groups[i].color.clone().offsetHSL(0.5, 0, 0).getHexString();
-            return '#000000';
-          }).bind(this),
-        circleFillColours: (function(i) {
-            return '#' + this.groups[i].color.getHexString();
-          }).bind(this)
-    };
+    // Build the combined areas array expected by venn v0.2.20: one
+    // {sets:[i], size, label} per group plus {sets:[k,j], size} per pair.
+    var areas = this.sets.map(function(set, i) {
+        return {sets: [i], size: set.size, label: set.label};
+    }).concat(this.overlaps.map(function(overlap) {
+        return {sets: overlap.sets.slice(), size: overlap.size};
+    }));
 
-    this.diagram = venn.drawD3Diagram(d3.select(containerID), positions, width, height, parameters);
+    var chart = venn.VennDiagram()
+        .width(width)
+        .height(height)
+        .colours(function(sets) {
+            return '#' + self.groups[sets[0]].color.getHexString();
+        });
+
+    // Invoke the chart directly so the scaled circles are available for
+    // click resolution.
+    var selection = d3.select(containerID).datum(areas);
+    var diagram = chart(selection);
+    var svg = selection.select('svg');
+
+    // The chart hardcodes a fill-opacity of 0.25; match the old widget's 0.4.
+    svg.selectAll('.venn-circle path').style('fill-opacity', 0.4);
+
+    this.diagram = diagram;
 
     const clearSelection = () => {
         // Clear selection
@@ -214,37 +223,39 @@
         label.empty();
     };
 
-    var self = this;
-
-    var click = function(d, i) {
+    var click = function() {
         clearSelection();
 
         // Prevent this click from bubbling up. We only want the background
         // click handler, if no element was clicked.
         d3.event.stopPropagation();
 
-        // Check if removing a group
-        if (d3.event.shiftKey) {
-            if (confirm("Remove group '" + self.sets[i].label + "' ?")) {
-               self.groups.splice(i, 1);
-               self.redraw();
-            }
-            return;
-        }
-
         // find circles intersected by the click
-        var e = d3.mouse(this),
+        var e = d3.mouse(svg.node()),
             x = e[0],
             y = e[1],
             intersecting = [];
-        self.diagram.svg.selectAll('circle').each(function(circle, k) {
+        Object.keys(diagram.circles).forEach(function(key) {
+            var circle = diagram.circles[key];
             var dx = circle.x - x,
                 dy = circle.y - y,
                 d = dx * dx + dy * dy;
             if (d < circle.radius * circle.radius) {
-                intersecting.push(k);
+                intersecting.push(parseInt(key, 10));
             }
         });
+
+        // Check if removing a group
+        if (d3.event.shiftKey) {
+            if (1 === intersecting.length) {
+                var gi = intersecting[0];
+                if (confirm("Remove group '" + self.sets[gi].label + "' ?")) {
+                   self.groups.splice(gi, 1);
+                   self.redraw();
+                }
+            }
+            return;
+        }
 
         if (intersecting.length > 1) {
             // Potential intersection (may be false due to layout impossibility)
@@ -295,22 +306,21 @@
         }
     };
 
-    this.diagram.circles
-      .on("mouseover", function(d, i) {
+    svg.on("click", click);
+
+    svg.selectAll('.venn-circle path')
+      .on("mouseover", function(d) {
           d3.select(this).style("fill-opacity", 0.8);
-          d3.select(this).style("stroke-width", 2);
+          d3.select(this).style("stroke-width", 2)
+              .style("stroke", '#' + self.groups[d.sets[0]].color.getHexString());
       })
-      .on("mouseout", function(d, i) {
+      .on("mouseout", function() {
           d3.select(this).style("fill-opacity", 0.4);
           d3.select(this).style("stroke-width", 0);
-      })
-      .on("click", click);
-
-    this.diagram.text
-      .on("click", click);
+      });
 
     // Deselect everything on a click outside the Venn diagram.
-    this.diagram.svg[0].parentNode.onclick = () => {
+    container[0].onclick = () => {
       clearSelection();
     };
   };

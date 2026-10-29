@@ -24,6 +24,8 @@ django/applications/catmaid/views/dvid.py:5: error: Module "django" has no attri
 django/applications/catmaid/control/project.py:5: error: Library stubs not installed for "yaml"  [import-untyped]
 django/applications/catmaid/control/authentication.py:17: error: Module "django" has no attribute "forms"  [attr-defined]
 django/applications/catmaid/management/commands/catmaid_find_node_provider_config.py:8: error: Library stubs not installed for "ujson"  [import-untyped]
+django/applications/catmaid/admin.py:6: error: Library stubs not installed for "yaml"  [import-untyped]
+django/applications/catmaid/admin.py:8: error: Module "django" has no attribute "forms"  [attr-defined]
 django/applications/catmaid/control/skeleton.py:7: error: Library stubs not installed for "dateutil.parser"  [import-untyped]
 django/applications/catmaid/control/skeleton.py:7: error: Library stubs not installed for "dateutil"  [import-untyped]
 django/applications/catmaid/control/skeleton.py:504: error: Need type annotation for "rev"  [var-annotated]

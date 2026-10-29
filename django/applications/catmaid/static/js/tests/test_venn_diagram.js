@@ -36,7 +36,8 @@ QUnit.test('Venn intersection selects skeletons in every group (#1203)', functio
   widget.groups = [
     {models: {1: {id: 1}, 2: {id: 2}, 3: {id: 3}}},
     {models: {1: {id: 1}, 2: {id: 2}}},
-    {models: {1: {id: 1}}}
+    {models: {1: {id: 1}}},
+    {models: {4: {id: 4}}}
   ];
 
   assert.deepEqual(Object.keys(widget.intersectGroupModels([0, 1, 2])), ['1'],
@@ -45,4 +46,6 @@ QUnit.test('Venn intersection selects skeletons in every group (#1203)', functio
       'pairwise intersection returns skeletons in both groups');
   assert.deepEqual(Object.keys(widget.intersectGroupModels([0, 2])), ['1'],
       'intersection of groups 0 and 2');
+  assert.deepEqual(Object.keys(widget.intersectGroupModels([0, 3])), [],
+      'disjoint groups return an empty intersection');
 });

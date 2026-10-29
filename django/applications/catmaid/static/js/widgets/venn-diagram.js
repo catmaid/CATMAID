@@ -195,7 +195,13 @@
     var areas = this.sets.map(function(set, i) {
         return {sets: [i], size: set.size, label: set.label};
     }).concat(this.overlaps.map(function(overlap) {
-        return {sets: overlap.sets.slice(), size: overlap.size};
+        var area = {sets: overlap.sets.slice(), size: overlap.size};
+        if (0 === overlap.size) {
+            // Heavily weight disjoint pairs so the layout keeps them apart
+            // instead of trading a spurious overlap for area fit (#1203).
+            area.weight = 1e6;
+        }
+        return area;
     }));
 
     var chart = venn.VennDiagram()

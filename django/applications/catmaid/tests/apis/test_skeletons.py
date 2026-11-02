@@ -89,6 +89,43 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         self.assertAlmostEqual(parsed_response['z'], 0)
 
 
+    def test_compact_detail_many_relation_ids(self):
+        self.fake_authentication()
+        # Add an attachment link (1026, attached_to) from node 285 in skeleton
+        # 235 to connector 2463, which isn't covered by the relation index.
+        TreenodeConnector.objects.create(project_id=self.test_project_id,
+                user_id=3, relation_id=1026, treenode_id=285,
+                connector_id=2463, skeleton_id=235)
+
+        def get_links(with_relation_ids):
+            response = self.client.post(
+                    f'/{self.test_project_id}/skeletons/compact-detail', {
+                        'skeleton_ids': [235],
+                        'with_connectors': True,
+                        'with_relation_ids': with_relation_ids,
+                    })
+            self.assertStatus(response)
+            parsed_response = json.loads(response.content.decode('utf-8'))
+            connectors = parsed_response['skeletons']['235'][1]
+            return sorted((c[0], c[1], c[2]) for c in connectors)
+
+        # By default, connector links use the relation index and only indexed
+        # relations are returned.
+        self.assertEqual(get_links(False), [
+            (247, 432, 0),
+            (285, 356, 0),
+            (415, 421, 0),
+        ])
+
+        # With relation IDs, links of all link types are returned.
+        self.assertEqual(get_links(True), [
+            (247, 432, 1023),
+            (285, 356, 1023),
+            (285, 2463, 1026),
+            (415, 421, 1023),
+        ])
+
+
     def test_import_skeleton_with_64_bit_ids(self):
         self.fake_authentication()
         assign_perm('can_import', self.test_user, self.test_project)

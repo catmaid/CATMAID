@@ -23,6 +23,7 @@ from catmaid.models import UserRole, ClassInstance, Treenode, \
         TreenodeClassInstance, ConnectorClassInstance, Review, User
 from catmaid.control import export_NeuroML_Level3
 from catmaid.control.authentication import requires_user_role
+from catmaid.control.link import LINK_RELATION_NAMES
 from catmaid.control.common import (get_relation_to_id_map, get_request_bool,
         get_request_list, is_empty)
 from catmaid.control.review import get_treenodes_to_reviews, \
@@ -326,6 +327,15 @@ def compact_skeleton_detail(request:HttpRequest, project_id=None, skeleton_id=No
       type: boolean
       defaultValue: "false"
       paramType: form
+    - name: with_relation_ids
+      description: |
+        Whether connector links should reference their relation ID instead
+        of the 0|1|2|3|4|-1 index. If enabled, links of all known link types
+        are returned, not only the indexed ones.
+      required: false
+      type: boolean
+      defaultValue: "false"
+      paramType: form
     type:
     - type: array
       items:
@@ -343,13 +353,15 @@ def compact_skeleton_detail(request:HttpRequest, project_id=None, skeleton_id=No
     with_annotations = get_request_bool(request.GET, "with_annotations", False)
     with_user_info = get_request_bool(request.GET, "with_user_info", False)
     with_edition_times = get_request_bool(request.GET, "with_edition_times", False)
+    with_relation_ids = get_request_bool(request.GET, "with_relation_ids", False)
     return_format = request.GET.get('format', 'json')
     ordered = get_request_bool(request.GET, "ordered", False)
 
     result = _compact_skeleton(project_id, skeleton_id, with_connectors,
                                with_tags, with_history, with_merge_history,
                                with_reviews, with_annotations, with_user_info,
-                               ordered, with_edition_times=with_edition_times)
+                               ordered, with_edition_times=with_edition_times,
+                               with_relation_ids=with_relation_ids)
 
     if return_format == 'msgpack':
         data = msgpack.packb(result)
@@ -494,6 +506,15 @@ def compact_skeleton_detail_many(request:HttpRequest, project_id=None) -> Union[
       type: boolean
       defaultValue: "false"
       paramType: form
+    - name: with_relation_ids
+      description: |
+        Whether connector links should reference their relation ID instead
+        of the 0|1|2|3|4|-1 index. If enabled, links of all known link types
+        are returned, not only the indexed ones.
+      required: false
+      type: boolean
+      defaultValue: "false"
+      paramType: form
     type:
     - type: array
       items:
@@ -510,6 +531,7 @@ def compact_skeleton_detail_many(request:HttpRequest, project_id=None) -> Union[
     with_annotations = get_request_bool(request.POST, "with_annotations", False)
     with_user_info = get_request_bool(request.POST, "with_user_info", False)
     with_edition_times = get_request_bool(request.POST, "with_edition_times", False)
+    with_relation_ids = get_request_bool(request.POST, "with_relation_ids", False)
     return_format = request.POST.get('format', 'json')
     ordered = get_request_bool(request.POST, "ordered", False)
 
@@ -521,7 +543,8 @@ def compact_skeleton_detail_many(request:HttpRequest, project_id=None) -> Union[
         skeletons[skeleton_id] = _compact_skeleton(project_id, skeleton_id,
                 with_connectors, with_tags, with_history, with_merge_history,
                 with_reviews, with_annotations, with_user_info, ordered,
-                with_edition_times=with_edition_times)
+                with_edition_times=with_edition_times,
+                with_relation_ids=with_relation_ids)
 
     result = {
         "skeletons": skeletons
@@ -540,7 +563,8 @@ def compact_skeleton_detail_many(request:HttpRequest, project_id=None) -> Union[
 def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
         with_tags=True, with_history=False, with_merge_history=True,
         with_reviews=False, with_annotations=False, with_user_info=False,
-        ordered=False, scale=None, with_edition_times=False) -> Tuple[Tuple, Tuple, DefaultDict[Any, List], List, List]:
+        ordered=False, scale=None, with_edition_times=False,
+        with_relation_ids=False) -> Tuple[Tuple, Tuple, DefaultDict[Any, List], List, List]:
     """Get a compact treenode representation of a skeleton
 
     The returned data can optionally with the history of individual nodes and
@@ -697,6 +721,16 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
         dm = relations.get('desmosome_with', -3)
         mc = relations.get('mitochondrion_of', -4)
         relation_index = {pre: 0, post: 1, gj: 2, dm: 3, mc: 4}
+        if with_relation_ids:
+            # Return links of all known link types with their relation ID
+            relation_ids = [relations[r] for r in LINK_RELATION_NAMES if r in relations]
+        else:
+            relation_ids = [pre, post, gj, dm, mc]
+
+        def map_relation(relation_id):
+            if with_relation_ids:
+                return relation_id
+            return relation_index.get(relation_id, -1)
         if not with_history:
             user_select = ', tc.user_id' if with_user_info else ''
             cursor.execute('''
@@ -707,33 +741,25 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
                     connector c
                 WHERE tc.skeleton_id = %(skeleton_id)s
                 AND tc.connector_id = c.id
-                AND tc.relation_id IN (%(pre_id)s, %(post_id)s, %(gj_id)s, %(dm_id)s, %(mc_id)s)
+                AND tc.relation_id = ANY(%(relation_ids)s::bigint[])
             '''.format(**{
                 'user_select': user_select,
                 'scale': '*%(scale)s' if scale else '',
                 'edition_time': ', c.edition_time' if with_edition_times else '',
             }), {
                 'skeleton_id': skeleton_id,
-                'pre_id': pre,
-                'post_id': post,
-                'gj_id': gj,
-                'dm_id': dm,
-                'mc_id': mc,
+                'relation_ids': relation_ids,
                 'scale': scale,
             })
 
             if with_user_info:
-                connectors = tuple((row[0], row[1], relation_index.get(row[2], -1), row[3], row[4], row[5], row[6]) for row in cursor.fetchall())
+                connectors = tuple((row[0], row[1], map_relation(row[2]), row[3], row[4], row[5], row[6]) for row in cursor.fetchall())
             else:
-                connectors = tuple((row[0], row[1], relation_index.get(row[2], -1), row[3], row[4], row[5]) for row in cursor.fetchall())
+                connectors = tuple((row[0], row[1], map_relation(row[2]), row[3], row[4], row[5]) for row in cursor.fetchall())
         else:
             params = {
                 'skeleton_id': skeleton_id,
-                'pre': pre,
-                'post': post,
-                'gj': gj,
-                'dm': dm,
-                'mc': mc,
+                'relation_ids': relation_ids,
                 'scale': scale,
             }
             user_select = ', links.user_id' if with_user_info else ''
@@ -765,7 +791,7 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
                 ) links(treenode_id, connector_id, relation_id, valid_from, valid_to, user_id)
                 JOIN connector__with_history c
                     ON links.connector_id = c.id
-                WHERE links.relation_id IN (%(pre)s, %(post)s, %(gj)s, %(dm)s, %(mc)s)
+                WHERE links.relation_id = ANY(%(relation_ids)s::bigint[])
             '''
 
             if with_merge_history:
@@ -793,9 +819,9 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
             }), params)
 
             if with_user_info:
-                connectors = tuple((row[0], row[1], relation_index.get(row[2], -1), row[3], row[4], row[5], row[6], row[7], row[8]) for row in cursor.fetchall())
+                connectors = tuple((row[0], row[1], map_relation(row[2]), row[3], row[4], row[5], row[6], row[7], row[8]) for row in cursor.fetchall())
             else:
-                connectors = tuple((row[0], row[1], relation_index.get(row[2], -1), row[3], row[4], row[5], row[6], row[7]) for row in cursor.fetchall())
+                connectors = tuple((row[0], row[1], map_relation(row[2]), row[3], row[4], row[5], row[6], row[7]) for row in cursor.fetchall())
 
     if with_tags:
         history_suffix = '__with_history' if with_history else ''

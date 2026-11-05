@@ -807,7 +807,7 @@
           }, {});
         })(this.partner_colors, this.colorFn, this.groups);
 
-    colors["others"] = '#f2f2f2';
+    colors["others"] = this.partner_colors["others"] || '#f2f2f2';
 
     var margin = {top: 20, right: 100, bottom: 50, left: 40},
         width = container.width() - margin.left - margin.right,

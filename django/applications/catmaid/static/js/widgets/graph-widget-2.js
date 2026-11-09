@@ -2,6 +2,8 @@
   cytoscape3,
   InstanceRegistry,
   project,
+  SkeletonAnnotations,
+  SynapseClustering,
 */
 
 (function (CATMAID) {
@@ -11,17 +13,20 @@
   /**
    * A graph widget that organizes connectivity around links of individual
    * treenodes. To save memory, only a reduced set of treenodes is kept per
-   * skeleton: the root node and all nodes linked to a connector (and later
-   * virtual split nodes). Graph nodes still represent whole skeletons for now,
-   * edges are aggregated from the treenode level links.
+   * skeleton: the root node, all nodes linked to a connector and the split
+   * nodes of virtual splits. Each split node is the root of a part of its
+   * skeleton. Graph nodes represent skeletons or, if split, skeleton parts.
+   * Edges are aggregated from the treenode level links.
    */
   let GraphWidget2 = function() {
     this.widgetID = this.registerInstance();
     CATMAID.SkeletonSource.call(this, true);
 
     // Skeleton ID vs reduced skeleton data: {model, rootId, nodes, links,
-    // splitNodes}. The nodes field maps treenode IDs to {id, x, y, z}, links
-    // is a list of [treenodeId, connectorId, relationName] entries.
+    // rootLabel, splitNodes, partLabels}. The nodes field maps treenode IDs to
+    // {id, x, y, z, part}, links is a list of [treenodeId, connectorId,
+    // relationName] entries. The splitNodes field maps treenode IDs to
+    // {label, parentPart}, see GraphWidget2.assignParts().
     this.skeletons = new Map();
 
     // Link types to create edges for
@@ -33,6 +38,16 @@
 
     this.edge_min_width = 0;
     this.layout_fit = true;
+
+    // Remember split dialog choices
+    this.splitOptions = {
+      bandwidth: 5000,
+      tag: '',
+      tagRootLabel: 'proximal',
+      tagOtherLabel: 'distal',
+      proximalLabel: 'proximal',
+      distalLabel: 'distal',
+    };
 
     // A set of filter rules to apply to the handled skeletons
     this.filterRules = [];
@@ -73,6 +88,18 @@
           ['Remove', () => this.removeSource()],
           ['Clear', () => this.clear()],
           ['Refresh', () => this.update()],
+        ]);
+
+        CATMAID.DOM.appendToTab(tabs['Subgraphs'], [
+          [document.createTextNode('Select node(s) and split by: ')],
+          ['Axon & dendrite', () => this.splitSelected(GraphWidget2.SPLIT_AXON_DENDRITE)],
+          ['Axon, backbone dendrite & dendritic terminals',
+              () => this.splitSelected(GraphWidget2.SPLIT_AXON_BACKBONE_TERMINALS)],
+          ['Synapse clusters', () => this.splitBySynapseClustering()],
+          ['Tag', () => this.splitByTag()],
+          ['Reset', () => this.unsplitSelected()],
+          [document.createTextNode(' - ')],
+          ['Split at active node', () => this.splitAtActiveNode()],
         ]);
 
         $(controls).tabs();
@@ -134,6 +161,12 @@
           "curve-style": "bezier",
         },
       }, {
+        // Edges between parts of the same skeleton
+        selector: "edge.part-edge",
+        style: {
+          "line-style": "dashed",
+        },
+      }, {
         selector: ":selected",
         style: {
           "background-color": "#b0ff72",
@@ -162,12 +195,27 @@
     }
   };
 
+  /**
+   * Get the graph nodes of a skeleton, one per part if it is split.
+   */
+  GraphWidget2.prototype.getSkeletonNodes = function(skeletonId) {
+    skeletonId = Number(skeletonId);
+    return this.cy.nodes().filter(node => node.data('skeleton_id') === skeletonId);
+  };
+
+  /**
+   * Get the graph node label for a skeleton or a part of it.
+   */
+  GraphWidget2.prototype.getNodeLabel = function(skeletonId, part) {
+    let name = CATMAID.NeuronNameService.getInstance().getName(skeletonId);
+    return part === null ? name : `${name} [${part}]`;
+  };
+
   GraphWidget2.prototype.updateNeuronNames = function() {
     if (!this.cy) return;
-    let nns = CATMAID.NeuronNameService.getInstance();
     this.cy.batch(() => {
       this.cy.nodes().forEach(node => {
-        node.data('label', nns.getName(node.data('skeleton_id')));
+        node.data('label', this.getNodeLabel(node.data('skeleton_id'), node.data('part')));
       });
     });
   };
@@ -180,8 +228,9 @@
     let skeleton = this.skeletons.get(Number(skeletonId));
     if (!skeleton) return null;
     let model = skeleton.model.clone();
-    let node = this.cy ? this.cy.getElementById(String(skeletonId)) : null;
-    model.setVisible(!!(node && node.length > 0 && node.selected()));
+    // A skeleton is selected if any of its parts is selected
+    let selected = !!this.cy && this.getSkeletonNodes(skeletonId).some(node => node.selected());
+    model.setVisible(selected);
     return model;
   };
 
@@ -235,8 +284,8 @@
       if (!this.skeletons.has(skeletonId)) continue;
       removedModels[skeletonId] = this.getSkeletonModel(skeletonId);
       this.skeletons.delete(skeletonId);
-      // Removing a node also removes its edges
-      if (this.cy) this.cy.getElementById(String(skeletonId)).remove();
+      // Removing nodes also removes their edges
+      if (this.cy) this.getSkeletonNodes(skeletonId).remove();
     }
     let removedIds = Object.keys(removedModels);
     if (removedIds.length > 0) {
@@ -272,7 +321,7 @@
   };
 
   /**
-   * Reload all skeletons from the back-end.
+   * Reload all skeletons from the back-end. Splits are kept.
    */
   GraphWidget2.prototype.update = function() {
     let models = {};
@@ -317,8 +366,8 @@
 
   /**
    * Get the reduced treenode representation of the passed in skeletons from
-   * the back-end. Returns a promise resolving into a Map of skeleton ID vs
-   * reduced skeleton data.
+   * the back-end. Splits of already loaded skeletons are kept. Returns a
+   * promise resolving into a Map of skeleton ID vs reduced skeleton data.
    */
   GraphWidget2.prototype.fetchSkeletons = function(skeletonIds) {
     let binary = !!CATMAID.Client.Settings.session.binary_data_transfer;
@@ -341,9 +390,16 @@
         let relationNames = new Map(linkTypes.map(lt => [lt.relation_id, lt.relation]));
         let skeletons = new Map();
         for (let skeletonId in result.skeletons) {
+          skeletonId = Number(skeletonId);
           let [nodeRows, connectorRows] = result.skeletons[skeletonId];
-          skeletons.set(Number(skeletonId),
-              GraphWidget2.reduceSkeleton(nodeRows, connectorRows, relationNames));
+          let skeleton = GraphWidget2.reduceSkeleton(nodeRows, connectorRows,
+              relationNames, this.skeletons.get(skeletonId));
+          if (skeleton.droppedSplitNodes.length > 0) {
+            CATMAID.warn(`Removed ${skeleton.droppedSplitNodes.length} split ` +
+                `node(s) that don't exist anymore from skeleton ${skeletonId}`);
+          }
+          delete skeleton.droppedSplitNodes;
+          skeletons.set(skeletonId, skeleton);
         }
         return skeletons;
       });
@@ -351,9 +407,11 @@
 
   /**
    * Create the reduced representation of a skeleton from compact-detail rows.
-   * Only the root and treenodes linked to a connector are kept.
+   * Only the root, treenodes linked to a connector and split nodes are kept.
+   * Split nodes are taken from the optional previous representation, if they
+   * still exist. Their IDs are returned as droppedSplitNodes otherwise.
    */
-  GraphWidget2.reduceSkeleton = function(nodeRows, connectorRows, relationNames) {
+  GraphWidget2.reduceSkeleton = function(nodeRows, connectorRows, relationNames, previous) {
     let links = [];
     let linkedNodeIds = new Set();
     for (let row of connectorRows) {
@@ -363,27 +421,108 @@
       linkedNodeIds.add(row[0]);
     }
 
+    let parents = new Map(nodeRows.map(row => [row[0], row[1]]));
+    let splitNodes = new Map();
+    let droppedSplitNodes = [];
+    if (previous) {
+      for (let [splitNodeId, split] of previous.splitNodes) {
+        if (parents.has(splitNodeId)) {
+          splitNodes.set(splitNodeId, split);
+        } else {
+          droppedSplitNodes.push(splitNodeId);
+        }
+      }
+    }
+
     let rootId = null;
     let nodes = new Map();
     for (let row of nodeRows) {
       let isRoot = row[1] === null;
       if (isRoot) rootId = row[0];
-      if (isRoot || linkedNodeIds.has(row[0])) {
+      if (isRoot || linkedNodeIds.has(row[0]) || splitNodes.has(row[0])) {
         nodes.set(row[0], {id: row[0], x: row[3], y: row[4], z: row[5]});
       }
     }
 
-    return {
+    let skeleton = {
       rootId: rootId,
       nodes: nodes,
       links: links,
-      splitNodes: new Set(),
+      rootLabel: splitNodes.size > 0 ? previous.rootLabel : null,
+      splitNodes: splitNodes,
+      droppedSplitNodes: droppedSplitNodes,
     };
+    GraphWidget2.assignParts(skeleton, nodeId => parents.get(nodeId));
+    return skeleton;
+  };
+
+  /**
+   * Assign each stored node of a skeleton to a part: the part of its nearest
+   * ancestor (including itself) that is a split node, or the root part if
+   * there is none. This needs the parent of every node of the skeleton,
+   * provided through the getParent function. For each split node, the part
+   * of its parent node is stored as parentPart. The ordered list of part
+   * labels is stored as partLabels. Without split nodes, the part is null.
+   */
+  GraphWidget2.assignParts = function(skeleton, getParent) {
+    let splitNodes = skeleton.splitNodes;
+    if (splitNodes.size === 0) {
+      skeleton.rootLabel = null;
+      skeleton.partLabels = [null];
+      for (let node of skeleton.nodes.values()) node.part = null;
+      return;
+    }
+
+    // Part labels of already visited nodes, to walk each path only once
+    let visited = new Map();
+    let getPart = nodeId => {
+      let path = [];
+      let part = skeleton.rootLabel;
+      let current = nodeId;
+      while (current !== null && current !== undefined) {
+        if (visited.has(current)) {
+          part = visited.get(current);
+          break;
+        }
+        path.push(current);
+        let split = splitNodes.get(current);
+        if (split) {
+          part = split.label;
+          break;
+        }
+        current = getParent(current);
+      }
+      for (let pathNodeId of path) visited.set(pathNodeId, part);
+      return part;
+    };
+
+    for (let node of skeleton.nodes.values()) {
+      node.part = getPart(node.id);
+    }
+    for (let [splitNodeId, split] of splitNodes) {
+      let parentId = getParent(splitNodeId);
+      split.parentPart = (parentId === null || parentId === undefined) ?
+          null : getPart(parentId);
+    }
+
+    skeleton.partLabels = Array.from(new Set([skeleton.rootLabel,
+        ...Array.from(splitNodes.values(), split => split.label)]));
+  };
+
+  /**
+   * Get the graph node ID of a skeleton part. Unsplit skeletons have a single
+   * graph node with the skeleton ID as ID.
+   */
+  GraphWidget2.getPartNodeId = function(skeleton, part) {
+    if (skeleton.splitNodes.size === 0) {
+      return String(skeleton.model.id);
+    }
+    return `${skeleton.model.id}_${skeleton.partLabels.indexOf(part)}`;
   };
 
   /**
    * Aggregate treenode level links between all loaded skeletons into edges
-   * between skeletons, one edge per link type and skeleton pair. Returns a
+   * between skeleton parts, one edge per link type and part pair. Returns a
    * promise resolving into a list of edge definitions.
    */
   GraphWidget2.prototype.computeEdges = function() {
@@ -402,9 +541,10 @@
       .then(([linkTypes, linkPairs]) => {
         let reciprocal = new Map(linkTypes.map(lt => [lt.relation, lt.isreciprocal]));
 
-        // Connector ID vs map of relation name vs list of [skeletonId, treenodeId]
+        // Connector ID vs map of relation name vs list of [graph node ID,
+        // treenode ID]
         let connectors = new Map();
-        for (let [skeletonId, skeleton] of this.skeletons) {
+        for (let skeleton of this.skeletons.values()) {
           for (let [treenodeId, connectorId, relationName] of skeleton.links) {
             let partners = connectors.get(connectorId);
             if (!partners) {
@@ -416,13 +556,14 @@
               relationPartners = [];
               partners.set(relationName, relationPartners);
             }
-            relationPartners.push([skeletonId, treenodeId]);
+            let part = skeleton.nodes.get(treenodeId).part;
+            relationPartners.push([GraphWidget2.getPartNodeId(skeleton, part), treenodeId]);
           }
         }
 
         let edges = new Map();
         let addLink = (linkType, directed, source, target, connectorId) => {
-          // Undirected edges are stored with ordered skeleton IDs
+          // Undirected edges are stored with ordered graph node IDs
           if (!directed && source[0] > target[0]) {
             [source, target] = [target, source];
           }
@@ -472,41 +613,77 @@
   };
 
   /**
+   * Get undirected edges that connect the parts of split skeletons along
+   * their arbor: each split node's part with the part of its parent node.
+   */
+  GraphWidget2.prototype.computePartEdges = function() {
+    let edges = new Map();
+    for (let skeleton of this.skeletons.values()) {
+      for (let split of skeleton.splitNodes.values()) {
+        if (split.parentPart === null || split.parentPart === split.label) continue;
+        let source = GraphWidget2.getPartNodeId(skeleton, split.parentPart);
+        let target = GraphWidget2.getPartNodeId(skeleton, split.label);
+        if (source > target) [source, target] = [target, source];
+        let id = `part_${source}_${target}`;
+        edges.set(id, {
+          id: id,
+          source: source,
+          target: target,
+          color: '#' + skeleton.model.color.getHexString(),
+        });
+      }
+    }
+    return Array.from(edges.values());
+  };
+
+  /**
    * Rebuild all graph elements from the loaded skeletons. Positions and
-   * selection state of existing nodes are kept, new nodes are laid out.
+   * selection state of existing nodes are kept, new nodes are laid out. New
+   * parts of a skeleton start at the position of its former graph node.
    */
   GraphWidget2.prototype.updateGraph = function() {
     return this.computeEdges()
       .then(edges => {
         let positions = {};
+        let skeletonPositions = {};
         let selected = new Set();
         this.cy.elements().forEach(element => {
           if (element.selected()) selected.add(element.id());
-          // Copy, because the returned position object is updated in place
-          if (element.isNode()) positions[element.id()] = Object.assign({}, element.position());
+          if (element.isNode()) {
+            // Copy, because the returned position object is updated in place
+            let position = Object.assign({}, element.position());
+            positions[element.id()] = position;
+            skeletonPositions[element.data('skeleton_id')] = position;
+          }
         });
 
-        let nns = CATMAID.NeuronNameService.getInstance();
-        let elements = {
-          nodes: Array.from(this.skeletons.values(), skeleton => {
-            let skeletonId = skeleton.model.id;
-            return {
+        let nodes = [];
+        for (let skeleton of this.skeletons.values()) {
+          let skeletonId = skeleton.model.id;
+          let color = '#' + skeleton.model.color.getHexString();
+          for (let part of skeleton.partLabels) {
+            nodes.push({
               data: {
-                id: String(skeletonId),
+                id: GraphWidget2.getPartNodeId(skeleton, part),
                 skeleton_id: skeletonId,
-                label: nns.getName(skeletonId),
-                color: '#' + skeleton.model.color.getHexString(),
+                part: part,
+                label: this.getNodeLabel(skeletonId, part),
+                color: color,
                 shape: 'ellipse',
               },
-            };
-          }),
+            });
+          }
+        }
+
+        let elements = {
+          nodes: nodes,
           edges: edges.map(edge => {
             let weight = edge.links.length;
             return {
               data: {
                 id: edge.id,
-                source: String(edge.source),
-                target: String(edge.target),
+                source: edge.source,
+                target: edge.target,
                 link_type: edge.linkType,
                 directed: edge.directed,
                 links: edge.links,
@@ -518,7 +695,21 @@
                 arrow: edge.directed ? 'triangle' : 'none',
               },
             };
-          }),
+          }).concat(this.computePartEdges().map(edge => {
+            return {
+              data: {
+                id: edge.id,
+                source: edge.source,
+                target: edge.target,
+                directed: false,
+                label: '',
+                width: 2,
+                color: edge.color,
+                arrow: 'none',
+              },
+              classes: 'part-edge',
+            };
+          })),
         };
 
         this.cy.elements().remove();
@@ -526,6 +717,7 @@
 
         let hasNewNodes = false;
         this.cy.batch(() => {
+          let offset = 0;
           this.cy.elements().forEach(element => {
             let id = element.id();
             if (selected.has(id)) element.select();
@@ -535,6 +727,14 @@
                 element.lock();
               } else {
                 hasNewNodes = true;
+                let skeletonPosition = skeletonPositions[element.data('skeleton_id')];
+                if (skeletonPosition) {
+                  offset += 40;
+                  element.position({
+                    x: skeletonPosition.x + offset,
+                    y: skeletonPosition.y + offset,
+                  });
+                }
               }
             }
           });
@@ -557,15 +757,282 @@
    */
   GraphWidget2.prototype.updateNodeProperties = function(models) {
     if (!this.cy) return;
-    let nns = CATMAID.NeuronNameService.getInstance();
     this.cy.batch(() => {
       for (let skeletonId in models) {
-        let node = this.cy.getElementById(String(skeletonId));
-        if (node.length === 0) continue;
-        node.data('color', '#' + models[skeletonId].color.getHexString());
-        node.data('label', nns.getName(skeletonId) || models[skeletonId].baseName);
+        let color = '#' + models[skeletonId].color.getHexString();
+        this.getSkeletonNodes(skeletonId).forEach(node => {
+          node.data('color', color);
+          node.data('label', this.getNodeLabel(skeletonId, node.data('part')));
+        });
+        this.cy.edges('.part-edge').forEach(edge => {
+          if (edge.source().data('skeleton_id') === Number(skeletonId)) {
+            edge.data('color', color);
+          }
+        });
       }
     });
+  };
+
+  GraphWidget2.SPLIT_AXON_DENDRITE = 'axon-dendrite';
+  GraphWidget2.SPLIT_AXON_BACKBONE_TERMINALS = 'axon-backbone-terminals';
+  GraphWidget2.SPLIT_SYNAPSE_CLUSTERS = 'synapse-clusters';
+  GraphWidget2.SPLIT_TAG = 'tag';
+
+  /**
+   * Get the IDs of all skeletons with at least one selected graph node.
+   */
+  GraphWidget2.prototype.getSelectedSkeletonIds = function() {
+    return Object.keys(this.getSelectedSkeletonModels()).map(Number);
+  };
+
+  /**
+   * Split the skeletons of all selected graph nodes with the passed in split
+   * mode. Existing splits of these skeletons are replaced.
+   */
+  GraphWidget2.prototype.splitSelected = function(mode, options = {}) {
+    let skeletonIds = this.getSelectedSkeletonIds();
+    if (skeletonIds.length === 0) {
+      CATMAID.info("Select one or more nodes first!");
+      return Promise.resolve();
+    }
+    let withTags = mode === GraphWidget2.SPLIT_AXON_BACKBONE_TERMINALS ||
+        mode === GraphWidget2.SPLIT_TAG;
+    return Promise.all(skeletonIds.map(skeletonId => {
+        return CATMAID.fetch(`${project.id}/${skeletonId}/1/1/${withTags ? 1 : 0}/compact-arbor`)
+          .then(json => {
+            let skeleton = this.skeletons.get(skeletonId);
+            // Ignore skeletons removed while loading
+            if (!skeleton) return;
+            let ap = new CATMAID.ArborParser().init('compact-arbor', json);
+            let split = GraphWidget2.computeSplit(mode, ap, json[2], options);
+            if (!split) {
+              CATMAID.info(`Couldn't split ${this.getNodeLabel(skeletonId, null)}`);
+              return;
+            }
+            this.setSplit(skeleton, split.rootLabel, split.splitNodes, ap);
+          });
+      }))
+      .then(() => this.updateGraph())
+      .catch(CATMAID.handleError);
+  };
+
+  /**
+   * Compute split nodes for a skeleton using one of the split modes. Returns
+   * {rootLabel, splitNodes} with splitNodes mapping split node IDs to part
+   * labels, or null if the skeleton can't be split this way.
+   */
+  GraphWidget2.computeSplit = function(mode, ap, tags, options) {
+    let edges = ap.arbor.edges;
+    if (mode === GraphWidget2.SPLIT_AXON_DENDRITE ||
+        mode === GraphWidget2.SPLIT_AXON_BACKBONE_TERMINALS) {
+      let axon = null;
+      if (ap.n_inputs > 0 && ap.n_outputs > 0) {
+        axon = SynapseClustering.prototype.findAxon(ap, 0.9, ap.positions);
+      }
+      let splitNodes = new Map();
+      if (axon) {
+        splitNodes.set(axon.root, 'axon');
+      }
+
+      let microtubulesEnd = tags['microtubules end'];
+      if (mode === GraphWidget2.SPLIT_AXON_BACKBONE_TERMINALS && microtubulesEnd) {
+        // Each subarbor attached to the backbone dendrite, outside of the axon,
+        // is a dendritic terminal.
+        let backbone = ap.arbor.upstreamArbor(microtubulesEnd.reduce((o, nodeId) => {
+          o[nodeId] = true;
+          return o;
+        }, {}));
+        for (let nodeId in edges) {
+          nodeId = Number(nodeId);
+          if (!backbone.contains(nodeId) && backbone.contains(edges[nodeId]) &&
+              !(axon && axon.contains(nodeId))) {
+            splitNodes.set(nodeId, 'dendritic terminals');
+          }
+        }
+        return {rootLabel: 'backbone dendrite', splitNodes: splitNodes};
+      }
+      // Without a microtubules end tag, fall back to axon and dendrite
+      return axon ? {rootLabel: 'dendrite', splitNodes: splitNodes} : null;
+    } else if (mode === GraphWidget2.SPLIT_TAG) {
+      let cuts = (tags[options.tag] || []).filter(nodeId => nodeId !== ap.arbor.root);
+      if (cuts.length === 0) return null;
+      let splitNodes = new Map(cuts.map((nodeId, i) => [nodeId,
+          cuts.length === 1 ? options.otherLabel : `${options.otherLabel} ${i + 1}`]));
+      return {rootLabel: options.rootLabel, splitNodes: splitNodes};
+    } else if (mode === GraphWidget2.SPLIT_SYNAPSE_CLUSTERS) {
+      let synapseMap = ap.createSynapseMap();
+      let sc = new SynapseClustering(ap.arbor, ap.positions, synapseMap, options.bandwidth);
+      let clusters = sc.clusterMaps(sc.densityHillMap());
+      // Only clusters with synapses become parts, the others are added to
+      // their parent part.
+      let clusterIds = Object.keys(clusters).filter(clusterId =>
+          Object.keys(clusters[clusterId]).some(nodeId => synapseMap[nodeId]));
+      if (clusterIds.length < 2) return null;
+      let rootLabel = 'root';
+      let splitNodes = new Map();
+      clusterIds.forEach((clusterId, i) => {
+        let cluster = clusters[clusterId];
+        // The cluster's top node is the only one whose parent is outside of it
+        for (let nodeId in cluster) {
+          let parentId = edges[nodeId];
+          if (parentId === undefined) {
+            rootLabel = String(i + 1);
+          } else if (!cluster[parentId]) {
+            splitNodes.set(Number(nodeId), String(i + 1));
+          }
+        }
+      });
+      return {rootLabel: rootLabel, splitNodes: splitNodes};
+    }
+    throw new CATMAID.ValueError(`Unknown split mode: ${mode}`);
+  };
+
+  /**
+   * Set the split nodes of a skeleton and assign its stored nodes to parts,
+   * using the full arbor in the passed in ArborParser.
+   */
+  GraphWidget2.prototype.setSplit = function(skeleton, rootLabel, splitNodes, ap) {
+    let linkedNodeIds = new Set(skeleton.links.map(link => link[0]));
+    // Remove nodes that were only kept as split nodes
+    for (let splitNodeId of skeleton.splitNodes.keys()) {
+      if (splitNodeId !== skeleton.rootId && !linkedNodeIds.has(splitNodeId)) {
+        skeleton.nodes.delete(splitNodeId);
+      }
+    }
+    skeleton.rootLabel = splitNodes.size > 0 ? rootLabel : null;
+    skeleton.splitNodes = new Map();
+    for (let [splitNodeId, label] of splitNodes) {
+      // Arbor node IDs can be strings, because they are used as object keys
+      splitNodeId = Number(splitNodeId);
+      skeleton.splitNodes.set(splitNodeId, {label: label});
+      if (!skeleton.nodes.has(splitNodeId)) {
+        let position = ap.positions[splitNodeId];
+        skeleton.nodes.set(splitNodeId, {id: splitNodeId,
+            x: position.x, y: position.y, z: position.z});
+      }
+    }
+    GraphWidget2.assignParts(skeleton, nodeId => {
+      let parentId = ap.arbor.edges[nodeId];
+      return parentId === undefined ? null : parentId;
+    });
+  };
+
+  GraphWidget2.prototype.splitBySynapseClustering = function() {
+    if (this.getSelectedSkeletonIds().length === 0) {
+      CATMAID.info("Select one or more nodes first!");
+      return;
+    }
+    let dialog = new CATMAID.OptionsDialog("Split by synapse clusters");
+    let bandwidth = dialog.appendNumericField("Bandwidth (nm): ", `graph_widget_2_bandwidth_${this.widgetID}`,
+        this.splitOptions.bandwidth, 1, undefined, undefined, true);
+    dialog.onOK = () => {
+      let value = Number(bandwidth.value);
+      if (Number.isNaN(value) || value <= 0) {
+        CATMAID.warn(`Invalid bandwidth: ${bandwidth.value}`);
+        return;
+      }
+      this.splitOptions.bandwidth = value;
+      this.splitSelected(GraphWidget2.SPLIT_SYNAPSE_CLUSTERS, {bandwidth: value});
+    };
+    dialog.show(300, 'auto', true);
+  };
+
+  GraphWidget2.prototype.splitByTag = function() {
+    if (this.getSelectedSkeletonIds().length === 0) {
+      CATMAID.info("Select one or more nodes first!");
+      return;
+    }
+    let dialog = new CATMAID.OptionsDialog("Split at tag");
+    let tag = dialog.appendField("Tag (exact match): ", `graph_widget_2_tag_${this.widgetID}`,
+        this.splitOptions.tag);
+    let rootLabel = dialog.appendField("Part with root node: ", `graph_widget_2_tag_root_label_${this.widgetID}`,
+        this.splitOptions.tagRootLabel);
+    let otherLabel = dialog.appendField("Other part(s): ", `graph_widget_2_tag_other_label_${this.widgetID}`,
+        this.splitOptions.tagOtherLabel);
+    dialog.onOK = () => {
+      this.splitOptions.tag = tag.value;
+      this.splitOptions.tagRootLabel = rootLabel.value;
+      this.splitOptions.tagOtherLabel = otherLabel.value;
+      this.splitSelected(GraphWidget2.SPLIT_TAG, {
+        tag: tag.value,
+        rootLabel: rootLabel.value,
+        otherLabel: otherLabel.value,
+      });
+    };
+    dialog.show(350, 'auto', true);
+  };
+
+  /**
+   * Split the active skeleton at the active node, in addition to existing
+   * splits of this skeleton.
+   */
+  GraphWidget2.prototype.splitAtActiveNode = function() {
+    let nodeId = SkeletonAnnotations.getActiveNodeId();
+    let skeletonId = SkeletonAnnotations.getActiveSkeletonId();
+    if (!nodeId || SkeletonAnnotations.getActiveNodeType() !== SkeletonAnnotations.TYPE_NODE ||
+        !SkeletonAnnotations.isRealNode(nodeId)) {
+      CATMAID.warn("Please select a treenode first");
+      return;
+    }
+    nodeId = Number(nodeId);
+    let skeleton = this.skeletons.get(Number(skeletonId));
+    if (!skeleton) {
+      CATMAID.warn("The active skeleton isn't part of this graph");
+      return;
+    }
+    if (nodeId === skeleton.rootId) {
+      CATMAID.warn("Can't split at the root node");
+      return;
+    }
+    if (skeleton.splitNodes.has(nodeId)) {
+      CATMAID.info("The skeleton is already split at this node");
+      return;
+    }
+
+    let isSplit = skeleton.splitNodes.size > 0;
+    let dialog = new CATMAID.OptionsDialog("Split at active node");
+    let proximalLabel = isSplit ? null : dialog.appendField("Part with root node: ",
+        `graph_widget_2_proximal_label_${this.widgetID}`, this.splitOptions.proximalLabel);
+    let distalLabel = dialog.appendField(isSplit ? "New part: " : "Other part: ",
+        `graph_widget_2_distal_label_${this.widgetID}`, this.splitOptions.distalLabel);
+    dialog.onOK = () => {
+      if (proximalLabel) this.splitOptions.proximalLabel = proximalLabel.value;
+      this.splitOptions.distalLabel = distalLabel.value;
+      CATMAID.fetch(`${project.id}/${skeletonId}/1/0/0/compact-arbor`)
+        .then(json => {
+          // Ignore skeletons removed while loading
+          if (this.skeletons.get(Number(skeletonId)) !== skeleton) return;
+          let ap = new CATMAID.ArborParser().init('compact-arbor', json);
+          if (!ap.arbor.contains(nodeId)) {
+            throw new CATMAID.Warning("The active node isn't part of the active skeleton anymore");
+          }
+          let splitNodes = new Map(Array.from(skeleton.splitNodes,
+              ([splitNodeId, split]) => [splitNodeId, split.label]));
+          splitNodes.set(nodeId, distalLabel.value);
+          this.setSplit(skeleton, isSplit ? skeleton.rootLabel : proximalLabel.value,
+              splitNodes, ap);
+          return this.updateGraph();
+        })
+        .catch(CATMAID.handleError);
+    };
+    dialog.show(350, 'auto', true);
+  };
+
+  /**
+   * Remove the splits of the skeletons of all selected graph nodes.
+   */
+  GraphWidget2.prototype.unsplitSelected = function() {
+    let skeletonIds = this.getSelectedSkeletonIds();
+    if (skeletonIds.length === 0) {
+      CATMAID.info("Select one or more nodes first!");
+      return Promise.resolve();
+    }
+    for (let skeletonId of skeletonIds) {
+      let skeleton = this.skeletons.get(skeletonId);
+      // No parent information is needed without split nodes
+      this.setSplit(skeleton, null, new Map(), null);
+    }
+    return this.updateGraph();
   };
 
   GraphWidget2.prototype.appendAsGroup = function() {
@@ -579,12 +1046,12 @@
 
   GraphWidget2.prototype.highlight = function(skeletonId) {
     if (!this.cy) return;
-    let node = this.cy.getElementById(String(skeletonId));
-    if (node.length === 0) return;
-    node.animate({style: {width: 100, height: 100}}, {
-      duration: 1000,
-      // Fall back to the stylesheet size
-      complete: () => node.removeStyle('width height'),
+    this.getSkeletonNodes(skeletonId).forEach(node => {
+      node.animate({style: {width: 100, height: 100}}, {
+        duration: 1000,
+        // Fall back to the stylesheet size
+        complete: () => node.removeStyle('width height'),
+      });
     });
   };
 

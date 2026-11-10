@@ -39,6 +39,21 @@
     this.edge_min_width = 0;
     this.layout_fit = true;
 
+    // Display options, see the View tab
+    this.viewOptions = {
+      fitIgnoresLabels: true,
+      wheelSensitivity: 1,
+      showLabels: true,
+      trimLabels: false,
+      labelVAlign: 'top',
+      labelHAlign: 'center',
+      // A maximum label width of zero disables wrapping
+      labelMaxWidth: 0,
+      nodeWidth: 30,
+      nodeHeight: 30,
+      nodeBorderWidth: 1,
+    };
+
     // Remember split dialog choices
     this.splitOptions = {
       bandwidth: 5000,
@@ -90,6 +105,47 @@
           ['Refresh', () => this.update()],
         ]);
 
+        let options = this.viewOptions;
+        let setOption = (name, value) => {
+          options[name] = value;
+          this.applyStyle();
+        };
+        CATMAID.DOM.appendToTab(tabs['View'], [
+          {type: 'button', label: 'Fit', onclick: () => this.fitView()},
+          {type: 'button', label: '+', title: 'Zoom in', onclick: () => this.zoomBy(1.25)},
+          {type: 'button', label: '−', title: 'Zoom out', onclick: () => this.zoomBy(0.8)},
+          {type: 'checkbox', label: 'Fit ignores labels', value: options.fitIgnoresLabels,
+              title: 'Fit only the nodes into the view, long labels may be cut off',
+              onclick: e => { options.fitIgnoresLabels = e.target.checked; }},
+          this.createNumericViewOption('Mouse wheel sensitivity:',
+              'Lower values allow to zoom in smaller steps', 'wheelSensitivity',
+              0.01, 0.1, value => {
+                if (this.cy) this.cy.renderer().wheelSensitivity = value;
+              }),
+          {type: 'heading', label: 'Labels'},
+          {type: 'checkbox', label: 'Show', value: options.showLabels,
+              onclick: e => setOption('showLabels', e.target.checked)},
+          {type: 'checkbox', label: "Trim after ';'", value: options.trimLabels,
+              title: "Show neuron names only up to the first ';'",
+              onclick: e => {
+                options.trimLabels = e.target.checked;
+                this.updateNeuronNames();
+              }},
+          {type: 'select', label: 'Vertical: ', entries: ['top', 'center', 'bottom'],
+              value: options.labelVAlign,
+              onchange: e => setOption('labelVAlign', e.target.value)},
+          {type: 'select', label: 'Horizontal: ', entries: ['left', 'center', 'right'],
+              value: options.labelHAlign,
+              onchange: e => setOption('labelHAlign', e.target.value)},
+          this.createNumericViewOption('Max width:', 'Wrap labels at this width ' +
+              'in pixels, zero disables wrapping', 'labelMaxWidth', 0, 10),
+          {type: 'heading', label: 'Nodes'},
+          this.createNumericViewOption('Width:', 'Node width in pixels', 'nodeWidth', 1, 1),
+          this.createNumericViewOption('Height:', 'Node height in pixels', 'nodeHeight', 1, 1),
+          this.createNumericViewOption('Border:', 'Node border width in pixels',
+              'nodeBorderWidth', 0, 0.5),
+        ]);
+
         CATMAID.DOM.appendToTab(tabs['Subgraphs'], [
           [document.createTextNode('Select node(s) and split by: ')],
           ['Axon & dendrite', () => this.splitSelected(GraphWidget2.SPLIT_AXON_DENDRITE)],
@@ -133,19 +189,37 @@
   GraphWidget2.prototype.init = function() {
     this.cy = cytoscape3({
       container: document.getElementById(`graph_widget_2_cy_${this.widgetID}`),
-      style: [{
+      style: this.getStylesheet(),
+      boxSelectionEnabled: true,
+    });
+    // Not passed as option, because Cytoscape.js warns about custom values
+    this.cy.renderer().wheelSensitivity = this.viewOptions.wheelSensitivity;
+  };
+
+  /**
+   * Get the graph stylesheet, based on the current view options.
+   */
+  GraphWidget2.prototype.getStylesheet = function() {
+    let options = this.viewOptions;
+    let nodeStyle = {
+      "label": "data(label)",
+      "shape": "data(shape)",
+      "border-width": options.nodeBorderWidth,
+      "background-color": "data(color)",
+      "border-color": "#555",
+      "text-opacity": options.showLabels ? 1 : 0,
+      "text-valign": options.labelVAlign,
+      "text-halign": options.labelHAlign,
+      "width": options.nodeWidth,
+      "height": options.nodeHeight,
+    };
+    if (options.labelMaxWidth > 0) {
+      nodeStyle["text-wrap"] = "wrap";
+      nodeStyle["text-max-width"] = `${options.labelMaxWidth}px`;
+    }
+    return [{
         selector: "node",
-        style: {
-          "label": "data(label)",
-          "shape": "data(shape)",
-          "border-width": 1,
-          "background-color": "data(color)",
-          "border-color": "#555",
-          "text-valign": "top",
-          "text-halign": "center",
-          "width": 30,
-          "height": 30,
-        },
+        style: nodeStyle,
       }, {
         selector: "edge",
         style: {
@@ -180,8 +254,69 @@
         style: {
           "display": "none",
         },
-      }],
-      boxSelectionEnabled: true,
+      }];
+  };
+
+  /**
+   * Replace the graph stylesheet with one based on the current view options.
+   */
+  GraphWidget2.prototype.applyStyle = function() {
+    if (this.cy) this.cy.style(this.getStylesheet());
+  };
+
+  /**
+   * Create a numeric field element for a view option, which is applied on
+   * change. Invalid values are refused.
+   */
+  GraphWidget2.prototype.createNumericViewOption = function(label, title, name,
+      min, step, onChange) {
+    return {
+      type: 'numeric',
+      label: label,
+      title: title,
+      value: this.viewOptions[name],
+      length: 3,
+      min: min,
+      step: step,
+      onchange: e => {
+        let value = Number(e.target.value);
+        if (e.target.value === '' || Number.isNaN(value) || value < min) {
+          CATMAID.warn(`Please use a number of at least ${min}`);
+          e.target.value = this.viewOptions[name];
+          return;
+        }
+        this.viewOptions[name] = value;
+        if (onChange) {
+          onChange(value);
+        } else {
+          this.applyStyle();
+        }
+      },
+    };
+  };
+
+  /**
+   * Fit all graph nodes into the view, optionally ignoring their labels.
+   */
+  GraphWidget2.prototype.fitView = function() {
+    if (!this.cy) return;
+    let nodes = this.cy.nodes(':visible');
+    if (nodes.empty()) return;
+    if (this.viewOptions.fitIgnoresLabels) {
+      this.cy.fit(nodes.boundingBox({includeLabels: false}), 30);
+    } else {
+      this.cy.fit(nodes, 30);
+    }
+  };
+
+  /**
+   * Zoom in (factor > 1) or out (factor < 1) around the center of the view.
+   */
+  GraphWidget2.prototype.zoomBy = function(factor) {
+    if (!this.cy) return;
+    this.cy.zoom({
+      level: this.cy.zoom() * factor,
+      renderedPosition: {x: this.cy.width() / 2, y: this.cy.height() / 2},
     });
   };
 
@@ -208,6 +343,10 @@
    */
   GraphWidget2.prototype.getNodeLabel = function(skeletonId, part) {
     let name = CATMAID.NeuronNameService.getInstance().getName(skeletonId);
+    if (this.viewOptions.trimLabels && name) {
+      let end = name.indexOf(';');
+      if (end !== -1) name = name.substring(0, end);
+    }
     return part === null ? name : `${name} [${part}]`;
   };
 
@@ -741,10 +880,14 @@
         });
 
         if (hasNewNodes) {
+          // Fitting is done by fitView(), to respect the view options
           this.cy.layout({
             name: 'spread',
-            fit: this.layout_fit,
-            stop: () => this.cy.nodes().unlock(),
+            fit: false,
+            stop: () => {
+              this.cy.nodes().unlock();
+              if (this.layout_fit) this.fitView();
+            },
           }).run();
         } else {
           this.cy.nodes().unlock();

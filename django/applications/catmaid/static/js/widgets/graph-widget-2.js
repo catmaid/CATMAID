@@ -4,6 +4,7 @@
   project,
   SkeletonAnnotations,
   SynapseClustering,
+  THREE,
 */
 
 (function (CATMAID) {
@@ -28,6 +29,14 @@
     // relationName] entries. The splitNodes field maps treenode IDs to
     // {label, parentPart}, see GraphWidget2.assignParts().
     this.skeletons = new Map();
+
+    // Group ID vs group: {id, label, color, hideSelfEdges, members,
+    // initialPosition}. The members field maps member keys to {skeletonId,
+    // part} entries, see GraphWidget2.getMemberKey(). A member is a whole
+    // skeleton (part null) or a part of a split skeleton.
+    this.groups = new Map();
+    // Member key vs group ID, rebuilt by updateGroups()
+    this.memberGroups = new Map();
 
     // Link types to create edges for
     this.selectedLinkTypes = new Set(['synaptic-connector']);
@@ -93,13 +102,14 @@
       controlsID: `graph_widget_2_controls_${this.widgetID}`,
       createControls: function(controls) {
         let tabs = CATMAID.DOM.addTabGroup(controls, `graph_widget_2_${this.widgetID}`,
-            ['Main', 'View', 'Grow', 'Nodes', 'Edges', 'Selection',
+            ['Main', 'View', 'Groups', 'Grow', 'Nodes', 'Edges', 'Selection',
              'Selections', 'Subgraphs', 'Align', 'Export']);
 
         CATMAID.DOM.appendToTab(tabs['Main'], [
           [document.createTextNode('From')],
           [CATMAID.skeletonListSources.createSelect(this)],
           ['Append', () => this.loadSource()],
+          ['Append as group', () => this.appendAsGroup()],
           ['Remove', () => this.removeSource()],
           ['Clear', () => this.clear()],
           ['Refresh', () => this.update()],
@@ -156,6 +166,14 @@
           ['Reset', () => this.unsplitSelected()],
           [document.createTextNode(' - ')],
           ['Split at active node', () => this.splitAtActiveNode()],
+        ]);
+
+        CATMAID.DOM.appendToTab(tabs['Groups'], [
+          ['Group selected', () => this.group()],
+          ['Ungroup selected', () => this.ungroup()],
+          [document.createTextNode(' - ')],
+          ['Group equally named', () => this.groupEquallyNamed()],
+          ['Group equally colored', () => this.groupEquallyColored()],
         ]);
 
         $(controls).tabs();
@@ -331,11 +349,12 @@
   };
 
   /**
-   * Get the graph nodes of a skeleton, one per part if it is split.
+   * Get the graph nodes of a skeleton, one per part if it is split, including
+   * group nodes that contain the skeleton or a part of it.
    */
   GraphWidget2.prototype.getSkeletonNodes = function(skeletonId) {
     skeletonId = Number(skeletonId);
-    return this.cy.nodes().filter(node => node.data('skeleton_id') === skeletonId);
+    return this.cy.nodes().filter(node => node.data('skeleton_ids').includes(skeletonId));
   };
 
   /**
@@ -354,6 +373,8 @@
     if (!this.cy) return;
     this.cy.batch(() => {
       this.cy.nodes().forEach(node => {
+        // Group nodes keep their group label
+        if (node.data('group_id')) return;
         node.data('label', this.getNodeLabel(node.data('skeleton_id'), node.data('part')));
       });
     });
@@ -386,8 +407,9 @@
     if (!this.cy) return models;
     this.cy.nodes().forEach(node => {
       if (node.selected() && node.visible()) {
-        let skeletonId = node.data('skeleton_id');
-        models[skeletonId] = this.getSkeletonModel(skeletonId);
+        for (let skeletonId of node.data('skeleton_ids')) {
+          models[skeletonId] = this.getSkeletonModel(skeletonId);
+        }
       }
     });
     return models;
@@ -400,6 +422,8 @@
   GraphWidget2.prototype.clear = function() {
     let removedModels = this.getSkeletonModels();
     this.skeletons.clear();
+    this.groups.clear();
+    this.memberGroups.clear();
     if (this.cy) this.cy.elements().remove();
     CATMAID.NeuronNameService.getInstance().unregister(this, null);
     if (!CATMAID.tools.isEmpty(removedModels)) {
@@ -418,19 +442,29 @@
 
   GraphWidget2.prototype.removeSkeletons = function(skeletonIds) {
     let removedModels = {};
+    let groupsChanged = false;
     for (let skeletonId of skeletonIds) {
       skeletonId = Number(skeletonId);
       if (!this.skeletons.has(skeletonId)) continue;
       removedModels[skeletonId] = this.getSkeletonModel(skeletonId);
       this.skeletons.delete(skeletonId);
-      // Removing nodes also removes their edges
-      if (this.cy) this.getSkeletonNodes(skeletonId).remove();
+      if (this.isGrouped(skeletonId)) {
+        // Group nodes and their edges are rebuilt below
+        groupsChanged = true;
+      } else if (this.cy) {
+        // Removing nodes also removes their edges
+        this.getSkeletonNodes(skeletonId).remove();
+      }
     }
     let removedIds = Object.keys(removedModels);
     if (removedIds.length > 0) {
       CATMAID.NeuronNameService.getInstance().unregister(this, removedIds);
       this.triggerRemove(removedModels);
     }
+    if (groupsChanged && this.cy) {
+      return this.updateGraph();
+    }
+    return Promise.resolve();
   };
 
   GraphWidget2.prototype.append = function(models) {
@@ -660,6 +694,24 @@
   };
 
   /**
+   * Get the key of a group member, a whole skeleton (part null) or a part of
+   * it. Unlike graph node IDs, member keys don't change if the part order
+   * changes.
+   */
+  GraphWidget2.getMemberKey = function(skeletonId, part) {
+    return `${skeletonId}|${part}`;
+  };
+
+  /**
+   * Get the ID of the graph node that represents the passed in skeleton part:
+   * its group node, if it is grouped, or its own node.
+   */
+  GraphWidget2.prototype.getGraphNodeId = function(skeleton, part) {
+    let groupId = this.memberGroups.get(GraphWidget2.getMemberKey(skeleton.model.id, part));
+    return groupId === undefined ? GraphWidget2.getPartNodeId(skeleton, part) : groupId;
+  };
+
+  /**
    * Aggregate treenode level links between all loaded skeletons into edges
    * between skeleton parts, one edge per link type and part pair. Returns a
    * promise resolving into a list of edge definitions.
@@ -678,6 +730,10 @@
         this.linkPairs,
       ])
       .then(([linkTypes, linkPairs]) => {
+        // Update groups only now, because they can change while link types
+        // are loaded. Graph nodes are created from the same state, right
+        // after this.
+        this.updateGroups();
         let reciprocal = new Map(linkTypes.map(lt => [lt.relation, lt.isreciprocal]));
 
         // Connector ID vs map of relation name vs list of [graph node ID,
@@ -696,12 +752,16 @@
               partners.set(relationName, relationPartners);
             }
             let part = skeleton.nodes.get(treenodeId).part;
-            relationPartners.push([GraphWidget2.getPartNodeId(skeleton, part), treenodeId]);
+            relationPartners.push([this.getGraphNodeId(skeleton, part), treenodeId]);
           }
         }
 
         let edges = new Map();
         let addLink = (linkType, directed, source, target, connectorId) => {
+          if (source[0] === target[0]) {
+            let group = this.groups.get(source[0]);
+            if (group && group.hideSelfEdges) return;
+          }
           // Undirected edges are stored with ordered graph node IDs
           if (!directed && source[0] > target[0]) {
             [source, target] = [target, source];
@@ -754,20 +814,23 @@
   /**
    * Get undirected edges that connect the parts of split skeletons along
    * their arbor: each split node's part with the part of its parent node.
+   * Parts in the same graph node, e.g. a group, aren't connected.
    */
   GraphWidget2.prototype.computePartEdges = function() {
     let edges = new Map();
     for (let skeleton of this.skeletons.values()) {
       for (let split of skeleton.splitNodes.values()) {
         if (split.parentPart === null || split.parentPart === split.label) continue;
-        let source = GraphWidget2.getPartNodeId(skeleton, split.parentPart);
-        let target = GraphWidget2.getPartNodeId(skeleton, split.label);
+        let source = this.getGraphNodeId(skeleton, split.parentPart);
+        let target = this.getGraphNodeId(skeleton, split.label);
+        if (source === target) continue;
         if (source > target) [source, target] = [target, source];
         let id = `part_${source}_${target}`;
         edges.set(id, {
           id: id,
           source: source,
           target: target,
+          skeletonId: skeleton.model.id,
           color: '#' + skeleton.model.color.getHexString(),
         });
       }
@@ -776,14 +839,52 @@
   };
 
   /**
-   * Rebuild all graph elements from the loaded skeletons. Positions and
-   * selection state of existing nodes are kept, new nodes are laid out. New
-   * parts of a skeleton start at the position of its former graph node.
+   * Remove group members that don't exist anymore, because their skeleton was
+   * removed or split differently, and rebuild the member index. Empty groups
+   * are removed.
+   */
+  GraphWidget2.prototype.updateGroups = function() {
+    this.memberGroups.clear();
+    let removedLabels = [];
+    for (let [groupId, group] of this.groups) {
+      for (let [key, member] of group.members) {
+        let skeleton = this.skeletons.get(member.skeletonId);
+        if (skeleton && skeleton.partLabels.includes(member.part)) {
+          this.memberGroups.set(key, groupId);
+        } else {
+          group.members.delete(key);
+        }
+      }
+      if (group.members.size === 0) {
+        this.groups.delete(groupId);
+        removedLabels.push(group.label);
+      }
+    }
+    if (removedLabels.length > 0) {
+      CATMAID.info(`Removed empty group(s): ${removedLabels.join(', ')}`);
+    }
+  };
+
+  GraphWidget2.prototype.isGrouped = function(skeletonId) {
+    for (let group of this.groups.values()) {
+      for (let member of group.members.values()) {
+        if (member.skeletonId === skeletonId) return true;
+      }
+    }
+    return false;
+  };
+
+  /**
+   * Rebuild all graph elements from the loaded skeletons and groups.
+   * Positions and selection state of existing nodes are kept, new nodes are
+   * laid out. New parts of a skeleton start at the position of its former
+   * graph node, ungrouped members at the position of their former group.
    */
   GraphWidget2.prototype.updateGraph = function() {
     return this.computeEdges()
       .then(edges => {
         let positions = {};
+        let memberPositions = {};
         let skeletonPositions = {};
         let selected = new Set();
         this.cy.elements().forEach(element => {
@@ -792,7 +893,10 @@
             // Copy, because the returned position object is updated in place
             let position = Object.assign({}, element.position());
             positions[element.id()] = position;
-            skeletonPositions[element.data('skeleton_id')] = position;
+            for (let member of element.data('members')) {
+              memberPositions[GraphWidget2.getMemberKey(member.skeletonId, member.part)] = position;
+              skeletonPositions[member.skeletonId] = position;
+            }
           }
         });
 
@@ -801,16 +905,41 @@
           let skeletonId = skeleton.model.id;
           let color = '#' + skeleton.model.color.getHexString();
           for (let part of skeleton.partLabels) {
+            // Grouped members are represented by their group node
+            if (this.memberGroups.has(GraphWidget2.getMemberKey(skeletonId, part))) continue;
             nodes.push({
               data: {
                 id: GraphWidget2.getPartNodeId(skeleton, part),
                 skeleton_id: skeletonId,
+                skeleton_ids: [skeletonId],
                 part: part,
+                members: [{skeletonId: skeletonId, part: part}],
                 label: this.getNodeLabel(skeletonId, part),
                 color: color,
                 shape: 'ellipse',
               },
             });
+          }
+        }
+
+        // Group nodes. New groups start at their initial position.
+        let initialPositions = {};
+        for (let group of this.groups.values()) {
+          let members = Array.from(group.members.values());
+          nodes.push({
+            data: {
+              id: group.id,
+              group_id: group.id,
+              skeleton_ids: Array.from(new Set(members.map(member => member.skeletonId))),
+              members: members,
+              label: group.label,
+              color: '#' + group.color.getHexString(),
+              shape: 'hexagon',
+            },
+          });
+          if (group.initialPosition) {
+            initialPositions[group.id] = group.initialPosition;
+            delete group.initialPosition;
           }
         }
 
@@ -841,6 +970,7 @@
                 source: edge.source,
                 target: edge.target,
                 directed: false,
+                skeleton_id: edge.skeletonId,
                 label: '',
                 width: 2,
                 color: edge.color,
@@ -861,17 +991,23 @@
             let id = element.id();
             if (selected.has(id)) element.select();
             if (element.isNode()) {
-              if (id in positions) {
+              // A new group can reuse the ID of a former group
+              if (id in initialPositions) {
+                element.position(initialPositions[id]);
+                element.lock();
+              } else if (id in positions) {
                 element.position(positions[id]);
                 element.lock();
               } else {
                 hasNewNodes = true;
-                let skeletonPosition = skeletonPositions[element.data('skeleton_id')];
-                if (skeletonPosition) {
+                let member = element.data('members')[0];
+                let previousPosition = memberPositions[GraphWidget2.getMemberKey(
+                    member.skeletonId, member.part)] || skeletonPositions[member.skeletonId];
+                if (previousPosition) {
                   offset += 40;
                   element.position({
-                    x: skeletonPosition.x + offset,
-                    y: skeletonPosition.y + offset,
+                    x: previousPosition.x + offset,
+                    y: previousPosition.y + offset,
                   });
                 }
               }
@@ -904,11 +1040,13 @@
       for (let skeletonId in models) {
         let color = '#' + models[skeletonId].color.getHexString();
         this.getSkeletonNodes(skeletonId).forEach(node => {
+          // Group nodes keep their group color and label
+          if (node.data('group_id')) return;
           node.data('color', color);
           node.data('label', this.getNodeLabel(skeletonId, node.data('part')));
         });
         this.cy.edges('.part-edge').forEach(edge => {
-          if (edge.source().data('skeleton_id') === Number(skeletonId)) {
+          if (edge.data('skeleton_id') === Number(skeletonId)) {
             edge.data('color', color);
           }
         });
@@ -1178,10 +1316,340 @@
     return this.updateGraph();
   };
 
-  GraphWidget2.prototype.appendAsGroup = function() {
+  GraphWidget2.prototype.nextGroupId = function() {
+    let max = 0;
+    for (let groupId of this.groups.keys()) {
+      max = Math.max(max, Number(groupId.substring(1)));
+    }
+    return `g${max + 1}`;
   };
 
-  GraphWidget2.prototype.appendGroup = function(models, position, color) {
+  /**
+   * Create a new group from the passed in members, a Map of member key vs
+   * {skeletonId, part}. Members are removed from their previous groups, groups
+   * left empty are removed. Doesn't update the graph.
+   */
+  GraphWidget2.prototype.createGroup = function(members, label, color,
+      hideSelfEdges, position) {
+    // Get the ID first, so that the new group doesn't take over the graph node
+    // of a merged group.
+    let groupId = this.nextGroupId();
+    for (let [otherGroupId, group] of this.groups) {
+      for (let key of members.keys()) group.members.delete(key);
+      if (group.members.size === 0) this.groups.delete(otherGroupId);
+    }
+    this.groups.set(groupId, {
+      id: groupId,
+      label: label,
+      color: color,
+      hideSelfEdges: hideSelfEdges,
+      members: members,
+      initialPosition: position,
+    });
+    return groupId;
+  };
+
+  /**
+   * Collect the group members of the passed in graph nodes, along with their
+   * mean position and mean color.
+   */
+  GraphWidget2.prototype.collectMembers = function(nodes) {
+    let members = new Map();
+    let position = {x: 0, y: 0};
+    let color = new THREE.Color(0, 0, 0);
+    nodes.forEach(node => {
+      let p = node.position();
+      position.x += p.x;
+      position.y += p.y;
+      color.add(new THREE.Color(node.data('color')));
+      for (let member of node.data('members')) {
+        members.set(GraphWidget2.getMemberKey(member.skeletonId, member.part), member);
+      }
+    });
+    position.x /= nodes.length;
+    position.y /= nodes.length;
+    color.multiplyScalar(1 / nodes.length);
+    return {members, position, color};
+  };
+
+  /**
+   * Append the selected skeletons of the selected source and group them,
+   * including all parts of already loaded split skeletons.
+   */
+  GraphWidget2.prototype.appendAsGroup = function() {
+    let models = CATMAID.skeletonListSources.getSelectedSkeletonModels(this);
+    let skeletonIds = Object.keys(models).map(Number);
+    if (skeletonIds.length === 0) {
+      CATMAID.info('Selected source is empty.');
+      return Promise.resolve();
+    }
+    if (skeletonIds.length === 1) {
+      return this.append(models);
+    }
+    return this.append(models)
+      .then(() => {
+        let members = new Map();
+        for (let skeletonId of skeletonIds) {
+          let skeleton = this.skeletons.get(skeletonId);
+          // Skeletons can fail to load
+          if (!skeleton) continue;
+          for (let part of skeleton.partLabels) {
+            members.set(GraphWidget2.getMemberKey(skeletonId, part),
+                {skeletonId: skeletonId, part: part});
+          }
+        }
+        if (members.size === 0) return;
+        return this.appendGroup(members);
+      });
+  };
+
+  /**
+   * Ask for the name, color and options of a new group of the passed in
+   * members, a Map of member key vs {skeletonId, part}, and create it. The
+   * name can be picked from the skeletons' annotations and node labels.
+   */
+  GraphWidget2.prototype.appendGroup = function(members, position, color) {
+    let skeletonIds = Array.from(new Set(Array.from(members.values(),
+        member => member.skeletonId)));
+    return CATMAID.fetch(`${project.id}/annotations/forskeletons`, 'POST', {
+        skeleton_ids: skeletonIds,
+      })
+      .then(json => {
+        let annotationSets = skeletonIds.map(skeletonId => new Set(
+            (json.skeletons[skeletonId] || []).map(annotation => annotation.id)));
+        let allIds = new Set();
+        for (let ids of annotationSets) {
+          for (let id of ids) allIds.add(id);
+        }
+        let commonIds = Array.from(allIds).filter(id => annotationSets.every(ids => ids.has(id)));
+        let toNames = ids => ids.map(id => json.annotations[id]).sort();
+        let common = ['--'].concat(toNames(commonIds));
+        let all = ['--'].concat(toNames(Array.from(allIds)));
+        let names = ['--'].concat(Array.from(members.values(),
+            member => this.getNodeLabel(member.skeletonId, member.part)).sort());
+
+        let idSuffix = `-graph-widget-2-${this.widgetID}`;
+        let dialog = new CATMAID.OptionsDialog("Group properties");
+        dialog.appendMessage(`Creating new group with ${members.size} node(s) ` +
+            `of ${skeletonIds.length} neuron(s).`);
+        dialog.appendMessage("Choose a group name from:");
+        dialog.appendMessage("(Will pick first non-empty match.)");
+        let commonChoice = dialog.appendChoice("Common annotations: ",
+            `gg-common${idSuffix}`, common, common, common[0]);
+        let allChoice = dialog.appendChoice("All annotations: ",
+            `gg-all${idSuffix}`, all, all, all[0]);
+        let nameChoice = dialog.appendChoice("All node names: ",
+            `gg-names${idSuffix}`, names, names, names[0]);
+        let typedName = dialog.appendField("Or type a new name: ",
+            `gg-typed${idSuffix}`, "", true);
+        let hideSelfEdges = dialog.appendCheckbox("Hide intragroup edges",
+            `gg-edges${idSuffix}`, true);
+        let appendCount = dialog.appendCheckbox("Append number of neurons to name",
+            `gg-number${idSuffix}`, true);
+        let colorMessage = dialog.appendMessage("Choose group color: ");
+        let groupColor = color ? '#' + color.getHexString() : '#aaaaff';
+        let colorButton = document.createElement('button');
+        colorButton.appendChild(document.createTextNode('Color'));
+        colorMessage.appendChild(colorButton);
+        CATMAID.ColorPicker.enable(colorButton, {
+          initialColor: groupColor,
+          onColorChange: rgb => {
+            groupColor = CATMAID.tools.rgbToHex(Math.round(rgb.r * 255),
+                Math.round(rgb.g * 255), Math.round(rgb.b * 255));
+          },
+        });
+
+        dialog.onOK = () => {
+          let label = [typedName, commonChoice, allChoice, nameChoice]
+              .map(element => element.value.trim())
+              .find(text => text.length > 0 && text !== '--');
+          if (!label) {
+            // Keeps the dialog open
+            throw new CATMAID.ValueError("You must choose a name!");
+          }
+          if (appendCount.checked) label += ` [#${skeletonIds.length}]`;
+          this.createGroup(members, label, new THREE.Color(groupColor),
+              hideSelfEdges.checked, position);
+          this.updateGraph().catch(CATMAID.handleError);
+        };
+
+        dialog.show(350, 'auto', true);
+        typedName.focus();
+      })
+      .catch(CATMAID.handleError);
+  };
+
+  /**
+   * Group all selected graph nodes into a single node. Selected groups are
+   * merged into the new group.
+   */
+  GraphWidget2.prototype.group = function() {
+    if (!this.cy) return Promise.resolve();
+    let nodes = this.cy.nodes().filter(node => node.selected() && node.visible());
+    if (nodes.length < 2) {
+      CATMAID.info("Select at least 2 nodes!");
+      return Promise.resolve();
+    }
+    let {members, position, color} = this.collectMembers(nodes);
+    return this.appendGroup(members, position, color);
+  };
+
+  /**
+   * Split all selected group nodes into their member nodes.
+   */
+  GraphWidget2.prototype.ungroup = function() {
+    if (!this.cy) return Promise.resolve();
+    let count = 0;
+    this.cy.nodes().forEach(node => {
+      let groupId = node.data('group_id');
+      if (groupId && node.selected()) {
+        this.groups.delete(groupId);
+        ++count;
+      }
+    });
+    if (count === 0) {
+      CATMAID.info("Nothing to ungroup!");
+      return Promise.resolve();
+    }
+    return this.updateGraph();
+  };
+
+  /**
+   * Group all ungrouped nodes with the same label, one group per label.
+   */
+  GraphWidget2.prototype.groupEquallyNamed = function() {
+    if (!this.cy) return Promise.resolve();
+    let nodesByLabel = new Map();
+    this.cy.nodes().forEach(node => {
+      if (node.data('group_id')) return;
+      let label = node.data('label');
+      let nodes = nodesByLabel.get(label);
+      if (nodes) {
+        nodes.push(node);
+      } else {
+        nodesByLabel.set(label, [node]);
+      }
+    });
+    let created = 0;
+    for (let [label, nodes] of nodesByLabel) {
+      if (nodes.length < 2) continue;
+      let {members, position} = this.collectMembers(nodes);
+      this.createGroup(members, label, new THREE.Color(nodes[0].data('color')),
+          false, position);
+      ++created;
+    }
+    if (created === 0) {
+      CATMAID.info("No equally named nodes found");
+      return Promise.resolve();
+    }
+    return this.updateGraph();
+  };
+
+  /**
+   * Group all ungrouped nodes with the same color, one group per color. The
+   * name of each group is asked for.
+   */
+  GraphWidget2.prototype.groupEquallyColored = function() {
+    if (!this.cy) return Promise.resolve();
+    let nodesByColor = new Map();
+    this.cy.nodes().forEach(node => {
+      if (node.data('group_id')) return;
+      let color = node.data('color');
+      let nodes = nodesByColor.get(color);
+      if (nodes) {
+        nodes.push(node);
+      } else {
+        nodesByColor.set(color, [node]);
+      }
+    });
+    let colors = Array.from(nodesByColor.keys()).filter(color => nodesByColor.get(color).length > 1);
+    if (colors.length === 0) {
+      CATMAID.info("No equally colored nodes found");
+      return Promise.resolve();
+    }
+
+    let groupNames = new Map();
+    let createGroups = () => {
+      for (let color of colors) {
+        let nodes = nodesByColor.get(color);
+        let {members, position} = this.collectMembers(nodes);
+        this.createGroup(members, groupNames.get(color), new THREE.Color(color),
+            false, position);
+      }
+      this.updateGraph().catch(CATMAID.handleError);
+    };
+
+    // Ask for one group name per color
+    let index = 0;
+    let askForNextGroupName = () => {
+      if (index === colors.length) {
+        createGroups();
+        return;
+      }
+      let color = colors[index];
+      let nameField;
+      let dialog = new CATMAID.OptionsDialog(`Group name for color ${color}`, {
+        'Next': () => {
+          let name = nameField.value.trim();
+          if (name.length === 0) {
+            // Keeps the dialog open
+            throw new CATMAID.ValueError("Please enter a name");
+          }
+          groupNames.set(color, name);
+          ++index;
+          askForNextGroupName();
+        },
+      });
+      let message = dialog.appendMessage("Please enter a name for the group with color ");
+      let colorPane = document.createElement('span');
+      colorPane.style.height = '1em';
+      colorPane.style.width = '5em';
+      colorPane.style.background = color;
+      colorPane.style.display = 'inline-block';
+      colorPane.style.border = '1px solid black';
+      colorPane.style.verticalAlign = 'middle';
+      message.appendChild(colorPane);
+      nameField = dialog.appendField('Name: ', `gg-color-name-graph-widget-2-${this.widgetID}`,
+          '', true);
+      dialog.show(400, 'auto', true);
+      nameField.focus();
+    };
+    askForNextGroupName();
+    return Promise.resolve();
+  };
+
+  /**
+   * Get all groups as CATMAID.SkeletonGroup instances, implementing the
+   * SkeletonGroupSource interface. Grouped parts are represented by their
+   * whole skeleton.
+   */
+  GraphWidget2.prototype.getGroups = function() {
+    return Array.from(this.groups.values(), group => {
+      let models = {};
+      for (let member of group.members.values()) {
+        models[member.skeletonId] = this.skeletons.get(member.skeletonId).model.clone();
+      }
+      return new CATMAID.SkeletonGroup(models, group.label, group.color.clone());
+    });
+  };
+
+  /**
+   * Get one CATMAID.SkeletonGroup per selected graph node, implementing the
+   * SkeletonGroupSource interface.
+   */
+  GraphWidget2.prototype.getSelectedGroups = function() {
+    if (!this.cy) return [];
+    let groups = [];
+    this.cy.nodes().forEach(node => {
+      if (!node.selected()) return;
+      let models = {};
+      for (let skeletonId of node.data('skeleton_ids')) {
+        models[skeletonId] = this.skeletons.get(skeletonId).model.clone();
+      }
+      groups.push(new CATMAID.SkeletonGroup(models, node.data('label'),
+          new THREE.Color(node.data('color'))));
+    });
+    return groups;
   };
 
   GraphWidget2.prototype.updateFilter = function(models, skipUpdate) {

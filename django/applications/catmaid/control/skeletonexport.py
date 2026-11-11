@@ -23,7 +23,7 @@ from catmaid.models import UserRole, ClassInstance, Treenode, \
         TreenodeClassInstance, ConnectorClassInstance, Review, User
 from catmaid.control import export_NeuroML_Level3
 from catmaid.control.authentication import requires_user_role
-from catmaid.control.link import LINK_RELATION_NAMES
+from catmaid.control.link import KNOWN_LINK_PAIRS, LINK_RELATION_NAMES
 from catmaid.control.common import (get_relation_to_id_map, get_request_bool,
         get_request_list, is_empty)
 from catmaid.control.review import get_treenodes_to_reviews, \
@@ -249,6 +249,13 @@ def compact_skeleton_detail(request:HttpRequest, project_id=None, skeleton_id=No
 
     [treenode_id, connector_id, 0|1|2|-1, location_x, location_y, location_z]
 
+    Optionally, the user ID, the link confidence and the partner counts are
+    appended to each connector row, in this order. Partner counts are a list
+    of five numbers: the number of other links to the same connector with the
+    partner relation of a link's relation (see KNOWN_LINK_PAIRS), for each link
+    confidence 1-5. Link confidence and partner counts aren't available with
+    history data.
+
     If history data is requested, each row contains a validity interval. Note
     that for the live table entry (the currently valid version), there are
     special semantics for this interval: The upper bound is older than or the
@@ -336,6 +343,24 @@ def compact_skeleton_detail(request:HttpRequest, project_id=None, skeleton_id=No
       type: boolean
       defaultValue: "false"
       paramType: form
+    - name: with_link_confidence
+      description: |
+        Whether the confidence of each connector link should be appended to
+        its row. Not available with history data.
+      required: false
+      type: boolean
+      defaultValue: "false"
+      paramType: form
+    - name: with_partner_counts
+      description: |
+        Whether partner counts should be appended to each connector row: the
+        number of other links to the same connector with the partner relation
+        of the link's relation, for each confidence 1-5. Not available with
+        history data.
+      required: false
+      type: boolean
+      defaultValue: "false"
+      paramType: form
     type:
     - type: array
       items:
@@ -354,6 +379,8 @@ def compact_skeleton_detail(request:HttpRequest, project_id=None, skeleton_id=No
     with_user_info = get_request_bool(request.GET, "with_user_info", False)
     with_edition_times = get_request_bool(request.GET, "with_edition_times", False)
     with_relation_ids = get_request_bool(request.GET, "with_relation_ids", False)
+    with_link_confidence = get_request_bool(request.GET, "with_link_confidence", False)
+    with_partner_counts = get_request_bool(request.GET, "with_partner_counts", False)
     return_format = request.GET.get('format', 'json')
     ordered = get_request_bool(request.GET, "ordered", False)
 
@@ -361,7 +388,9 @@ def compact_skeleton_detail(request:HttpRequest, project_id=None, skeleton_id=No
                                with_tags, with_history, with_merge_history,
                                with_reviews, with_annotations, with_user_info,
                                ordered, with_edition_times=with_edition_times,
-                               with_relation_ids=with_relation_ids)
+                               with_relation_ids=with_relation_ids,
+                               with_link_confidence=with_link_confidence,
+                               with_partner_counts=with_partner_counts)
 
     if return_format == 'msgpack':
         data = msgpack.packb(result)
@@ -430,6 +459,13 @@ def compact_skeleton_detail_many(request:HttpRequest, project_id=None) -> Union[
     postsynaptic, 2 = gap junction, 3 = desmosome, 4 = mitochondria, -1 = other:
 
     [treenode_id, connector_id, 0|1|2|-1, location_x, location_y, location_z]
+
+    Optionally, the user ID, the link confidence and the partner counts are
+    appended to each connector row, in this order. Partner counts are a list
+    of five numbers: the number of other links to the same connector with the
+    partner relation of a link's relation (see KNOWN_LINK_PAIRS), for each link
+    confidence 1-5. Link confidence and partner counts aren't available with
+    history data.
 
     If history data is requested, each row contains a validity interval. Note
     that for the live table entry (the currently valid version), there are
@@ -515,6 +551,24 @@ def compact_skeleton_detail_many(request:HttpRequest, project_id=None) -> Union[
       type: boolean
       defaultValue: "false"
       paramType: form
+    - name: with_link_confidence
+      description: |
+        Whether the confidence of each connector link should be appended to
+        its row. Not available with history data.
+      required: false
+      type: boolean
+      defaultValue: "false"
+      paramType: form
+    - name: with_partner_counts
+      description: |
+        Whether partner counts should be appended to each connector row: the
+        number of other links to the same connector with the partner relation
+        of the link's relation, for each confidence 1-5. Not available with
+        history data.
+      required: false
+      type: boolean
+      defaultValue: "false"
+      paramType: form
     type:
     - type: array
       items:
@@ -532,6 +586,8 @@ def compact_skeleton_detail_many(request:HttpRequest, project_id=None) -> Union[
     with_user_info = get_request_bool(request.POST, "with_user_info", False)
     with_edition_times = get_request_bool(request.POST, "with_edition_times", False)
     with_relation_ids = get_request_bool(request.POST, "with_relation_ids", False)
+    with_link_confidence = get_request_bool(request.POST, "with_link_confidence", False)
+    with_partner_counts = get_request_bool(request.POST, "with_partner_counts", False)
     return_format = request.POST.get('format', 'json')
     ordered = get_request_bool(request.POST, "ordered", False)
 
@@ -544,7 +600,9 @@ def compact_skeleton_detail_many(request:HttpRequest, project_id=None) -> Union[
                 with_connectors, with_tags, with_history, with_merge_history,
                 with_reviews, with_annotations, with_user_info, ordered,
                 with_edition_times=with_edition_times,
-                with_relation_ids=with_relation_ids)
+                with_relation_ids=with_relation_ids,
+                with_link_confidence=with_link_confidence,
+                with_partner_counts=with_partner_counts)
 
     result = {
         "skeletons": skeletons
@@ -564,7 +622,8 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
         with_tags=True, with_history=False, with_merge_history=True,
         with_reviews=False, with_annotations=False, with_user_info=False,
         ordered=False, scale=None, with_edition_times=False,
-        with_relation_ids=False) -> Tuple[Tuple, Tuple, DefaultDict[Any, List], List, List]:
+        with_relation_ids=False, with_link_confidence=False,
+        with_partner_counts=False) -> Tuple[Tuple, Tuple, DefaultDict[Any, List], List, List]:
     """Get a compact treenode representation of a skeleton
 
     The returned data can optionally with the history of individual nodes and
@@ -582,6 +641,13 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
 
     [treenode_id, connector_id, 0|1|2|-1, location_x, location_y, location_z]
 
+    Optionally, the user ID, the link confidence and the partner counts are
+    appended to each connector row, in this order. Partner counts are a list
+    of five numbers: the number of other links to the same connector with the
+    partner relation of a link's relation (see KNOWN_LINK_PAIRS), for each link
+    confidence 1-5. Link confidence and partner counts aren't available with
+    history data.
+
     If history data is requested, each row contains a validity interval. Note
     that for the live table entry (the currently valid version), there are
     special semantics for this interval: The upper bound is older than or the
@@ -592,6 +658,10 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
     the original creation time is needed for data that was created without
     history tables enabled.
     """
+
+    if with_history and (with_link_confidence or with_partner_counts):
+        raise ValueError("Link confidence and partner counts aren't "
+                "available with history data")
 
     cursor = connection.cursor()
 
@@ -733,29 +803,66 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
             return relation_index.get(relation_id, -1)
         if not with_history:
             user_select = ', tc.user_id' if with_user_info else ''
+            confidence_select = ', tc.confidence' if with_link_confidence else ''
+            partner_relations = {}
+            if with_partner_counts:
+                # Count the other links to the same connector that have the
+                # partner relation of a link's relation, by their confidence.
+                for link_pair in KNOWN_LINK_PAIRS.values():
+                    source = relations.get(link_pair['source'])
+                    target = relations.get(link_pair['target'])
+                    if source is not None and target is not None:
+                        partner_relations[source] = target
+                        partner_relations[target] = source
+                partner_select = ', partners.counts'
+                partner_join = '''
+                    LEFT JOIN LATERAL (
+                        SELECT ARRAY[{counts}] AS counts
+                        FROM treenode_connector p
+                        JOIN UNNEST(%(partner_relation_ids)s::bigint[],
+                                %(partner_relation_partner_ids)s::bigint[])
+                            AS pr(relation_id, partner_id)
+                            ON pr.relation_id = tc.relation_id
+                            AND p.relation_id = pr.partner_id
+                        WHERE p.connector_id = tc.connector_id
+                        AND p.id <> tc.id
+                    ) partners ON TRUE
+                '''.format(counts=', '.join(
+                        f'count(*) FILTER (WHERE p.confidence = {confidence})'
+                        for confidence in range(1, 6)))
+            else:
+                partner_select = ''
+                partner_join = ''
             cursor.execute('''
                 SELECT tc.treenode_id, tc.connector_id, tc.relation_id,
                     c.location_x{scale}, c.location_y{scale}, c.location_z{scale}
-                    {user_select}{edition_time}
-                FROM treenode_connector tc,
-                    connector c
+                    {user_select}{confidence_select}{partner_select}{edition_time}
+                FROM treenode_connector tc
+                JOIN connector c
+                    ON tc.connector_id = c.id
+                {partner_join}
                 WHERE tc.skeleton_id = %(skeleton_id)s
-                AND tc.connector_id = c.id
                 AND tc.relation_id = ANY(%(relation_ids)s::bigint[])
             '''.format(**{
                 'user_select': user_select,
+                'confidence_select': confidence_select,
+                'partner_select': partner_select,
+                'partner_join': partner_join,
                 'scale': '*%(scale)s' if scale else '',
                 'edition_time': ', c.edition_time' if with_edition_times else '',
             }), {
                 'skeleton_id': skeleton_id,
                 'relation_ids': relation_ids,
+                'partner_relation_ids': list(partner_relations.keys()),
+                'partner_relation_partner_ids': list(partner_relations.values()),
                 'scale': scale,
             })
 
-            if with_user_info:
-                connectors = tuple((row[0], row[1], map_relation(row[2]), row[3], row[4], row[5], row[6]) for row in cursor.fetchall())
-            else:
-                connectors = tuple((row[0], row[1], map_relation(row[2]), row[3], row[4], row[5]) for row in cursor.fetchall())
+            # The edition time isn't part of the result rows
+            n_columns = 6 + sum((with_user_info, with_link_confidence,
+                    with_partner_counts))
+            connectors = tuple((row[0], row[1], map_relation(row[2])) +
+                    tuple(row[3:n_columns]) for row in cursor.fetchall())
         else:
             params = {
                 'skeleton_id': skeleton_id,

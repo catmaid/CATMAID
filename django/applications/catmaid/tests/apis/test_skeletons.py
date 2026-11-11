@@ -15,7 +15,7 @@ from guardian.shortcuts import assign_perm
 from catmaid.control.annotation import _annotate_entities, annotations_for_skeleton
 from catmaid.control.skeleton import _get_neuronname_from_skeletonid
 from catmaid.models import (
-    ClassInstance, ClassInstanceClassInstance, Log, Review, TreenodeConnector,
+    ClassInstance, ClassInstanceClassInstance, Log, Relation, Review, TreenodeConnector,
     ReviewerWhitelist, Treenode, User, ClientDatastore, ClientData,
     TreenodeClassInstance
 )
@@ -124,6 +124,80 @@ class SkeletonsApiTests(CatmaidApiTestCase):
             (285, 2463, 1026),
             (415, 421, 1023),
         ])
+
+    def test_compact_detail_partner_counts(self):
+        self.fake_authentication()
+        pre = Relation.objects.get(project_id=self.test_project_id,
+                relation_name='presynaptic_to').id
+        post = Relation.objects.get(project_id=self.test_project_id,
+                relation_name='postsynaptic_to').id
+        # Lower the confidence of a postsynaptic partner link of skeleton 235
+        # and of one of its own links, to get different confidence bins.
+        partner_link = TreenodeConnector.objects.filter(
+                project_id=self.test_project_id, relation_id=post,
+                connector__treenodeconnector__skeleton_id=235,
+                connector__treenodeconnector__relation_id=pre).exclude(
+                skeleton_id=235).order_by('id').first()
+        partner_link.confidence = 3
+        partner_link.save()
+        own_link = TreenodeConnector.objects.filter(
+                skeleton_id=235, relation_id=pre).order_by('id').first()
+        own_link.confidence = 2
+        own_link.save()
+
+        def get_connectors(**params):
+            response = self.client.post(
+                    f'/{self.test_project_id}/skeletons/compact-detail', dict({
+                        'skeleton_ids': [235],
+                        'with_connectors': True,
+                        'with_relation_ids': True,
+                    }, **params))
+            self.assertStatus(response)
+            parsed_response = json.loads(response.content.decode('utf-8'))
+            return parsed_response['skeletons']['235'][1]
+
+        # Without the new flags, rows keep their six columns
+        plain = get_connectors()
+        self.assertTrue(all(len(row) == 6 for row in plain))
+
+        rows = get_connectors(with_link_confidence=True, with_partner_counts=True)
+        self.assertEqual(len(rows), len(plain))
+        partner_relations = {pre: post, post: pre}
+        for row in rows:
+            self.assertEqual(len(row), 8)
+            link = TreenodeConnector.objects.get(skeleton_id=235,
+                    treenode_id=row[0], connector_id=row[1], relation_id=row[2])
+            self.assertEqual(row[6], link.confidence)
+            expected_counts = [0] * 5
+            for partner in TreenodeConnector.objects.filter(
+                    connector_id=link.connector_id,
+                    relation_id=partner_relations[link.relation_id]).exclude(id=link.id):
+                expected_counts[partner.confidence - 1] += 1
+            self.assertEqual(row[7], expected_counts)
+
+        # The test data should cover partners with different confidences
+        all_counts = [row[7] for row in rows]
+        self.assertTrue(any(counts[2] > 0 for counts in all_counts))
+        self.assertTrue(any(counts[4] > 0 for counts in all_counts))
+        self.assertIn(2, [row[6] for row in rows])
+
+        # The user ID comes before the confidence
+        rows_with_users = get_connectors(with_link_confidence=True,
+                with_user_info=True)
+        self.assertTrue(all(len(row) == 8 for row in rows_with_users))
+        self.assertEqual(sorted(row[7] for row in rows_with_users),
+                sorted(row[6] for row in rows))
+
+        # Not available with history data
+        response = self.client.post(
+                f'/{self.test_project_id}/skeletons/compact-detail', {
+                    'skeleton_ids': [235],
+                    'with_connectors': True,
+                    'with_history': True,
+                    'with_partner_counts': True,
+                })
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        self.assertIn('error', parsed_response)
 
 
     def test_import_skeleton_with_64_bit_ids(self):

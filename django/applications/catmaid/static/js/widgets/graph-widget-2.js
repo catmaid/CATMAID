@@ -38,6 +38,10 @@
     // Member key vs group ID, rebuilt by updateGroups()
     this.memberGroups = new Map();
 
+    // IDs of graph nodes locked by the user. Other nodes are only locked
+    // temporarily, while new nodes are laid out.
+    this.lockedNodeIds = new Set();
+
     // Link types to create edges for
     this.selectedLinkTypes = new Set(['synaptic-connector']);
     this.linkTypeColors = new Map([
@@ -155,6 +159,34 @@
           this.createNumericViewOption('Border:', 'Node border width in pixels',
               'nodeBorderWidth', 0, 0.5),
         ]);
+
+        let selectTextSpec = {type: 'text', id: `graph_widget_2_select_text_${this.widgetID}`,
+            placeholder: 'Name or /regex', title: 'Select nodes whose label ' +
+            'contains this text, or matches a regular expression starting with /',
+            onenter: () => this.selectByName(selectText.value)};
+        let showHiddenSpec = {type: 'button', label: 'Show hidden', disabled: true,
+            id: `graph_widget_2_show_hidden_${this.widgetID}`,
+            onclick: () => this.showHidden()};
+        let selectionSpecs = [
+          ['Annotate', () => this.annotate_skeleton_list()],
+          [document.createTextNode(' - ')],
+          ['Measure edge risk', () => this.measureEdgeRisk()],
+          [document.createTextNode(' - ')],
+          ['Hide', () => this.hideSelected()],
+          showHiddenSpec,
+          ['Lock', () => this.lockSelected(true)],
+          ['Unlock', () => this.lockSelected(false)],
+          [document.createTextNode(' - ')],
+          ['Remove', () => this.removeSelected()],
+          [document.createTextNode(' - ')],
+          selectTextSpec,
+          ['Select by name', () => this.selectByName(selectText.value)],
+          [document.createTextNode(' - ')],
+          ['Invert', () => this.invertSelection()],
+        ];
+        let selectionElements = CATMAID.DOM.appendToTab(tabs['Selection'], selectionSpecs);
+        let selectText = selectionElements[selectionSpecs.indexOf(selectTextSpec)];
+        this.showHiddenButton = selectionElements[selectionSpecs.indexOf(showHiddenSpec)];
 
         CATMAID.DOM.appendToTab(tabs['Subgraphs'], [
           [document.createTextNode('Select node(s) and split by: ')],
@@ -424,7 +456,9 @@
     this.skeletons.clear();
     this.groups.clear();
     this.memberGroups.clear();
+    this.lockedNodeIds.clear();
     if (this.cy) this.cy.elements().remove();
+    this.updateShowHiddenButton();
     CATMAID.NeuronNameService.getInstance().unregister(this, null);
     if (!CATMAID.tools.isEmpty(removedModels)) {
       this.triggerRemove(removedModels);
@@ -464,6 +498,7 @@
     if (groupsChanged && this.cy) {
       return this.updateGraph();
     }
+    this.updateShowHiddenButton();
     return Promise.resolve();
   };
 
@@ -887,8 +922,10 @@
         let memberPositions = {};
         let skeletonPositions = {};
         let selected = new Set();
+        let hidden = new Set();
         this.cy.elements().forEach(element => {
           if (element.selected()) selected.add(element.id());
+          if (element.hasClass('hidden')) hidden.add(element.id());
           if (element.isNode()) {
             // Copy, because the returned position object is updated in place
             let position = Object.assign({}, element.position());
@@ -990,6 +1027,7 @@
           this.cy.elements().forEach(element => {
             let id = element.id();
             if (selected.has(id)) element.select();
+            if (hidden.has(id)) element.addClass('hidden');
             if (element.isNode()) {
               // A new group can reuse the ID of a former group
               if (id in initialPositions) {
@@ -1015,20 +1053,35 @@
           });
         });
 
+        // Forget locks of nodes that don't exist anymore
+        for (let id of this.lockedNodeIds) {
+          if (this.cy.getElementById(id).empty()) this.lockedNodeIds.delete(id);
+        }
+        this.updateShowHiddenButton();
+
         if (hasNewNodes) {
           // Fitting is done by fitView(), to respect the view options
           this.cy.layout({
             name: 'spread',
             fit: false,
             stop: () => {
-              this.cy.nodes().unlock();
+              this.releaseLayoutLocks();
               if (this.layout_fit) this.fitView();
             },
           }).run();
         } else {
-          this.cy.nodes().unlock();
+          this.releaseLayoutLocks();
         }
       });
+  };
+
+  /**
+   * Unlock all nodes that weren't locked by the user.
+   */
+  GraphWidget2.prototype.releaseLayoutLocks = function() {
+    this.cy.nodes().forEach(node => {
+      if (!this.lockedNodeIds.has(node.id())) node.unlock();
+    });
   };
 
   /**
@@ -1314,6 +1367,236 @@
       this.setSplit(skeleton, null, new Map(), null);
     }
     return this.updateGraph();
+  };
+
+  /**
+   * Show the number of hidden elements on the "Show hidden" button, which is
+   * disabled if nothing is hidden.
+   */
+  GraphWidget2.prototype.updateShowHiddenButton = function() {
+    let button = this.showHiddenButton;
+    if (!button) return;
+    let count = this.cy ? this.cy.elements('.hidden').length : 0;
+    button.value = count > 0 ? `Show hidden (${count})` : 'Show hidden';
+    button.disabled = count === 0;
+  };
+
+  /**
+   * Hide all selected nodes and edges. Edges of hidden nodes are hidden too.
+   */
+  GraphWidget2.prototype.hideSelected = function() {
+    if (!this.cy) return;
+    let selected = this.cy.elements(':selected');
+    if (selected.empty()) {
+      CATMAID.info("Select one or more nodes or edges first!");
+      return;
+    }
+    selected.unselect();
+    selected.addClass('hidden');
+    this.updateShowHiddenButton();
+  };
+
+  GraphWidget2.prototype.showHidden = function() {
+    if (!this.cy) return;
+    this.cy.elements().removeClass('hidden');
+    this.updateShowHiddenButton();
+  };
+
+  /**
+   * Lock or unlock the positions of all selected nodes. Locks are kept when
+   * the graph is updated.
+   */
+  GraphWidget2.prototype.lockSelected = function(lock) {
+    if (!this.cy) return;
+    let nodes = this.cy.nodes(':selected');
+    if (nodes.empty()) {
+      CATMAID.info("Select one or more nodes first!");
+      return;
+    }
+    nodes.forEach(node => {
+      if (lock) {
+        this.lockedNodeIds.add(node.id());
+        node.lock();
+      } else {
+        this.lockedNodeIds.delete(node.id());
+        node.unlock();
+      }
+    });
+  };
+
+  /**
+   * Remove the skeletons of all selected visible nodes, including all parts of
+   * split skeletons and all members of groups, after asking for confirmation.
+   * Selected edges without selected nodes are hidden, because edges are
+   * recreated from links with every graph update.
+   */
+  GraphWidget2.prototype.removeSelected = function() {
+    if (!this.cy) return;
+    let skeletonIds = this.getSelectedSkeletonIds();
+    if (skeletonIds.length === 0) {
+      let edges = this.cy.edges(':selected');
+      if (edges.empty()) {
+        CATMAID.info("Select one or more nodes first!");
+        return;
+      }
+      edges.unselect();
+      edges.addClass('hidden');
+      this.updateShowHiddenButton();
+      CATMAID.info(`Edges can't be removed, hid ${edges.length} selected edge(s) instead`);
+      return;
+    }
+    let dialog = new CATMAID.OptionsDialog("Remove skeletons");
+    dialog.appendMessage(`Remove ${skeletonIds.length} skeleton(s) of the selected nodes, ` +
+        'including all their parts and group memberships?');
+    dialog.onOK = () => {
+      this.removeSkeletons(skeletonIds).catch(CATMAID.handleError);
+    };
+    dialog.show(350, 'auto', true);
+  };
+
+  /**
+   * Select all visible nodes whose label contains the passed in text, or
+   * matches it as regular expression if it starts with '/'. The current
+   * selection is kept.
+   */
+  GraphWidget2.prototype.selectByName = function(text) {
+    if (!this.cy) return;
+    let match = CATMAID.createTextMatchingFunction(text);
+    if (!match) return;
+    let count = 0;
+    this.cy.nodes(':visible').forEach(node => {
+      if (match(node.data('label'))) {
+        node.select();
+        ++count;
+      }
+    });
+    CATMAID.msg("Select by name", `Selected ${count} node(s)`);
+  };
+
+  GraphWidget2.prototype.invertSelection = function() {
+    if (!this.cy) return;
+    this.cy.nodes(':visible').forEach(node => {
+      if (node.selected()) {
+        node.unselect();
+      } else {
+        node.select();
+      }
+    });
+  };
+
+  /**
+   * Label selected synaptic edges with their risk: how likely the target
+   * would lose the edge's synapses due to a single error in its arbor. An
+   * edge is considered if it is selected or both its nodes are. Edges into
+   * groups are ignored.
+   */
+  GraphWidget2.prototype.measureEdgeRisk = function() {
+    if (!this.cy) return Promise.resolve();
+    // Target skeleton ID vs list of edges
+    let edgesByTarget = new Map();
+    let autapses = 0;
+    this.cy.edges().forEach(edge => {
+      // Cytoscape.js updates the cached visibility of edges only when
+      // rendering, so test the hidden class directly.
+      if (edge.connectedNodes().add(edge).some(element => element.hasClass('hidden'))) return;
+      // Risk is computed from synaptic inputs only
+      if (edge.data('link_type') !== 'synaptic-connector') return;
+      if (!edge.selected() && !(edge.source().selected() && edge.target().selected())) return;
+      let target = edge.target();
+      if (target.data('group_id')) return;
+      if (edge.source().id() === target.id()) {
+        edge.data('label', `${edge.data('weight')} [MAX]`);
+        ++autapses;
+        return;
+      }
+      let targetSkeletonId = target.data('skeleton_id');
+      let edges = edgesByTarget.get(targetSkeletonId);
+      if (edges) {
+        edges.push(edge);
+      } else {
+        edgesByTarget.set(targetSkeletonId, [edge]);
+      }
+    });
+
+    if (edgesByTarget.size === 0) {
+      if (autapses === 0) {
+        CATMAID.info("Select at least 2 connected nodes, that are not groups!");
+      }
+      return Promise.resolve();
+    }
+
+    return Promise.all(Array.from(edgesByTarget, ([skeletonId, edges]) => {
+        return CATMAID.fetch(`${project.id}/${skeletonId}/1/1/0/compact-arbor`)
+          .then(json => {
+            let ap = new CATMAID.ArborParser().init('compact-arbor', json);
+            GraphWidget2.prepareRiskArbor(ap);
+            for (let edge of edges) {
+              let risk = GraphWidget2.computeEdgeRisk(ap,
+                  edge.data('links').map(link => link[2]));
+              if (risk === null) {
+                CATMAID.info(`Couldn't measure the risk of edge ${edge.source().data('label')} ` +
+                    `→ ${edge.target().data('label')}, the skeleton changed`);
+                continue;
+              }
+              let label = risk.toFixed(2);
+              if (label === '0.00') label = 'MIN';
+              else if (label === '1.00') label = 'MAX';
+              edge.data('risk', risk);
+              edge.data('label', `${edge.data('weight')} [${label}]`);
+            }
+          });
+      }))
+      .catch(CATMAID.handleError);
+  };
+
+  /**
+   * Prepare an arbor for edge risk computation: reroot it at the node with
+   * the highest centrifugal flow centrality closest to the root, if the
+   * skeleton has outputs.
+   */
+  GraphWidget2.prepareRiskArbor = function(ap) {
+    if (ap.n_inputs === 0 || ap.n_outputs === 0) return;
+    let fc = ap.arbor.flowCentrality(ap.outputs, ap.inputs, ap.n_outputs, ap.n_inputs);
+    if (!fc) return;
+    let max = 0;
+    let node = null;
+    for (let nodeId in fc) {
+      if (max < fc[nodeId].centrifugal) {
+        max = fc[nodeId].centrifugal;
+        node = nodeId;
+      }
+    }
+    if (node === null) return;
+    // Walk towards the root while the centrality stays maximal
+    let child = node;
+    while (fc[node] && fc[node].centrifugal === max) {
+      child = node;
+      node = ap.arbor.edges[node];
+    }
+    ap.arbor.reroot(child);
+  };
+
+  /**
+   * Compute the risk of an edge into the arbor of the passed in ArborParser,
+   * represented by the treenodes receiving its synapses: one minus the
+   * fraction of all inputs that would be lost by cutting the arbor at the
+   * nearest common ancestor of these treenodes. Returns null if none of the
+   * treenodes is part of the arbor anymore or the arbor has no inputs.
+   */
+  GraphWidget2.computeEdgeRisk = function(ap, treenodeIds) {
+    if (ap.n_inputs === 0) return null;
+    let synapseNodes = {};
+    for (let treenodeId of treenodeIds) {
+      if (ap.arbor.contains(treenodeId)) synapseNodes[treenodeId] = true;
+    }
+    if (CATMAID.tools.isEmpty(synapseNodes)) return null;
+    let lca = ap.arbor.nearestCommonAncestor(synapseNodes);
+    let subNodes = ap.arbor.subArbor(lca).nodes();
+    let lostInputs = 0;
+    for (let nodeId in ap.inputs) {
+      if (subNodes[nodeId] !== undefined) lostInputs += ap.inputs[nodeId];
+    }
+    return 1 - lostInputs / ap.n_inputs;
   };
 
   GraphWidget2.prototype.nextGroupId = function() {

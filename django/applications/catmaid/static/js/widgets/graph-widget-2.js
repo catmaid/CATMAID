@@ -51,6 +51,12 @@
 
     this.edge_min_width = 0;
     this.layout_fit = true;
+    // Index into GraphWidget2.LAYOUTS, used for new nodes and re-layouts
+    this.layoutIndex = 0;
+    // Value of an entry in GraphWidget2.NODE_COLOR_MODES
+    this.nodeColorMode = 'source';
+    // Graph node IDs hidden by hideUnconnectedNodes()
+    this.hiddenUnconnectedIds = new Set();
 
     // Display options, see the View tab
     this.viewOptions = {
@@ -160,6 +166,31 @@
               'nodeBorderWidth', 0, 0.5),
         ]);
 
+        CATMAID.DOM.appendToTab(tabs['Nodes'], [
+          {type: 'select', label: 'Layout: ', title: 'The layout to use for re-layouts and new nodes',
+              entries: GraphWidget2.LAYOUTS.map((layout, i) => ({title: layout.title, value: String(i)})),
+              value: String(this.layoutIndex),
+              onchange: e => { this.layoutIndex = Number(e.target.value); }},
+          ['Re-layout', () => this.relayout()],
+          {type: 'checkbox', label: 'fit', value: this.layout_fit,
+              title: 'Fit the view to the graph after a layout',
+              onclick: e => { this.layout_fit = e.target.checked; }},
+          [document.createTextNode(' - ')],
+          {type: 'select', label: 'Color: ', title: 'How to color nodes',
+              entries: GraphWidget2.NODE_COLOR_MODES, value: this.nodeColorMode,
+              onchange: e => this.setNodeColorMode(e.target.value)},
+          [document.createTextNode(' - ')],
+          {type: 'button', label: 'Hide unconnected',
+              title: 'Hide all nodes that have either no connected edges or only edges to themselves',
+              onclick: () => this.hideUnconnectedNodes()},
+          {type: 'button', label: 'Show unconnected',
+              title: 'Show all nodes hidden by "Hide unconnected"',
+              onclick: () => this.showUnconnectedNodes()},
+          {type: 'button', label: 'Remove unconnected',
+              title: 'Remove all skeletons whose nodes have either no connected edges or only edges to themselves',
+              onclick: () => this.removeUnconnectedNodes()},
+        ]);
+
         let selectTextSpec = {type: 'text', id: `graph_widget_2_select_text_${this.widgetID}`,
             placeholder: 'Name or /regex', title: 'Select nodes whose label ' +
             'contains this text, or matches a regular expression starting with /',
@@ -244,6 +275,16 @@
     });
     // Not passed as option, because Cytoscape.js warns about custom values
     this.cy.renderer().wheelSensitivity = this.viewOptions.wheelSensitivity;
+
+    // Circles of hell colors depend on the selected node. Selecting many nodes
+    // at once triggers many events, recolor only once for them.
+    this.cy.on('select unselect', 'node', () => {
+      if (!this.nodeColorMode.startsWith('circles-of-hell') || this.recolorTimeout) return;
+      this.recolorTimeout = setTimeout(() => {
+        this.recolorTimeout = null;
+        this.applyNodeColors();
+      }, 0);
+    });
   };
 
   /**
@@ -457,6 +498,7 @@
     this.groups.clear();
     this.memberGroups.clear();
     this.lockedNodeIds.clear();
+    this.hiddenUnconnectedIds.clear();
     if (this.cy) this.cy.elements().remove();
     this.updateShowHiddenButton();
     CATMAID.NeuronNameService.getInstance().unregister(this, null);
@@ -1058,21 +1100,342 @@
           if (this.cy.getElementById(id).empty()) this.lockedNodeIds.delete(id);
         }
         this.updateShowHiddenButton();
+        // Nodes are created with source colors
+        this.applyNodeColors();
 
         if (hasNewNodes) {
-          // Fitting is done by fitView(), to respect the view options
-          this.cy.layout({
-            name: 'spread',
-            fit: false,
-            stop: () => {
-              this.releaseLayoutLocks();
-              if (this.layout_fit) this.fitView();
-            },
-          }).run();
+          this.runLayout(() => this.releaseLayoutLocks());
         } else {
           this.releaseLayoutLocks();
         }
       });
+  };
+
+  /**
+   * Layouts available for this widget, see the Nodes tab. Fitting is done by
+   * fitView(), to respect the view options. Layouts don't move locked nodes.
+   */
+  GraphWidget2.LAYOUTS = [
+    {title: 'Spread (force-directed)', options: {name: 'spread'}},
+    {title: 'Hierarchical', options: {name: 'breadthfirst'}},
+    {title: 'Grid', options: {name: 'grid'}},
+    {title: 'Circle', options: {name: 'circle'}},
+    {title: 'Concentric (degree)', options: {name: 'concentric', minNodeSpacing: 80,
+        concentric: node => node.degree(), levelWidth: nodes => nodes.maxDegree() / 4}},
+    {title: 'Concentric (out degree)', options: {name: 'concentric', minNodeSpacing: 80,
+        concentric: node => node.outdegree(), levelWidth: nodes => nodes.maxDegree() / 4}},
+    {title: 'Concentric (in degree)', options: {name: 'concentric', minNodeSpacing: 80,
+        concentric: node => node.indegree(), levelWidth: nodes => nodes.maxDegree() / 4}},
+    {title: 'Random', options: {name: 'random'}},
+    {title: 'Compound Spring Embedder', options: {name: 'cose'}},
+    // Without positions, the preset layout keeps the current ones
+    {title: 'Manual', options: {name: 'preset'}},
+    {title: 'Dagre (DAG-based)', options: {name: 'dagre'}},
+    {title: 'Cola (force-directed)', options: {name: 'cola'}},
+  ];
+
+  /**
+   * Run the selected layout on all nodes and call the optional callback when
+   * it is done.
+   */
+  GraphWidget2.prototype.runLayout = function(callback) {
+    let layout = GraphWidget2.LAYOUTS[this.layoutIndex];
+    this.cy.layout(Object.assign({}, layout.options, {
+      fit: false,
+      stop: () => {
+        if (callback) callback();
+        if (this.layout_fit) this.fitView();
+      },
+    })).run();
+  };
+
+  GraphWidget2.prototype.relayout = function() {
+    if (!this.cy || this.cy.nodes().empty()) return;
+    this.runLayout();
+  };
+
+  GraphWidget2.NODE_COLOR_MODES = [
+    {title: 'source', value: 'source'},
+    {title: 'review status (union)', value: 'union-review'},
+    {title: 'review status (team)', value: 'whitelist-review'},
+    {title: 'review status (own)', value: 'own-review'},
+    {title: 'input/output', value: 'io'},
+    {title: 'betweenness centrality', value: 'betweenness-centrality'},
+    {title: 'circles of hell (upstream)', value: 'circles-of-hell-upstream'},
+    {title: 'circles of hell (downstream)', value: 'circles-of-hell-downstream'},
+  ];
+
+  GraphWidget2.prototype.setNodeColorMode = function(mode) {
+    this.nodeColorMode = mode;
+    return this.applyNodeColors();
+  };
+
+  /**
+   * Whether an element is shown: neither it nor, for edges, its nodes have the
+   * hidden class. Cytoscape.js updates the cached visibility of edges only when
+   * rendering, so the hidden class is tested directly.
+   */
+  GraphWidget2.isShown = function(element) {
+    if (element.hasClass('hidden')) return false;
+    return element.isNode() ||
+        !(element.source().hasClass('hidden') || element.target().hasClass('hidden'));
+  };
+
+  /**
+   * Get all shown edges that represent links, i.e. no part edges.
+   */
+  GraphWidget2.prototype.getShownLinkEdges = function() {
+    return this.cy.edges().filter(edge => !edge.hasClass('part-edge') && GraphWidget2.isShown(edge));
+  };
+
+  /**
+   * Get the color of a node in the "source" mode: its skeleton's or group's
+   * color.
+   */
+  GraphWidget2.prototype.getSourceColor = function(node) {
+    let groupId = node.data('group_id');
+    let color = groupId ? this.groups.get(groupId).color :
+        this.skeletons.get(node.data('skeleton_id')).model.color;
+    return '#' + color.getHexString();
+  };
+
+  /**
+   * Color all graph nodes according to the node color mode. Returns a promise
+   * that resolves once colors are set.
+   */
+  GraphWidget2.prototype.applyNodeColors = function() {
+    if (!this.cy) return Promise.resolve();
+    let mode = this.nodeColorMode;
+    // Results of earlier asynchronous colorings are ignored
+    let token = this.nodeColorToken = {};
+    let setColors = getColor => {
+      this.cy.batch(() => {
+        this.cy.nodes().forEach(node => node.data('color', getColor(node)));
+      });
+    };
+
+    if (mode === 'source') {
+      setColors(node => this.getSourceColor(node));
+    } else if (mode.endsWith('-review')) {
+      let skeletonIds = Array.from(this.skeletons.keys());
+      if (skeletonIds.length === 0) return Promise.resolve();
+      let data = {skeleton_ids: skeletonIds};
+      if (mode === 'own-review') data.user_ids = [CATMAID.session.userid];
+      else if (mode === 'whitelist-review') data.whitelist = true;
+      return CATMAID.fetch(`${project.id}/skeletons/review-status`, 'POST', data)
+        .then(json => {
+          if (this.nodeColorToken !== token) return;
+          setColors(node => {
+            // Parts and groups show the mean review status of their skeletons
+            let skeletonIds = node.data('skeleton_ids');
+            let percent = skeletonIds.reduce((sum, skeletonId) => {
+              let counts = json[skeletonId];
+              return counts && counts[0] > 0 ? sum + Math.floor(100 * counts[1] / counts[0]) : sum;
+            }, 0) / skeletonIds.length;
+            return CATMAID.ReviewSystem.getBackgroundColor(percent);
+          });
+        })
+        .catch(CATMAID.handleError);
+    } else if (mode === 'io') {
+      let io = GraphWidget2.getNodesIO(this.cy.nodes(), this.getShownLinkEdges());
+      setColors(node => GraphWidget2.getIOColor(io.get(node.id())));
+    } else if (mode === 'betweenness-centrality') {
+      let centrality = this.computeBetweennessCentrality();
+      let color = new THREE.Color();
+      setColors(node => {
+        // Hidden nodes have no centrality and are white, like disconnected ones
+        let c = centrality.get(node.id()) || 0;
+        return '#' + color.setHSL(0, c, 1 - (c / 2)).getHexString();
+      });
+    } else if (mode.startsWith('circles-of-hell-')) {
+      let colors = this.computeCirclesOfHellColors(mode === 'circles-of-hell-upstream');
+      setColors(node => colors.get(node.id()) || '#fff');
+    } else {
+      throw new CATMAID.ValueError(`Unknown node color mode: ${mode}`);
+    }
+    return Promise.resolve();
+  };
+
+  /**
+   * Sum the weights of the passed in directed edges into inputs and outputs
+   * per node. Returns a Map of node ID vs {inputs, outputs}.
+   */
+  GraphWidget2.getNodesIO = function(nodes, edges) {
+    let io = new Map(nodes.map(node => [node.id(), {inputs: 0, outputs: 0}]));
+    edges.forEach(edge => {
+      if (!edge.data('directed')) return;
+      io.get(edge.target().id()).inputs += edge.data('weight');
+      io.get(edge.source().id()).outputs += edge.data('weight');
+    });
+    return io;
+  };
+
+  /**
+   * Map inputs and outputs to a color: purely output nodes are red, purely
+   * input nodes green, mixed nodes span the hue from red to green, with
+   * balanced nodes being yellow. Nodes without both are white.
+   */
+  GraphWidget2.getIOColor = function(io) {
+    if (io.inputs === 0) {
+      return io.outputs === 0 ? '#fff' : '#f00';
+    }
+    if (io.outputs === 0) return '#0f0';
+    return '#' + new THREE.Color().setHSL((io.inputs / (io.inputs + io.outputs)) * 0.333,
+        1, 0.5).getHexString();
+  };
+
+  /**
+   * Compute the normalized betweenness centrality of all shown nodes, along
+   * shown directed link edges weighted by their link count. Returns a Map of
+   * node ID vs value in [0, 1].
+   */
+  GraphWidget2.prototype.computeBetweennessCentrality = function() {
+    // Cytoscape.js follows all outgoing edges of a node, so a separate graph
+    // is needed to ignore hidden, part and undirected edges.
+    let nodes = this.cy.nodes().filter(node => GraphWidget2.isShown(node));
+    let edges = this.getShownLinkEdges().filter(edge => edge.data('directed'));
+    let graph = cytoscape3({
+      headless: true,
+      elements: {
+        nodes: nodes.map(node => ({data: {id: node.id()}})),
+        edges: edges.map(edge => ({data: {id: edge.id(), source: edge.source().id(),
+            target: edge.target().id(), weight: edge.data('weight')}})),
+      },
+    });
+    let bc = graph.elements().betweennessCentrality({
+      directed: true,
+      weight: edge => edge.data('weight'),
+    });
+    let centrality = new Map(graph.nodes().map(node => [node.id(), bc.betweennessNormalized(node)]));
+    graph.destroy();
+    return centrality;
+  };
+
+  /**
+   * Color nodes by their distance to the only selected node, following shown
+   * link edges upstream or downstream. Undirected links are followed in both
+   * directions. Returns a Map of node ID vs color, unreached nodes have none.
+   */
+  GraphWidget2.prototype.computeCirclesOfHellColors = function(upstream) {
+    let colors = new Map();
+    let selected = this.cy.nodes(':selected');
+    if (selected.length !== 1) {
+      if (selected.length > 1) CATMAID.info("Need 1 (and only 1) selected node!");
+      return colors;
+    }
+
+    // Node ID vs IDs of nodes to walk to
+    let next = new Map();
+    let addStep = (from, to) => {
+      let targets = next.get(from);
+      if (targets) {
+        targets.add(to);
+      } else {
+        next.set(from, new Set([to]));
+      }
+    };
+    this.getShownLinkEdges().forEach(edge => {
+      let source = edge.source().id(), target = edge.target().id();
+      if (source === target) return;
+      if (!edge.data('directed') || !upstream) addStep(source, target);
+      if (!edge.data('directed') || upstream) addStep(target, source);
+    });
+
+    let circles = GraphWidget2.getCircles(selected.id(), next);
+    circles.forEach((circle, i) => {
+      // The selected node uses the selection color, the next circles get
+      // lighter with increasing distance.
+      let color = i === 0 ? '#b0ff72' :
+          '#' + new THREE.Color().setHSL(0.66, 1, 0.55 + 0.45 * i / circles.length).getHexString();
+      for (let nodeId of circle) colors.set(nodeId, color);
+    });
+    return colors;
+  };
+
+  /**
+   * Breadth-first search from a start node along the passed in steps, a Map
+   * of node ID vs Set of next node IDs. Returns a list of node ID lists, one
+   * per distance, starting with the start node.
+   */
+  GraphWidget2.getCircles = function(startId, next) {
+    let seen = new Set([startId]);
+    let circles = [[startId]];
+    while (true) {
+      let circle = [];
+      for (let nodeId of circles[circles.length - 1]) {
+        for (let nextId of (next.get(nodeId) || [])) {
+          if (seen.has(nextId)) continue;
+          seen.add(nextId);
+          circle.push(nextId);
+        }
+      }
+      if (circle.length === 0) break;
+      circles.push(circle);
+    }
+    return circles;
+  };
+
+  /**
+   * Find all shown nodes without shown link edges to other nodes.
+   */
+  GraphWidget2.prototype.findUnconnectedNodes = function() {
+    let connected = new Set();
+    this.getShownLinkEdges().forEach(edge => {
+      if (edge.source().id() === edge.target().id()) return;
+      connected.add(edge.source().id());
+      connected.add(edge.target().id());
+    });
+    return this.cy.nodes().filter(node => GraphWidget2.isShown(node) && !connected.has(node.id()));
+  };
+
+  GraphWidget2.prototype.hideUnconnectedNodes = function() {
+    if (!this.cy) return;
+    let nodes = this.findUnconnectedNodes();
+    if (nodes.empty()) {
+      CATMAID.info("No unconnected nodes found");
+      return;
+    }
+    nodes.forEach(node => this.hiddenUnconnectedIds.add(node.id()));
+    nodes.unselect();
+    nodes.addClass('hidden');
+    this.updateShowHiddenButton();
+  };
+
+  /**
+   * Show nodes hidden by hideUnconnectedNodes(), other hidden nodes stay
+   * hidden.
+   */
+  GraphWidget2.prototype.showUnconnectedNodes = function() {
+    if (!this.cy) return;
+    for (let nodeId of this.hiddenUnconnectedIds) {
+      this.cy.getElementById(nodeId).removeClass('hidden');
+    }
+    this.hiddenUnconnectedIds.clear();
+    this.updateShowHiddenButton();
+  };
+
+  /**
+   * Remove all skeletons whose graph nodes are all unconnected, after asking
+   * for confirmation. Skeletons with a connected part or group are kept.
+   */
+  GraphWidget2.prototype.removeUnconnectedNodes = function() {
+    if (!this.cy) return;
+    let unconnected = new Set(this.findUnconnectedNodes().map(node => node.id()));
+    let skeletonIds = Array.from(this.skeletons.keys()).filter(skeletonId => {
+      let nodes = this.getSkeletonNodes(skeletonId);
+      return nodes.nonempty() && nodes.every(node => unconnected.has(node.id()));
+    });
+    if (skeletonIds.length === 0) {
+      CATMAID.info("No skeletons with only unconnected nodes found");
+      return;
+    }
+    let dialog = new CATMAID.OptionsDialog("Remove unconnected");
+    dialog.appendMessage(`Remove ${skeletonIds.length} skeleton(s) without connections ` +
+        'to other nodes?');
+    dialog.onOK = () => {
+      this.removeSkeletons(skeletonIds).catch(CATMAID.handleError);
+    };
+    dialog.show(350, 'auto', true);
   };
 
   /**
@@ -1095,7 +1458,7 @@
         this.getSkeletonNodes(skeletonId).forEach(node => {
           // Group nodes keep their group color and label
           if (node.data('group_id')) return;
-          node.data('color', color);
+          if (this.nodeColorMode === 'source') node.data('color', color);
           node.data('label', this.getNodeLabel(skeletonId, node.data('part')));
         });
         this.cy.edges('.part-edge').forEach(edge => {
@@ -1399,6 +1762,7 @@
   GraphWidget2.prototype.showHidden = function() {
     if (!this.cy) return;
     this.cy.elements().removeClass('hidden');
+    this.hiddenUnconnectedIds.clear();
     this.updateShowHiddenButton();
   };
 
@@ -1495,10 +1859,7 @@
     // Target skeleton ID vs list of edges
     let edgesByTarget = new Map();
     let autapses = 0;
-    this.cy.edges().forEach(edge => {
-      // Cytoscape.js updates the cached visibility of edges only when
-      // rendering, so test the hidden class directly.
-      if (edge.connectedNodes().add(edge).some(element => element.hasClass('hidden'))) return;
+    this.getShownLinkEdges().forEach(edge => {
       // Risk is computed from synaptic inputs only
       if (edge.data('link_type') !== 'synaptic-connector') return;
       if (!edge.selected() && !(edge.source().selected() && edge.target().selected())) return;

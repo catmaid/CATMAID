@@ -44,12 +44,33 @@
 
     // Link types to create edges for
     this.selectedLinkTypes = new Set(['synaptic-connector']);
+    // Link type vs {color, opacity} of its edges
     this.linkTypeColors = new Map([
-      ['synaptic-connector', '#555'],
-      ['default', '#ff9e25'],
+      ['synaptic-connector', {color: '#555', opacity: 1}],
+      ['default', {color: '#ff9e25', opacity: 1}],
     ]);
+    // Graph node ID vs arrow shape of the directed edges leaving it
+    this.arrowShapes = new Map();
 
-    this.edge_min_width = 0;
+    // Edge options, see the Edges tab
+    this.edgeOptions = {
+      // One of 'link-type', 'source' or 'target'
+      colorMode: 'link-type',
+      minLinks: 1,
+      // Links count only if both partner links have at least this confidence
+      minConfidence: 1,
+      hideSelfEdges: false,
+      // Value of an entry in GraphWidget2.EDGE_LABEL_STRATEGIES
+      labelStrategy: 'absolute',
+      textColor: '#555',
+      textOpacity: 1,
+      textOutlineWidth: 0.4,
+      textOutlineOpacity: 1,
+      minWidth: 0,
+      // Key of GraphWidget2.EDGE_WIDTH_FUNCTIONS
+      widthFunction: 'sqrt',
+    };
+
     this.layout_fit = true;
     // Index into GraphWidget2.LAYOUTS, used for new nodes and re-layouts
     this.layoutIndex = 0;
@@ -165,6 +186,86 @@
           this.createNumericViewOption('Border:', 'Node border width in pixels',
               'nodeBorderWidth', 0, 0.5),
         ]);
+
+        let edgeOptions = this.edgeOptions;
+        let setEdgeOption = (name, value) => {
+          edgeOptions[name] = value;
+          this.updateEdgeProperties();
+        };
+        let updateEdges = () => this.updateEdgeProperties();
+        let linkTypeSelection = CATMAID.DOM.createAsyncPlaceholder(
+          CATMAID.DOM.initLinkTypeList({
+            getSelectedLinkTypes: () => this.selectedLinkTypes,
+            setLinkTypeVisibility: (linkType, visible) => this.setLinkTypeVisibility(linkType, visible),
+            // All link types are loaded already
+            update: () => this.updateGraph(),
+            color: true,
+            getLinkTypeColor: linkType => this.getLinkTypeColor(linkType),
+            getLinkTypeOpacity: linkType => this.getLinkTypeOpacity(linkType),
+            // Called with a different context
+            updateLinkTypeColor: (...args) => this.updateLinkTypeColor(...args),
+          }));
+        let linkTypeWrapper = document.createElement('span');
+        linkTypeWrapper.appendChild(linkTypeSelection);
+        let arrowShapeSpec = {type: 'select', label: 'Arrow shape: ',
+            title: 'Arrow shape for the edges leaving the selected nodes',
+            entries: GraphWidget2.ARROW_SHAPES, value: 'triangle'};
+        let synapseTypeSpec = {type: 'select', label: 'Synapse type: ',
+            title: 'Hide or show synaptic edges between axon and dendrite ' +
+                'parts of skeletons split into axon and dendrite',
+            entries: Object.keys(GraphWidget2.SYNAPSE_TYPES), value: 'axo-axonic'};
+        let edgeSpecs = [
+          {type: 'select', label: 'Color by: ', title: 'Color directed edges ' +
+              'like their link type, or like their source or target node',
+              entries: [{title: 'link type', value: 'link-type'},
+                        {title: 'source', value: 'source'},
+                        {title: 'target', value: 'target'}],
+              value: edgeOptions.colorMode,
+              onchange: e => setEdgeOption('colorMode', e.target.value)},
+          this.createNumericOption(edgeOptions, 'Min. links:',
+              'Hide edges with fewer links', 'minLinks', 1, undefined, 1, updateEdges),
+          {type: 'select', label: 'Min. confidence: ', title: 'Ignore links ' +
+              'whose confidence or whose partner link\'s confidence is lower',
+              entries: ['1', '2', '3', '4', '5'], value: String(edgeOptions.minConfidence),
+              onchange: e => setEdgeOption('minConfidence', Number(e.target.value))},
+          {type: 'checkbox', label: 'Hide self edges', value: edgeOptions.hideSelfEdges,
+              title: 'Hide edges whose source and target node are the same',
+              onclick: e => setEdgeOption('hideSelfEdges', e.target.checked)},
+          {type: 'child', element: linkTypeWrapper},
+          [document.createTextNode(' - ')],
+          arrowShapeSpec,
+          ['Set', () => this.setArrowShapeOfSelectedNodes(arrowShapeSelect.value)],
+          [document.createTextNode(' - ')],
+          synapseTypeSpec,
+          ['Hide', () => this.setSynapseTypeVisibility(synapseTypeSelect.value, false)],
+          ['Show', () => this.setSynapseTypeVisibility(synapseTypeSelect.value, true)],
+          {type: 'heading', label: 'Display'},
+          {type: 'select', label: 'Label: ', title: 'Edge labels, relative ' +
+              'values include partners that aren\'t part of the graph',
+              entries: GraphWidget2.EDGE_LABEL_STRATEGIES, value: edgeOptions.labelStrategy,
+              onchange: e => setEdgeOption('labelStrategy', e.target.value)},
+          {type: 'color-button', label: 'Text color', title: 'Color of edge labels',
+              color: {initialColor: edgeOptions.textColor},
+              onchange: (rgb, alpha, colorChanged, alphaChanged, colorHex) => {
+                if (!colorChanged) return;
+                edgeOptions.textColor = '#' + colorHex;
+                this.applyStyle();
+              }},
+          this.createNumericOption(edgeOptions, 'Text opacity:', 'Opacity of edge labels',
+              'textOpacity', 0, 1, 0.1, () => this.applyStyle()),
+          this.createNumericOption(edgeOptions, 'Text outline:', 'Outline width of edge labels',
+              'textOutlineWidth', 0, undefined, 0.1, () => this.applyStyle()),
+          this.createNumericOption(edgeOptions, 'Outline opacity:', 'Opacity of edge label outlines',
+              'textOutlineOpacity', 0, 1, 0.1, () => this.applyStyle()),
+          this.createNumericOption(edgeOptions, 'Min. width:', 'Width added to all edges',
+              'minWidth', 0, undefined, 0.5, updateEdges),
+          {type: 'select', label: 'Width: ', title: 'Edge width as a function of the link count',
+              entries: Object.keys(GraphWidget2.EDGE_WIDTH_FUNCTIONS), value: edgeOptions.widthFunction,
+              onchange: e => setEdgeOption('widthFunction', e.target.value)},
+        ];
+        let edgeElements = CATMAID.DOM.appendToTab(tabs['Edges'], edgeSpecs);
+        let arrowShapeSelect = edgeElements[edgeSpecs.indexOf(arrowShapeSpec)];
+        let synapseTypeSelect = edgeElements[edgeSpecs.indexOf(synapseTypeSpec)];
 
         CATMAID.DOM.appendToTab(tabs['Nodes'], [
           {type: 'select', label: 'Layout: ', title: 'The layout to use for re-layouts and new nodes',
@@ -292,6 +393,7 @@
    */
   GraphWidget2.prototype.getStylesheet = function() {
     let options = this.viewOptions;
+    let edgeOptions = this.edgeOptions;
     let nodeStyle = {
       "label": "data(label)",
       "shape": "data(shape)",
@@ -319,10 +421,12 @@
           "target-arrow-shape": "data(arrow)",
           "target-arrow-color": "data(color)",
           "line-color": "data(color)",
-          "opacity": 1.0,
+          "opacity": "data(opacity)",
+          "text-opacity": edgeOptions.textOpacity,
           "text-outline-color": "#fff",
-          "text-outline-width": 0.4,
-          "color": "#555",
+          "text-outline-width": edgeOptions.textOutlineWidth,
+          "text-outline-opacity": edgeOptions.textOutlineOpacity,
+          "color": edgeOptions.textColor,
           "curve-style": "bezier",
         },
       }, {
@@ -345,6 +449,12 @@
         style: {
           "display": "none",
         },
+      }, {
+        // Edges removed by edge filters
+        selector: ".filtered",
+        style: {
+          "display": "none",
+        },
       }];
   };
 
@@ -361,27 +471,37 @@
    */
   GraphWidget2.prototype.createNumericViewOption = function(label, title, name,
       min, step, onChange) {
+    return this.createNumericOption(this.viewOptions, label, title, name, min,
+        undefined, step, onChange || (() => this.applyStyle()));
+  };
+
+  /**
+   * Create a numeric field element for a field of an options object. The
+   * passed in function is called with valid new values, invalid values are
+   * refused. The maximum is optional.
+   */
+  GraphWidget2.prototype.createNumericOption = function(options, label, title,
+      name, min, max, step, onChange) {
     return {
       type: 'numeric',
       label: label,
       title: title,
-      value: this.viewOptions[name],
+      value: options[name],
       length: 3,
       min: min,
+      max: max,
       step: step,
       onchange: e => {
         let value = Number(e.target.value);
-        if (e.target.value === '' || Number.isNaN(value) || value < min) {
-          CATMAID.warn(`Please use a number of at least ${min}`);
-          e.target.value = this.viewOptions[name];
+        if (e.target.value === '' || Number.isNaN(value) || value < min ||
+            (max !== undefined && value > max)) {
+          CATMAID.warn(max === undefined ? `Please use a number of at least ${min}` :
+              `Please use a number between ${min} and ${max}`);
+          e.target.value = options[name];
           return;
         }
-        this.viewOptions[name] = value;
-        if (onChange) {
-          onChange(value);
-        } else {
-          this.applyStyle();
-        }
+        options[name] = value;
+        onChange(value);
       },
     };
   };
@@ -499,6 +619,7 @@
     this.memberGroups.clear();
     this.lockedNodeIds.clear();
     this.hiddenUnconnectedIds.clear();
+    this.arrowShapes.clear();
     if (this.cy) this.cy.elements().remove();
     this.updateShowHiddenButton();
     CATMAID.NeuronNameService.getInstance().unregister(this, null);
@@ -630,6 +751,8 @@
             skeleton_ids: skeletonIds,
             with_connectors: true,
             with_relation_ids: true,
+            with_link_confidence: true,
+            with_partner_counts: true,
             format: binary ? 'msgpack' : 'json',
           },
           responseType: binary ? 'arraybuffer' : undefined,
@@ -667,7 +790,8 @@
     for (let row of connectorRows) {
       let relationName = relationNames.get(row[2]);
       if (!relationName) continue;
-      links.push([row[0], row[1], relationName]);
+      // Rows end with the link confidence and partner counts
+      links.push([row[0], row[1], relationName, row[6], row[7]]);
       linkedNodeIds.add(row[0]);
     }
 
@@ -807,6 +931,8 @@
         this.linkPairs,
       ])
       .then(([linkTypes, linkPairs]) => {
+        // Needed synchronously for edge labels
+        this.resolvedLinkPairs = linkPairs;
         // Update groups only now, because they can change while link types
         // are loaded. Graph nodes are created from the same state, right
         // after this.
@@ -817,7 +943,7 @@
         // treenode ID]
         let connectors = new Map();
         for (let skeleton of this.skeletons.values()) {
-          for (let [treenodeId, connectorId, relationName] of skeleton.links) {
+          for (let [treenodeId, connectorId, relationName, confidence] of skeleton.links) {
             let partners = connectors.get(connectorId);
             if (!partners) {
               partners = new Map();
@@ -829,7 +955,7 @@
               partners.set(relationName, relationPartners);
             }
             let part = skeleton.nodes.get(treenodeId).part;
-            relationPartners.push([this.getGraphNodeId(skeleton, part), treenodeId]);
+            relationPartners.push([this.getGraphNodeId(skeleton, part), treenodeId, confidence]);
           }
         }
 
@@ -856,7 +982,8 @@
             };
             edges.set(id, edge);
           }
-          edge.links.push([source[1], connectorId, target[1]]);
+          // A link pair is as confident as its less confident link
+          edge.links.push([source[1], connectorId, target[1], Math.min(source[2], target[2])]);
         };
 
         for (let linkType of this.selectedLinkTypes) {
@@ -1024,8 +1151,9 @@
 
         let elements = {
           nodes: nodes,
+          // Weight, label, width, color, opacity and arrow are set by
+          // updateEdgeProperties().
           edges: edges.map(edge => {
-            let weight = edge.links.length;
             return {
               data: {
                 id: edge.id,
@@ -1034,12 +1162,12 @@
                 link_type: edge.linkType,
                 directed: edge.directed,
                 links: edge.links,
-                weight: weight,
-                label: weight,
-                width: this.edge_min_width + Math.sqrt(weight),
-                color: this.linkTypeColors.get(edge.linkType) ||
-                    this.linkTypeColors.get('default'),
-                arrow: edge.directed ? 'triangle' : 'none',
+                weight: edge.links.length,
+                label: '',
+                width: 1,
+                color: this.getLinkTypeColor(edge.linkType),
+                opacity: 1,
+                arrow: 'none',
               },
             };
           }).concat(this.computePartEdges().map(edge => {
@@ -1053,6 +1181,7 @@
                 label: '',
                 width: 2,
                 color: edge.color,
+                opacity: 1,
                 arrow: 'none',
               },
               classes: 'part-edge',
@@ -1095,10 +1224,14 @@
           });
         });
 
-        // Forget locks of nodes that don't exist anymore
+        // Forget locks and arrow shapes of nodes that don't exist anymore
         for (let id of this.lockedNodeIds) {
           if (this.cy.getElementById(id).empty()) this.lockedNodeIds.delete(id);
         }
+        for (let id of this.arrowShapes.keys()) {
+          if (this.cy.getElementById(id).empty()) this.arrowShapes.delete(id);
+        }
+        this.updateEdgeProperties();
         this.updateShowHiddenButton();
         // Nodes are created with source colors
         this.applyNodeColors();
@@ -1109,6 +1242,203 @@
           this.releaseLayoutLocks();
         }
       });
+  };
+
+  GraphWidget2.EDGE_WIDTH_FUNCTIONS = {
+    identity: w => w,
+    log: Math.log,
+    log10: Math.log10,
+    sqrt: Math.sqrt,
+  };
+
+  GraphWidget2.EDGE_LABEL_STRATEGIES = [
+    {title: 'Absolute number of connections', value: 'absolute'},
+    {title: 'Fraction of outbound connections', value: 'outbound-relative'},
+    {title: 'Fraction of inbound connections', value: 'inbound-relative'},
+  ];
+
+  GraphWidget2.ARROW_SHAPES = ['triangle', 'tee', 'circle', 'square', 'diamond',
+      'vee', 'triangle-tee', 'triangle-cross', 'triangle-backcurve', 'none'];
+
+  GraphWidget2.prototype.getLinkTypeColor = function(linkType) {
+    return (this.linkTypeColors.get(linkType) || this.linkTypeColors.get('default')).color;
+  };
+
+  GraphWidget2.prototype.getLinkTypeOpacity = function(linkType) {
+    return (this.linkTypeColors.get(linkType) || this.linkTypeColors.get('default')).opacity;
+  };
+
+  /**
+   * Change color and opacity of a link type's edges, called by the color
+   * buttons of the link type list. Link types without an own entry start
+   * with the default color and opacity.
+   */
+  GraphWidget2.prototype.updateLinkTypeColor = function(linkType, rgb, alpha,
+      colorChanged, alphaChanged, colorHex) {
+    let entry = this.linkTypeColors.get(linkType);
+    if (!entry) {
+      let defaults = this.linkTypeColors.get('default');
+      entry = {color: defaults.color, opacity: defaults.opacity};
+      this.linkTypeColors.set(linkType, entry);
+    }
+    if (colorChanged) entry.color = '#' + colorHex;
+    if (alphaChanged) entry.opacity = alpha;
+    if (colorChanged || alphaChanged) this.updateEdgeProperties();
+  };
+
+  GraphWidget2.prototype.setLinkTypeVisibility = function(linkType, visible) {
+    if (visible) {
+      this.selectedLinkTypes.add(linkType);
+    } else {
+      this.selectedLinkTypes.delete(linkType);
+    }
+  };
+
+  /**
+   * Update weight, label, width, color, opacity and arrow of all link edges
+   * from the edge options, and filter edges by them. Filtered edges get the
+   * "filtered" class, independent of manually hidden elements.
+   */
+  GraphWidget2.prototype.updateEdgeProperties = function() {
+    if (!this.cy) return;
+    let options = this.edgeOptions;
+    let widthFunction = GraphWidget2.EDGE_WIDTH_FUNCTIONS[options.widthFunction];
+    // Partner totals are computed once per graph node and relation
+    let totals = new Map();
+    let getTotal = (node, relation) => {
+      let key = `${node.id()}|${relation}`;
+      let total = totals.get(key);
+      if (total === undefined) {
+        total = this.getPartnerTotal(node, relation, options.minConfidence);
+        totals.set(key, total);
+      }
+      return total;
+    };
+
+    this.cy.batch(() => {
+      this.cy.edges().forEach(edge => {
+        if (edge.hasClass('part-edge')) return;
+        let weight = edge.data('links').reduce((count, link) =>
+            link[3] >= options.minConfidence ? count + 1 : count, 0);
+        let source = edge.source(), target = edge.target();
+        let linkType = edge.data('link_type');
+        let directed = edge.data('directed');
+
+        let label = weight;
+        if (options.labelStrategy !== 'absolute' && this.resolvedLinkPairs) {
+          let pair = this.resolvedLinkPairs[linkType];
+          let total = options.labelStrategy === 'outbound-relative' ?
+              getTotal(source, pair.source) : getTotal(target, pair.target);
+          // Two decimals precision
+          label = total > 0 ? Math.round(100 * weight / total) / 100 : 0;
+        }
+
+        let color = this.getLinkTypeColor(linkType);
+        if (directed && options.colorMode === 'source') {
+          color = source.data('color');
+        } else if (directed && options.colorMode === 'target') {
+          color = target.data('color');
+        }
+
+        edge.data({
+          weight: weight,
+          label: label,
+          // Width functions like log can be negative or undefined for small values
+          width: options.minWidth + (weight > 0 ? Math.max(0, widthFunction(weight)) : 0),
+          color: color,
+          opacity: this.getLinkTypeOpacity(linkType),
+          arrow: directed ? (this.arrowShapes.get(source.id()) || 'triangle') : 'none',
+        });
+
+        if (weight === 0 || weight < options.minLinks ||
+            (options.hideSelfEdges && source.id() === target.id())) {
+          edge.addClass('filtered');
+        } else {
+          edge.removeClass('filtered');
+        }
+      });
+    });
+  };
+
+  /**
+   * Count the partner links of all links with the passed in relation in a
+   * graph node: links of other skeletons or of the same skeleton to the same
+   * connectors, with the partner relation. This includes partners that aren't
+   * part of the graph. Only link pairs with both confidences of at least
+   * minConfidence are counted.
+   */
+  GraphWidget2.prototype.getPartnerTotal = function(node, relation, minConfidence) {
+    let total = 0;
+    for (let member of node.data('members')) {
+      let skeleton = this.skeletons.get(member.skeletonId);
+      for (let [treenodeId, , relationName, confidence, partnerCounts] of skeleton.links) {
+        if (relationName !== relation || confidence < minConfidence) continue;
+        if (skeleton.nodes.get(treenodeId).part !== member.part) continue;
+        for (let i = minConfidence - 1; i < 5; ++i) total += partnerCounts[i];
+      }
+    }
+    return total;
+  };
+
+  /**
+   * Use the passed in arrow shape for all directed edges leaving the selected
+   * nodes.
+   */
+  GraphWidget2.prototype.setArrowShapeOfSelectedNodes = function(shape) {
+    if (!this.cy) return;
+    let nodes = this.cy.nodes(':selected');
+    if (nodes.empty()) {
+      CATMAID.warn("Select source nodes first!");
+      return;
+    }
+    nodes.forEach(node => this.arrowShapes.set(node.id(), shape));
+    this.updateEdgeProperties();
+  };
+
+  /**
+   * Get whether a graph node represents an axon ('axo') or dendrite
+   * ('dendro'), based on its part label from an axon/dendrite split. Returns
+   * null for other nodes.
+   */
+  GraphWidget2.getCompartment = function(node) {
+    let part = node.data('part');
+    if (part === 'axon') return 'axo';
+    if (part === 'dendrite' || part === 'backbone dendrite' ||
+        part === 'dendritic terminals') {
+      return 'dendro';
+    }
+    return null;
+  };
+
+  GraphWidget2.SYNAPSE_TYPES = {
+    'axo-axonic': ['axo', 'axo'],
+    'axo-dendritic': ['axo', 'dendro'],
+    'dendro-axonic': ['dendro', 'axo'],
+    'dendro-dendritic': ['dendro', 'dendro'],
+  };
+
+  /**
+   * Hide or show synaptic edges by the compartments of their nodes, e.g. all
+   * axo-dendritic edges. This needs nodes from axon/dendrite splits.
+   */
+  GraphWidget2.prototype.setSynapseTypeVisibility = function(type, visible) {
+    if (!this.cy) return;
+    let [sourceCompartment, targetCompartment] = GraphWidget2.SYNAPSE_TYPES[type];
+    let edges = this.cy.edges().filter(edge =>
+        edge.data('link_type') === 'synaptic-connector' &&
+        GraphWidget2.getCompartment(edge.source()) === sourceCompartment &&
+        GraphWidget2.getCompartment(edge.target()) === targetCompartment);
+    if (edges.empty()) {
+      CATMAID.info(`No ${type} edges found, split skeletons into axon and dendrite first`);
+      return;
+    }
+    if (visible) {
+      edges.removeClass('hidden');
+    } else {
+      edges.unselect();
+      edges.addClass('hidden');
+    }
+    this.updateShowHiddenButton();
   };
 
   /**
@@ -1176,7 +1506,7 @@
    * rendering, so the hidden class is tested directly.
    */
   GraphWidget2.isShown = function(element) {
-    if (element.hasClass('hidden')) return false;
+    if (element.hasClass('hidden') || element.hasClass('filtered')) return false;
     return element.isNode() ||
         !(element.source().hasClass('hidden') || element.target().hasClass('hidden'));
   };
@@ -1212,6 +1542,8 @@
       this.cy.batch(() => {
         this.cy.nodes().forEach(node => node.data('color', getColor(node)));
       });
+      // Edges can be colored like their nodes
+      if (this.edgeOptions.colorMode !== 'link-type') this.updateEdgeProperties();
     };
 
     if (mode === 'source') {
@@ -1892,8 +2224,9 @@
             let ap = new CATMAID.ArborParser().init('compact-arbor', json);
             GraphWidget2.prepareRiskArbor(ap);
             for (let edge of edges) {
-              let risk = GraphWidget2.computeEdgeRisk(ap,
-                  edge.data('links').map(link => link[2]));
+              let minConfidence = this.edgeOptions.minConfidence;
+              let risk = GraphWidget2.computeEdgeRisk(ap, edge.data('links')
+                  .filter(link => link[3] >= minConfidence).map(link => link[2]));
               if (risk === null) {
                 CATMAID.info(`Couldn't measure the risk of edge ${edge.source().data('label')} ` +
                     `→ ${edge.target().data('label')}, the skeleton changed`);

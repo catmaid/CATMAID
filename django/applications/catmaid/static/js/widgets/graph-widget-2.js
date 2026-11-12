@@ -78,6 +78,15 @@
     this.nodeColorMode = 'source';
     // Graph node IDs hidden by hideUnconnectedNodes()
     this.hiddenUnconnectedIds = new Set();
+    // Graph node ID vs counter value at the time it was selected, to process
+    // selected nodes in selection order.
+    this.selectionOrder = new Map();
+    this.selectionCounter = 0;
+    // Grid snapping of dragged nodes, see the Align tab
+    this.gridOptions = {
+      snap: false,
+      size: 10,
+    };
 
     // Display options, see the View tab
     this.viewOptions = {
@@ -320,6 +329,27 @@
         let selectText = selectionElements[selectionSpecs.indexOf(selectTextSpec)];
         this.showHiddenButton = selectionElements[selectionSpecs.indexOf(showHiddenSpec)];
 
+        CATMAID.DOM.appendToTab(tabs['Align'], [
+          [document.createTextNode('Align: ')],
+          {type: 'button', label: 'X', onclick: () => this.alignNodes('x'),
+              title: 'Use the X coordinate of the first selected node for all selected nodes'},
+          {type: 'button', label: 'Y', onclick: () => this.alignNodes('y'),
+              title: 'Use the Y coordinate of the first selected node for all selected nodes'},
+          [document.createTextNode(' - Distribute: ')],
+          {type: 'button', label: 'X', onclick: () => this.distributeNodes('x'),
+              title: 'Space the selected nodes evenly along X, between the outermost ones'},
+          {type: 'button', label: 'Y', onclick: () => this.distributeNodes('y'),
+              title: 'Space the selected nodes evenly along Y, between the outermost ones'},
+          [document.createTextNode(' - ')],
+          {type: 'checkbox', label: 'Snap to grid', value: this.gridOptions.snap,
+              title: 'Move dragged nodes to the nearest grid point when they are released',
+              onclick: e => { this.gridOptions.snap = e.target.checked; }},
+          this.createNumericOption(this.gridOptions, 'Grid size:', 'Grid cell size in pixels',
+              'size', 1, undefined, 1, () => {}),
+          {type: 'button', label: 'Snap selected', onclick: () => this.snapSelectedToGrid(),
+              title: 'Move the selected nodes to the nearest grid point'},
+        ]);
+
         CATMAID.DOM.appendToTab(tabs['Subgraphs'], [
           [document.createTextNode('Select node(s) and split by: ')],
           ['Axon & dendrite', () => this.splitSelected(GraphWidget2.SPLIT_AXON_DENDRITE)],
@@ -376,6 +406,17 @@
     });
     // Not passed as option, because Cytoscape.js warns about custom values
     this.cy.renderer().wheelSensitivity = this.viewOptions.wheelSensitivity;
+
+    this.cy.on('select', 'node', e => {
+      let id = e.target.id();
+      if (!this.selectionOrder.has(id)) this.selectionOrder.set(id, ++this.selectionCounter);
+    });
+    this.cy.on('unselect remove', 'node', e => this.selectionOrder.delete(e.target.id()));
+
+    // Snap released nodes to the grid
+    this.cy.on('dragfree', 'node', e => {
+      if (this.gridOptions.snap) this.snapToGrid(e.target);
+    });
 
     // Circles of hell colors depend on the selected node. Selecting many nodes
     // at once triggers many events, recolor only once for them.
@@ -620,6 +661,7 @@
     this.lockedNodeIds.clear();
     this.hiddenUnconnectedIds.clear();
     this.arrowShapes.clear();
+    this.selectionOrder.clear();
     if (this.cy) this.cy.elements().remove();
     this.updateShowHiddenButton();
     CATMAID.NeuronNameService.getInstance().unregister(this, null);
@@ -1189,6 +1231,8 @@
           })),
         };
 
+        // Removing and reselecting elements would change the selection order
+        let selectionOrder = new Map(this.selectionOrder);
         this.cy.elements().remove();
         this.cy.add(elements);
 
@@ -1223,6 +1267,8 @@
             }
           });
         });
+        this.selectionOrder = new Map(Array.from(selectionOrder).filter(
+            ([id]) => this.cy.getElementById(id).selected()));
 
         // Forget locks and arrow shapes of nodes that don't exist anymore
         for (let id of this.lockedNodeIds) {
@@ -2291,6 +2337,84 @@
       if (subNodes[nodeId] !== undefined) lostInputs += ap.inputs[nodeId];
     }
     return 1 - lostInputs / ap.n_inputs;
+  };
+
+  /**
+   * Get the selected nodes in the order they were selected.
+   */
+  GraphWidget2.prototype.getOrderedSelectedNodes = function() {
+    let infinity = Number.POSITIVE_INFINITY;
+    return this.cy.nodes(':selected').sort((a, b) =>
+        (this.selectionOrder.get(a.id()) || infinity) -
+        (this.selectionOrder.get(b.id()) || infinity));
+  };
+
+  /**
+   * Report locked nodes that couldn't be moved.
+   */
+  GraphWidget2.reportLockedNodes = function(nodes) {
+    let nLocked = nodes.filter(node => node.locked()).length;
+    if (nLocked > 0) CATMAID.info(`${nLocked} locked node(s) weren't moved`);
+  };
+
+  /**
+   * Give all selected nodes the coordinate of the first selected node on the
+   * passed in axis ('x' or 'y').
+   */
+  GraphWidget2.prototype.alignNodes = function(axis) {
+    if (!this.cy) return;
+    let nodes = this.getOrderedSelectedNodes();
+    if (nodes.length < 2) {
+      CATMAID.warn("Please select at least two nodes");
+      return;
+    }
+    let value = nodes[0].position(axis);
+    let others = nodes.slice(1);
+    // Locked nodes keep their position
+    others.forEach(node => node.position(axis, value));
+    GraphWidget2.reportLockedNodes(others);
+  };
+
+  /**
+   * Space the selected nodes evenly on the passed in axis ('x' or 'y'),
+   * between the two outermost ones.
+   */
+  GraphWidget2.prototype.distributeNodes = function(axis) {
+    if (!this.cy) return;
+    let nodes = this.cy.nodes(':selected').sort((a, b) => a.position(axis) - b.position(axis));
+    if (nodes.length < 3) {
+      CATMAID.warn("Please select at least three nodes");
+      return;
+    }
+    let first = nodes[0].position(axis);
+    let step = (nodes[nodes.length - 1].position(axis) - first) / (nodes.length - 1);
+    let inner = nodes.slice(1, nodes.length - 1);
+    // Locked nodes keep their position
+    inner.forEach((node, i) => node.position(axis, first + (i + 1) * step));
+    GraphWidget2.reportLockedNodes(inner);
+  };
+
+  /**
+   * Move a node to the nearest point of the grid.
+   */
+  GraphWidget2.prototype.snapToGrid = function(node) {
+    let size = this.gridOptions.size;
+    let position = node.position();
+    node.position({
+      x: Math.round(position.x / size) * size,
+      y: Math.round(position.y / size) * size,
+    });
+  };
+
+  GraphWidget2.prototype.snapSelectedToGrid = function() {
+    if (!this.cy) return;
+    let nodes = this.cy.nodes(':selected');
+    if (nodes.empty()) {
+      CATMAID.warn("Please select nodes first");
+      return;
+    }
+    nodes.forEach(node => this.snapToGrid(node));
+    GraphWidget2.reportLockedNodes(nodes);
   };
 
   GraphWidget2.prototype.nextGroupId = function() {

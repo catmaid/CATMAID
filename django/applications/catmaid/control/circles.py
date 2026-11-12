@@ -16,36 +16,94 @@ from django.http import HttpRequest, JsonResponse
 from catmaid.models import UserRole
 from catmaid.control.authentication import requires_user_role
 from catmaid.control.common import get_request_list
+from catmaid.control.link import KNOWN_LINK_PAIRS
 from catmaid.control.skeleton import _neuronnames
 
-def _next_circle(skeleton_set:Set, relations, cursor, allowed_connector_ids=None) -> DefaultDict:
-    """ Return a dictionary of skeleton IDs in the skeleton_set vs a dictionary of connected skeletons vs how many connections."""
+
+# The direction of a partner skeleton, relative to a reference skeleton
+UPSTREAM = 'upstream'
+DOWNSTREAM = 'downstream'
+UNDIRECTED = 'undirected'
+
+
+def _link_relation_pairs(cursor, project_id:Union[int,str], link_types=None) -> List[Tuple[int, int]]:
+    """ Return a list of (source relation ID, target relation ID) tuples for
+    the passed in link type IDs, e.g. 'synaptic-connector'. Without link types,
+    synaptic links are used. Link types that share their relations are only
+    returned once. Link types whose relations don't exist in the project are
+    skipped."""
+    if not link_types:
+        link_types = ['synaptic-connector']
+
+    name_pairs:List[Tuple[str, str]] = []
+    for link_type in link_types:
+        pair = KNOWN_LINK_PAIRS.get(link_type)
+        if not pair:
+            raise ValueError(f"Unknown link type: {link_type}")
+        name_pair = (pair['source'], pair['target'])
+        if name_pair not in name_pairs:
+            name_pairs.append(name_pair)
+
+    cursor.execute("""
+        SELECT relation_name, id
+        FROM relation
+        WHERE project_id = %(project_id)s
+          AND relation_name = ANY(%(relation_names)s::text[])
+    """, {
+        'project_id': int(project_id),
+        'relation_names': list(set(chain.from_iterable(name_pairs))),
+    })
+    relations = dict(cursor.fetchall())
+
+    return [(relations[source], relations[target]) for source, target in name_pairs
+            if source in relations and target in relations]
+
+def _next_circle(skeleton_set:Set, relation_pairs, cursor, allowed_connector_ids=None) -> DefaultDict:
+    """ Return a dictionary of skeleton IDs in the skeleton_set vs a dictionary
+    of (source relation ID, target relation ID, direction) tuples vs a
+    dictionary of connected skeletons vs how many connections. Each tuple
+    represents a link type and where a connected skeleton is, relative to the
+    skeleton from the skeleton_set: UPSTREAM, DOWNSTREAM or UNDIRECTED."""
+    # The relation of a skeleton and the relation of its partner vs the link
+    # type and partner direction this represents.
+    directions:Dict[Tuple[int, int], Tuple[int, int, str]] = {}
+    for source, target in relation_pairs:
+        if source == target:
+            directions[(source, target)] = (source, target, UNDIRECTED)
+        else:
+            directions[(source, target)] = (source, target, DOWNSTREAM)
+            directions[(target, source)] = (source, target, UPSTREAM)
+
     cursor.execute(f'''
-        SELECT tc1.skeleton_id, tc1.relation_id, tc2.skeleton_id
-        FROM treenode_connector tc1,
-             treenode_connector tc2
+        SELECT tc1.skeleton_id, tc1.relation_id, tc2.relation_id, tc2.skeleton_id
+        FROM treenode_connector tc1
+        JOIN treenode_connector tc2
+            ON tc1.connector_id = tc2.connector_id
+        JOIN UNNEST(%(relation_ids_1)s::bigint[], %(relation_ids_2)s::bigint[])
+            relation_pair(relation_id_1, relation_id_2)
+            ON tc1.relation_id = relation_pair.relation_id_1
+            AND tc2.relation_id = relation_pair.relation_id_2
         WHERE tc1.skeleton_id = ANY(%(skeleton_ids)s::bigint[])
-          AND tc1.connector_id = tc2.connector_id
           AND tc1.skeleton_id != tc2.skeleton_id
-          AND tc1.relation_id != tc2.relation_id
-          AND tc1.relation_id = ANY(%(allowed_relation_ids)s::bigint[])
-          AND tc2.relation_id = ANY(%(allowed_relation_ids)s::bigint[])
           {'AND tc1.connector_id = ANY(%(allowed_c_ids)s::bigint[])' if allowed_connector_ids else ''}
     ''', {
         'skeleton_ids': list(skeleton_set),
-        'allowed_relation_ids': [relations['presynaptic_to'], relations['postsynaptic_to']],
+        'relation_ids_1': [pair[0] for pair in directions.keys()],
+        'relation_ids_2': [pair[1] for pair in directions.keys()],
         'allowed_c_ids': allowed_connector_ids,
     })
     connections:DefaultDict = defaultdict(partial(defaultdict, partial(defaultdict, int)))
     for row in cursor.fetchall():
-        connections[row[0]][row[1]][row[2]] += 1
+        connections[row[0]][directions[(row[1], row[2])]][row[3]] += 1
     return connections
 
 def _relations(cursor, project_id:Union[int,str]) -> Dict:
     cursor.execute("SELECT relation_name, id FROM relation WHERE project_id = %s AND (relation_name = 'presynaptic_to' OR relation_name = 'postsynaptic_to')" % int(project_id))
     return dict(cursor.fetchall())
 
-def _clean_mins(request:HttpRequest, cursor, project_id:Union[int,str]) -> Tuple[Dict, Any]:
+def _clean_mins(request:HttpRequest) -> Dict:
+    """ Return the minimum number of connections for partners in each
+    direction. Undirected partners need to reach the lower minimum."""
     min_pre: float = int(request.POST.get('min_pre',  -1))
     min_post: float = int(request.POST.get('min_post', -1))
 
@@ -56,11 +114,11 @@ def _clean_mins(request:HttpRequest, cursor, project_id:Union[int,str]) -> Tuple
     if -1 == min_post:
         min_post = float('inf')
 
-    relations = _relations(cursor, project_id)
-    mins = {}
-    mins[relations['presynaptic_to']] = min_post # inverted: all postsynaptic to the set
-    mins[relations['postsynaptic_to']] = min_pre # inverted: all presynaptic to the set
-    return mins, relations
+    return {
+        UPSTREAM: min_pre,
+        DOWNSTREAM: min_post,
+        UNDIRECTED: min(min_pre, min_post),
+    }
 
 @api_view(['POST'])
 @requires_user_role(UserRole.Browse)
@@ -83,12 +141,43 @@ def circles_of_hell(request:HttpRequest, project_id) -> JsonResponse:
           defaultValue: 1
           type: integer
           paramType: form
+        - name: min_pre
+          description: |
+            (Optional) The minimum number of connections with a skeleton, to
+            include it as upstream partner. With -1, no upstream partners are
+            included.
+          required: false
+          defaultValue: -1
+          type: integer
+          paramType: form
+        - name: min_post
+          description: |
+            (Optional) The minimum number of connections with a skeleton, to
+            include it as downstream partner. With -1, no downstream partners
+            are included.
+          required: false
+          defaultValue: -1
+          type: integer
+          paramType: form
         - name: allowed_connector_ids[]
           description: (Optional) IDs of connector nodes that are allowed to be used for expansion.
           required: false
           type: array
           items:
             type: integer
+          paramType: form
+        - name: link_types[]
+          description: |
+            (Optional) IDs of the link types to expand along, e.g.
+            "synaptic-connector" or "gapjunction-connector". By default, only
+            synaptic links are used. The minimum number of connections has to
+            be reached by a single link type. Partners of undirected link
+            types are both upstream and downstream partners, the lower minimum
+            applies to them.
+          required: false
+          type: array
+          items:
+            type: string
           paramType: form
     """
     n_circles = int(request.POST.get('n_circles', 1))
@@ -101,7 +190,9 @@ def circles_of_hell(request:HttpRequest, project_id) -> JsonResponse:
         raise Exception("No skeletons were provided.")
 
     cursor = connection.cursor()
-    mins, relations = _clean_mins(request, cursor, int(project_id))
+    mins = _clean_mins(request)
+    link_types = get_request_list(request.POST, 'link_types', None)
+    relation_pairs = _link_relation_pairs(cursor, int(project_id), link_types)
 
     allowed_connector_ids = get_request_list(request.POST, 'allowed_connector_ids', None)
 
@@ -110,10 +201,10 @@ def circles_of_hell(request:HttpRequest, project_id) -> JsonResponse:
 
     while n_circles > 0 and current_circle:
         n_circles -= 1
-        connections = _next_circle(current_circle, relations, cursor, allowed_connector_ids)
+        connections = _next_circle(current_circle, relation_pairs, cursor, allowed_connector_ids)
         next_circle = set(skID for c in connections.values() \
-                          for relationID, cs in c.items() \
-                          for skID, count in cs.items() if count >= mins[relationID])
+                          for (_, _, direction), cs in c.items() \
+                          for skID, count in cs.items() if count >= mins[direction])
         current_circle = next_circle - all_circles
         all_circles = all_circles.union(next_circle)
 
@@ -201,7 +292,12 @@ def find_directed_paths(request:HttpRequest, project_id=None) -> JsonResponse:
 @requires_user_role(UserRole.Browse)
 def find_directed_path_skeletons(request:HttpRequest, project_id=None) -> JsonResponse:
     """ Given a set of two or more skeleton Ids, find directed paths of connected neurons between them, for a maximum inner path length as given (i.e. origin and destination not counted), and return the nodes of those paths, including the provided source and target nodes.
-        Conceptually identical to find_directed_paths but far more performant. """
+        Conceptually identical to find_directed_paths but far more performant.
+        By default, only synaptic links are followed. The optional link_types
+        list parameter makes it possible to follow other link types, e.g.
+        "gapjunction-connector". The minimum number of synapses has to be
+        reached by a single link type. Undirected link types are followed in
+        both directions. """
 
     origin_skids = set(int(v) for k,v in request.POST.items() if k.startswith('sources['))
     target_skids = set(int(v) for k,v in request.POST.items() if k.startswith('targets['))
@@ -215,38 +311,40 @@ def find_directed_path_skeletons(request:HttpRequest, project_id=None) -> JsonRe
         min_synapses = float('inf')
 
     cursor = connection.cursor()
-    relations = _relations(cursor, project_id)
+    link_types = get_request_list(request.POST, 'link_types', None)
+    # Relations of a skeleton and its partner one hop further down a path
+    downstream_pairs = _link_relation_pairs(cursor, project_id, link_types)
+    upstream_pairs = [(target, source) for source, target in downstream_pairs]
 
-    def fetch_adjacent(cursor, skids, relation1, relation2, min_synapses) -> Iterator[Any]:
+    def fetch_adjacent(cursor, skids, relation_pairs, min_synapses) -> Iterator[Any]:
         """ Return the list of skids one hop away from the given skids. """
         cursor.execute("""
         SELECT tc2.skeleton_id
-        FROM treenode_connector tc1,
-             treenode_connector tc2
+        FROM treenode_connector tc1
+        JOIN treenode_connector tc2
+            ON tc1.connector_id = tc2.connector_id
+        JOIN UNNEST(%(relation_ids_1)s::bigint[], %(relation_ids_2)s::bigint[])
+            relation_pair(relation_id_1, relation_id_2)
+            ON tc1.relation_id = relation_pair.relation_id_1
+            AND tc2.relation_id = relation_pair.relation_id_2
         WHERE tc1.project_id = %(project_id)s
           AND tc1.skeleton_id = ANY (%(skeleton_ids)s::bigint[])
-          AND tc1.connector_id = tc2.connector_id
           AND tc1.skeleton_id != tc2.skeleton_id
-          AND tc1.relation_id = %(relation_1)s
-          AND tc2.relation_id = %(relation_2)s
-        GROUP BY tc1.skeleton_id, tc2.skeleton_id
+        GROUP BY tc1.skeleton_id, tc2.skeleton_id, tc1.relation_id, tc2.relation_id
         HAVING count(*) >= %(min_synapses)s
         """, {
             'project_id': int(project_id),
             'skeleton_ids': [int(skid) for skid in skids],
-            'relation_1': int(relation1),
-            'relation_2': int(relation2),
+            'relation_ids_1': [pair[0] for pair in relation_pairs],
+            'relation_ids_2': [pair[1] for pair in relation_pairs],
             'min_synapses': float(min_synapses),
         })
         return chain.from_iterable(cursor.fetchall())
 
-    pre = relations['presynaptic_to']
-    post = relations['postsynaptic_to']
-
-    def fetch_fronts(cursor, skids, max_n_hops, relation1, relation2, min_synapses) -> List[Set]:
+    def fetch_fronts(cursor, skids, max_n_hops, relation_pairs, min_synapses) -> List[Set]:
         fronts = [set(skids)]
         for n_hops in range(1, max_n_hops):
-            adjacent = set(fetch_adjacent(cursor, fronts[-1], relation1, relation2, min_synapses))
+            adjacent = set(fetch_adjacent(cursor, fronts[-1], relation_pairs, min_synapses))
             for front in fronts:
                 adjacent -= front
             if len(adjacent) > 0:
@@ -258,8 +356,8 @@ def find_directed_path_skeletons(request:HttpRequest, project_id=None) -> JsonRe
             fronts.append(set())
         return fronts
 
-    origin_fronts = fetch_fronts(cursor, origin_skids, max_n_hops, pre, post, min_synapses)
-    target_fronts = fetch_fronts(cursor, target_skids, max_n_hops, post, pre, min_synapses)
+    origin_fronts = fetch_fronts(cursor, origin_skids, max_n_hops, downstream_pairs, min_synapses)
+    target_fronts = fetch_fronts(cursor, target_skids, max_n_hops, upstream_pairs, min_synapses)
 
     skeleton_ids = origin_fronts[0].union(target_fronts[0])
 

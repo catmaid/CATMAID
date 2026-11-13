@@ -63,6 +63,9 @@
     marker.setAttribute('refY', refY);
     marker.setAttribute('orient', 'auto');
     marker.setAttribute('markerUnits', units);
+    // Marker shapes are centered around the end of their line and aren't
+    // limited to the marker viewport, which would be clipped by default.
+    marker.setAttribute('overflow', 'visible');
 
     if (type) marker.setAttribute('catmaidtype', type);
 

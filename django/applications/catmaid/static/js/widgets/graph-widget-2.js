@@ -571,6 +571,13 @@
           "display": "none",
         },
       }, {
+        // Edges of hidden nodes are hidden explicitly, the renderer fails for
+        // displayed edges of nodes that aren't displayed. See setHidden().
+        selector: "node.hidden <-> node",
+        style: {
+          "display": "none",
+        },
+      }, {
         // Edges removed by edge filters
         selector: ".filtered",
         style: {
@@ -1324,7 +1331,7 @@
           this.cy.elements().forEach(element => {
             let id = element.id();
             if (selected.has(id)) element.select();
-            if (hidden.has(id)) element.addClass('hidden');
+            if (hidden.has(id)) this.setHidden(element, true);
             if (element.isNode()) {
               // A new group can reuse the ID of a former group
               if (id in initialPositions) {
@@ -1858,7 +1865,7 @@
     }
     nodes.forEach(node => this.hiddenUnconnectedIds.add(node.id()));
     nodes.unselect();
-    nodes.addClass('hidden');
+    this.setHidden(nodes, true);
     this.updateShowHiddenButton();
   };
 
@@ -1869,7 +1876,7 @@
   GraphWidget2.prototype.showUnconnectedNodes = function() {
     if (!this.cy) return;
     for (let nodeId of this.hiddenUnconnectedIds) {
-      this.cy.getElementById(nodeId).removeClass('hidden');
+      this.setHidden(this.cy.getElementById(nodeId), false);
     }
     this.hiddenUnconnectedIds.clear();
     this.updateShowHiddenButton();
@@ -2216,13 +2223,28 @@
       return;
     }
     selected.unselect();
-    selected.addClass('hidden');
+    this.setHidden(selected, true);
     this.updateShowHiddenButton();
+  };
+
+  /**
+   * Hide or show the passed in elements by setting or removing their hidden
+   * class. The stylesheet also hides the edges of hidden nodes. Cytoscape.js
+   * doesn't update the style of edges when the classes of their nodes
+   * change, so this is done explicitly.
+   */
+  GraphWidget2.prototype.setHidden = function(elements, hidden) {
+    if (hidden) {
+      elements.addClass('hidden');
+    } else {
+      elements.removeClass('hidden');
+    }
+    elements.nodes().connectedEdges().updateStyle();
   };
 
   GraphWidget2.prototype.showHidden = function() {
     if (!this.cy) return;
-    this.cy.elements().removeClass('hidden');
+    this.setHidden(this.cy.elements(), false);
     this.hiddenUnconnectedIds.clear();
     this.updateShowHiddenButton();
   };
@@ -3125,7 +3147,7 @@
         // Show hidden nodes of skeletons on a path
         this.cy.nodes('.hidden').forEach(node => {
           if (node.data('skeleton_ids').some(skeletonId => skeletonIds.has(skeletonId))) {
-            node.removeClass('hidden');
+            this.setHidden(node, false);
             this.hiddenUnconnectedIds.delete(node.id());
           }
         });

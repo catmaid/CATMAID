@@ -87,6 +87,25 @@
       snap: false,
       size: 10,
     };
+    // Grow options, see the Grow tab. A minimum of zero links accepts all
+    // partners in a direction, -1 none.
+    this.growOptions = {
+      circles: 1,
+      minUpstream: 2,
+      minDownstream: 2,
+      // A regular expression, only partners with a matching annotation are
+      // added. Empty to add all partners.
+      annotationFilter: '',
+      hops: 2,
+      minPathLinks: 2,
+    };
+    // Member key vs {skeletonId, part} of the skeletons and skeleton parts
+    // picked as path sources and targets, see GraphWidget2.getMemberKey().
+    // Unlike graph node IDs, member keys aren't reused for other parts.
+    this.pathOrigins = {
+      source: new Map(),
+      target: new Map(),
+    };
 
     // Display options, see the View tab
     this.viewOptions = {
@@ -369,6 +388,67 @@
           ['Group equally named', () => this.groupEquallyNamed()],
           ['Group equally colored', () => this.groupEquallyColored()],
         ]);
+
+        let growOptions = this.growOptions;
+        let numberEntries = (first, last) => Array.from({length: last - first + 1},
+            (_, i) => ({title: String(first + i), value: String(first + i)}));
+        let limitEntries = direction => [
+          {title: `All ${direction}`, value: '0'},
+          {title: `No ${direction}`, value: '-1'},
+        ].concat(numberEntries(1, 50));
+        let pickSourcesSpec = {type: 'button', label: 'Pick sources',
+            title: 'Add the selected nodes to the nodes that paths start at',
+            onclick: () => this.pickPathOrigins('source')};
+        let pickTargetsSpec = {type: 'button', label: 'Pick targets',
+            title: 'Add the selected nodes to the nodes that paths end at',
+            onclick: () => this.pickPathOrigins('target')};
+        let growSpecs = [
+          [document.createTextNode('Grow ')],
+          {type: 'button', label: 'Circles',
+              title: 'Add the partners of the selected nodes, connected ' +
+                  'through the link types selected in the Edges tab',
+              onclick: () => this.growCircles()},
+          {type: 'select', label: ' by ', title: 'How many orders of partners to add',
+              entries: numberEntries(1, 5), value: String(growOptions.circles),
+              onchange: e => { growOptions.circles = Number(e.target.value); }},
+          [document.createTextNode(' orders, limit: ')],
+          {type: 'select', title: 'The minimum number of links of a single ' +
+              'link type from an upstream partner',
+              entries: limitEntries('upstream'), value: String(growOptions.minUpstream),
+              onchange: e => { growOptions.minUpstream = Number(e.target.value); }},
+          {type: 'select', title: 'The minimum number of links of a single ' +
+              'link type to a downstream partner',
+              entries: limitEntries('downstream'), value: String(growOptions.minDownstream),
+              onchange: e => { growOptions.minDownstream = Number(e.target.value); }},
+          {type: 'text', label: 'Filter (regex):', title: 'Only include ' +
+              'partners with annotations matching this regular expression',
+              value: growOptions.annotationFilter, length: 4,
+              onchange: e => { growOptions.annotationFilter = e.target.value; }},
+          [document.createTextNode(' - Find ')],
+          {type: 'button', label: 'Paths',
+              title: 'Add the neurons on paths from the picked sources to ' +
+                  'the picked targets, along the link types selected in the Edges tab',
+              onclick: () => this.growPaths()},
+          {type: 'select', label: ' by ', title: 'The number of links a path consists of',
+              entries: numberEntries(2, 6), value: String(growOptions.hops),
+              onchange: e => { growOptions.hops = Number(e.target.value); }},
+          [document.createTextNode(' hops, ')],
+          this.createNumericOption(growOptions, 'Min. links:', 'The minimum ' +
+              'number of links of a single link type between the neurons of a path',
+              'minPathLinks', 1, undefined, 1, () => {}),
+          pickSourcesSpec,
+          {type: 'button', label: 'X', title: 'Forget all path sources',
+              onclick: () => this.clearPathOrigins('source')},
+          pickTargetsSpec,
+          {type: 'button', label: 'X', title: 'Forget all path targets',
+              onclick: () => this.clearPathOrigins('target')},
+        ];
+        let growElements = CATMAID.DOM.appendToTab(tabs['Grow'], growSpecs);
+        this.pathOriginButtons = {
+          source: growElements[growSpecs.indexOf(pickSourcesSpec)],
+          target: growElements[growSpecs.indexOf(pickTargetsSpec)],
+        };
+        this.updatePathOriginButtons();
 
         $(controls).tabs();
       },
@@ -664,6 +744,7 @@
     this.selectionOrder.clear();
     if (this.cy) this.cy.elements().remove();
     this.updateShowHiddenButton();
+    this.prunePathOrigins();
     CATMAID.NeuronNameService.getInstance().unregister(this, null);
     if (!CATMAID.tools.isEmpty(removedModels)) {
       this.triggerRemove(removedModels);
@@ -704,6 +785,7 @@
       return this.updateGraph();
     }
     this.updateShowHiddenButton();
+    this.prunePathOrigins();
     return Promise.resolve();
   };
 
@@ -1277,6 +1359,7 @@
         for (let id of this.arrowShapes.keys()) {
           if (this.cy.getElementById(id).empty()) this.arrowShapes.delete(id);
         }
+        this.prunePathOrigins();
         this.updateEdgeProperties();
         this.updateShowHiddenButton();
         // Nodes are created with source colors
@@ -2751,6 +2834,305 @@
           new THREE.Color(node.data('color'))));
     });
     return groups;
+  };
+
+  /**
+   * Get the members of all selected and shown graph nodes: a map of member
+   * keys vs {skeletonId, part}.
+   */
+  GraphWidget2.prototype.getSelectedMembers = function() {
+    let members = new Map();
+    if (!this.cy) return members;
+    this.cy.nodes(':selected').forEach(node => {
+      if (!GraphWidget2.isShown(node)) return;
+      for (let member of node.data('members')) {
+        members.set(GraphWidget2.getMemberKey(member.skeletonId, member.part), member);
+      }
+    });
+    return members;
+  };
+
+  /**
+   * Sort the passed in members into the IDs of unsplit skeletons and the
+   * parts of split skeletons to grow from. Each part comes with the IDs of
+   * all connectors its treenodes are linked to, to limit back-end queries to
+   * the links of this part. Parts without links are left out.
+   */
+  GraphWidget2.prototype.collectGrowSeeds = function(members) {
+    let skeletonIds = [];
+    let parts = [];
+    for (let member of members) {
+      let skeleton = this.skeletons.get(member.skeletonId);
+      if (!skeleton) continue;
+      if (skeleton.splitNodes.size === 0) {
+        skeletonIds.push(member.skeletonId);
+        continue;
+      }
+      let connectorIds = new Set();
+      for (let [treenodeId, connectorId] of skeleton.links) {
+        if (skeleton.nodes.get(treenodeId).part === member.part) {
+          connectorIds.add(connectorId);
+        }
+      }
+      // Without allowed connectors, the back-end follows all links
+      if (connectorIds.size === 0) continue;
+      parts.push({
+        skeletonId: member.skeletonId,
+        part: member.part,
+        connectorIds: Array.from(connectorIds),
+      });
+    }
+    return {skeletonIds, parts};
+  };
+
+  /**
+   * Get the IDs of all skeletons that are connected to the passed in
+   * skeletons through links of the selected link types, over the passed in
+   * number of circles. Partners need the passed in minimum number of links
+   * of a single link type, -1 excludes all up- or downstream partners.
+   * Optionally, only links to the passed in connectors are followed.
+   */
+  GraphWidget2.prototype.fetchPartners = function(skeletonIds, nCircles,
+      minUpstream, minDownstream, allowedConnectorIds) {
+    return CATMAID.fetch(`${project.id}/graph/circlesofhell`, 'POST', {
+        skeleton_ids: skeletonIds,
+        n_circles: nCircles,
+        min_pre: minUpstream,
+        min_post: minDownstream,
+        link_types: Array.from(this.selectedLinkTypes),
+        allowed_connector_ids: allowedConnectorIds,
+      })
+      .then(json => json[0]);
+  };
+
+  /**
+   * Get the IDs of all skeletons that are directly connected to at least one
+   * of the passed in skeleton parts, see collectGrowSeeds(). The minimum
+   * number of links applies to each part on its own.
+   */
+  GraphWidget2.prototype.fetchPartPartners = function(parts, minUpstream, minDownstream) {
+    return Promise.all(parts.map(part => this.fetchPartners([part.skeletonId], 1,
+          minUpstream, minDownstream, part.connectorIds)))
+      .then(results => Array.from(new Set([].concat(...results))));
+  };
+
+  /**
+   * Get the passed in skeleton IDs that have at least one annotation
+   * matching the passed in regular expression. Without one, all are returned.
+   */
+  GraphWidget2.prototype.filterByAnnotation = function(skeletonIds, regex) {
+    if (!regex || skeletonIds.length === 0) return Promise.resolve(skeletonIds);
+    return CATMAID.fetch(`${project.id}/annotations/forskeletons`, 'POST', {
+        skeleton_ids: skeletonIds,
+      })
+      .then(json => skeletonIds.filter(skeletonId => {
+        let annotations = json.skeletons[skeletonId];
+        return annotations && annotations.some(a => regex.test(json.annotations[a.id]));
+      }));
+  };
+
+  /**
+   * Append the passed in skeletons that aren't part of the graph yet. If
+   * there are none, the passed in message is shown.
+   */
+  GraphWidget2.prototype.appendGrown = function(skeletonIds, emptyMessage) {
+    let color = new THREE.Color(0xffae56);
+    let models = {};
+    for (let skeletonId of skeletonIds) {
+      if (this.skeletons.has(Number(skeletonId))) continue;
+      models[skeletonId] = new CATMAID.SkeletonModel(Number(skeletonId), "", color);
+    }
+    let count = Object.keys(models).length;
+    if (count === 0) {
+      CATMAID.info(emptyMessage);
+      return Promise.resolve();
+    }
+    return this.append(models)
+      .then(() => CATMAID.msg("Grow", `Added ${count} neuron(s)`));
+  };
+
+  /**
+   * Whether growing is possible at all. Without a selected link type the
+   * back-end would fall back to synaptic links.
+   */
+  GraphWidget2.prototype.canGrow = function() {
+    if (this.selectedLinkTypes.size === 0) {
+      CATMAID.warn("Select at least one link type in the Edges tab first");
+      return false;
+    }
+    return true;
+  };
+
+  /**
+   * Add the partners of all selected nodes to the graph, over as many orders
+   * as set in the grow options. Partners are connected through links of the
+   * selected link types. Selected parts of split skeletons only grow along
+   * their own links. Partners further away than the first order are found
+   * through whole skeletons.
+   */
+  GraphWidget2.prototype.growCircles = function() {
+    let options = this.growOptions;
+    let seeds = this.collectGrowSeeds(this.getSelectedMembers().values());
+    if (seeds.skeletonIds.length === 0 && seeds.parts.length === 0) {
+      CATMAID.info("Select one or more nodes with links first!");
+      return Promise.resolve();
+    }
+    if (options.minUpstream === -1 && options.minDownstream === -1) {
+      CATMAID.warn("Can't grow with neither upstream nor downstream partners");
+      return Promise.resolve();
+    }
+    if (!this.canGrow()) return Promise.resolve();
+    let regex = null;
+    if (options.annotationFilter !== '') {
+      try {
+        regex = new RegExp(options.annotationFilter, 'i');
+      } catch (error) {
+        CATMAID.warn(`Invalid filter expression: ${options.annotationFilter}`);
+        return Promise.resolve();
+      }
+    }
+
+    let firstCircle = [this.fetchPartPartners(seeds.parts, options.minUpstream,
+        options.minDownstream)];
+    if (seeds.skeletonIds.length > 0) {
+      firstCircle.push(this.fetchPartners(seeds.skeletonIds, 1,
+          options.minUpstream, options.minDownstream));
+    }
+    return Promise.all(firstCircle)
+      .then(results => this.filterByAnnotation(
+          Array.from(new Set([].concat(...results))), regex))
+      .then(partners => {
+        // Growing continues from the partners found so far. Split skeletons
+        // aren't included, to not grow along their unselected parts.
+        let skeletonIds = Array.from(new Set(seeds.skeletonIds.concat(partners)));
+        if (options.circles === 1 || skeletonIds.length === 0) return partners;
+        return this.fetchPartners(skeletonIds, options.circles - 1,
+              options.minUpstream, options.minDownstream)
+          .then(furtherPartners => this.filterByAnnotation(furtherPartners, regex))
+          .then(furtherPartners => partners.concat(furtherPartners));
+      })
+      .then(partners => this.appendGrown(partners, "No new partners found"))
+      .catch(CATMAID.handleError);
+  };
+
+  /**
+   * Add the members of all selected nodes to the path sources or targets,
+   * depending on the passed in type: 'source' or 'target'.
+   */
+  GraphWidget2.prototype.pickPathOrigins = function(type) {
+    let members = this.getSelectedMembers();
+    if (members.size === 0) {
+      CATMAID.info("Select one or more nodes first!");
+      return;
+    }
+    for (let [key, member] of members) {
+      this.pathOrigins[type].set(key, member);
+    }
+    this.updatePathOriginButtons();
+  };
+
+  GraphWidget2.prototype.clearPathOrigins = function(type) {
+    this.pathOrigins[type].clear();
+    this.updatePathOriginButtons();
+  };
+
+  /**
+   * Forget path sources and targets that don't exist anymore, because their
+   * skeleton was removed or split differently.
+   */
+  GraphWidget2.prototype.prunePathOrigins = function() {
+    for (let origins of Object.values(this.pathOrigins)) {
+      for (let [key, member] of origins) {
+        let skeleton = this.skeletons.get(member.skeletonId);
+        if (!skeleton || !skeleton.partLabels.includes(member.part)) {
+          origins.delete(key);
+        }
+      }
+    }
+    this.updatePathOriginButtons();
+  };
+
+  GraphWidget2.prototype.updatePathOriginButtons = function() {
+    if (!this.pathOriginButtons) return;
+    for (let type in this.pathOrigins) {
+      let count = this.pathOrigins[type].size;
+      this.pathOriginButtons[type].value = `Pick ${type}s` + (count > 0 ? ` (${count})` : '');
+    }
+  };
+
+  /**
+   * Get all picked path sources or targets whose graph node is shown.
+   */
+  GraphWidget2.prototype.getShownPathOrigins = function(type) {
+    let members = [];
+    for (let member of this.pathOrigins[type].values()) {
+      let skeleton = this.skeletons.get(member.skeletonId);
+      let node = this.cy.getElementById(this.getGraphNodeId(skeleton, member.part));
+      if (node.nonempty() && GraphWidget2.isShown(node)) members.push(member);
+    }
+    return members;
+  };
+
+  /**
+   * Add all skeletons to the graph that are part of a path from a picked
+   * source to a picked target. Paths follow links of the selected link types
+   * and have as many hops as set in the grow options. For parts of split
+   * skeletons, paths continue from the partners of the part: downstream
+   * partners of source parts and upstream partners of target parts.
+   */
+  GraphWidget2.prototype.growPaths = function() {
+    if (!this.cy) return Promise.resolve();
+    this.prunePathOrigins();
+    for (let type in this.pathOrigins) {
+      if (this.pathOrigins[type].size === 0) {
+        CATMAID.warn(`Pick ${type} node(s) for the paths first!`);
+        return Promise.resolve();
+      }
+    }
+    if (!this.canGrow()) return Promise.resolve();
+
+    let nHops = this.growOptions.hops;
+    let minLinks = this.growOptions.minPathLinks;
+    let linkTypes = Array.from(this.selectedLinkTypes);
+    let sources = this.collectGrowSeeds(this.getShownPathOrigins('source'));
+    let targets = this.collectGrowSeeds(this.getShownPathOrigins('target'));
+
+    return Promise.all([
+        this.fetchPartPartners(sources.parts, -1, minLinks),
+        this.fetchPartPartners(targets.parts, minLinks, -1),
+      ])
+      .then(([sourcePartners, targetPartners]) => {
+        // The first hop from a source part and the last hop to a target part
+        // are covered by their partners already.
+        let searches = [
+          [sources.skeletonIds, targets.skeletonIds, nHops],
+          [sourcePartners, targets.skeletonIds, nHops - 1],
+          [sources.skeletonIds, targetPartners, nHops - 1],
+          [sourcePartners, targetPartners, nHops - 2],
+        ].filter(([sourceIds, targetIds, hops]) =>
+            sourceIds.length > 0 && targetIds.length > 0 && hops >= 1);
+        return Promise.all(searches.map(([sourceIds, targetIds, hops]) =>
+            CATMAID.fetch(`${project.id}/graph/dps`, 'POST', {
+              sources: sourceIds,
+              targets: targetIds,
+              n_hops: hops,
+              min_synapses: minLinks,
+              link_types: linkTypes,
+            })));
+      })
+      .then(results => {
+        let skeletonIds = new Set([].concat(...results).map(Number));
+        // Show hidden nodes of skeletons on a path
+        this.cy.nodes('.hidden').forEach(node => {
+          if (node.data('skeleton_ids').some(skeletonId => skeletonIds.has(skeletonId))) {
+            node.removeClass('hidden');
+            this.hiddenUnconnectedIds.delete(node.id());
+          }
+        });
+        this.updateShowHiddenButton();
+        return this.appendGrown(Array.from(skeletonIds), "No new paths found");
+      })
+      .catch(CATMAID.handleError);
   };
 
   GraphWidget2.prototype.updateFilter = function(models, skipUpdate) {

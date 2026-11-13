@@ -225,6 +225,49 @@
     this.addMarker(id, tee, width, height, refX, refY, units, style, "triangle-tee");
   };
 
+  SVGFactory.prototype.addTriangleCrossMarker = function(id, width, height, refX, refY, units, style) {
+    var cross = document.createElementNS(this.getNamespaces().svg, 'path');
+
+    // A triangle with a thin bar across the line, right behind it
+    var w4 = width / 4.0,
+        w8 = width / 8.0,
+        h2 = height / 2.0;
+
+    var path = [[-w4 - w8, h2],
+                [     -w4, h2],
+                [     -w4, 0],
+                [       0, 0],
+                [       0, h2],
+                [   width, 0],
+                [       0, -h2],
+                [       0, 0],
+                [     -w4, 0],
+                [     -w4, -h2],
+                [-w4 - w8, -h2]];
+
+    cross.setAttribute('d', this._asSVGPath(path, true));
+
+    this.addMarker(id, cross, width, height, refX, refY, units, style, "triangle-cross");
+  };
+
+  SVGFactory.prototype.addTriangleBackcurveMarker = function(id, width, height, refX, refY, units, style) {
+    var arrow = document.createElementNS(this.getNamespaces().svg, 'path');
+
+    // A triangle with its back side curved towards the tip. The curve meets
+    // the end of the line at the origin.
+    var w4 = width / 4.0,
+        h2 = height / 2.0;
+
+    arrow.setAttribute('d',
+         'M' + (-w4) + ',' + h2 +
+        ' L' + width + ',0' +
+        ' L' + (-w4) + ',' + (-h2) +
+        ' Q' + w4 + ',0 ' + (-w4) + ',' + h2 +
+        ' Z');
+
+    this.addMarker(id, arrow, width, height, refX, refY, units, style, "triangle-backcurve");
+  };
+
   SVGFactory.prototype.createAndAddMarker = function(arrowId, options, arrowStyle) {
     var supported = {
       triangle: "Arrow",
@@ -234,6 +277,8 @@
       diamond: "Diamond",
       vee: "Vee",
       "triangle-tee": "TriangleTee",
+      "triangle-cross": "TriangleCross",
+      "triangle-backcurve": "TriangleBackcurve",
     };
 
     var type = supported[options.arrow];
@@ -492,6 +537,8 @@
       var shrinkers = {
         "triangle": true,
         "triangle-tee": true,
+        "triangle-cross": true,
+        "triangle-backcurve": true,
         "diamond": true,
         "vee": true,
       };
@@ -514,6 +561,8 @@
         switch(options.arrow) {
           case "triangle":
           case "triangle-tee":
+          case "triangle-cross":
+          case "triangle-backcurve":
             f = 0.9;
             break;
           case "diamond":

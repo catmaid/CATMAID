@@ -2,6 +2,7 @@
   cytoscape3,
   InstanceRegistry,
   project,
+  saveAs,
   SkeletonAnnotations,
   SynapseClustering,
   THREE,
@@ -387,6 +388,15 @@
           [document.createTextNode(' - ')],
           ['Group equally named', () => this.groupEquallyNamed()],
           ['Group equally colored', () => this.groupEquallyColored()],
+        ]);
+
+        CATMAID.DOM.appendToTab(tabs['Export'], [
+          ['Export GML', () => this.exportGML()],
+          ['Export SVG', () => this.showSVGOptions()],
+          ['Export Adjacency Matrix', () => this.exportAdjacencyMatrix()],
+          ['Open Connectivity Matrix', () => this.openConnectivityMatrix()],
+          ['Open plot', () => this.openPlot()],
+          ['Quantify', () => this.quantificationDialog()],
         ]);
 
         let growOptions = this.growOptions;
@@ -3155,6 +3165,363 @@
         return this.appendGrown(Array.from(skeletonIds), "No new paths found");
       })
       .catch(CATMAID.handleError);
+  };
+
+  /**
+   * Get all shown nodes, or show a warning if there are none.
+   */
+  GraphWidget2.prototype.getShownNodesOrWarn = function() {
+    let nodes = this.cy ? this.cy.nodes().filter(node => GraphWidget2.isShown(node)) : [];
+    if (nodes.length === 0) {
+      CATMAID.warn("Load a graph first!");
+      return null;
+    }
+    return nodes;
+  };
+
+  /**
+   * Get the adjacency matrix of all shown nodes: {ids, names, models,
+   * matrix}. Each matrix cell is the sum of the weights of all shown link
+   * edges from the row node to the column node. Undirected edges count in
+   * both directions. The models field has a list of skeleton models for each
+   * node.
+   */
+  GraphWidget2.prototype.getAdjacencyMatrix = function() {
+    let ids = [], names = [], models = [];
+    let indices = new Map();
+    if (!this.cy) return {ids, names, models, matrix: []};
+    this.cy.nodes().forEach(node => {
+      if (!GraphWidget2.isShown(node)) return;
+      indices.set(node.id(), ids.length);
+      ids.push(node.id());
+      names.push(node.data('label'));
+      models.push(node.data('skeleton_ids').map(
+          skeletonId => this.skeletons.get(skeletonId).model.clone()));
+    });
+    let matrix = ids.map(() => new Uint32Array(ids.length));
+    this.getShownLinkEdges().forEach(edge => {
+      let source = indices.get(edge.source().id());
+      let target = indices.get(edge.target().id());
+      let weight = edge.data('weight');
+      matrix[source][target] += weight;
+      if (!edge.data('directed') && source !== target) {
+        matrix[target][source] += weight;
+      }
+    });
+    return {ids, names, models, matrix};
+  };
+
+  /**
+   * Get the adjacency matrix of all shown nodes as CSV text. The first row
+   * and the first column contain the node labels.
+   */
+  GraphWidget2.prototype.writeAdjacencyMatrix = function() {
+    let m = this.getAdjacencyMatrix();
+    let names = m.names.map(name =>
+        '"' + name.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"');
+    return '"Neurons",' + names.join(',') + '\n' +
+        m.matrix.map((row, i) => names[i] + ',' + Array.from(row).join(',')).join('\n');
+  };
+
+  GraphWidget2.prototype.exportAdjacencyMatrix = function() {
+    if (!this.getShownNodesOrWarn()) return;
+    let blob = new Blob([this.writeAdjacencyMatrix()], {type: 'text/plain'});
+    saveAs(blob, "adjacency_matrix.csv");
+  };
+
+  /**
+   * Get all shown nodes and the shown edges between them as GML text. With
+   * linearized IDs, nodes are numbered from zero instead of using their graph
+   * node IDs, which aren't numbers for groups and skeleton parts. Edges
+   * between the parts of a split skeleton have the link type "part" and no
+   * weight.
+   */
+  GraphWidget2.prototype.writeGML = function(linearizeIds) {
+    let quote = text => '"' + String(text).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+    let ids = new Map();
+    let items = ['Creator "CATMAID"\nVersion 1.0\ngraph ['];
+    if (!this.cy) return items.join("\n  ") + "\n]";
+
+    this.cy.nodes().forEach(node => {
+      if (!GraphWidget2.isShown(node)) return;
+      let exportId = linearizeIds ? ids.size : node.id();
+      ids.set(node.id(), exportId);
+      let p = node.position();
+      items.push(["node [",
+                  "id " + exportId,
+                  ["graphics [",
+                   "x " + p.x,
+                   "y " + p.y,
+                   "w " + node.width(),
+                   "h " + node.height(),
+                   'fill ' + quote(node.data('color')),
+                   'type ' + quote(node.data('shape')),
+                   'outline "#000000"',
+                   "outline_width 1"].join("\n      "),
+                  "]",
+                  'name ' + quote(node.data('label')),
+                  "unit_id " + node.id()].join("\n    "));
+      items.push("]");
+    });
+
+    this.cy.edges().forEach(edge => {
+      if (!GraphWidget2.isShown(edge)) return;
+      let isPartEdge = edge.hasClass('part-edge');
+      let properties = ['link_type ' + quote(isPartEdge ? 'part' : edge.data('link_type'))];
+      if (!isPartEdge) properties.push('weight ' + edge.data('weight'));
+      if (edge.data('risk') !== undefined) {
+        properties.push('risk ' + edge.data('risk'), 'label ' + quote(edge.data('label')));
+      }
+      items.push(["edge [",
+                  "source " + ids.get(edge.source().id()),
+                  "target " + ids.get(edge.target().id()),
+                  ["graphics [",
+                   'type "line"',
+                   "Line [",
+                   "]",
+                   "source_arrow 0",
+                   "target_arrow " + (edge.data('directed') ? 3 : 0)].join("\n      "),
+                  "]"].concat(properties).join("\n    "));
+      items.push("]");
+    });
+
+    return items.join("\n  ") + "\n]";
+  };
+
+  GraphWidget2.prototype.exportGML = function() {
+    if (!this.getShownNodesOrWarn()) return;
+    let dialog = new CATMAID.OptionsDialog('Export GML');
+    dialog.appendMessage('Please check the export options.');
+    let linearizeIds = dialog.appendCheckbox('Linearize IDs',
+        `graph_widget_2_linearize_ids_${this.widgetID}`, true,
+        "Replace graph node IDs with incremental IDs starting from zero. Some tools require this.");
+    dialog.onOK = () => {
+      let blob = new Blob([this.writeGML(linearizeIds.checked)], {type: "text/plain"});
+      saveAs(blob, "graph.gml");
+    };
+    dialog.show(500, 'auto', true);
+  };
+
+  /**
+   * Create an SVG document of all shown nodes and edges, as they are
+   * currently displayed. Returns a CATMAID.SVGFactory. Adobe Illustrator
+   * needs the arrowOnSeparateLine option.
+   */
+  GraphWidget2.prototype.generateSVG = function(options = {}) {
+    let cy = this.cy;
+    let container = cy.container();
+    let extent = cy.extent();
+    let svg = new CATMAID.SVGFactory(container.clientWidth, container.clientHeight,
+        extent.x1, extent.y1, extent.x2 - extent.x1, extent.y2 - extent.y1);
+    let renderer = cy.renderer();
+
+    // Edge geometry is taken from the render cache of Cytoscape.js
+    cy.edges().forEach(edge => {
+      if (!GraphWidget2.isShown(edge)) return;
+      let opacity = Number(edge.style('opacity'));
+      if (opacity === 0) return;
+      let rscratch = edge._private.rscratch;
+      let strokeWidth = parseFloat(edge.style('width'));
+      let lineStyle = {
+        'stroke': edge.style('line-color'),
+        'stroke-width': strokeWidth + 'px',
+        'fill': 'none',
+        'opacity': opacity,
+      };
+      if (edge.style('line-style') === 'dashed') {
+        lineStyle['stroke-dasharray'] = `${3 * strokeWidth},${2 * strokeWidth}`;
+      }
+      let lineOptions = {
+        edgeType: rscratch.edgeType,
+        arrowOnSeparateLine: CATMAID.getOption(options, 'arrowOnSeparateLine', false),
+        refX: CATMAID.getOption(options, 'arrowRefX', undefined),
+        strokeWidth: strokeWidth,
+        controlPoints: rscratch.ctrlpts,
+      };
+      let label = edge.style('label');
+      if (label) {
+        Object.assign(lineOptions, {
+          label: label,
+          labelOffsetX: 0,
+          labelOffsetY: 0,
+          labelX: rscratch.labelX,
+          labelY: rscratch.labelY,
+          labelStyle: {
+            'fill': edge.style('color'),
+            'stroke-width': '0px',
+            'font-family': 'Verdana',
+            'font-size': edge.style('font-size'),
+            'opacity': edge.style('text-opacity'),
+          },
+        });
+      }
+      // "Arrow" means end marker here
+      let arrow = edge.style('target-arrow-shape');
+      if (arrow && arrow !== 'none') {
+        // Arrow sizes are in a rather narrow range, absolute sizes are easier
+        let size = 3 * (0.5 * strokeWidth + 1.5);
+        Object.assign(lineOptions, {
+          arrow: arrow,
+          arrowStyle: lineStyle,
+          arrowUnit: 'userSpaceOnUse',
+          arrowWidth: size,
+          arrowHeight: size,
+          refX: 0,
+          refY: 0,
+        });
+      }
+      svg.drawLine(rscratch.startX, rscratch.startY, rscratch.arrowEndX,
+          rscratch.arrowEndY, lineStyle, lineOptions);
+    });
+
+    cy.nodes().forEach(node => {
+      if (!GraphWidget2.isShown(node)) return;
+      let position = node.position();
+      let width = node.width(), height = node.height();
+      let shapeStyle = {
+        'fill': node.style('background-color'),
+        'stroke': node.style('border-color'),
+        'stroke-width': node.style('border-width'),
+        'opacity': node.style('opacity'),
+      };
+      let textStyle = {
+        'fill': node.style('color'),
+        'stroke-width': '0px',
+        'font-family': 'Verdana',
+        'font-size': node.style('font-size'),
+        'opacity': node.style('text-opacity'),
+      };
+
+      // Label position relative to the node position
+      let halign = node.style('text-halign'), valign = node.style('text-valign');
+      let labelHeight = node._private.rstyle.labelHeight || 0;
+      let dx = 0, dy = 0;
+      if (halign === 'center') {
+        textStyle['text-anchor'] = 'middle';
+      } else if (halign === 'right') {
+        dx = width / 2 + 1;
+        textStyle['text-anchor'] = 'start';
+      } else if (halign === 'left') {
+        dx = -(width / 2 + 1);
+        textStyle['text-anchor'] = 'end';
+      }
+      if (valign === 'center') {
+        dy = labelHeight / 3;
+      } else if (valign === 'bottom') {
+        dy = height / 2 + 1 + labelHeight;
+      } else if (valign === 'top') {
+        dy = -(height / 2 + 1);
+      }
+
+      let label = node.style('label');
+      let shape = node.data('shape');
+      if (shape === 'ellipse' && width === height) {
+        svg.drawLabeledCircle(position.x, position.y, width / 2, shapeStyle,
+            label, dx, dy, textStyle);
+      } else if (shape in renderer.nodeShapes && renderer.nodeShapes[shape].points) {
+        svg.drawLabeledPolygonPath(position.x, position.y, width, height,
+            renderer.nodeShapes[shape].points, shapeStyle, label, dx, dy, textStyle);
+      } else {
+        CATMAID.warn(`Could not export graph element. Unknown shape: ${shape}`);
+      }
+    });
+
+    return svg;
+  };
+
+  GraphWidget2.prototype.showSVGOptions = function() {
+    if (!this.getShownNodesOrWarn()) return;
+    let dialog = new CATMAID.OptionsDialog("SVG Export", {
+      'Illustrator SVG': () => this.exportSVG({arrowOnSeparateLine: true}),
+      'Regular SVG': () => this.exportSVG({arrowRefX: 0}),
+    });
+    dialog.appendMessage("If you want to use the exported SVG file with Adobe " +
+        "Illustrator, please use the respective export button below. Unfortunately, " +
+        "Illustrator is not standards conformant and will not work properly with regular " +
+        "SVG files. We recommend Inkscape, which works well with regular SVGs.");
+    dialog.show('400', 'auto', true);
+  };
+
+  GraphWidget2.prototype.exportSVG = function(options) {
+    if (!this.getShownNodesOrWarn()) return;
+    this.generateSVG(options).save(`graph-${this.widgetID}.svg`);
+  };
+
+  /**
+   * Open all shown nodes in a new connectivity matrix widget. Groups are
+   * added as groups. The connectivity matrix works with whole skeletons, so
+   * parts of split skeletons are added as their whole skeleton.
+   */
+  GraphWidget2.prototype.openConnectivityMatrix = function() {
+    let nodes = this.getShownNodesOrWarn();
+    if (!nodes) return;
+    let getModels = node => {
+      let models = {};
+      for (let skeletonId of node.data('skeleton_ids')) {
+        models[skeletonId] = this.skeletons.get(skeletonId).model.clone();
+      }
+      return models;
+    };
+    let matrix = new CATMAID.ConnectivityMatrixWidget();
+    let single = {};
+    nodes.forEach(node => {
+      if (node.data('group_id') === undefined) {
+        Object.assign(single, getModels(node));
+      } else {
+        matrix.rowDimension.appendAsGroup(getModels(node), node.data('label'));
+        matrix.colDimension.appendAsGroup(getModels(node), node.data('label'));
+      }
+    });
+    matrix.rowDimension.append(single);
+    matrix.colDimension.append(single);
+    WindowMaker.create('connectivity-matrix', matrix, true);
+  };
+
+  /**
+   * Open the adjacency matrix of all shown nodes in a new circuit graph plot.
+   */
+  GraphWidget2.prototype.openPlot = function() {
+    if (!this.getShownNodesOrWarn()) return;
+    WindowMaker.create('circuit-graph-plot');
+    let plot = CATMAID.CircuitGraphPlot.prototype.getLastInstance();
+    let m = this.getAdjacencyMatrix();
+    plot.plot(m.ids, m.names, m.models, m.matrix);
+  };
+
+  /**
+   * Show the number of shown nodes, edges, neurons and links.
+   */
+  GraphWidget2.prototype.quantificationDialog = function() {
+    if (!this.cy) return;
+    let nodes = this.cy.nodes().filter(node => GraphWidget2.isShown(node));
+    let nDirected = 0, nUndirected = 0, nLinks = 0;
+    this.getShownLinkEdges().forEach(edge => {
+      if (edge.data('directed')) {
+        ++nDirected;
+      } else {
+        ++nUndirected;
+      }
+      nLinks += edge.data('weight');
+    });
+    let skeletonIds = new Set();
+    nodes.forEach(node => node.data('skeleton_ids').forEach(id => skeletonIds.add(id)));
+
+    let dialog = new CATMAID.OptionsDialog("Graph Quantification", {
+      'OK': () => {},
+    });
+    let table = document.createElement('table');
+    [
+      ["Number of nodes:", nodes.length, "(shown nodes, includes groups and skeleton parts)"],
+      ["Number of directed edges:", nDirected, "(shown edges, e.g. synaptic)"],
+      ["Number of undirected edges:", nUndirected, "(shown edges, e.g. gap junctions)"],
+      ["Number of neurons:", skeletonIds.size, ""],
+      ["Number of in-graph links:", nLinks, "(sum of the link counts of all shown edges)"],
+    ].forEach(cells => {
+      let row = table.insertRow();
+      cells.forEach(cell => { row.insertCell().textContent = cell; });
+    });
+    dialog.dialog.appendChild(table);
+    dialog.show(500, 'auto', true);
   };
 
   GraphWidget2.prototype.updateFilter = function(models, skipUpdate) {

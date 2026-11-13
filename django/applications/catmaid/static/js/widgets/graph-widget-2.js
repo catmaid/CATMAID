@@ -100,6 +100,18 @@
       hops: 2,
       minPathLinks: 2,
     };
+    // Named selections of skeletons and skeleton parts, in the order of the
+    // list in the Selections tab. Each is {name, members}, the members field
+    // maps member keys to {skeletonId, part}, see GraphWidget2.getMemberKey().
+    // A graph node is part of a selection if any of its members is.
+    this.selections = [];
+    this.selectionOptions = {
+      preventOverlaps: true,
+      // Whether aligning selections as columns hides all other nodes
+      hideOtherNodes: false,
+      // Opacity of faded edges in percent
+      fadedEdgeOpacity: 30,
+    };
     // Member key vs {skeletonId, part} of the skeletons and skeleton parts
     // picked as path sources and targets, see GraphWidget2.getMemberKey().
     // Unlike graph node IDs, member keys aren't reused for other parts.
@@ -398,6 +410,49 @@
           ['Open plot', () => this.openPlot()],
           ['Quantify', () => this.quantificationDialog()],
         ]);
+
+        let selectionOptions = this.selectionOptions;
+        let selectionListSpec = {type: 'select', entries: [],
+            title: 'The selection that the buttons to the right work on'};
+        let selectionsSpecs = [
+          {type: 'button', label: 'Create selection',
+              title: 'Remember the selected nodes as a new named selection',
+              onclick: () => this.createSelection()},
+          {type: 'checkbox', label: 'prevent overlaps', value: selectionOptions.preventOverlaps,
+              title: 'Leave out nodes that are part of another selection already',
+              onclick: e => { selectionOptions.preventOverlaps = e.target.checked; }},
+          selectionListSpec,
+          {type: 'button', label: '\u25B2', title: 'Move the selection up in the list',
+              onclick: () => this.moveSelection(-1)},
+          {type: 'button', label: '\u25BC', title: 'Move the selection down in the list',
+              onclick: () => this.moveSelection(1)},
+          ['Select', () => this.activateSelection(true)],
+          ['Deselect', () => this.activateSelection(false)],
+          ['Remove', () => this.removeSelection()],
+          ['Select all', () => this.activateAllSelections()],
+          [document.createTextNode(' - ')],
+          {type: 'button', label: 'As columns',
+              title: 'Arrange the nodes of each selection as a column, in list order',
+              onclick: () => this.alignSelectionsAsColumns()},
+          {type: 'checkbox', label: 'hide other nodes', value: selectionOptions.hideOtherNodes,
+              title: 'Hide nodes that are not part of any selection when arranging columns',
+              onclick: e => { selectionOptions.hideOtherNodes = e.target.checked; }},
+          Object.assign(this.createNumericOption(selectionOptions, 'edge opacity:',
+              'The opacity of faded edges in percent', 'fadedEdgeOpacity', 0, 100, 1, () => {}),
+              {postlabel: '%'}),
+          {type: 'button', label: 'Fade edges',
+              title: 'Fade all edges, except for the ones that connect the ' +
+                  'selected nodes to neighboring columns and further on',
+              onclick: () => this.fadeEdges()},
+          {type: 'button', label: 'Restore edges', title: 'Undo the fading of edges',
+              onclick: () => this.restoreEdges()},
+          {type: 'button', label: 'Hide non-seq edges',
+              title: 'Hide all edges that don\'t lead from one selection to the next one in the list',
+              onclick: () => this.hideNonSequentialEdges()},
+        ];
+        let selectionsElements = CATMAID.DOM.appendToTab(tabs['Selections'], selectionsSpecs);
+        this.selectionSelect = selectionsElements[selectionsSpecs.indexOf(selectionListSpec)];
+        this.updateSelectionSelect();
 
         let growOptions = this.growOptions;
         let numberEntries = (first, last) => Array.from({length: last - first + 1},
@@ -762,6 +817,7 @@
     if (this.cy) this.cy.elements().remove();
     this.updateShowHiddenButton();
     this.prunePathOrigins();
+    this.pruneSelections();
     CATMAID.NeuronNameService.getInstance().unregister(this, null);
     if (!CATMAID.tools.isEmpty(removedModels)) {
       this.triggerRemove(removedModels);
@@ -803,6 +859,7 @@
     }
     this.updateShowHiddenButton();
     this.prunePathOrigins();
+    this.pruneSelections();
     return Promise.resolve();
   };
 
@@ -1377,6 +1434,7 @@
           if (this.cy.getElementById(id).empty()) this.arrowShapes.delete(id);
         }
         this.prunePathOrigins();
+        this.pruneSelections();
         this.updateEdgeProperties();
         this.updateShowHiddenButton();
         // Nodes are created with source colors
@@ -3165,6 +3223,314 @@
         return this.appendGrown(Array.from(skeletonIds), "No new paths found");
       })
       .catch(CATMAID.handleError);
+  };
+
+  /**
+   * Update the list of selections in the Selections tab. The passed in index
+   * becomes the active entry, by default the current one is kept.
+   */
+  GraphWidget2.prototype.updateSelectionSelect = function(activeIndex) {
+    let select = this.selectionSelect;
+    if (!select) return;
+    if (activeIndex === undefined) activeIndex = select.selectedIndex;
+    select.options.length = 0;
+    for (let selection of this.selections) {
+      select.add(new Option(selection.name, selection.name));
+    }
+    select.selectedIndex = Math.max(0, Math.min(activeIndex, this.selections.length - 1));
+  };
+
+  /**
+   * Get the selection that is active in the list of the Selections tab.
+   */
+  GraphWidget2.prototype.getActiveSelection = function() {
+    if (!this.selectionSelect) return null;
+    return this.selections[this.selectionSelect.selectedIndex] || null;
+  };
+
+  /**
+   * Remember the members of all selected nodes as a new named selection. If
+   * overlaps are prevented, members of other selections are left out and
+   * their nodes are deselected.
+   */
+  GraphWidget2.prototype.createSelection = function() {
+    if (!this.cy) return;
+    let existing = new Set();
+    if (this.selectionOptions.preventOverlaps) {
+      for (let selection of this.selections) {
+        for (let key of selection.members.keys()) existing.add(key);
+      }
+    }
+    let members = new Map();
+    let droppedNodes = [];
+    this.cy.nodes(':selected').forEach(node => {
+      if (!GraphWidget2.isShown(node)) return;
+      let nAdded = 0;
+      for (let member of node.data('members')) {
+        let key = GraphWidget2.getMemberKey(member.skeletonId, member.part);
+        if (existing.has(key)) continue;
+        members.set(key, member);
+        ++nAdded;
+      }
+      if (nAdded === 0) droppedNodes.push(node);
+    });
+    if (members.size === 0) {
+      CATMAID.warn(droppedNodes.length > 0 ?
+          "All selected nodes belong to other selections already!" :
+          "Select at least one node!");
+      return;
+    }
+
+    let askName = () => {
+      droppedNodes.forEach(node => node.unselect());
+      let dialog = new CATMAID.OptionsDialog("Create selection");
+      let nameField = dialog.appendField("Name: ",
+          `graph_widget_2_selection_name_${this.widgetID}`, "", true);
+      dialog.onOK = () => {
+        let name = nameField.value.trim();
+        // Errors keep the dialog open
+        if (!name) {
+          throw new CATMAID.ValueError("Need a name for the selection!");
+        }
+        if (this.selections.some(selection => selection.name === name)) {
+          throw new CATMAID.ValueError("Name already exists!");
+        }
+        this.selections.push({name: name, members: members});
+        this.updateSelectionSelect(this.selections.length - 1);
+      };
+      dialog.show(350, 'auto', true);
+      nameField.focus();
+    };
+
+    if (droppedNodes.length === 0) {
+      askName();
+      return;
+    }
+    let dialog = new CATMAID.OptionsDialog("Create selection");
+    dialog.appendMessage(`${droppedNodes.length} node(s) already belong to other ` +
+        "selections and will be deselected. Continue?");
+    dialog.onOK = askName;
+    dialog.show(350, 'auto', true);
+  };
+
+  /**
+   * Move the active selection up (-1) or down (1) in the list.
+   */
+  GraphWidget2.prototype.moveSelection = function(offset) {
+    if (!this.selectionSelect) return;
+    let index = this.selectionSelect.selectedIndex;
+    let newIndex = index + (offset > 0 ? 1 : -1);
+    if (index < 0 || newIndex < 0 || newIndex >= this.selections.length) return;
+    let selections = this.selections;
+    [selections[index], selections[newIndex]] = [selections[newIndex], selections[index]];
+    this.updateSelectionSelect(newIndex);
+  };
+
+  GraphWidget2.prototype.removeSelection = function() {
+    let selection = this.getActiveSelection();
+    if (!selection) return;
+    this.selections.splice(this.selections.indexOf(selection), 1);
+    this.updateSelectionSelect();
+  };
+
+  /**
+   * Forget selection members that don't exist anymore, because their skeleton
+   * was removed or split differently. Selections without members are removed.
+   */
+  GraphWidget2.prototype.pruneSelections = function() {
+    let removedNames = [];
+    this.selections = this.selections.filter(selection => {
+      for (let [key, member] of selection.members) {
+        let skeleton = this.skeletons.get(member.skeletonId);
+        if (!skeleton || !skeleton.partLabels.includes(member.part)) {
+          selection.members.delete(key);
+        }
+      }
+      if (selection.members.size === 0) removedNames.push(selection.name);
+      return selection.members.size > 0;
+    });
+    if (removedNames.length > 0) {
+      CATMAID.info(`Removed empty selection(s): ${removedNames.join(', ')}`);
+      this.updateSelectionSelect();
+    }
+  };
+
+  /**
+   * Get the index of the selection a graph node is part of, the last one in
+   * the list if there are multiple, or -1.
+   */
+  GraphWidget2.prototype.getSelectionIndex = function(node) {
+    let keys = node.data('members').map(
+        member => GraphWidget2.getMemberKey(member.skeletonId, member.part));
+    for (let i = this.selections.length - 1; i >= 0; --i) {
+      let members = this.selections[i].members;
+      if (keys.some(key => members.has(key))) return i;
+    }
+    return -1;
+  };
+
+  /**
+   * Get all graph nodes with at least one member in the passed in selection.
+   */
+  GraphWidget2.prototype.getSelectionNodes = function(selection) {
+    return this.cy.nodes().filter(node => node.data('members').some(member =>
+        selection.members.has(GraphWidget2.getMemberKey(member.skeletonId, member.part))));
+  };
+
+  /**
+   * Select or deselect the nodes of the active selection.
+   */
+  GraphWidget2.prototype.activateSelection = function(select) {
+    let selection = this.getActiveSelection();
+    if (!selection || !this.cy) return;
+    let nodes = this.getSelectionNodes(selection);
+    if (select) {
+      nodes.select();
+    } else {
+      nodes.unselect();
+    }
+  };
+
+  GraphWidget2.prototype.activateAllSelections = function() {
+    if (!this.cy) return;
+    this.cy.nodes().filter(node => this.getSelectionIndex(node) !== -1).select();
+  };
+
+  /**
+   * Arrange the nodes of each selection as a column, in the order of the
+   * selection list, with the nodes of a column sorted by label. The zoom
+   * level is reset to 100% and the columns are spread over the view. Nodes of
+   * multiple selections are part of the last one. Locked nodes aren't moved.
+   * Optionally, nodes that aren't part of any selection are hidden.
+   */
+  GraphWidget2.prototype.alignSelectionsAsColumns = function() {
+    if (!this.cy) return;
+    if (this.selections.length === 0) {
+      CATMAID.warn("Create at least one selection first!");
+      return;
+    }
+    let columns = this.selections.map(() => []);
+    let others = [];
+    let nOverlapping = 0;
+    this.cy.nodes().forEach(node => {
+      let index = this.getSelectionIndex(node);
+      if (index === -1) {
+        others.push(node);
+        return;
+      }
+      columns[index].push(node);
+      let nSelections = this.selections.filter(
+          selection => this.getSelectionNodes(selection).contains(node)).length;
+      if (nSelections > 1) ++nOverlapping;
+    });
+    if (nOverlapping > 0) {
+      CATMAID.warn(`${nOverlapping} node(s) are part of more than one selection ` +
+          "and are placed in the column of the last one");
+    }
+
+    this.cy.zoom(1.0);
+
+    let marginX = this.viewOptions.nodeWidth * 2;
+    let marginY = this.viewOptions.nodeHeight * 2;
+    let width = this.cy.width() - 2 * marginX;
+    let height = this.cy.height() - 2 * marginY;
+    let columnSpacing = columns.length > 1 ? width / (columns.length - 1) : 0;
+
+    let moved = [];
+    this.cy.batch(() => {
+      columns.forEach((column, i) => {
+        column.sort((a, b) => a.data('label').localeCompare(b.data('label'),
+            undefined, {numeric: true, sensitivity: 'base'}));
+        let rowSpacing = column.length > 1 ? height / (column.length - 1) : 0;
+        column.forEach((node, k) => {
+          // Locked nodes keep their position. A single node is centered.
+          node.renderedPosition({
+            x: marginX + i * columnSpacing,
+            y: column.length > 1 ? marginY + k * rowSpacing : marginY + height / 2,
+          });
+          moved.push(node);
+        });
+      });
+      if (this.selectionOptions.hideOtherNodes) {
+        others.forEach(node => {
+          node.unselect();
+          this.setHidden(node, true);
+        });
+      }
+    });
+    this.updateShowHiddenButton();
+    GraphWidget2.reportLockedNodes(moved);
+  };
+
+  /**
+   * Fade all edges, except for the ones that lead to the selected nodes from
+   * the previous column or from them to the next column, and so on from
+   * column to column. Columns are the selections in list order.
+   */
+  GraphWidget2.prototype.fadeEdges = function() {
+    if (!this.cy) return;
+    let selected = this.cy.nodes(':selected').filter(node => GraphWidget2.isShown(node));
+    if (selected.empty()) {
+      CATMAID.warn("Select at least one node first!");
+      return;
+    }
+    let edges = this.getShownLinkEdges();
+    let nColumns = this.selections.length;
+    let opaque = new Set();
+    // Follow edges to neighboring columns: -1 upstream, 1 downstream
+    let follow = (node, direction, visited) => {
+      if (visited.has(node.id())) return;
+      visited.add(node.id());
+      let column = this.getSelectionIndex(node);
+      if (column === -1) return;
+      edges.forEach(edge => {
+        let near = direction > 0 ? edge.source() : edge.target();
+        let far = direction > 0 ? edge.target() : edge.source();
+        if (near.id() !== node.id()) return;
+        let farColumn = this.getSelectionIndex(far);
+        if (farColumn !== column + direction) return;
+        opaque.add(edge.id());
+        if (farColumn > 0 && farColumn < nColumns - 1) follow(far, direction, visited);
+      });
+    };
+    selected.forEach(node => {
+      follow(node, -1, new Set());
+      follow(node, 1, new Set());
+    });
+    let opacity = this.selectionOptions.fadedEdgeOpacity / 100;
+    this.cy.batch(() => {
+      edges.forEach(edge => {
+        edge.style('opacity', opaque.has(edge.id()) ? 1 : opacity);
+      });
+    });
+  };
+
+  /**
+   * Undo fadeEdges(): edges get the opacity of their link type again.
+   */
+  GraphWidget2.prototype.restoreEdges = function() {
+    if (!this.cy) return;
+    this.cy.edges().removeStyle('opacity');
+  };
+
+  /**
+   * Hide all edges, except for the ones from the nodes of a selection to the
+   * nodes of the next selection in the list.
+   */
+  GraphWidget2.prototype.hideNonSequentialEdges = function() {
+    if (!this.cy) return;
+    if (this.selections.length === 0) {
+      CATMAID.warn("Create at least one selection first!");
+      return;
+    }
+    let edges = this.getShownLinkEdges().filter(edge => {
+      let source = this.getSelectionIndex(edge.source());
+      let target = this.getSelectionIndex(edge.target());
+      return source === -1 || target === -1 || source + 1 !== target;
+    });
+    edges.unselect();
+    this.setHidden(edges, true);
+    this.updateShowHiddenButton();
   };
 
   /**

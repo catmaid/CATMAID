@@ -199,6 +199,85 @@ class SkeletonsApiTests(CatmaidApiTestCase):
         parsed_response = json.loads(response.content.decode('utf-8'))
         self.assertIn('error', parsed_response)
 
+    def test_compact_detail_linked_nodes_only(self):
+        self.fake_authentication()
+        # Gap junction links (1025, gapjunction_with) are their own partner
+        # relation: two links of different skeletons and confidences at
+        # connector 432, plus an attachment link without partner relation.
+        for treenode_id, confidence in ((367, 4), (2374, 2)):
+            treenode = Treenode.objects.get(id=treenode_id)
+            TreenodeConnector.objects.create(project_id=self.test_project_id,
+                    user_id=3, relation_id=1025, treenode_id=treenode_id,
+                    connector_id=432, skeleton_id=treenode.skeleton_id,
+                    confidence=confidence)
+        TreenodeConnector.objects.create(project_id=self.test_project_id,
+                user_id=3, relation_id=1026, treenode_id=285,
+                connector_id=2463, skeleton_id=235)
+        skeleton_ids = sorted(set(Treenode.objects.filter(
+                project_id=self.test_project_id).values_list('skeleton_id', flat=True)))
+        linked_skeleton_ids = set(TreenodeConnector.objects.filter(
+                project_id=self.test_project_id).values_list('skeleton_id', flat=True))
+        unlinked_skeleton_ids = [s for s in skeleton_ids if s not in linked_skeleton_ids]
+        self.assertTrue(unlinked_skeleton_ids)
+
+        def get_skeletons(**params):
+            response = self.client.post(
+                    f'/{self.test_project_id}/skeletons/compact-detail', dict({
+                        'skeleton_ids': skeleton_ids,
+                        'with_connectors': True,
+                    }, **params))
+            self.assertStatus(response)
+            return json.loads(response.content.decode('utf-8'))['skeletons']
+
+        for flags in ({'with_relation_ids': True, 'with_link_confidence': True,
+                       'with_partner_counts': True, 'with_user_info': True},
+                      {'with_edition_times': True, 'ordered': True}):
+            full = get_skeletons(**flags)
+            reduced = get_skeletons(with_linked_nodes_only=True, **flags)
+            self.assertEqual(sorted(reduced.keys()), sorted(full.keys()))
+            for skeleton_id, (nodes, connectors, tags, reviews, annotations) in full.items():
+                reduced_nodes, reduced_connectors = reduced[skeleton_id][:2]
+                # Links are the same, nodes only the root and linked ones
+                self.assertEqual(sorted(reduced_connectors), sorted(connectors))
+                linked = set(row[0] for row in connectors)
+                expected_nodes = [row for row in nodes if row[1] is None or row[0] in linked]
+                self.assertEqual(sorted(reduced_nodes, key=lambda r: r[0]),
+                        sorted(expected_nodes, key=lambda r: r[0]))
+                self.assertEqual(reduced[skeleton_id][2:], [{}, [], []])
+                if flags.get('ordered'):
+                    self.assertEqual(reduced_nodes, sorted(reduced_nodes, key=lambda r: r[0]))
+            # Skeletons without links get only their root
+            for skeleton_id in unlinked_skeleton_ids:
+                self.assertEqual(len(reduced[str(skeleton_id)][0]), 1)
+                self.assertIsNone(reduced[str(skeleton_id)][0][0][1])
+
+        # The test data covers gap junction partner counts, which exclude the
+        # link itself
+        gap_junction_rows = [row for skeleton in get_skeletons(with_linked_nodes_only=True,
+                with_relation_ids=True, with_link_confidence=True,
+                with_partner_counts=True).values() for row in skeleton[1] if row[2] == 1025]
+        self.assertEqual(sorted((row[6], row[7]) for row in gap_junction_rows),
+                [(2, [0, 0, 0, 1, 0]), (4, [0, 1, 0, 0, 0])])
+
+        # Not available with history data, tags, reviews or annotations
+        for flag in ('with_history', 'with_tags', 'with_reviews', 'with_annotations'):
+            response = self.client.post(
+                    f'/{self.test_project_id}/skeletons/compact-detail', {
+                        'skeleton_ids': [235],
+                        'with_linked_nodes_only': True,
+                        flag: True,
+                    })
+            parsed_response = json.loads(response.content.decode('utf-8'))
+            self.assertIn('error', parsed_response)
+
+        # Unknown skeletons give an error
+        response = self.client.post(
+                f'/{self.test_project_id}/skeletons/compact-detail', {
+                    'skeleton_ids': [235, 999999],
+                    'with_linked_nodes_only': True,
+                })
+        self.assertEqual(response.status_code, 404)
+
 
     def test_import_skeleton_with_64_bit_ids(self):
         self.fake_authentication()

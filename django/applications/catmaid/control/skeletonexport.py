@@ -569,6 +569,16 @@ def compact_skeleton_detail_many(request:HttpRequest, project_id=None) -> Union[
       type: boolean
       defaultValue: "false"
       paramType: form
+    - name: with_linked_nodes_only
+      description: |
+        Whether only the root node and the nodes linked to a returned
+        connector link should be returned for each skeleton, instead of all
+        nodes. Row formats don't change. Not available with history data,
+        tags, reviews or annotations.
+      required: false
+      type: boolean
+      defaultValue: "false"
+      paramType: form
     type:
     - type: array
       items:
@@ -588,21 +598,33 @@ def compact_skeleton_detail_many(request:HttpRequest, project_id=None) -> Union[
     with_relation_ids = get_request_bool(request.POST, "with_relation_ids", False)
     with_link_confidence = get_request_bool(request.POST, "with_link_confidence", False)
     with_partner_counts = get_request_bool(request.POST, "with_partner_counts", False)
+    with_linked_nodes_only = get_request_bool(request.POST, "with_linked_nodes_only", False)
     return_format = request.POST.get('format', 'json')
     ordered = get_request_bool(request.POST, "ordered", False)
 
     if not skeleton_ids:
         raise ValueError("No skeleton IDs provided")
 
-    skeletons = {}
-    for skeleton_id in skeleton_ids:
-        skeletons[skeleton_id] = _compact_skeleton(project_id, skeleton_id,
-                with_connectors, with_tags, with_history, with_merge_history,
-                with_reviews, with_annotations, with_user_info, ordered,
+    if with_linked_nodes_only:
+        if with_history or with_merge_history or with_tags or with_reviews or with_annotations:
+            raise ValueError("Linked nodes only aren't available with history "
+                    "data, tags, reviews or annotations")
+        skeletons = _compact_skeletons_linked_nodes(project_id, skeleton_ids,
+                with_connectors, with_user_info, ordered,
                 with_edition_times=with_edition_times,
                 with_relation_ids=with_relation_ids,
                 with_link_confidence=with_link_confidence,
                 with_partner_counts=with_partner_counts)
+    else:
+        skeletons = {}
+        for skeleton_id in skeleton_ids:
+            skeletons[skeleton_id] = _compact_skeleton(project_id, skeleton_id,
+                    with_connectors, with_tags, with_history, with_merge_history,
+                    with_reviews, with_annotations, with_user_info, ordered,
+                    with_edition_times=with_edition_times,
+                    with_relation_ids=with_relation_ids,
+                    with_link_confidence=with_link_confidence,
+                    with_partner_counts=with_partner_counts)
 
     result = {
         "skeletons": skeletons
@@ -616,6 +638,159 @@ def compact_skeleton_detail_many(request:HttpRequest, project_id=None) -> Union[
             'separators': (',', ':'),
             'default': default
         })
+
+
+def _get_link_relations(relations, with_relation_ids) -> Tuple[List[int], Any]:
+    """Get the IDs of the relations of connector links to return and a
+    function that maps a relation ID to its value in result rows: the relation
+    ID itself or, without with_relation_ids, the 0|1|2|3|4|-1 index.
+    """
+    pre = relations['presynaptic_to']
+    post = relations['postsynaptic_to']
+    gj = relations.get('gapjunction_with', -1)
+    dm = relations.get('desmosome_with', -3)
+    mc = relations.get('mitochondrion_of', -4)
+    relation_index = {pre: 0, post: 1, gj: 2, dm: 3, mc: 4}
+    if with_relation_ids:
+        # Return links of all known link types with their relation ID
+        relation_ids = [relations[r] for r in LINK_RELATION_NAMES if r in relations]
+    else:
+        relation_ids = [pre, post, gj, dm, mc]
+
+    def map_relation(relation_id):
+        if with_relation_ids:
+            return relation_id
+        return relation_index.get(relation_id, -1)
+
+    return relation_ids, map_relation
+
+
+def _get_partner_relations(relations) -> Dict[int, int]:
+    """Map the ID of each link relation of KNOWN_LINK_PAIRS to the ID of its
+    partner relation.
+    """
+    partner_relations = {}
+    for link_pair in KNOWN_LINK_PAIRS.values():
+        source = relations.get(link_pair['source'])
+        target = relations.get(link_pair['target'])
+        if source is not None and target is not None:
+            partner_relations[source] = target
+            partner_relations[target] = source
+    return partner_relations
+
+
+def _compact_skeletons_linked_nodes(project_id, skeleton_ids, with_connectors=True,
+        with_user_info=False, ordered=False, with_edition_times=False,
+        with_relation_ids=False, with_link_confidence=False,
+        with_partner_counts=False) -> Dict[int, Tuple]:
+    """Get a reduced compact representation of many skeletons at once, in the
+    format of _compact_skeleton(): only the root node and the nodes linked to
+    a returned connector link are included. Tags, reviews, annotations and
+    history aren't available. Returns a dictionary of skeleton ID vs
+    (nodes, connectors, tags, reviews, annotations).
+    """
+    cursor = connection.cursor()
+    cursor.execute("""
+        SELECT relation_name, id FROM relation WHERE project_id=%(project_id)s
+    """, {
+        'project_id': project_id,
+    })
+    relations = dict(cursor.fetchall())
+    relation_ids, map_relation = _get_link_relations(relations, with_relation_ids)
+
+    nodes:DefaultDict[int, List] = defaultdict(list)
+    connectors:DefaultDict[int, List] = defaultdict(list)
+    link_rows:List[Tuple] = []
+
+    if with_connectors:
+        cursor.execute('''
+            SELECT tc.skeleton_id, tc.treenode_id, tc.connector_id, tc.relation_id,
+                c.location_x, c.location_y, c.location_z, tc.user_id, tc.confidence
+            FROM treenode_connector tc
+            JOIN connector c
+                ON tc.connector_id = c.id
+            WHERE tc.skeleton_id = ANY(%(skeleton_ids)s::bigint[])
+            AND tc.relation_id = ANY(%(relation_ids)s::bigint[])
+        ''', {
+            'skeleton_ids': skeleton_ids,
+            'relation_ids': relation_ids,
+        })
+        link_rows = cursor.fetchall()
+
+    # Count the links of all involved connectors by relation and confidence,
+    # to get for each link the other links to the same connector that have
+    # the partner relation of the link's relation.
+    partner_counts:Dict[Tuple[int, int], List[int]] = {}
+    partner_relations = _get_partner_relations(relations) if with_partner_counts else {}
+    if with_partner_counts and link_rows:
+        cursor.execute('''
+            SELECT p.connector_id, p.relation_id, p.confidence, count(*)
+            FROM treenode_connector p
+            WHERE p.connector_id = ANY(%(connector_ids)s::bigint[])
+            AND p.relation_id = ANY(%(partner_relation_ids)s::bigint[])
+            GROUP BY 1, 2, 3
+        ''', {
+            'connector_ids': list(set(row[2] for row in link_rows)),
+            'partner_relation_ids': list(set(partner_relations.values())),
+        })
+        for connector_id, relation_id, confidence, count in cursor.fetchall():
+            counts = partner_counts.get((connector_id, relation_id))
+            if counts is None:
+                counts = partner_counts[(connector_id, relation_id)] = [0] * 5
+            counts[confidence - 1] = count
+
+    for skeleton_id, treenode_id, connector_id, relation_id, x, y, z, user_id, \
+            confidence in link_rows:
+        row:List[Any] = [treenode_id, connector_id, map_relation(relation_id), x, y, z]
+        if with_user_info:
+            row.append(user_id)
+        if with_link_confidence:
+            row.append(confidence)
+        if with_partner_counts:
+            partner_relation = partner_relations.get(relation_id)
+            counts = [0] * 5
+            if partner_relation is not None:
+                counts = list(partner_counts.get((connector_id, partner_relation), counts))
+                # A link isn't its own partner
+                if partner_relation == relation_id:
+                    counts[confidence - 1] -= 1
+            row.append(counts)
+        connectors[skeleton_id].append(tuple(row))
+
+    # Roots and linked nodes. Selecting the linked nodes by ID is much faster
+    # than testing each node of the skeletons for links.
+    cursor.execute('''
+        SELECT t.skeleton_id, t.id, t.parent_id, t.user_id, t.location_x,
+            t.location_y, t.location_z, t.radius, t.confidence {edition_time}
+        FROM treenode t
+        WHERE t.id = ANY(%(linked_ids)s::bigint[])
+        UNION
+        SELECT t.skeleton_id, t.id, t.parent_id, t.user_id, t.location_x,
+            t.location_y, t.location_z, t.radius, t.confidence {edition_time}
+        FROM treenode t
+        WHERE t.skeleton_id = ANY(%(skeleton_ids)s::bigint[])
+        AND t.parent_id IS NULL
+        {order}
+    '''.format(**{
+        'edition_time': ', t.edition_time' if with_edition_times else '',
+        'order': 'ORDER BY 2' if ordered else '',
+    }), {
+        'linked_ids': list(set(row[1] for row in link_rows)),
+        'skeleton_ids': skeleton_ids,
+    })
+    for row in cursor.fetchall():
+        nodes[row[0]].append(tuple(row[1:]))
+
+    # Skeletons without nodes return empty lists, if they exist
+    missing = [skeleton_id for skeleton_id in skeleton_ids if skeleton_id not in nodes]
+    if missing:
+        existing = set(ClassInstance.objects.filter(pk__in=missing).values_list('id', flat=True))
+        for skeleton_id in missing:
+            if skeleton_id not in existing:
+                raise Http404(f"Skeleton #{skeleton_id} doesn't exist")
+
+    return {skeleton_id: (tuple(nodes[skeleton_id]), tuple(connectors[skeleton_id]),
+            {}, [], []) for skeleton_id in skeleton_ids}
 
 
 def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
@@ -785,22 +960,7 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
 
     if with_connectors:
         # Fetch all connectors with their partner treenode IDs
-        pre = relations['presynaptic_to']
-        post = relations['postsynaptic_to']
-        gj = relations.get('gapjunction_with', -1)
-        dm = relations.get('desmosome_with', -3)
-        mc = relations.get('mitochondrion_of', -4)
-        relation_index = {pre: 0, post: 1, gj: 2, dm: 3, mc: 4}
-        if with_relation_ids:
-            # Return links of all known link types with their relation ID
-            relation_ids = [relations[r] for r in LINK_RELATION_NAMES if r in relations]
-        else:
-            relation_ids = [pre, post, gj, dm, mc]
-
-        def map_relation(relation_id):
-            if with_relation_ids:
-                return relation_id
-            return relation_index.get(relation_id, -1)
+        relation_ids, map_relation = _get_link_relations(relations, with_relation_ids)
         if not with_history:
             user_select = ', tc.user_id' if with_user_info else ''
             confidence_select = ', tc.confidence' if with_link_confidence else ''
@@ -808,12 +968,7 @@ def _compact_skeleton(project_id, skeleton_id, with_connectors=True,
             if with_partner_counts:
                 # Count the other links to the same connector that have the
                 # partner relation of a link's relation, by their confidence.
-                for link_pair in KNOWN_LINK_PAIRS.values():
-                    source = relations.get(link_pair['source'])
-                    target = relations.get(link_pair['target'])
-                    if source is not None and target is not None:
-                        partner_relations[source] = target
-                        partner_relations[target] = source
+                partner_relations = _get_partner_relations(relations)
                 partner_select = ', partners.counts'
                 partner_join = '''
                     LEFT JOIN LATERAL (

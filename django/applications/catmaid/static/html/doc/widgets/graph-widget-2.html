@@ -1,0 +1,109 @@
+<p>
+Graph Widget 2 shows neurons and their connections as a graph. A graph node is
+a neuron, a part of a split neuron or a group of neurons and parts. Edges are
+built from the links of individual treenodes to connectors, with one edge per
+link type and pair of graph nodes. All link types can be shown, e.g. synapses
+and gap junctions. The link types to use are selected in the <em>Edges</em>
+tab.
+</p>
+
+<h4>Tabs</h4>
+<ul>
+  <li><em>Main</em>: append and remove neurons from another widget, clear and
+  refresh the graph, clone the widget, save the graph to a file and open
+  saved graphs.</li>
+  <li><em>View</em>: fit and zoom the view, mouse wheel sensitivity, and how
+  node labels, nodes and edges look (edge labels, label text, edge
+  width).</li>
+  <li><em>Groups</em>: group the selected nodes into one node, ungroup, and
+  group neurons with the same name or the same color.</li>
+  <li><em>Grow</em>: add the partners of the selected nodes over a number of
+  orders (<em>Circles</em>), or the neurons on paths between picked sources
+  and targets (<em>Paths</em>). Both follow the link types selected in the
+  <em>Edges</em> tab. Selected parts of split neurons only grow along their
+  own links.</li>
+  <li><em>Nodes</em>: layouts, node colors (e.g. review status, betweenness
+  centrality, circles of hell) and unconnected nodes.</li>
+  <li><em>Edges</em>: edge colors, link types and their colors, arrow shapes
+  and filters for edges, see below.</li>
+  <li><em>Selection</em>: annotate, measure edge risk, hide, lock and remove
+  the selected nodes, select by name and invert the selection.</li>
+  <li><em>Selections</em>: remember named sets of nodes, arrange them as
+  columns and fade or hide edges between them.</li>
+  <li><em>Subgraphs</em>: split the selected neurons into axon and dendrite,
+  into axon, backbone dendrite and dendritic terminals, by synapse clusters,
+  at a tag or at the active node, or reset the splits. Splits are kept when
+  the graph is refreshed.</li>
+  <li><em>Align</em>: align and distribute the selected nodes and snap nodes
+  to a grid.</li>
+  <li><em>Export</em>: GML, SVG and adjacency matrix files, the Connectivity
+  Matrix widget, a plot of the graph and graph statistics.</li>
+</ul>
+
+<h4>Filtering edges</h4>
+<p>
+The <em>Edges</em> tab has the same filters as the old Graph Widget, with
+other names:
+</p>
+<ul>
+  <li><em>Min. links</em> hides edges with fewer links (old: "Hide edges
+  with less than n synapses"). It applies to all link types.</li>
+  <li><em>Min. confidence</em> ignores links whose confidence, or whose
+  partner link's confidence, is lower (old: "Filter synapses below
+  confidence").</li>
+  <li><em>Synapse type</em> with <em>Hide</em> and <em>Show</em> hides or
+  shows synaptic edges between axon and dendrite parts, e.g. axo-dendritic
+  edges (old: "Hide/Show").</li>
+</ul>
+<p>
+Edges removed by these filters aren't counted as hidden: <em>Show hidden</em>
+in the <em>Selection</em> tab only shows elements hidden by hand.
+</p>
+
+<h4>Node filters</h4>
+<p>
+Like in many widgets, node filters are available through the funnel icon in
+the title bar. If filters are active and <em>Apply node/edge filters</em> is
+checked in the <em>Edges</em> tab, a connector only counts if at least one of
+the treenodes linked to it is allowed by the filters. Splitting and grouping
+work with node filters as well.
+</p>
+
+<h4>Saving and opening graphs</h4>
+<p>
+<em>Save</em> stores the graph as JSON file: the neurons with their splits,
+groups, node positions, hidden and locked nodes, selections and the settings
+of all tabs. Connections aren't stored, they are loaded again when the file is
+opened with <em>Open...</em>. Files of the old Graph Widget can be opened too.
+Their splits are computed again, except for splits at a tag, which old files
+don't store; these neurons are shown unsplit.
+</p>
+<p>
+<em>Clone</em> opens a second Graph Widget 2 with the same graph. Deep links
+that include widget settings restore the graph as well.
+</p>
+
+<h4>Layouts made in other tools</h4>
+<p>
+Layouts can be made in other tools, e.g. Gephi, and opened again in CATMAID:
+</p>
+<ol>
+  <li>Export the graph as GML in the <em>Export</em> tab. The default option
+  (linearize IDs) is fine.</li>
+  <li>Open the GML file in Gephi and make a layout.</li>
+  <li>Export the graph in Gephi as GraphML file: File &gt; Export &gt; Graph
+  file, file type "GraphML".</li>
+  <li>Click <em>Open...</em> in the <em>Main</em> tab and select the GraphML
+  file. The default import options work for Gephi.</li>
+</ol>
+<p>
+Only whole neurons are matched again, through the <em>unit_id</em> field of
+the GML export. Parts of split neurons and groups are skipped.
+</p>
+
+<h4>Keyboard shortcuts</h4>
+<ul>
+  <li><kbd>Delete</kbd>: remove the selected nodes, after a confirmation.</li>
+  <li><kbd>J</kbd>: group the selected nodes.</li>
+  <li>Hold <kbd>Shift</kbd>: zoom in smaller steps with the mouse wheel.</li>
+</ul>

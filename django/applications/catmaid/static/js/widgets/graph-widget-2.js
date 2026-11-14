@@ -6,6 +6,7 @@
   SkeletonAnnotations,
   SynapseClustering,
   THREE,
+  WindowMaker,
 */
 
 (function (CATMAID) {
@@ -157,6 +158,8 @@
     this.allowedConnectorIds = null;
     // Counts filter runs, to ignore the results of outdated ones
     this.filterRun = 0;
+    // Counts clear() calls, to ignore loads started before
+    this.loadCounter = 0;
   };
 
   GraphWidget2.prototype = Object.create(CATMAID.SkeletonSource.prototype);
@@ -179,357 +182,8 @@
       subscriptionSource: [this],
       controlsID: `graph_widget_2_controls_${this.widgetID}`,
       createControls: function(controls) {
-        let tabs = CATMAID.DOM.addTabGroup(controls, `graph_widget_2_${this.widgetID}`,
-            ['Main', 'View', 'Groups', 'Grow', 'Nodes', 'Edges', 'Selection',
-             'Selections', 'Subgraphs', 'Align', 'Export']);
-
-        CATMAID.DOM.appendToTab(tabs['Main'], [
-          [document.createTextNode('From')],
-          [CATMAID.skeletonListSources.createSelect(this)],
-          ['Append', () => this.loadSource()],
-          ['Append as group', () => this.appendAsGroup()],
-          ['Remove', () => this.removeSource()],
-          ['Clear', () => this.clear()],
-          ['Refresh', () => this.update()],
-        ]);
-
-        let options = this.viewOptions;
-        let setOption = (name, value) => {
-          options[name] = value;
-          this.applyStyle();
-        };
-        CATMAID.DOM.appendToTab(tabs['View'], [
-          {type: 'button', label: 'Fit', onclick: () => this.fitView()},
-          {type: 'button', label: '+', title: 'Zoom in', onclick: () => this.zoomBy(1.25)},
-          {type: 'button', label: '−', title: 'Zoom out', onclick: () => this.zoomBy(0.8)},
-          {type: 'checkbox', label: 'Fit ignores labels', value: options.fitIgnoresLabels,
-              title: 'Fit only the nodes into the view, long labels may be cut off',
-              onclick: e => { options.fitIgnoresLabels = e.target.checked; }},
-          this.createNumericViewOption('Mouse wheel sensitivity:',
-              'Lower values allow to zoom in smaller steps', 'wheelSensitivity',
-              0.01, 0.1, value => {
-                if (this.cy) this.cy.renderer().wheelSensitivity = value;
-              }),
-          {type: 'heading', label: 'Labels'},
-          {type: 'checkbox', label: 'Show', value: options.showLabels,
-              onclick: e => setOption('showLabels', e.target.checked)},
-          {type: 'checkbox', label: "Trim after ';'", value: options.trimLabels,
-              title: "Show neuron names only up to the first ';'",
-              onclick: e => {
-                options.trimLabels = e.target.checked;
-                this.updateNeuronNames();
-              }},
-          {type: 'select', label: 'Vertical: ', entries: ['top', 'center', 'bottom'],
-              value: options.labelVAlign,
-              onchange: e => setOption('labelVAlign', e.target.value)},
-          {type: 'select', label: 'Horizontal: ', entries: ['left', 'center', 'right'],
-              value: options.labelHAlign,
-              onchange: e => setOption('labelHAlign', e.target.value)},
-          this.createNumericViewOption('Max width:', 'Wrap labels at this width ' +
-              'in pixels, zero disables wrapping', 'labelMaxWidth', 0, 10),
-          {type: 'heading', label: 'Nodes'},
-          this.createNumericViewOption('Width:', 'Node width in pixels', 'nodeWidth', 1, 1),
-          this.createNumericViewOption('Height:', 'Node height in pixels', 'nodeHeight', 1, 1),
-          this.createNumericViewOption('Border:', 'Node border width in pixels',
-              'nodeBorderWidth', 0, 0.5),
-        ]);
-
-        let edgeOptions = this.edgeOptions;
-        let setEdgeOption = (name, value) => {
-          edgeOptions[name] = value;
-          this.updateEdgeProperties();
-        };
-        let updateEdges = () => this.updateEdgeProperties();
-        let linkTypeSelection = CATMAID.DOM.createAsyncPlaceholder(
-          CATMAID.DOM.initLinkTypeList({
-            getSelectedLinkTypes: () => this.selectedLinkTypes,
-            setLinkTypeVisibility: (linkType, visible) => this.setLinkTypeVisibility(linkType, visible),
-            // All link types are loaded already
-            update: () => this.updateGraph(),
-            color: true,
-            getLinkTypeColor: linkType => this.getLinkTypeColor(linkType),
-            getLinkTypeOpacity: linkType => this.getLinkTypeOpacity(linkType),
-            // Called with a different context
-            updateLinkTypeColor: (...args) => this.updateLinkTypeColor(...args),
-          }));
-        let linkTypeWrapper = document.createElement('span');
-        linkTypeWrapper.appendChild(linkTypeSelection);
-        let arrowShapeSpec = {type: 'select', label: 'Arrow shape: ',
-            title: 'Arrow shape for the edges leaving the selected nodes',
-            entries: GraphWidget2.ARROW_SHAPES, value: 'triangle'};
-        let synapseTypeSpec = {type: 'select', label: 'Synapse type: ',
-            title: 'Hide or show synaptic edges between axon and dendrite ' +
-                'parts of skeletons split into axon and dendrite',
-            entries: Object.keys(GraphWidget2.SYNAPSE_TYPES), value: 'axo-axonic'};
-        let edgeSpecs = [
-          {type: 'select', label: 'Color by: ', title: 'Color directed edges ' +
-              'like their link type, or like their source or target node',
-              entries: [{title: 'link type', value: 'link-type'},
-                        {title: 'source', value: 'source'},
-                        {title: 'target', value: 'target'}],
-              value: edgeOptions.colorMode,
-              onchange: e => setEdgeOption('colorMode', e.target.value)},
-          this.createNumericOption(edgeOptions, 'Min. links:',
-              'Hide edges with fewer links', 'minLinks', 1, undefined, 1, updateEdges),
-          {type: 'select', label: 'Min. confidence: ', title: 'Ignore links ' +
-              'whose confidence or whose partner link\'s confidence is lower',
-              entries: ['1', '2', '3', '4', '5'], value: String(edgeOptions.minConfidence),
-              onchange: e => setEdgeOption('minConfidence', Number(e.target.value))},
-          {type: 'checkbox', label: 'Hide self edges', value: edgeOptions.hideSelfEdges,
-              title: 'Hide edges whose source and target node are the same',
-              onclick: e => setEdgeOption('hideSelfEdges', e.target.checked)},
-          {type: 'checkbox', label: 'Apply node/edge filters', value: this.applyFilterRules,
-              title: 'Apply all enabled node filters (funnel icon in title bar). ' +
-                  'If node filters are active, only edges with at least one node ' +
-                  'allowed by the filter will be shown.',
-              onclick: e => {
-                this.applyFilterRules = e.target.checked;
-                if (this.filterRules.length > 0) this.updateFilter();
-              }},
-          {type: 'child', element: linkTypeWrapper},
-          [document.createTextNode(' - ')],
-          arrowShapeSpec,
-          ['Set', () => this.setArrowShapeOfSelectedNodes(arrowShapeSelect.value)],
-          [document.createTextNode(' - ')],
-          synapseTypeSpec,
-          ['Hide', () => this.setSynapseTypeVisibility(synapseTypeSelect.value, false)],
-          ['Show', () => this.setSynapseTypeVisibility(synapseTypeSelect.value, true)],
-          {type: 'heading', label: 'Display'},
-          {type: 'select', label: 'Label: ', title: 'Edge labels, relative ' +
-              'values include partners that aren\'t part of the graph',
-              entries: GraphWidget2.EDGE_LABEL_STRATEGIES, value: edgeOptions.labelStrategy,
-              onchange: e => setEdgeOption('labelStrategy', e.target.value)},
-          {type: 'color-button', label: 'Text color', title: 'Color of edge labels',
-              color: {initialColor: edgeOptions.textColor},
-              onchange: (rgb, alpha, colorChanged, alphaChanged, colorHex) => {
-                if (!colorChanged) return;
-                edgeOptions.textColor = '#' + colorHex;
-                this.applyStyle();
-              }},
-          this.createNumericOption(edgeOptions, 'Text opacity:', 'Opacity of edge labels',
-              'textOpacity', 0, 1, 0.1, () => this.applyStyle()),
-          this.createNumericOption(edgeOptions, 'Text outline:', 'Outline width of edge labels',
-              'textOutlineWidth', 0, undefined, 0.1, () => this.applyStyle()),
-          this.createNumericOption(edgeOptions, 'Outline opacity:', 'Opacity of edge label outlines',
-              'textOutlineOpacity', 0, 1, 0.1, () => this.applyStyle()),
-          this.createNumericOption(edgeOptions, 'Min. width:', 'Width added to all edges',
-              'minWidth', 0, undefined, 0.5, updateEdges),
-          {type: 'select', label: 'Width: ', title: 'Edge width as a function of the link count',
-              entries: Object.keys(GraphWidget2.EDGE_WIDTH_FUNCTIONS), value: edgeOptions.widthFunction,
-              onchange: e => setEdgeOption('widthFunction', e.target.value)},
-        ];
-        let edgeElements = CATMAID.DOM.appendToTab(tabs['Edges'], edgeSpecs);
-        let arrowShapeSelect = edgeElements[edgeSpecs.indexOf(arrowShapeSpec)];
-        let synapseTypeSelect = edgeElements[edgeSpecs.indexOf(synapseTypeSpec)];
-
-        CATMAID.DOM.appendToTab(tabs['Nodes'], [
-          {type: 'select', label: 'Layout: ', title: 'The layout to use for re-layouts and new nodes',
-              entries: GraphWidget2.LAYOUTS.map((layout, i) => ({title: layout.title, value: String(i)})),
-              value: String(this.layoutIndex),
-              onchange: e => { this.layoutIndex = Number(e.target.value); }},
-          ['Re-layout', () => this.relayout()],
-          {type: 'checkbox', label: 'fit', value: this.layout_fit,
-              title: 'Fit the view to the graph after a layout',
-              onclick: e => { this.layout_fit = e.target.checked; }},
-          [document.createTextNode(' - ')],
-          {type: 'select', label: 'Color: ', title: 'How to color nodes',
-              entries: GraphWidget2.NODE_COLOR_MODES, value: this.nodeColorMode,
-              onchange: e => this.setNodeColorMode(e.target.value)},
-          [document.createTextNode(' - ')],
-          {type: 'button', label: 'Hide unconnected',
-              title: 'Hide all nodes that have either no connected edges or only edges to themselves',
-              onclick: () => this.hideUnconnectedNodes()},
-          {type: 'button', label: 'Show unconnected',
-              title: 'Show all nodes hidden by "Hide unconnected"',
-              onclick: () => this.showUnconnectedNodes()},
-          {type: 'button', label: 'Remove unconnected',
-              title: 'Remove all skeletons whose nodes have either no connected edges or only edges to themselves',
-              onclick: () => this.removeUnconnectedNodes()},
-        ]);
-
-        let selectTextSpec = {type: 'text', id: `graph_widget_2_select_text_${this.widgetID}`,
-            placeholder: 'Name or /regex', title: 'Select nodes whose label ' +
-            'contains this text, or matches a regular expression starting with /',
-            onenter: () => this.selectByName(selectText.value)};
-        let showHiddenSpec = {type: 'button', label: 'Show hidden', disabled: true,
-            id: `graph_widget_2_show_hidden_${this.widgetID}`,
-            onclick: () => this.showHidden()};
-        let selectionSpecs = [
-          ['Annotate', () => this.annotate_skeleton_list()],
-          [document.createTextNode(' - ')],
-          ['Measure edge risk', () => this.measureEdgeRisk()],
-          [document.createTextNode(' - ')],
-          ['Hide', () => this.hideSelected()],
-          showHiddenSpec,
-          ['Lock', () => this.lockSelected(true)],
-          ['Unlock', () => this.lockSelected(false)],
-          [document.createTextNode(' - ')],
-          ['Remove', () => this.removeSelected()],
-          [document.createTextNode(' - ')],
-          selectTextSpec,
-          ['Select by name', () => this.selectByName(selectText.value)],
-          [document.createTextNode(' - ')],
-          ['Invert', () => this.invertSelection()],
-        ];
-        let selectionElements = CATMAID.DOM.appendToTab(tabs['Selection'], selectionSpecs);
-        let selectText = selectionElements[selectionSpecs.indexOf(selectTextSpec)];
-        this.showHiddenButton = selectionElements[selectionSpecs.indexOf(showHiddenSpec)];
-
-        CATMAID.DOM.appendToTab(tabs['Align'], [
-          [document.createTextNode('Align: ')],
-          {type: 'button', label: 'X', onclick: () => this.alignNodes('x'),
-              title: 'Use the X coordinate of the first selected node for all selected nodes'},
-          {type: 'button', label: 'Y', onclick: () => this.alignNodes('y'),
-              title: 'Use the Y coordinate of the first selected node for all selected nodes'},
-          [document.createTextNode(' - Distribute: ')],
-          {type: 'button', label: 'X', onclick: () => this.distributeNodes('x'),
-              title: 'Space the selected nodes evenly along X, between the outermost ones'},
-          {type: 'button', label: 'Y', onclick: () => this.distributeNodes('y'),
-              title: 'Space the selected nodes evenly along Y, between the outermost ones'},
-          [document.createTextNode(' - ')],
-          {type: 'checkbox', label: 'Snap to grid', value: this.gridOptions.snap,
-              title: 'Move dragged nodes to the nearest grid point when they are released',
-              onclick: e => { this.gridOptions.snap = e.target.checked; }},
-          this.createNumericOption(this.gridOptions, 'Grid size:', 'Grid cell size in pixels',
-              'size', 1, undefined, 1, () => {}),
-          {type: 'button', label: 'Snap selected', onclick: () => this.snapSelectedToGrid(),
-              title: 'Move the selected nodes to the nearest grid point'},
-        ]);
-
-        CATMAID.DOM.appendToTab(tabs['Subgraphs'], [
-          [document.createTextNode('Select node(s) and split by: ')],
-          ['Axon & dendrite', () => this.splitSelected(GraphWidget2.SPLIT_AXON_DENDRITE)],
-          ['Axon, backbone dendrite & dendritic terminals',
-              () => this.splitSelected(GraphWidget2.SPLIT_AXON_BACKBONE_TERMINALS)],
-          ['Synapse clusters', () => this.splitBySynapseClustering()],
-          ['Tag', () => this.splitByTag()],
-          ['Reset', () => this.unsplitSelected()],
-          [document.createTextNode(' - ')],
-          ['Split at active node', () => this.splitAtActiveNode()],
-        ]);
-
-        CATMAID.DOM.appendToTab(tabs['Groups'], [
-          ['Group selected', () => this.group()],
-          ['Ungroup selected', () => this.ungroup()],
-          [document.createTextNode(' - ')],
-          ['Group equally named', () => this.groupEquallyNamed()],
-          ['Group equally colored', () => this.groupEquallyColored()],
-        ]);
-
-        CATMAID.DOM.appendToTab(tabs['Export'], [
-          ['Export GML', () => this.exportGML()],
-          ['Export SVG', () => this.showSVGOptions()],
-          ['Export Adjacency Matrix', () => this.exportAdjacencyMatrix()],
-          ['Open Connectivity Matrix', () => this.openConnectivityMatrix()],
-          ['Open plot', () => this.openPlot()],
-          ['Quantify', () => this.quantificationDialog()],
-        ]);
-
-        let selectionOptions = this.selectionOptions;
-        let selectionListSpec = {type: 'select', entries: [],
-            title: 'The selection that the buttons to the right work on'};
-        let selectionsSpecs = [
-          {type: 'button', label: 'Create selection',
-              title: 'Remember the selected nodes as a new named selection',
-              onclick: () => this.createSelection()},
-          {type: 'checkbox', label: 'prevent overlaps', value: selectionOptions.preventOverlaps,
-              title: 'Leave out nodes that are part of another selection already',
-              onclick: e => { selectionOptions.preventOverlaps = e.target.checked; }},
-          selectionListSpec,
-          {type: 'button', label: '\u25B2', title: 'Move the selection up in the list',
-              onclick: () => this.moveSelection(-1)},
-          {type: 'button', label: '\u25BC', title: 'Move the selection down in the list',
-              onclick: () => this.moveSelection(1)},
-          ['Select', () => this.activateSelection(true)],
-          ['Deselect', () => this.activateSelection(false)],
-          ['Remove', () => this.removeSelection()],
-          ['Select all', () => this.activateAllSelections()],
-          [document.createTextNode(' - ')],
-          {type: 'button', label: 'As columns',
-              title: 'Arrange the nodes of each selection as a column, in list order',
-              onclick: () => this.alignSelectionsAsColumns()},
-          {type: 'checkbox', label: 'hide other nodes', value: selectionOptions.hideOtherNodes,
-              title: 'Hide nodes that are not part of any selection when arranging columns',
-              onclick: e => { selectionOptions.hideOtherNodes = e.target.checked; }},
-          Object.assign(this.createNumericOption(selectionOptions, 'edge opacity:',
-              'The opacity of faded edges in percent', 'fadedEdgeOpacity', 0, 100, 1, () => {}),
-              {postlabel: '%'}),
-          {type: 'button', label: 'Fade edges',
-              title: 'Fade all edges, except for the ones that connect the ' +
-                  'selected nodes to neighboring columns and further on',
-              onclick: () => this.fadeEdges()},
-          {type: 'button', label: 'Restore edges', title: 'Undo the fading of edges',
-              onclick: () => this.restoreEdges()},
-          {type: 'button', label: 'Hide non-seq edges',
-              title: 'Hide all edges that don\'t lead from one selection to the next one in the list',
-              onclick: () => this.hideNonSequentialEdges()},
-        ];
-        let selectionsElements = CATMAID.DOM.appendToTab(tabs['Selections'], selectionsSpecs);
-        this.selectionSelect = selectionsElements[selectionsSpecs.indexOf(selectionListSpec)];
-        this.updateSelectionSelect();
-
-        let growOptions = this.growOptions;
-        let numberEntries = (first, last) => Array.from({length: last - first + 1},
-            (_, i) => ({title: String(first + i), value: String(first + i)}));
-        let limitEntries = direction => [
-          {title: `All ${direction}`, value: '0'},
-          {title: `No ${direction}`, value: '-1'},
-        ].concat(numberEntries(1, 50));
-        let pickSourcesSpec = {type: 'button', label: 'Pick sources',
-            title: 'Add the selected nodes to the nodes that paths start at',
-            onclick: () => this.pickPathOrigins('source')};
-        let pickTargetsSpec = {type: 'button', label: 'Pick targets',
-            title: 'Add the selected nodes to the nodes that paths end at',
-            onclick: () => this.pickPathOrigins('target')};
-        let growSpecs = [
-          [document.createTextNode('Grow ')],
-          {type: 'button', label: 'Circles',
-              title: 'Add the partners of the selected nodes, connected ' +
-                  'through the link types selected in the Edges tab',
-              onclick: () => this.growCircles()},
-          {type: 'select', label: ' by ', title: 'How many orders of partners to add',
-              entries: numberEntries(1, 5), value: String(growOptions.circles),
-              onchange: e => { growOptions.circles = Number(e.target.value); }},
-          [document.createTextNode(' orders, limit: ')],
-          {type: 'select', title: 'The minimum number of links of a single ' +
-              'link type from an upstream partner',
-              entries: limitEntries('upstream'), value: String(growOptions.minUpstream),
-              onchange: e => { growOptions.minUpstream = Number(e.target.value); }},
-          {type: 'select', title: 'The minimum number of links of a single ' +
-              'link type to a downstream partner',
-              entries: limitEntries('downstream'), value: String(growOptions.minDownstream),
-              onchange: e => { growOptions.minDownstream = Number(e.target.value); }},
-          {type: 'text', label: 'Filter (regex):', title: 'Only include ' +
-              'partners with annotations matching this regular expression',
-              value: growOptions.annotationFilter, length: 4,
-              onchange: e => { growOptions.annotationFilter = e.target.value; }},
-          [document.createTextNode(' - Find ')],
-          {type: 'button', label: 'Paths',
-              title: 'Add the neurons on paths from the picked sources to ' +
-                  'the picked targets, along the link types selected in the Edges tab',
-              onclick: () => this.growPaths()},
-          {type: 'select', label: ' by ', title: 'The number of links a path consists of',
-              entries: numberEntries(2, 6), value: String(growOptions.hops),
-              onchange: e => { growOptions.hops = Number(e.target.value); }},
-          [document.createTextNode(' hops, ')],
-          this.createNumericOption(growOptions, 'Min. links:', 'The minimum ' +
-              'number of links of a single link type between the neurons of a path',
-              'minPathLinks', 1, undefined, 1, () => {}),
-          pickSourcesSpec,
-          {type: 'button', label: 'X', title: 'Forget all path sources',
-              onclick: () => this.clearPathOrigins('source')},
-          pickTargetsSpec,
-          {type: 'button', label: 'X', title: 'Forget all path targets',
-              onclick: () => this.clearPathOrigins('target')},
-        ];
-        let growElements = CATMAID.DOM.appendToTab(tabs['Grow'], growSpecs);
-        this.pathOriginButtons = {
-          source: growElements[growSpecs.indexOf(pickSourcesSpec)],
-          target: growElements[growSpecs.indexOf(pickTargetsSpec)],
-        };
-        this.updatePathOriginButtons();
-
-        $(controls).tabs();
+        this.controlsElement = controls;
+        this.buildControls(controls);
       },
       contentID: `graph_widget_2_${this.widgetID}`,
       expandContent: true,
@@ -555,6 +209,384 @@
         update: this.updateFilter.bind(this),
       }
     };
+  };
+
+  /**
+   * Create the tabs and their controls, showing the current options.
+   */
+  GraphWidget2.prototype.buildControls = function(controls) {
+    let tabs = CATMAID.DOM.addTabGroup(controls, `graph_widget_2_${this.widgetID}`,
+        ['Main', 'View', 'Groups', 'Grow', 'Nodes', 'Edges', 'Selection',
+         'Selections', 'Subgraphs', 'Align', 'Export']);
+
+    let fileButton = CATMAID.DOM.createFileButton(undefined, false,
+        e => this.loadFromFile(e.target.files));
+    CATMAID.DOM.appendToTab(tabs['Main'], [
+      [document.createTextNode('From')],
+      [CATMAID.skeletonListSources.createSelect(this)],
+      ['Append', () => this.loadSource()],
+      ['Append as group', () => this.appendAsGroup()],
+      ['Remove', () => this.removeSource()],
+      ['Clear', () => this.clear()],
+      ['Refresh', () => this.update()],
+      [document.createTextNode(' - ')],
+      ['Clone', () => this.cloneWidget()],
+      ['Save', () => this.saveJSON()],
+      ['Open...', () => fileButton.click()],
+    ]);
+    tabs['Main'].appendChild(fileButton);
+
+    let options = this.viewOptions;
+    let setOption = (name, value) => {
+      options[name] = value;
+      this.applyStyle();
+    };
+    CATMAID.DOM.appendToTab(tabs['View'], [
+      {type: 'button', label: 'Fit', onclick: () => this.fitView()},
+      {type: 'button', label: '+', title: 'Zoom in', onclick: () => this.zoomBy(1.25)},
+      {type: 'button', label: '−', title: 'Zoom out', onclick: () => this.zoomBy(0.8)},
+      {type: 'checkbox', label: 'Fit ignores labels', value: options.fitIgnoresLabels,
+          title: 'Fit only the nodes into the view, long labels may be cut off',
+          onclick: e => { options.fitIgnoresLabels = e.target.checked; }},
+      this.createNumericViewOption('Mouse wheel sensitivity:',
+          'Lower values allow to zoom in smaller steps', 'wheelSensitivity',
+          0.01, 0.1, value => {
+            if (this.cy) this.cy.renderer().wheelSensitivity = value;
+          }),
+      {type: 'heading', label: 'Labels'},
+      {type: 'checkbox', label: 'Show', value: options.showLabels,
+          onclick: e => setOption('showLabels', e.target.checked)},
+      {type: 'checkbox', label: "Trim after ';'", value: options.trimLabels,
+          title: "Show neuron names only up to the first ';'",
+          onclick: e => {
+            options.trimLabels = e.target.checked;
+            this.updateNeuronNames();
+          }},
+      {type: 'select', label: 'Vertical: ', entries: ['top', 'center', 'bottom'],
+          value: options.labelVAlign,
+          onchange: e => setOption('labelVAlign', e.target.value)},
+      {type: 'select', label: 'Horizontal: ', entries: ['left', 'center', 'right'],
+          value: options.labelHAlign,
+          onchange: e => setOption('labelHAlign', e.target.value)},
+      this.createNumericViewOption('Max width:', 'Wrap labels at this width ' +
+          'in pixels, zero disables wrapping', 'labelMaxWidth', 0, 10),
+      {type: 'heading', label: 'Nodes'},
+      this.createNumericViewOption('Width:', 'Node width in pixels', 'nodeWidth', 1, 1),
+      this.createNumericViewOption('Height:', 'Node height in pixels', 'nodeHeight', 1, 1),
+      this.createNumericViewOption('Border:', 'Node border width in pixels',
+          'nodeBorderWidth', 0, 0.5),
+    ]);
+
+    let edgeOptions = this.edgeOptions;
+    let setEdgeOption = (name, value) => {
+      edgeOptions[name] = value;
+      this.updateEdgeProperties();
+    };
+    let updateEdges = () => this.updateEdgeProperties();
+    let linkTypeSelection = CATMAID.DOM.createAsyncPlaceholder(
+      CATMAID.DOM.initLinkTypeList({
+        getSelectedLinkTypes: () => this.selectedLinkTypes,
+        setLinkTypeVisibility: (linkType, visible) => this.setLinkTypeVisibility(linkType, visible),
+        // All link types are loaded already
+        update: () => this.updateGraph(),
+        color: true,
+        getLinkTypeColor: linkType => this.getLinkTypeColor(linkType),
+        getLinkTypeOpacity: linkType => this.getLinkTypeOpacity(linkType),
+        // Called with a different context
+        updateLinkTypeColor: (...args) => this.updateLinkTypeColor(...args),
+      }));
+    let linkTypeWrapper = document.createElement('span');
+    linkTypeWrapper.appendChild(linkTypeSelection);
+    let arrowShapeSpec = {type: 'select', label: 'Arrow shape: ',
+        title: 'Arrow shape for the edges leaving the selected nodes',
+        entries: GraphWidget2.ARROW_SHAPES, value: 'triangle'};
+    let synapseTypeSpec = {type: 'select', label: 'Synapse type: ',
+        title: 'Hide or show synaptic edges between axon and dendrite ' +
+            'parts of skeletons split into axon and dendrite',
+        entries: Object.keys(GraphWidget2.SYNAPSE_TYPES), value: 'axo-axonic'};
+    let edgeSpecs = [
+      {type: 'select', label: 'Color by: ', title: 'Color directed edges ' +
+          'like their link type, or like their source or target node',
+          entries: [{title: 'link type', value: 'link-type'},
+                    {title: 'source', value: 'source'},
+                    {title: 'target', value: 'target'}],
+          value: edgeOptions.colorMode,
+          onchange: e => setEdgeOption('colorMode', e.target.value)},
+      this.createNumericOption(edgeOptions, 'Min. links:',
+          'Hide edges with fewer links', 'minLinks', 1, undefined, 1, updateEdges),
+      {type: 'select', label: 'Min. confidence: ', title: 'Ignore links ' +
+          'whose confidence or whose partner link\'s confidence is lower',
+          entries: ['1', '2', '3', '4', '5'], value: String(edgeOptions.minConfidence),
+          onchange: e => setEdgeOption('minConfidence', Number(e.target.value))},
+      {type: 'checkbox', label: 'Hide self edges', value: edgeOptions.hideSelfEdges,
+          title: 'Hide edges whose source and target node are the same',
+          onclick: e => setEdgeOption('hideSelfEdges', e.target.checked)},
+      {type: 'checkbox', label: 'Apply node/edge filters', value: this.applyFilterRules,
+          title: 'Apply all enabled node filters (funnel icon in title bar). ' +
+              'If node filters are active, only edges with at least one node ' +
+              'allowed by the filter will be shown.',
+          onclick: e => {
+            this.applyFilterRules = e.target.checked;
+            if (this.filterRules.length > 0) this.updateFilter();
+          }},
+      {type: 'child', element: linkTypeWrapper},
+      [document.createTextNode(' - ')],
+      arrowShapeSpec,
+      ['Set', () => this.setArrowShapeOfSelectedNodes(arrowShapeSelect.value)],
+      [document.createTextNode(' - ')],
+      synapseTypeSpec,
+      ['Hide', () => this.setSynapseTypeVisibility(synapseTypeSelect.value, false)],
+      ['Show', () => this.setSynapseTypeVisibility(synapseTypeSelect.value, true)],
+      {type: 'heading', label: 'Display'},
+      {type: 'select', label: 'Label: ', title: 'Edge labels, relative ' +
+          'values include partners that aren\'t part of the graph',
+          entries: GraphWidget2.EDGE_LABEL_STRATEGIES, value: edgeOptions.labelStrategy,
+          onchange: e => setEdgeOption('labelStrategy', e.target.value)},
+      {type: 'color-button', label: 'Text color', title: 'Color of edge labels',
+          color: {initialColor: edgeOptions.textColor},
+          onchange: (rgb, alpha, colorChanged, alphaChanged, colorHex) => {
+            if (!colorChanged) return;
+            edgeOptions.textColor = '#' + colorHex;
+            this.applyStyle();
+          }},
+      this.createNumericOption(edgeOptions, 'Text opacity:', 'Opacity of edge labels',
+          'textOpacity', 0, 1, 0.1, () => this.applyStyle()),
+      this.createNumericOption(edgeOptions, 'Text outline:', 'Outline width of edge labels',
+          'textOutlineWidth', 0, undefined, 0.1, () => this.applyStyle()),
+      this.createNumericOption(edgeOptions, 'Outline opacity:', 'Opacity of edge label outlines',
+          'textOutlineOpacity', 0, 1, 0.1, () => this.applyStyle()),
+      this.createNumericOption(edgeOptions, 'Min. width:', 'Width added to all edges',
+          'minWidth', 0, undefined, 0.5, updateEdges),
+      {type: 'select', label: 'Width: ', title: 'Edge width as a function of the link count',
+          entries: Object.keys(GraphWidget2.EDGE_WIDTH_FUNCTIONS), value: edgeOptions.widthFunction,
+          onchange: e => setEdgeOption('widthFunction', e.target.value)},
+    ];
+    let edgeElements = CATMAID.DOM.appendToTab(tabs['Edges'], edgeSpecs);
+    let arrowShapeSelect = edgeElements[edgeSpecs.indexOf(arrowShapeSpec)];
+    let synapseTypeSelect = edgeElements[edgeSpecs.indexOf(synapseTypeSpec)];
+
+    CATMAID.DOM.appendToTab(tabs['Nodes'], [
+      {type: 'select', label: 'Layout: ', title: 'The layout to use for re-layouts and new nodes',
+          entries: GraphWidget2.LAYOUTS.map((layout, i) => ({title: layout.title, value: String(i)})),
+          value: String(this.layoutIndex),
+          onchange: e => { this.layoutIndex = Number(e.target.value); }},
+      ['Re-layout', () => this.relayout()],
+      {type: 'checkbox', label: 'fit', value: this.layout_fit,
+          title: 'Fit the view to the graph after a layout',
+          onclick: e => { this.layout_fit = e.target.checked; }},
+      [document.createTextNode(' - ')],
+      {type: 'select', label: 'Color: ', title: 'How to color nodes',
+          entries: GraphWidget2.NODE_COLOR_MODES, value: this.nodeColorMode,
+          onchange: e => this.setNodeColorMode(e.target.value)},
+      [document.createTextNode(' - ')],
+      {type: 'button', label: 'Hide unconnected',
+          title: 'Hide all nodes that have either no connected edges or only edges to themselves',
+          onclick: () => this.hideUnconnectedNodes()},
+      {type: 'button', label: 'Show unconnected',
+          title: 'Show all nodes hidden by "Hide unconnected"',
+          onclick: () => this.showUnconnectedNodes()},
+      {type: 'button', label: 'Remove unconnected',
+          title: 'Remove all skeletons whose nodes have either no connected edges or only edges to themselves',
+          onclick: () => this.removeUnconnectedNodes()},
+    ]);
+
+    let selectTextSpec = {type: 'text', id: `graph_widget_2_select_text_${this.widgetID}`,
+        placeholder: 'Name or /regex', title: 'Select nodes whose label ' +
+        'contains this text, or matches a regular expression starting with /',
+        onenter: () => this.selectByName(selectText.value)};
+    let showHiddenSpec = {type: 'button', label: 'Show hidden', disabled: true,
+        id: `graph_widget_2_show_hidden_${this.widgetID}`,
+        onclick: () => this.showHidden()};
+    let selectionSpecs = [
+      ['Annotate', () => this.annotate_skeleton_list()],
+      [document.createTextNode(' - ')],
+      ['Measure edge risk', () => this.measureEdgeRisk()],
+      [document.createTextNode(' - ')],
+      ['Hide', () => this.hideSelected()],
+      showHiddenSpec,
+      ['Lock', () => this.lockSelected(true)],
+      ['Unlock', () => this.lockSelected(false)],
+      [document.createTextNode(' - ')],
+      ['Remove', () => this.removeSelected()],
+      [document.createTextNode(' - ')],
+      selectTextSpec,
+      ['Select by name', () => this.selectByName(selectText.value)],
+      [document.createTextNode(' - ')],
+      ['Invert', () => this.invertSelection()],
+    ];
+    let selectionElements = CATMAID.DOM.appendToTab(tabs['Selection'], selectionSpecs);
+    let selectText = selectionElements[selectionSpecs.indexOf(selectTextSpec)];
+    this.showHiddenButton = selectionElements[selectionSpecs.indexOf(showHiddenSpec)];
+
+    CATMAID.DOM.appendToTab(tabs['Align'], [
+      [document.createTextNode('Align: ')],
+      {type: 'button', label: 'X', onclick: () => this.alignNodes('x'),
+          title: 'Use the X coordinate of the first selected node for all selected nodes'},
+      {type: 'button', label: 'Y', onclick: () => this.alignNodes('y'),
+          title: 'Use the Y coordinate of the first selected node for all selected nodes'},
+      [document.createTextNode(' - Distribute: ')],
+      {type: 'button', label: 'X', onclick: () => this.distributeNodes('x'),
+          title: 'Space the selected nodes evenly along X, between the outermost ones'},
+      {type: 'button', label: 'Y', onclick: () => this.distributeNodes('y'),
+          title: 'Space the selected nodes evenly along Y, between the outermost ones'},
+      [document.createTextNode(' - ')],
+      {type: 'checkbox', label: 'Snap to grid', value: this.gridOptions.snap,
+          title: 'Move dragged nodes to the nearest grid point when they are released',
+          onclick: e => { this.gridOptions.snap = e.target.checked; }},
+      this.createNumericOption(this.gridOptions, 'Grid size:', 'Grid cell size in pixels',
+          'size', 1, undefined, 1, () => {}),
+      {type: 'button', label: 'Snap selected', onclick: () => this.snapSelectedToGrid(),
+          title: 'Move the selected nodes to the nearest grid point'},
+    ]);
+
+    CATMAID.DOM.appendToTab(tabs['Subgraphs'], [
+      [document.createTextNode('Select node(s) and split by: ')],
+      ['Axon & dendrite', () => this.splitSelected(GraphWidget2.SPLIT_AXON_DENDRITE)],
+      ['Axon, backbone dendrite & dendritic terminals',
+          () => this.splitSelected(GraphWidget2.SPLIT_AXON_BACKBONE_TERMINALS)],
+      ['Synapse clusters', () => this.splitBySynapseClustering()],
+      ['Tag', () => this.splitByTag()],
+      ['Reset', () => this.unsplitSelected()],
+      [document.createTextNode(' - ')],
+      ['Split at active node', () => this.splitAtActiveNode()],
+    ]);
+
+    CATMAID.DOM.appendToTab(tabs['Groups'], [
+      ['Group selected', () => this.group()],
+      ['Ungroup selected', () => this.ungroup()],
+      [document.createTextNode(' - ')],
+      ['Group equally named', () => this.groupEquallyNamed()],
+      ['Group equally colored', () => this.groupEquallyColored()],
+    ]);
+
+    CATMAID.DOM.appendToTab(tabs['Export'], [
+      ['Export GML', () => this.exportGML()],
+      ['Export SVG', () => this.showSVGOptions()],
+      ['Export Adjacency Matrix', () => this.exportAdjacencyMatrix()],
+      ['Open Connectivity Matrix', () => this.openConnectivityMatrix()],
+      ['Open plot', () => this.openPlot()],
+      ['Quantify', () => this.quantificationDialog()],
+    ]);
+
+    let selectionOptions = this.selectionOptions;
+    let selectionListSpec = {type: 'select', entries: [],
+        title: 'The selection that the buttons to the right work on'};
+    let selectionsSpecs = [
+      {type: 'button', label: 'Create selection',
+          title: 'Remember the selected nodes as a new named selection',
+          onclick: () => this.createSelection()},
+      {type: 'checkbox', label: 'prevent overlaps', value: selectionOptions.preventOverlaps,
+          title: 'Leave out nodes that are part of another selection already',
+          onclick: e => { selectionOptions.preventOverlaps = e.target.checked; }},
+      selectionListSpec,
+      {type: 'button', label: '\u25B2', title: 'Move the selection up in the list',
+          onclick: () => this.moveSelection(-1)},
+      {type: 'button', label: '\u25BC', title: 'Move the selection down in the list',
+          onclick: () => this.moveSelection(1)},
+      ['Select', () => this.activateSelection(true)],
+      ['Deselect', () => this.activateSelection(false)],
+      ['Remove', () => this.removeSelection()],
+      ['Select all', () => this.activateAllSelections()],
+      [document.createTextNode(' - ')],
+      {type: 'button', label: 'As columns',
+          title: 'Arrange the nodes of each selection as a column, in list order',
+          onclick: () => this.alignSelectionsAsColumns()},
+      {type: 'checkbox', label: 'hide other nodes', value: selectionOptions.hideOtherNodes,
+          title: 'Hide nodes that are not part of any selection when arranging columns',
+          onclick: e => { selectionOptions.hideOtherNodes = e.target.checked; }},
+      Object.assign(this.createNumericOption(selectionOptions, 'edge opacity:',
+          'The opacity of faded edges in percent', 'fadedEdgeOpacity', 0, 100, 1, () => {}),
+          {postlabel: '%'}),
+      {type: 'button', label: 'Fade edges',
+          title: 'Fade all edges, except for the ones that connect the ' +
+              'selected nodes to neighboring columns and further on',
+          onclick: () => this.fadeEdges()},
+      {type: 'button', label: 'Restore edges', title: 'Undo the fading of edges',
+          onclick: () => this.restoreEdges()},
+      {type: 'button', label: 'Hide non-seq edges',
+          title: 'Hide all edges that don\'t lead from one selection to the next one in the list',
+          onclick: () => this.hideNonSequentialEdges()},
+    ];
+    let selectionsElements = CATMAID.DOM.appendToTab(tabs['Selections'], selectionsSpecs);
+    this.selectionSelect = selectionsElements[selectionsSpecs.indexOf(selectionListSpec)];
+    this.updateSelectionSelect();
+
+    let growOptions = this.growOptions;
+    let numberEntries = (first, last) => Array.from({length: last - first + 1},
+        (_, i) => ({title: String(first + i), value: String(first + i)}));
+    let limitEntries = direction => [
+      {title: `All ${direction}`, value: '0'},
+      {title: `No ${direction}`, value: '-1'},
+    ].concat(numberEntries(1, 50));
+    let pickSourcesSpec = {type: 'button', label: 'Pick sources',
+        title: 'Add the selected nodes to the nodes that paths start at',
+        onclick: () => this.pickPathOrigins('source')};
+    let pickTargetsSpec = {type: 'button', label: 'Pick targets',
+        title: 'Add the selected nodes to the nodes that paths end at',
+        onclick: () => this.pickPathOrigins('target')};
+    let growSpecs = [
+      [document.createTextNode('Grow ')],
+      {type: 'button', label: 'Circles',
+          title: 'Add the partners of the selected nodes, connected ' +
+              'through the link types selected in the Edges tab',
+          onclick: () => this.growCircles()},
+      {type: 'select', label: ' by ', title: 'How many orders of partners to add',
+          entries: numberEntries(1, 5), value: String(growOptions.circles),
+          onchange: e => { growOptions.circles = Number(e.target.value); }},
+      [document.createTextNode(' orders, limit: ')],
+      {type: 'select', title: 'The minimum number of links of a single ' +
+          'link type from an upstream partner',
+          entries: limitEntries('upstream'), value: String(growOptions.minUpstream),
+          onchange: e => { growOptions.minUpstream = Number(e.target.value); }},
+      {type: 'select', title: 'The minimum number of links of a single ' +
+          'link type to a downstream partner',
+          entries: limitEntries('downstream'), value: String(growOptions.minDownstream),
+          onchange: e => { growOptions.minDownstream = Number(e.target.value); }},
+      {type: 'text', label: 'Filter (regex):', title: 'Only include ' +
+          'partners with annotations matching this regular expression',
+          value: growOptions.annotationFilter, length: 4,
+          onchange: e => { growOptions.annotationFilter = e.target.value; }},
+      [document.createTextNode(' - Find ')],
+      {type: 'button', label: 'Paths',
+          title: 'Add the neurons on paths from the picked sources to ' +
+              'the picked targets, along the link types selected in the Edges tab',
+          onclick: () => this.growPaths()},
+      {type: 'select', label: ' by ', title: 'The number of links a path consists of',
+          entries: numberEntries(2, 6), value: String(growOptions.hops),
+          onchange: e => { growOptions.hops = Number(e.target.value); }},
+      [document.createTextNode(' hops, ')],
+      this.createNumericOption(growOptions, 'Min. links:', 'The minimum ' +
+          'number of links of a single link type between the neurons of a path',
+          'minPathLinks', 1, undefined, 1, () => {}),
+      pickSourcesSpec,
+      {type: 'button', label: 'X', title: 'Forget all path sources',
+          onclick: () => this.clearPathOrigins('source')},
+      pickTargetsSpec,
+      {type: 'button', label: 'X', title: 'Forget all path targets',
+          onclick: () => this.clearPathOrigins('target')},
+    ];
+    let growElements = CATMAID.DOM.appendToTab(tabs['Grow'], growSpecs);
+    this.pathOriginButtons = {
+      source: growElements[growSpecs.indexOf(pickSourcesSpec)],
+      target: growElements[growSpecs.indexOf(pickTargetsSpec)],
+    };
+    this.updatePathOriginButtons();
+
+    $(controls).tabs();
+  };
+
+  /**
+   * Build the tab controls again, to show changed options. The active tab is
+   * kept.
+   */
+  GraphWidget2.prototype.rebuildControls = function() {
+    let controls = this.controlsElement;
+    if (!controls) return;
+    let active = $(controls).tabs('option', 'active');
+    $(controls).tabs('destroy');
+    while (controls.firstChild) controls.removeChild(controls.firstChild);
+    this.buildControls(controls);
+    $(controls).tabs('option', 'active', active);
   };
 
   GraphWidget2.prototype.init = function() {
@@ -828,8 +860,9 @@
     this.hiddenUnconnectedIds.clear();
     this.arrowShapes.clear();
     this.selectionOrder.clear();
-    // Ignore pending filter runs
+    // Ignore pending filter runs and loads
     ++this.filterRun;
+    ++this.loadCounter;
     this.allowedNodeIds = null;
     this.allowedConnectorIds = null;
     if (this.cy) this.cy.elements().remove();
@@ -925,31 +958,41 @@
 
   /**
    * Fetch the reduced treenode data for the passed in models and rebuild the
-   * graph. New skeletons trigger an add event.
+   * graph. New skeletons trigger an add event. The optional restore object
+   * restores saved content, see setContent(): {content, splits, positions,
+   * splitRequests}.
    */
-  GraphWidget2.prototype.load = function(models, isReload = false) {
+  GraphWidget2.prototype.load = function(models, isReload = false, restore = null) {
+    let loadId = this.loadCounter;
     let skeletonIds = Object.keys(models).map(Number);
     let nns = CATMAID.NeuronNameService.getInstance();
     return new Promise(resolve => nns.registerAll(this, models, resolve))
-      .then(() => this.fetchSkeletons(skeletonIds))
+      .then(() => this.fetchSkeletons(skeletonIds, restore ? restore.splits : null))
       .then(skeletons => {
+        // The widget was cleared while loading
+        if (loadId !== this.loadCounter) return;
         let addedModels = {};
         for (let [skeletonId, skeleton] of skeletons) {
-          // Ignore skeletons removed while loading
           let model = models[skeletonId];
-          if (isReload && !this.skeletons.has(skeletonId)) continue;
-          if (!isReload && !this.skeletons.has(skeletonId)) {
-            addedModels[skeletonId] = model;
-          }
+          let loaded = this.skeletons.has(skeletonId);
+          // Ignore skeletons removed while loading
+          if (isReload && !loaded) continue;
+          // Keep skeletons appended while loading, unless they are restored
+          if (!isReload && loaded && !restore) continue;
+          if (!loaded) addedModels[skeletonId] = model;
           skeleton.model = model.clone();
           this.skeletons.set(skeletonId, skeleton);
         }
-        // Filter rules have to see new and changed skeletons as well
-        return this.updateFilter(undefined, true)
+        return (restore ? this.prepareRestore(restore) : Promise.resolve())
+          // Filter rules have to see new and changed skeletons as well
+          .then(() => this.updateFilter(undefined, true))
           .then(() => {
-            this.updateGraph();
+            let update = this.updateGraph(restore ? restore.positions : undefined);
             if (!CATMAID.tools.isEmpty(addedModels)) {
               this.triggerAdd(addedModels);
+            }
+            if (restore) {
+              return update.then(() => this.applyRestoredState(restore.content));
             }
           });
       })
@@ -958,10 +1001,12 @@
 
   /**
    * Get the reduced treenode representation of the passed in skeletons from
-   * the back-end. Splits of already loaded skeletons are kept. Returns a
-   * promise resolving into a Map of skeleton ID vs reduced skeleton data.
+   * the back-end. Splits of already loaded skeletons are kept, or, if passed
+   * in, the splits of a Map of skeleton ID vs {rootLabel, splitNodes} are
+   * used. Returns a promise resolving into a Map of skeleton ID vs reduced
+   * skeleton data.
    */
-  GraphWidget2.prototype.fetchSkeletons = function(skeletonIds) {
+  GraphWidget2.prototype.fetchSkeletons = function(skeletonIds, splits = null) {
     let binary = !!CATMAID.Client.Settings.session.binary_data_transfer;
     return Promise.all([
         CATMAID.Connectors.linkTypes(project.id),
@@ -987,7 +1032,7 @@
           skeletonId = Number(skeletonId);
           let [nodeRows, connectorRows] = result.skeletons[skeletonId];
           let skeleton = GraphWidget2.reduceSkeleton(nodeRows, connectorRows,
-              relationNames, this.skeletons.get(skeletonId));
+              relationNames, splits ? splits.get(skeletonId) : this.skeletons.get(skeletonId));
           if (skeleton.droppedSplitNodes.length > 0) {
             CATMAID.warn(`Removed ${skeleton.droppedSplitNodes.length} split ` +
                 `node(s) that don't exist anymore from skeleton ${skeletonId}`);
@@ -1306,8 +1351,10 @@
    * Positions and selection state of existing nodes are kept, new nodes are
    * laid out. New parts of a skeleton start at the position of its former
    * graph node, ungrouped members at the position of their former group.
+   * Optionally, positions can be passed in as Map of node key vs position,
+   * see getNodeKey().
    */
-  GraphWidget2.prototype.updateGraph = function() {
+  GraphWidget2.prototype.updateGraph = function(restoredPositions) {
     return this.computeEdges()
       .then(edges => {
         let positions = {};
@@ -1416,6 +1463,12 @@
         let selectionOrder = new Map(this.selectionOrder);
         this.cy.elements().remove();
         this.cy.add(elements);
+        if (restoredPositions) {
+          this.cy.nodes().forEach(node => {
+            let position = restoredPositions.get(this.getNodeKey(node));
+            if (position) positions[node.id()] = Object.assign({}, position);
+          });
+        }
 
         let hasNewNodes = false;
         this.cy.batch(() => {
@@ -2056,6 +2109,16 @@
       CATMAID.info("Select one or more nodes first!");
       return Promise.resolve();
     }
+    return this.splitSkeletons(skeletonIds, mode, options);
+  };
+
+  /**
+   * Split the passed in skeletons with the passed in split mode. Existing
+   * splits of these skeletons are replaced. Unless skipUpdate is set, the
+   * graph is updated afterwards.
+   */
+  GraphWidget2.prototype.splitSkeletons = function(skeletonIds, mode, options = {},
+      skipUpdate = false) {
     let withTags = mode === GraphWidget2.SPLIT_AXON_BACKBONE_TERMINALS ||
         mode === GraphWidget2.SPLIT_TAG;
     return Promise.all(skeletonIds.map(skeletonId => {
@@ -2073,7 +2136,7 @@
             this.setSplit(skeleton, split.rootLabel, split.splitNodes, ap);
           });
       }))
-      .then(() => this.updateGraph())
+      .then(() => skipUpdate ? undefined : this.updateGraph())
       .catch(CATMAID.handleError);
   };
 
@@ -4015,7 +4078,688 @@
     delete this.state;
   };
 
+  GraphWidget2.CONTENT_FORMAT = 'catmaid-graph-widget-2';
+  GraphWidget2.CONTENT_VERSION = 1;
+
+  // Option objects that are part of the settings
+  GraphWidget2.SETTINGS_OPTIONS = ['viewOptions', 'edgeOptions', 'gridOptions',
+      'growOptions', 'selectionOptions', 'splitOptions'];
+
+  /**
+   * Get the options of all tabs as plain object.
+   */
+  GraphWidget2.prototype.getSettings = function() {
+    let settings = {};
+    for (let name of GraphWidget2.SETTINGS_OPTIONS) {
+      settings[name] = Object.assign({}, this[name]);
+    }
+    settings.nodeColorMode = this.nodeColorMode;
+    settings.layoutIndex = this.layoutIndex;
+    settings.layoutFit = this.layout_fit;
+    settings.selectedLinkTypes = Array.from(this.selectedLinkTypes);
+    settings.linkTypeColors = Array.from(this.linkTypeColors,
+        ([linkType, value]) => [linkType, Object.assign({}, value)]);
+    settings.applyFilterRules = this.applyFilterRules;
+    return settings;
+  };
+
+  /**
+   * Set options from an object returned by getSettings(). Unknown fields and
+   * values of the wrong type are ignored. Controls, style and graph aren't
+   * updated, see refreshSettings().
+   */
+  GraphWidget2.prototype.applySettings = function(settings) {
+    if (!settings) return;
+    let isType = (value, example) => typeof value === typeof example;
+    for (let name of GraphWidget2.SETTINGS_OPTIONS) {
+      let values = settings[name];
+      if (!values) continue;
+      let options = this[name];
+      for (let key in options) {
+        if (isType(values[key], options[key])) options[key] = values[key];
+      }
+    }
+    if (GraphWidget2.NODE_COLOR_MODES.some(mode => mode.value === settings.nodeColorMode)) {
+      this.nodeColorMode = settings.nodeColorMode;
+    }
+    if (Number.isInteger(settings.layoutIndex) && settings.layoutIndex >= 0 &&
+        settings.layoutIndex < GraphWidget2.LAYOUTS.length) {
+      this.layoutIndex = settings.layoutIndex;
+    }
+    if (isType(settings.layoutFit, true)) this.layout_fit = settings.layoutFit;
+    if (isType(settings.applyFilterRules, true)) this.applyFilterRules = settings.applyFilterRules;
+    if (Array.isArray(settings.selectedLinkTypes)) {
+      this.selectedLinkTypes.clear();
+      settings.selectedLinkTypes.forEach(linkType => this.selectedLinkTypes.add(String(linkType)));
+    }
+    if (Array.isArray(settings.linkTypeColors)) {
+      for (let [linkType, value] of settings.linkTypeColors) {
+        if (value && isType(value.color, '') && isType(value.opacity, 1)) {
+          this.linkTypeColors.set(String(linkType), {color: value.color, opacity: value.opacity});
+        }
+      }
+    }
+  };
+
+  /**
+   * Show changed settings: rebuild the controls and update style, labels,
+   * edges and node colors. Changed link types need a graph update.
+   */
+  GraphWidget2.prototype.refreshSettings = function() {
+    this.rebuildControls();
+    if (!this.cy) return;
+    this.cy.renderer().wheelSensitivity = this.viewOptions.wheelSensitivity;
+    this.applyStyle();
+    this.updateNeuronNames();
+    this.updateEdgeProperties();
+    this.applyNodeColors();
+  };
+
+  /**
+   * Get the key of a graph node that doesn't depend on the order of skeleton
+   * parts: the group ID of group nodes, the member key otherwise.
+   */
+  GraphWidget2.prototype.getNodeKey = function(node) {
+    let groupId = node.data('group_id');
+    if (groupId) return groupId;
+    let member = node.data('members')[0];
+    return GraphWidget2.getMemberKey(member.skeletonId, member.part);
+  };
+
+  /**
+   * Get the content of the widget as plain object: settings, skeletons with
+   * their splits, groups, node positions and states, hidden edges,
+   * selections, path sources and targets and the view. Links aren't part of
+   * it, they are loaded again when the content is restored.
+   */
+  GraphWidget2.prototype.getContent = function() {
+    let toList = members => Array.from(members.values(),
+        member => [member.skeletonId, member.part]);
+    let content = {
+      format: GraphWidget2.CONTENT_FORMAT,
+      version: GraphWidget2.CONTENT_VERSION,
+      settings: this.getSettings(),
+      skeletons: Array.from(this.skeletons.values(), skeleton => {
+        let model = skeleton.model;
+        return {
+          // The format of CATMAID.SkeletonModel.deserialize()
+          model: {
+            id: model.id,
+            color: '#' + model.color.getHexString(),
+            selected: model.selected,
+            pre: model.pre_visible,
+            post: model.post_visible,
+            text: model.text_visible,
+            meta: model.meta_visible,
+            opacity: model.opacity,
+          },
+          rootLabel: skeleton.rootLabel,
+          splitNodes: Array.from(skeleton.splitNodes, ([nodeId, split]) => [nodeId, split.label]),
+        };
+      }),
+      groups: Array.from(this.groups.values(), group => ({
+        id: group.id,
+        label: group.label,
+        color: '#' + group.color.getHexString(),
+        hideSelfEdges: group.hideSelfEdges,
+        members: toList(group.members),
+      })),
+      nodes: [],
+      hiddenEdges: [],
+      selections: this.selections.map(selection => ({
+        name: selection.name,
+        members: toList(selection.members),
+      })),
+      pathOrigins: {
+        source: toList(this.pathOrigins.source),
+        target: toList(this.pathOrigins.target),
+      },
+      view: null,
+    };
+    if (this.cy) {
+      this.cy.nodes().forEach(node => {
+        let position = node.position();
+        let entry = {key: this.getNodeKey(node), x: position.x, y: position.y};
+        if (node.hasClass('hidden')) entry.hidden = true;
+        if (this.hiddenUnconnectedIds.has(node.id())) entry.hiddenUnconnected = true;
+        if (this.lockedNodeIds.has(node.id())) entry.locked = true;
+        let arrow = this.arrowShapes.get(node.id());
+        if (arrow) entry.arrow = arrow;
+        content.nodes.push(entry);
+      });
+      this.cy.edges('.hidden').forEach(edge => {
+        content.hiddenEdges.push([edge.hasClass('part-edge') ? 'part' : edge.data('link_type'),
+            this.getNodeKey(edge.source()), this.getNodeKey(edge.target())]);
+      });
+      content.view = {zoom: this.cy.zoom(), pan: Object.assign({}, this.cy.pan())};
+    }
+    return content;
+  };
+
+  /**
+   * Replace the graph with content returned by getContent(). Settings are
+   * applied too, unless withSettings is false. Skeletons that don't exist
+   * anymore are left out. Optionally, skeletons are split again by passing
+   * in a list of {skeletonIds, mode, options}. Returns a promise that
+   * resolves once the graph is restored.
+   */
+  GraphWidget2.prototype.setContent = function(content, withSettings = true, splitRequests = []) {
+    if (!content || content.format !== GraphWidget2.CONTENT_FORMAT) {
+      CATMAID.warn("This is not the content of a Graph Widget 2");
+      return Promise.resolve();
+    }
+    this.clear();
+    if (withSettings && content.settings) {
+      this.applySettings(content.settings);
+      this.refreshSettings();
+    }
+
+    let models = {};
+    let splits = new Map();
+    for (let entry of content.skeletons || []) {
+      let model;
+      try {
+        model = CATMAID.SkeletonModel.deserialize(entry.model);
+      } catch (error) {
+        continue;
+      }
+      if (!Number.isInteger(model.id) || model.id <= 0) continue;
+      models[model.id] = model;
+      if (Array.isArray(entry.splitNodes) && entry.splitNodes.length > 0) {
+        splits.set(model.id, {
+          rootLabel: String(entry.rootLabel),
+          splitNodes: new Map(entry.splitNodes.map(([nodeId, label]) =>
+              [Number(nodeId), {label: String(label)}])),
+        });
+      }
+    }
+    let positions = new Map();
+    for (let entry of content.nodes || []) {
+      if (Number.isFinite(entry.x) && Number.isFinite(entry.y)) {
+        positions.set(String(entry.key), {x: entry.x, y: entry.y});
+      }
+    }
+    if (CATMAID.tools.isEmpty(models)) {
+      CATMAID.info("No skeletons to load");
+      return Promise.resolve();
+    }
+
+    let loadId = this.loadCounter;
+    return CATMAID.fetch({
+        url: `${project.id}/skeletons/validity`,
+        method: 'POST',
+        data: {
+          skeleton_ids: Object.keys(models),
+          return_invalid: true,
+        },
+      })
+      .then(missing => {
+        if (loadId !== this.loadCounter) return;
+        if (missing.length > 0) {
+          missing.forEach(skeletonId => delete models[skeletonId]);
+          CATMAID.warn(`Removed ${missing.length} missing skeleton(s)`);
+        }
+        if (CATMAID.tools.isEmpty(models)) return;
+        return this.load(models, false, {
+          content: content,
+          splits: splits,
+          positions: positions,
+          splitRequests: splitRequests,
+        });
+      })
+      .catch(CATMAID.handleError);
+  };
+
+  /**
+   * Set groups, selections and path origins of restored content and split
+   * skeletons again if requested, after the skeletons are loaded and before
+   * the graph is built. See setContent().
+   */
+  GraphWidget2.prototype.prepareRestore = function(restore) {
+    let content = restore.content;
+    let toMembers = (list, used) => {
+      let members = new Map();
+      for (let entry of Array.isArray(list) ? list : []) {
+        if (!Array.isArray(entry)) continue;
+        let skeletonId = Number(entry[0]);
+        let part = entry[1] === null ? null : String(entry[1]);
+        let key = GraphWidget2.getMemberKey(skeletonId, part);
+        if (used) {
+          if (used.has(key)) continue;
+          used.add(key);
+        }
+        members.set(key, {skeletonId: skeletonId, part: part});
+      }
+      return members;
+    };
+
+    // Members belong to only one group
+    let grouped = new Set();
+    for (let group of content.groups || []) {
+      let members = toMembers(group.members, grouped);
+      if (members.size === 0) continue;
+      let id = /^g\d+$/.test(group.id) && !this.groups.has(group.id) ?
+          group.id : this.nextGroupId();
+      this.groups.set(id, {
+        id: id,
+        label: String(group.label),
+        color: new THREE.Color(group.color),
+        hideSelfEdges: !!group.hideSelfEdges,
+        members: members,
+      });
+    }
+
+    this.selections = [];
+    for (let selection of content.selections || []) {
+      let name = String(selection.name);
+      let members = toMembers(selection.members);
+      if (members.size === 0 || this.selections.some(s => s.name === name)) continue;
+      this.selections.push({name: name, members: members});
+    }
+    this.updateSelectionSelect(0);
+
+    let pathOrigins = content.pathOrigins || {};
+    for (let type in this.pathOrigins) {
+      this.pathOrigins[type] = toMembers(pathOrigins[type]);
+    }
+    this.updatePathOriginButtons();
+
+    return Promise.all((restore.splitRequests || []).map(request => this.splitSkeletons(
+        request.skeletonIds.filter(skeletonId => this.skeletons.has(skeletonId)),
+        request.mode, request.options, true)));
+  };
+
+  /**
+   * Restore hidden and locked nodes, arrow shapes, hidden edges and the view
+   * of content returned by getContent(), after the graph is built.
+   */
+  GraphWidget2.prototype.applyRestoredState = function(content) {
+    if (!this.cy) return;
+    let nodes = new Map(this.cy.nodes().map(node => [this.getNodeKey(node), node]));
+    let hidden = [];
+    for (let entry of content.nodes || []) {
+      let node = nodes.get(String(entry.key));
+      if (!node) continue;
+      if (entry.hidden) hidden.push(node);
+      if (entry.hiddenUnconnected) this.hiddenUnconnectedIds.add(node.id());
+      if (entry.locked) {
+        this.lockedNodeIds.add(node.id());
+        node.lock();
+      }
+      if (GraphWidget2.ARROW_SHAPES.includes(entry.arrow)) {
+        this.arrowShapes.set(node.id(), entry.arrow);
+      }
+    }
+
+    // Undirected edges can have their nodes in either order
+    let edges = new Map();
+    this.cy.edges().forEach(edge => {
+      let type = edge.hasClass('part-edge') ? 'part' : edge.data('link_type');
+      let source = this.getNodeKey(edge.source());
+      let target = this.getNodeKey(edge.target());
+      edges.set(JSON.stringify([type, source, target]), edge);
+      if (!edge.data('directed')) edges.set(JSON.stringify([type, target, source]), edge);
+    });
+    for (let entry of content.hiddenEdges || []) {
+      let edge = Array.isArray(entry) ? edges.get(JSON.stringify(entry.map(String))) : undefined;
+      if (edge) hidden.push(edge);
+    }
+
+    this.setHidden(this.cy.collection(hidden), true);
+    this.updateEdgeProperties();
+    this.updateShowHiddenButton();
+    let view = content.view;
+    if (view && Number.isFinite(view.zoom) && view.pan &&
+        Number.isFinite(view.pan.x) && Number.isFinite(view.pan.y)) {
+      this.cy.viewport({zoom: view.zoom, pan: {x: view.pan.x, y: view.pan.y}});
+    }
+  };
+
+  /**
+   * Open a new Graph Widget 2 with the same content and settings, except for
+   * the node selection and filter rules.
+   */
   GraphWidget2.prototype.cloneWidget = function() {
+    let copy = WindowMaker.create('graph-widget-2').widget;
+    return copy.setContent(this.getContent());
+  };
+
+  /**
+   * Ask for a file name and save the content as JSON file.
+   */
+  GraphWidget2.prototype.saveJSON = function() {
+    let dialog = new CATMAID.OptionsDialog("Save graph");
+    let nameField = dialog.appendField("File name: ",
+        `graph_widget_2_file_name_${this.widgetID}`, `graph${this.widgetID}.json`, true);
+    dialog.onOK = () => {
+      let fileName = nameField.value.trim();
+      // Errors keep the dialog open
+      if (fileName.length === 0) throw new CATMAID.ValueError("Need a file name!");
+      saveAs(new Blob([JSON.stringify(this.getContent())], {type: 'application/json'}), fileName);
+    };
+    dialog.show(350, 'auto', true);
+  };
+
+  /**
+   * Load a JSON file saved by this widget or by the old Graph Widget, or
+   * import a GraphML file.
+   */
+  GraphWidget2.prototype.loadFromFile = function(files) {
+    try {
+      if (files.length === 0) throw new CATMAID.ValueError("Choose at least one file!");
+      if (files.length > 1) throw new CATMAID.ValueError("Choose only one file!");
+      let file = files[0];
+      let nameComponents = file.name.split('.');
+      if (nameComponents.length === 1) {
+        throw new CATMAID.ValueError("A file extension is needed");
+      }
+      let extension = nameComponents[nameComponents.length - 1].toLowerCase();
+      if (extension !== 'json' && extension !== 'graphml') {
+        throw new CATMAID.ValueError(`Unsupported file type: ${extension}`);
+      }
+      return file.text()
+        .then(text => extension === 'json' ? this.loadFromJSON(text) : this.importGraphML(text))
+        .catch(CATMAID.handleError);
+    } catch (error) {
+      CATMAID.handleError(error);
+      return Promise.resolve();
+    }
+  };
+
+  /**
+   * Load the content of a JSON file saved by this widget or by the old Graph
+   * Widget.
+   */
+  GraphWidget2.prototype.loadFromJSON = function(text) {
+    let json;
+    try {
+      json = JSON.parse(text);
+    } catch (error) {
+      throw new CATMAID.ValueError(`Couldn't parse JSON file: ${error.message}`);
+    }
+    if (json && json.format === GraphWidget2.CONTENT_FORMAT) {
+      return this.setContent(json);
+    }
+    if (json && json.elements && json.properties) {
+      let legacy = GraphWidget2.convertLegacyContent(json, this.getSettings());
+      if (legacy.nTagSplits > 0) {
+        CATMAID.warn(`${legacy.nTagSplits} skeleton(s) were split at a tag, which ` +
+            "files of the old Graph Widget don't store. They are shown unsplit.");
+      }
+      return this.setContent(legacy.content, true, legacy.splitRequests);
+    }
+    throw new CATMAID.ValueError("This is not a file of a graph widget");
+  };
+
+  // Part labels of the node ID suffixes of split skeletons in the old Graph
+  // Widget
+  GraphWidget2.LEGACY_PART_LABELS = {
+    axon: 'axon',
+    dendrite: 'dendrite',
+    backbone_dendrite: 'backbone dendrite',
+    dendritic_terminals: 'dendritic terminals',
+  };
+
+  /**
+   * Convert the content of a JSON file saved by the old Graph Widget into
+   * content for setContent(). Settings that the old widget doesn't have keep
+   * the values of the passed in settings. Returns {content, splitRequests,
+   * nTagSplits}: split modes are computed again from the arbor, except for
+   * splits at a tag, whose tag isn't saved.
+   */
+  GraphWidget2.convertLegacyContent = function(json, settings) {
+    let properties = json.properties || {};
+    let options = json.options || {};
+    let layout = json.layout || {};
+    let legacyGroups = json.groups || {};
+    let subgraphs = json.subgraphs || {};
+    let toHex = color => '#' + CATMAID.tools.getColor(color).getHexString();
+
+    settings = JSON.parse(JSON.stringify(settings));
+    let set = (target, key, value) => {
+      if (value !== undefined) target[key] = value;
+    };
+    set(settings.viewOptions, 'labelVAlign', properties.label_valign);
+    set(settings.viewOptions, 'labelHAlign', properties.label_halign);
+    set(settings.viewOptions, 'showLabels', properties.show_node_labels);
+    set(settings.viewOptions, 'trimLabels', properties.trim_node_labels);
+    set(settings.viewOptions, 'nodeWidth', properties.node_width);
+    set(settings.viewOptions, 'nodeHeight', properties.node_height);
+    set(settings.edgeOptions, 'textColor', properties.edge_text_color);
+    set(settings.edgeOptions, 'textOpacity', properties.edge_text_opacity);
+    set(settings.edgeOptions, 'textOutlineWidth', properties.edge_text_outline_width);
+    set(settings.edgeOptions, 'textOutlineOpacity', properties.edge_text_outline_opacity);
+    set(settings.edgeOptions, 'minWidth', properties.edge_min_width);
+    if (properties.edge_width_function in GraphWidget2.EDGE_WIDTH_FUNCTIONS) {
+      settings.edgeOptions.widthFunction = properties.edge_width_function;
+    }
+    set(settings.gridOptions, 'snap', properties.grid_snap);
+    set(settings.gridOptions, 'size', properties.grid_side);
+    set(settings, 'selectedLinkTypes', options.selectedLinkTypes);
+    set(settings, 'linkTypeColors', options.linkTypeColors);
+
+    // Skeleton ID vs model in the format of CATMAID.SkeletonModel.deserialize()
+    let models = new Map();
+    let addModel = model => {
+      let skeletonId = Number(model.id);
+      if (Number.isInteger(skeletonId) && !models.has(skeletonId)) {
+        models.set(skeletonId, {
+          id: skeletonId,
+          color: toHex(model.color),
+          selected: model.selected,
+          pre: model.pre_visible,
+          post: model.post_visible,
+          text: model.text_visible,
+          meta: model.meta_visible,
+          opacity: model.opacity,
+        });
+      }
+      return skeletonId;
+    };
+
+    // Old groups contain whole skeletons only
+    let groups = [];
+    let groupedIds = new Set();
+    for (let groupId in legacyGroups) {
+      let group = legacyGroups[groupId];
+      let skeletonIds = Object.values(group.models || {}).map(addModel)
+          .filter(skeletonId => Number.isInteger(skeletonId));
+      if (skeletonIds.length === 0) continue;
+      skeletonIds.forEach(skeletonId => groupedIds.add(skeletonId));
+      groups.push({
+        id: groupId,
+        label: group.label,
+        color: toHex(group.color),
+        hideSelfEdges: !!group.hide_self_edges,
+        members: skeletonIds.map(skeletonId => [skeletonId, null]),
+      });
+    }
+
+    // Split modes of ungrouped skeletons
+    let splitModes = new Map();
+    let nTagSplits = 0;
+    for (let skeletonId in subgraphs) {
+      skeletonId = Number(skeletonId);
+      if (groupedIds.has(skeletonId)) continue;
+      let mode = subgraphs[skeletonId];
+      if (mode === -1) {
+        splitModes.set(skeletonId, [GraphWidget2.SPLIT_AXON_DENDRITE, {}]);
+      } else if (mode === -2) {
+        splitModes.set(skeletonId, [GraphWidget2.SPLIT_AXON_BACKBONE_TERMINALS, {}]);
+      } else if (mode > 0) {
+        splitModes.set(skeletonId, [GraphWidget2.SPLIT_SYNAPSE_CLUSTERS, {bandwidth: mode}]);
+      } else if (mode === -3) {
+        ++nTagSplits;
+      }
+    }
+
+    let positions = layout.positions || {};
+    let nodes = [];
+    let elements = json.elements;
+    for (let node of (elements && elements.nodes) || []) {
+      let data = node.data || {};
+      let id = String(data.id);
+      let key = null;
+      if (id in legacyGroups) {
+        key = id;
+      } else if (Array.isArray(data.skeletons) && data.skeletons.length > 0) {
+        let skeletonId = addModel(data.skeletons[0]);
+        if (id === String(skeletonId)) {
+          key = GraphWidget2.getMemberKey(skeletonId, null);
+        } else if (id.startsWith(`${skeletonId}_`)) {
+          let suffix = id.substring(String(skeletonId).length + 1);
+          let label = GraphWidget2.LEGACY_PART_LABELS[suffix];
+          let splitMode = splitModes.get(skeletonId);
+          if (label && splitMode && splitMode[0] !== GraphWidget2.SPLIT_SYNAPSE_CLUSTERS) {
+            key = GraphWidget2.getMemberKey(skeletonId, label);
+          } else if (suffix === 'first') {
+            // The part with the root node of a split at a tag
+            key = GraphWidget2.getMemberKey(skeletonId, null);
+          }
+        }
+      }
+      // Synapse cluster parts and other parts of tag splits can't be matched
+      if (key === null) continue;
+      let position = positions[id];
+      let entry = {key: key};
+      if (position && Number.isFinite(position.x) && Number.isFinite(position.y)) {
+        entry.x = position.x;
+        entry.y = position.y;
+      }
+      if (typeof node.classes === 'string' && node.classes.split(' ').includes('hidden')) {
+        entry.hidden = true;
+      }
+      nodes.push(entry);
+    }
+
+    // One request per split mode and bandwidth
+    let splitRequests = new Map();
+    for (let [skeletonId, [mode, splitOptions]] of splitModes) {
+      if (!models.has(skeletonId)) continue;
+      let requestKey = `${mode}|${splitOptions.bandwidth}`;
+      let request = splitRequests.get(requestKey);
+      if (!request) {
+        request = {skeletonIds: [], mode: mode, options: splitOptions};
+        splitRequests.set(requestKey, request);
+      }
+      request.skeletonIds.push(skeletonId);
+    }
+
+    let view = null;
+    if (Number.isFinite(layout.zoom) && layout.pan) {
+      view = {zoom: layout.zoom, pan: layout.pan};
+    }
+
+    return {
+      content: {
+        format: GraphWidget2.CONTENT_FORMAT,
+        version: GraphWidget2.CONTENT_VERSION,
+        settings: settings,
+        skeletons: Array.from(models.values(), model => ({model: model, splitNodes: []})),
+        groups: groups,
+        nodes: nodes,
+        view: view,
+      },
+      splitRequests: Array.from(splitRequests.values()),
+      nTagSplits: nTagSplits,
+    };
+  };
+
+  /**
+   * Ask for import options and replace the graph with the nodes of a GraphML
+   * file, as skeletons. Edges are loaded from the back-end.
+   */
+  GraphWidget2.prototype.importGraphML = function(xmlData) {
+    let dialog = new CATMAID.OptionsDialog("Import GraphML");
+    dialog.appendMessage("Please check the import options.");
+    let preferUnitId = dialog.appendCheckbox('Prefer "unit_id" field for ID',
+        `graph_widget_2_prefer_unit_id_${this.widgetID}`, true,
+        'If imported nodes have a "unit_id" field, prefer it over the regular "id" field.');
+    let invertY = dialog.appendCheckbox('Invert Y coordinates',
+        `graph_widget_2_invert_y_${this.widgetID}`, true,
+        'Mirror all Y coordinates to switch between left-handed and right-handed coordinates.');
+    dialog.onOK = () => {
+      try {
+        let result = GraphWidget2.parseGraphML(xmlData, preferUnitId.checked, invertY.checked);
+        if (result.nSkipped > 0) {
+          CATMAID.warn(`Skipped ${result.nSkipped} node(s) without a valid or with a repeated skeleton ID`);
+        }
+        this.setContent(result.content, false);
+      } catch (error) {
+        CATMAID.handleError(error);
+      }
+    };
+    dialog.show(500, 'auto', true);
+  };
+
+  /**
+   * Get the nodes of a GraphML document as content for setContent(): node
+   * IDs are skeleton IDs. Colors are read from the fields r, g and b,
+   * positions from x and y. Data fields are found by their key or by the
+   * name of their key. Returns {content, nSkipped}.
+   */
+  GraphWidget2.parseGraphML = function(xmlData, preferUnitId = true, invertY = true) {
+    let xml = new DOMParser().parseFromString(xmlData, 'application/xml');
+    if (xml.getElementsByTagName('parsererror').length > 0) {
+      throw new CATMAID.ValueError("Couldn't parse GraphML file");
+    }
+    let keyNames = new Map(Array.from(xml.getElementsByTagName('key'),
+        key => [key.getAttribute('id'), key.getAttribute('attr.name')]));
+    let getData = (element, name) => {
+      for (let data of Array.from(element.getElementsByTagName('data'))) {
+        let key = data.getAttribute('key');
+        if (key === name || keyNames.get(key) === name) {
+          let text = data.textContent.trim();
+          return text.length > 0 ? text : undefined;
+        }
+      }
+      return undefined;
+    };
+    let getChannel = (element, name) => {
+      let value = Number(getData(element, name));
+      return Number.isFinite(value) ? Math.max(0, Math.min(255, value)) / 255 : undefined;
+    };
+
+    let skeletons = [];
+    let nodes = [];
+    let seen = new Set();
+    let nSkipped = 0;
+    for (let element of Array.from(xml.getElementsByTagName('node'))) {
+      let unitId = Number(getData(element, 'unit_id'));
+      let skeletonId = preferUnitId && Number.isInteger(unitId) && unitId > 0 ?
+          unitId : Number(element.getAttribute('id'));
+      if (!Number.isInteger(skeletonId) || skeletonId <= 0 || seen.has(skeletonId)) {
+        ++nSkipped;
+        continue;
+      }
+      seen.add(skeletonId);
+      let r = getChannel(element, 'r'), g = getChannel(element, 'g'), b = getChannel(element, 'b');
+      let color = r === undefined || g === undefined || b === undefined ?
+          undefined : '#' + new THREE.Color(r, g, b).getHexString();
+      skeletons.push({model: {id: skeletonId, color: color}, splitNodes: []});
+      let x = Number(getData(element, 'x')), y = Number(getData(element, 'y'));
+      if (Number.isFinite(x) && Number.isFinite(y)) {
+        nodes.push({key: GraphWidget2.getMemberKey(skeletonId, null), x: x, y: invertY ? -y : y});
+      }
+    }
+    return {
+      content: {
+        format: GraphWidget2.CONTENT_FORMAT,
+        version: GraphWidget2.CONTENT_VERSION,
+        skeletons: skeletons,
+        nodes: nodes,
+      },
+      nSkipped: nSkipped,
+    };
+  };
+
+  // Layout specs replace double quotes with single quotes, so both are encoded
+  GraphWidget2.encodeContent = function(content) {
+    return encodeURIComponent(JSON.stringify(content)).replace(/'/g, '%27');
+  };
+
+  GraphWidget2.decodeContent = function(text) {
+    return JSON.parse(decodeURIComponent(text));
   };
 
   // Register widget
@@ -4029,16 +4773,25 @@
       uiState: true,
       getState: function(widget, withInteractionState=false) {
         let state = {
+          settings: widget.getSettings(),
         };
-
         if (withInteractionState) {
+          state.content = GraphWidget2.encodeContent(widget.getContent());
         }
-
         return state;
       },
       setState: function(widget, state) {
+        widget.applySettings(state.settings);
+        // Open widgets show the new settings right away
+        if (widget.cy) {
+          widget.refreshSettings();
+          if (widget.skeletons.size > 0) widget.updateGraph();
+        }
       },
       setPostLoadState: function(widget, state) {
+        if (state.content) {
+          widget.setContent(GraphWidget2.decodeContent(state.content), false);
+        }
       },
     },
   });

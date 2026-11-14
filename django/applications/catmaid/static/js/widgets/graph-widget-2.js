@@ -4050,6 +4050,37 @@
     return connectorIds;
   };
 
+  /**
+   * Keyboard shortcuts of the focused widget: Delete removes the selected
+   * nodes, J groups them and holding Shift zooms in smaller steps. Returns
+   * true if the key was handled.
+   */
+  GraphWidget2.prototype.handleKeyPress = function(event) {
+    if (!this.cy) return false;
+    if (event.key === 'Shift') {
+      this.cy.renderer().wheelSensitivity = 0.5 * this.viewOptions.wheelSensitivity;
+      return false;
+    }
+    let modified = event.ctrlKey || event.altKey || event.metaKey;
+    if (event.key === 'Delete' && !modified) {
+      this.removeSelected();
+      return true;
+    }
+    if (event.key === 'j' && !modified && !event.shiftKey) {
+      // Group only once while the key is held down
+      if (!event.repeat) this.group().catch(CATMAID.handleError);
+      return true;
+    }
+    return false;
+  };
+
+  GraphWidget2.prototype.handleKeyUp = function(event) {
+    if (event.key === 'Shift' && this.cy) {
+      this.cy.renderer().wheelSensitivity = this.viewOptions.wheelSensitivity;
+    }
+    return false;
+  };
+
   GraphWidget2.prototype.highlight = function(skeletonId) {
     if (!this.cy) return;
     this.getSkeletonNodes(skeletonId).forEach(node => {

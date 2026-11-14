@@ -751,7 +751,7 @@
    */
   GraphWidget2.prototype.fitView = function() {
     if (!this.cy) return;
-    let nodes = this.cy.nodes(':visible');
+    let nodes = this.cy.nodes().filter(node => GraphWidget2.isShown(node));
     if (nodes.empty()) return;
     if (this.viewOptions.fitIgnoresLabels) {
       this.cy.fit(nodes.boundingBox({includeLabels: false}), 30);
@@ -839,7 +839,7 @@
     let models = {};
     if (!this.cy) return models;
     this.cy.nodes().forEach(node => {
-      if (node.selected() && node.visible()) {
+      if (node.selected() && GraphWidget2.isShown(node)) {
         for (let skeletonId of node.data('skeleton_ids')) {
           models[skeletonId] = this.getSkeletonModel(skeletonId);
         }
@@ -2471,7 +2471,7 @@
     let match = CATMAID.createTextMatchingFunction(text);
     if (!match) return;
     let count = 0;
-    this.cy.nodes(':visible').forEach(node => {
+    this.cy.nodes().filter(node => GraphWidget2.isShown(node)).forEach(node => {
       if (match(node.data('label'))) {
         node.select();
         ++count;
@@ -2482,7 +2482,7 @@
 
   GraphWidget2.prototype.invertSelection = function() {
     if (!this.cy) return;
-    this.cy.nodes(':visible').forEach(node => {
+    this.cy.nodes().filter(node => GraphWidget2.isShown(node)).forEach(node => {
       if (node.selected()) {
         node.unselect();
       } else {
@@ -2851,7 +2851,7 @@
    */
   GraphWidget2.prototype.group = function() {
     if (!this.cy) return Promise.resolve();
-    let nodes = this.cy.nodes().filter(node => node.selected() && node.visible());
+    let nodes = this.cy.nodes().filter(node => node.selected() && GraphWidget2.isShown(node));
     if (nodes.length < 2) {
       CATMAID.info("Select at least 2 nodes!");
       return Promise.resolve();

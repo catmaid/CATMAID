@@ -236,6 +236,13 @@
     ]);
     tabs['Main'].appendChild(fileButton);
 
+    let edgeOptions = this.edgeOptions;
+    let setEdgeOption = (name, value) => {
+      edgeOptions[name] = value;
+      this.updateEdgeProperties();
+    };
+    let updateEdges = () => this.updateEdgeProperties();
+
     let options = this.viewOptions;
     let setOption = (name, value) => {
       options[name] = value;
@@ -275,14 +282,31 @@
       this.createNumericViewOption('Height:', 'Node height in pixels', 'nodeHeight', 1, 1),
       this.createNumericViewOption('Border:', 'Node border width in pixels',
           'nodeBorderWidth', 0, 0.5),
+      {type: 'heading', label: 'Edges'},
+      {type: 'select', label: 'Label: ', title: 'Edge labels, relative ' +
+          'values include partners that aren\'t part of the graph',
+          entries: GraphWidget2.EDGE_LABEL_STRATEGIES, value: edgeOptions.labelStrategy,
+          onchange: e => setEdgeOption('labelStrategy', e.target.value)},
+      {type: 'color-button', label: 'Text color', title: 'Color of edge labels',
+          color: {initialColor: edgeOptions.textColor},
+          onchange: (rgb, alpha, colorChanged, alphaChanged, colorHex) => {
+            if (!colorChanged) return;
+            edgeOptions.textColor = '#' + colorHex;
+            this.applyStyle();
+          }},
+      this.createNumericOption(edgeOptions, 'Text opacity:', 'Opacity of edge labels',
+          'textOpacity', 0, 1, 0.1, () => this.applyStyle()),
+      this.createNumericOption(edgeOptions, 'Text outline:', 'Outline width of edge labels',
+          'textOutlineWidth', 0, undefined, 0.1, () => this.applyStyle()),
+      this.createNumericOption(edgeOptions, 'Outline opacity:', 'Opacity of edge label outlines',
+          'textOutlineOpacity', 0, 1, 0.1, () => this.applyStyle()),
+      this.createNumericOption(edgeOptions, 'Min. width:', 'Width added to all edges',
+          'minWidth', 0, undefined, 0.5, updateEdges),
+      {type: 'select', label: 'Width: ', title: 'Edge width as a function of the link count',
+          entries: Object.keys(GraphWidget2.EDGE_WIDTH_FUNCTIONS), value: edgeOptions.widthFunction,
+          onchange: e => setEdgeOption('widthFunction', e.target.value)},
     ]);
 
-    let edgeOptions = this.edgeOptions;
-    let setEdgeOption = (name, value) => {
-      edgeOptions[name] = value;
-      this.updateEdgeProperties();
-    };
-    let updateEdges = () => this.updateEdgeProperties();
     let linkTypeSelection = CATMAID.DOM.createAsyncPlaceholder(
       CATMAID.DOM.initLinkTypeList({
         getSelectedLinkTypes: () => this.selectedLinkTypes,
@@ -337,29 +361,6 @@
       synapseTypeSpec,
       ['Hide', () => this.setSynapseTypeVisibility(synapseTypeSelect.value, false)],
       ['Show', () => this.setSynapseTypeVisibility(synapseTypeSelect.value, true)],
-      {type: 'heading', label: 'Display'},
-      {type: 'select', label: 'Label: ', title: 'Edge labels, relative ' +
-          'values include partners that aren\'t part of the graph',
-          entries: GraphWidget2.EDGE_LABEL_STRATEGIES, value: edgeOptions.labelStrategy,
-          onchange: e => setEdgeOption('labelStrategy', e.target.value)},
-      {type: 'color-button', label: 'Text color', title: 'Color of edge labels',
-          color: {initialColor: edgeOptions.textColor},
-          onchange: (rgb, alpha, colorChanged, alphaChanged, colorHex) => {
-            if (!colorChanged) return;
-            edgeOptions.textColor = '#' + colorHex;
-            this.applyStyle();
-          }},
-      this.createNumericOption(edgeOptions, 'Text opacity:', 'Opacity of edge labels',
-          'textOpacity', 0, 1, 0.1, () => this.applyStyle()),
-      this.createNumericOption(edgeOptions, 'Text outline:', 'Outline width of edge labels',
-          'textOutlineWidth', 0, undefined, 0.1, () => this.applyStyle()),
-      this.createNumericOption(edgeOptions, 'Outline opacity:', 'Opacity of edge label outlines',
-          'textOutlineOpacity', 0, 1, 0.1, () => this.applyStyle()),
-      this.createNumericOption(edgeOptions, 'Min. width:', 'Width added to all edges',
-          'minWidth', 0, undefined, 0.5, updateEdges),
-      {type: 'select', label: 'Width: ', title: 'Edge width as a function of the link count',
-          entries: Object.keys(GraphWidget2.EDGE_WIDTH_FUNCTIONS), value: edgeOptions.widthFunction,
-          onchange: e => setEdgeOption('widthFunction', e.target.value)},
     ];
     let edgeElements = CATMAID.DOM.appendToTab(tabs['Edges'], edgeSpecs);
     let arrowShapeSelect = edgeElements[edgeSpecs.indexOf(arrowShapeSpec)];

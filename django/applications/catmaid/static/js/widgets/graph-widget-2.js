@@ -149,8 +149,14 @@
     this.filterRules = [];
     // Filter rules can optionally be disabled
     this.applyFilterRules = true;
-    // A set of connector nodes allowed by node filters
-    this.allowedConnectorNodes = new Set();
+    // The IDs of all treenodes allowed by the filter rules, null without
+    // active filter rules
+    this.allowedNodeIds = null;
+    // The IDs of all connectors linked to an allowed treenode, null without
+    // active filter rules. Only links to these connectors are used.
+    this.allowedConnectorIds = null;
+    // Counts filter runs, to ignore the results of outdated ones
+    this.filterRun = 0;
   };
 
   GraphWidget2.prototype = Object.create(CATMAID.SkeletonSource.prototype);
@@ -272,6 +278,14 @@
           {type: 'checkbox', label: 'Hide self edges', value: edgeOptions.hideSelfEdges,
               title: 'Hide edges whose source and target node are the same',
               onclick: e => setEdgeOption('hideSelfEdges', e.target.checked)},
+          {type: 'checkbox', label: 'Apply node/edge filters', value: this.applyFilterRules,
+              title: 'Apply all enabled node filters (funnel icon in title bar). ' +
+                  'If node filters are active, only edges with at least one node ' +
+                  'allowed by the filter will be shown.',
+              onclick: e => {
+                this.applyFilterRules = e.target.checked;
+                if (this.filterRules.length > 0) this.updateFilter();
+              }},
           {type: 'child', element: linkTypeWrapper},
           [document.createTextNode(' - ')],
           arrowShapeSpec,
@@ -814,6 +828,10 @@
     this.hiddenUnconnectedIds.clear();
     this.arrowShapes.clear();
     this.selectionOrder.clear();
+    // Ignore pending filter runs
+    ++this.filterRun;
+    this.allowedNodeIds = null;
+    this.allowedConnectorIds = null;
     if (this.cy) this.cy.elements().remove();
     this.updateShowHiddenButton();
     this.prunePathOrigins();
@@ -854,7 +872,8 @@
       CATMAID.NeuronNameService.getInstance().unregister(this, removedIds);
       this.triggerRemove(removedModels);
     }
-    if (groupsChanged && this.cy) {
+    // With filter rules, a connector can lose its only allowed treenode
+    if ((groupsChanged || this.allowedNodeIds) && removedIds.length > 0 && this.cy) {
       return this.updateGraph();
     }
     this.updateShowHiddenButton();
@@ -925,10 +944,14 @@
           skeleton.model = model.clone();
           this.skeletons.set(skeletonId, skeleton);
         }
-        this.updateGraph();
-        if (!CATMAID.tools.isEmpty(addedModels)) {
-          this.triggerAdd(addedModels);
-        }
+        // Filter rules have to see new and changed skeletons as well
+        return this.updateFilter(undefined, true)
+          .then(() => {
+            this.updateGraph();
+            if (!CATMAID.tools.isEmpty(addedModels)) {
+              this.triggerAdd(addedModels);
+            }
+          });
       })
       .catch(CATMAID.handleError);
   };
@@ -1135,6 +1158,7 @@
         // are loaded. Graph nodes are created from the same state, right
         // after this.
         this.updateGroups();
+        let allowedConnectorIds = this.updateAllowedConnectors();
         let reciprocal = new Map(linkTypes.map(lt => [lt.relation, lt.isreciprocal]));
 
         // Connector ID vs map of relation name vs list of [graph node ID,
@@ -1142,6 +1166,7 @@
         let connectors = new Map();
         for (let skeleton of this.skeletons.values()) {
           for (let [treenodeId, connectorId, relationName, confidence] of skeleton.links) {
+            if (allowedConnectorIds && !allowedConnectorIds.has(connectorId)) continue;
             let partners = connectors.get(connectorId);
             if (!partners) {
               partners = new Map();
@@ -1569,14 +1594,17 @@
    * graph node: links of other skeletons or of the same skeleton to the same
    * connectors, with the partner relation. This includes partners that aren't
    * part of the graph. Only link pairs with both confidences of at least
-   * minConfidence are counted.
+   * minConfidence are counted, and only links to connectors allowed by the
+   * filter rules.
    */
   GraphWidget2.prototype.getPartnerTotal = function(node, relation, minConfidence) {
+    let allowedConnectorIds = this.allowedConnectorIds;
     let total = 0;
     for (let member of node.data('members')) {
       let skeleton = this.skeletons.get(member.skeletonId);
-      for (let [treenodeId, , relationName, confidence, partnerCounts] of skeleton.links) {
+      for (let [treenodeId, connectorId, relationName, confidence, partnerCounts] of skeleton.links) {
         if (relationName !== relation || confidence < minConfidence) continue;
+        if (allowedConnectorIds && !allowedConnectorIds.has(connectorId)) continue;
         if (skeleton.nodes.get(treenodeId).part !== member.part) continue;
         for (let i = minConfidence - 1; i < 5; ++i) total += partnerCounts[i];
       }
@@ -2946,7 +2974,8 @@
    * Sort the passed in members into the IDs of unsplit skeletons and the
    * parts of split skeletons to grow from. Each part comes with the IDs of
    * all connectors its treenodes are linked to, to limit back-end queries to
-   * the links of this part. Parts without links are left out.
+   * the links of this part. Connectors that aren't allowed by the filter
+   * rules and parts without links are left out.
    */
   GraphWidget2.prototype.collectGrowSeeds = function(members) {
     let skeletonIds = [];
@@ -2958,8 +2987,10 @@
         skeletonIds.push(member.skeletonId);
         continue;
       }
+      let allowedConnectorIds = this.allowedConnectorIds;
       let connectorIds = new Set();
       for (let [treenodeId, connectorId] of skeleton.links) {
+        if (allowedConnectorIds && !allowedConnectorIds.has(connectorId)) continue;
         if (skeleton.nodes.get(treenodeId).part === member.part) {
           connectorIds.add(connectorId);
         }
@@ -2980,10 +3011,18 @@
    * skeletons through links of the selected link types, over the passed in
    * number of circles. Partners need the passed in minimum number of links
    * of a single link type, -1 excludes all up- or downstream partners.
-   * Optionally, only links to the passed in connectors are followed.
+   * Only links to the passed in connectors are followed, by default the ones
+   * allowed by the filter rules. Without filter rules, all are followed.
    */
   GraphWidget2.prototype.fetchPartners = function(skeletonIds, nCircles,
       minUpstream, minDownstream, allowedConnectorIds) {
+    if (!allowedConnectorIds && this.allowedConnectorIds) {
+      allowedConnectorIds = Array.from(this.allowedConnectorIds);
+    }
+    // The back-end follows all links if no connector is passed in
+    if (allowedConnectorIds && allowedConnectorIds.length === 0) {
+      return Promise.resolve([]);
+    }
     return CATMAID.fetch(`${project.id}/graph/circlesofhell`, 'POST', {
         skeleton_ids: skeletonIds,
         n_circles: nCircles,
@@ -3890,7 +3929,62 @@
     dialog.show(500, 'auto', true);
   };
 
+  /**
+   * Whether filter rules are applied and at least one is switched on.
+   */
+  GraphWidget2.prototype.isFilterActive = function() {
+    return this.applyFilterRules && this.filterRules.some(rule => !rule.skip);
+  };
+
+  /**
+   * Reevaluate the current set of node filter rules for the passed in
+   * skeleton models, by default all loaded ones, to update the set of allowed
+   * treenodes. Unless skipUpdate is set, the graph is rebuilt afterwards.
+   * Skeletons aren't loaded again. Returns a promise.
+   */
   GraphWidget2.prototype.updateFilter = function(models, skipUpdate) {
+    let run = ++this.filterRun;
+    let update = () => (skipUpdate || !this.cy) ? undefined : this.updateGraph();
+    let skeletons = models || this.getSkeletonModels();
+    if (CATMAID.tools.isEmpty(skeletons) || !this.isFilterActive()) {
+      this.allowedNodeIds = null;
+      this.updateAllowedConnectors();
+      return Promise.resolve().then(update);
+    }
+
+    let filter = new CATMAID.SkeletonFilter(this.filterRules, skeletons);
+    return filter.execute()
+      .then(filtered => {
+        // Rules or skeletons changed in the meantime, a newer run handles it
+        if (run !== this.filterRun) return;
+        this.allowedNodeIds = new Set(Object.keys(filtered.nodes).map(Number));
+        if (this.updateAllowedConnectors().size === 0) {
+          CATMAID.warn("No links left after filter application");
+        }
+        return update();
+      })
+      .catch(CATMAID.handleError);
+  };
+
+  /**
+   * Update and return the set of connectors that links are used of with
+   * active filter rules: all connectors linked to at least one allowed
+   * treenode of a loaded skeleton. Without active filter rules it is null.
+   */
+  GraphWidget2.prototype.updateAllowedConnectors = function() {
+    let allowedNodeIds = this.allowedNodeIds;
+    if (!allowedNodeIds) {
+      this.allowedConnectorIds = null;
+      return null;
+    }
+    let connectorIds = new Set();
+    for (let skeleton of this.skeletons.values()) {
+      for (let [treenodeId, connectorId] of skeleton.links) {
+        if (allowedNodeIds.has(treenodeId)) connectorIds.add(connectorId);
+      }
+    }
+    this.allowedConnectorIds = connectorIds;
+    return connectorIds;
   };
 
   GraphWidget2.prototype.highlight = function(skeletonId) {

@@ -1008,41 +1008,67 @@
    * skeleton data.
    */
   GraphWidget2.prototype.fetchSkeletons = function(skeletonIds, splits = null) {
-    let binary = !!CATMAID.Client.Settings.session.binary_data_transfer;
-    return Promise.all([
-        CATMAID.Connectors.linkTypes(project.id),
-        CATMAID.fetch({
-          url: `${project.id}/skeletons/compact-detail`,
-          method: 'POST',
-          data: {
-            skeleton_ids: skeletonIds,
-            with_connectors: true,
-            with_relation_ids: true,
-            with_link_confidence: true,
-            with_partner_counts: true,
-            format: binary ? 'msgpack' : 'json',
-          },
-          responseType: binary ? 'arraybuffer' : undefined,
-          decoder: binary ? 'msgpack' : 'json',
-        }),
-      ])
-      .then(([linkTypes, result]) => {
+    let getPrevious = skeletonId => splits ? splits.get(skeletonId) : this.skeletons.get(skeletonId);
+    // Assigning nodes to the parts of split skeletons needs all their nodes,
+    // otherwise only the root and linked nodes are needed.
+    let splitIds = [], unsplitIds = [];
+    for (let skeletonId of skeletonIds) {
+      let previous = getPrevious(skeletonId);
+      if (previous && previous.splitNodes.size > 0) {
+        splitIds.push(skeletonId);
+      } else {
+        unsplitIds.push(skeletonId);
+      }
+    }
+    let requests = [];
+    if (unsplitIds.length > 0) requests.push(this.fetchSkeletonRows(unsplitIds, true));
+    if (splitIds.length > 0) requests.push(this.fetchSkeletonRows(splitIds, false));
+    return Promise.all([CATMAID.Connectors.linkTypes(project.id), ...requests])
+      .then(([linkTypes, ...results]) => {
         let relationNames = new Map(linkTypes.map(lt => [lt.relation_id, lt.relation]));
         let skeletons = new Map();
-        for (let skeletonId in result.skeletons) {
-          skeletonId = Number(skeletonId);
-          let [nodeRows, connectorRows] = result.skeletons[skeletonId];
-          let skeleton = GraphWidget2.reduceSkeleton(nodeRows, connectorRows,
-              relationNames, splits ? splits.get(skeletonId) : this.skeletons.get(skeletonId));
-          if (skeleton.droppedSplitNodes.length > 0) {
-            CATMAID.warn(`Removed ${skeleton.droppedSplitNodes.length} split ` +
-                `node(s) that don't exist anymore from skeleton ${skeletonId}`);
+        for (let result of results) {
+          for (let skeletonId in result.skeletons) {
+            skeletonId = Number(skeletonId);
+            let [nodeRows, connectorRows] = result.skeletons[skeletonId];
+            let skeleton = GraphWidget2.reduceSkeleton(nodeRows, connectorRows,
+                relationNames, getPrevious(skeletonId));
+            if (skeleton.droppedSplitNodes.length > 0) {
+              CATMAID.warn(`Removed ${skeleton.droppedSplitNodes.length} split ` +
+                  `node(s) that don't exist anymore from skeleton ${skeletonId}`);
+            }
+            delete skeleton.droppedSplitNodes;
+            skeletons.set(skeletonId, skeleton);
           }
-          delete skeleton.droppedSplitNodes;
-          skeletons.set(skeletonId, skeleton);
         }
         return skeletons;
       });
+  };
+
+  /**
+   * Request compact-detail rows of the passed in skeletons, with all link
+   * information the widget needs. With linkedNodesOnly, only the root and the
+   * linked nodes of each skeleton are returned.
+   */
+  GraphWidget2.prototype.fetchSkeletonRows = function(skeletonIds, linkedNodesOnly) {
+    let binary = !!CATMAID.Client.Settings.session.binary_data_transfer;
+    return CATMAID.fetch({
+      url: `${project.id}/skeletons/compact-detail`,
+      method: 'POST',
+      data: {
+        skeleton_ids: skeletonIds,
+        with_connectors: true,
+        with_relation_ids: true,
+        with_link_confidence: true,
+        with_partner_counts: true,
+        with_linked_nodes_only: linkedNodesOnly,
+        format: binary ? 'msgpack' : 'json',
+      },
+      responseType: binary ? 'arraybuffer' : undefined,
+      decoder: binary ? 'msgpack' : 'json',
+      // The requests for split and unsplit skeletons don't wait for each other
+      parallel: true,
+    });
   };
 
   /**

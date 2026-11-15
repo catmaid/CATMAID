@@ -278,6 +278,94 @@ class SkeletonsApiTests(CatmaidApiTestCase):
                 })
         self.assertEqual(response.status_code, 404)
 
+    def test_compact_detail_split_nodes(self):
+        self.fake_authentication()
+        skeleton_ids = sorted(set(Treenode.objects.filter(
+                project_id=self.test_project_id).values_list('skeleton_id', flat=True)))
+        # One skeleton isn't requested, to check that its split nodes are ignored
+        foreign_skeleton_id = next(s for s in reversed(skeleton_ids) if s != 235
+                and Treenode.objects.filter(skeleton_id=s).count() > 1)
+        requested_skeleton_ids = [s for s in skeleton_ids if s != foreign_skeleton_id]
+
+        def get_result(**params):
+            response = self.client.post(
+                    f'/{self.test_project_id}/skeletons/compact-detail', dict({
+                        'skeleton_ids': requested_skeleton_ids,
+                        'with_connectors': True,
+                    }, **params))
+            self.assertStatus(response)
+            return json.loads(response.content.decode('utf-8'))
+
+        full = get_result()['skeletons']
+        nodes = full['235'][0]
+        parents = {row[0]: row[1] for row in nodes}
+        linked = set(row[0] for row in full['235'][1])
+        children:Dict[int, list] = {}
+        for node_id, parent_id in parents.items():
+            children.setdefault(parent_id, []).append(node_id)
+
+        def get_unlinked_inner_children(node_id):
+            return sorted(n for n in children.get(node_id, [])
+                    if n not in linked and children.get(n))
+
+        # An unlinked split node with an unlinked split child, which has
+        # children itself, and a linked split node
+        unlinked_split = next(n for n in sorted(parents) if parents[n] is not None
+                and n not in linked and get_unlinked_inner_children(n))
+        nested_split = get_unlinked_inner_children(unlinked_split)[0]
+        linked_split = next(n for n in sorted(linked) if parents[n] is not None)
+        foreign_split = Treenode.objects.filter(skeleton_id=foreign_skeleton_id) \
+                .exclude(parent_id=None).values_list('id', flat=True).first()
+        missing_split = 999999
+        self.assertFalse(Treenode.objects.filter(id=missing_split).exists())
+        split_node_ids = [unlinked_split, nested_split, linked_split, foreign_split,
+                missing_split]
+
+        for flags in ({}, {'ordered': True, 'with_edition_times': True}):
+            result = get_result(with_linked_nodes_only=True,
+                    split_node_ids=split_node_ids, **flags)
+            reduced = result['skeletons']
+            reduced_nodes = reduced['235'][0]
+            reduced_ids = set(row[0] for row in reduced_nodes)
+            # Split nodes are returned with the root and the linked nodes
+            expected_ids = set(n for n in parents if parents[n] is None or n in linked) | \
+                    {unlinked_split, nested_split, linked_split}
+            self.assertEqual(reduced_ids, expected_ids)
+            full_nodes = get_result(**flags)['skeletons']['235'][0]
+            self.assertEqual(sorted(reduced_nodes, key=lambda r: r[0]),
+                    sorted((row for row in full_nodes if row[0] in expected_ids), key=lambda r: r[0]))
+            # The nearest returned ancestor of each returned node
+            expected_parents = []
+            for node_id in expected_ids:
+                parent_id = parents[node_id]
+                while parent_id is not None and parent_id not in expected_ids:
+                    parent_id = parents[parent_id]
+                expected_parents.append([node_id, parent_id])
+            self.assertEqual(list(result['reduced_parents'].keys()), ['235'])
+            self.assertEqual(sorted(result['reduced_parents']['235']), sorted(expected_parents))
+            self.assertIn([nested_split, unlinked_split], result['reduced_parents']['235'])
+            # Other skeletons are the same as without split nodes
+            unsplit = get_result(with_linked_nodes_only=True, **flags)['skeletons']
+            for skeleton_id in reduced:
+                if skeleton_id != '235':
+                    self.assertEqual(reduced[skeleton_id], unsplit[skeleton_id])
+            self.assertNotIn(str(foreign_skeleton_id), reduced)
+
+        # Without split nodes in the requested skeletons, reduced parents are
+        # empty. Without split node IDs, they are missing.
+        self.assertEqual(get_result(with_linked_nodes_only=True,
+                split_node_ids=[missing_split])['reduced_parents'], {})
+        self.assertNotIn('reduced_parents', get_result(with_linked_nodes_only=True))
+
+        # Split nodes need linked nodes only
+        response = self.client.post(
+                f'/{self.test_project_id}/skeletons/compact-detail', {
+                    'skeleton_ids': [235],
+                    'split_node_ids': [unlinked_split],
+                })
+        parsed_response = json.loads(response.content.decode('utf-8'))
+        self.assertIn('error', parsed_response)
+
 
     def test_import_skeleton_with_64_bit_ids(self):
         self.fake_authentication()

@@ -571,13 +571,27 @@ def compact_skeleton_detail_many(request:HttpRequest, project_id=None) -> Union[
       paramType: form
     - name: with_linked_nodes_only
       description: |
-        Whether only the root node and the nodes linked to a returned
-        connector link should be returned for each skeleton, instead of all
-        nodes. Row formats don't change. Not available with history data,
-        tags, reviews or annotations.
+        Whether only the root node, the nodes linked to a returned connector
+        link and the passed in split nodes should be returned for each
+        skeleton, instead of all nodes. Row formats don't change. Not
+        available with history data, tags, reviews or annotations.
       required: false
       type: boolean
       defaultValue: "false"
+      paramType: form
+    - name: split_node_ids
+      description: |
+        Treenodes that should be returned in addition to the root and linked
+        nodes, if they belong to a requested skeleton. For each skeleton that
+        contains one of them, the result's reduced_parents field maps the ID
+        of each of the skeleton's returned nodes to the ID of its nearest
+        returned ancestor, as a list of [node_id, parent_id] rows. The
+        parent_id of the root is null. Only available with
+        with_linked_nodes_only.
+      required: false
+      type: array
+      items:
+        type: integer
       paramType: form
     type:
     - type: array
@@ -599,22 +613,28 @@ def compact_skeleton_detail_many(request:HttpRequest, project_id=None) -> Union[
     with_link_confidence = get_request_bool(request.POST, "with_link_confidence", False)
     with_partner_counts = get_request_bool(request.POST, "with_partner_counts", False)
     with_linked_nodes_only = get_request_bool(request.POST, "with_linked_nodes_only", False)
+    split_node_ids = get_request_list(request.POST, "split_node_ids", None, map_fn=int)
     return_format = request.POST.get('format', 'json')
     ordered = get_request_bool(request.POST, "ordered", False)
 
     if not skeleton_ids:
         raise ValueError("No skeleton IDs provided")
 
+    if split_node_ids is not None and not with_linked_nodes_only:
+        raise ValueError("Split nodes are only available with linked nodes only")
+
+    reduced_parents = None
     if with_linked_nodes_only:
         if with_history or with_merge_history or with_tags or with_reviews or with_annotations:
             raise ValueError("Linked nodes only aren't available with history "
                     "data, tags, reviews or annotations")
-        skeletons = _compact_skeletons_linked_nodes(project_id, skeleton_ids,
-                with_connectors, with_user_info, ordered,
+        skeletons, reduced_parents = _compact_skeletons_linked_nodes(project_id,
+                skeleton_ids, with_connectors, with_user_info, ordered,
                 with_edition_times=with_edition_times,
                 with_relation_ids=with_relation_ids,
                 with_link_confidence=with_link_confidence,
-                with_partner_counts=with_partner_counts)
+                with_partner_counts=with_partner_counts,
+                split_node_ids=split_node_ids)
     else:
         skeletons = {}
         for skeleton_id in skeleton_ids:
@@ -626,9 +646,11 @@ def compact_skeleton_detail_many(request:HttpRequest, project_id=None) -> Union[
                     with_link_confidence=with_link_confidence,
                     with_partner_counts=with_partner_counts)
 
-    result = {
+    result:Dict[str, Any] = {
         "skeletons": skeletons
     }
+    if split_node_ids is not None:
+        result["reduced_parents"] = reduced_parents
 
     if return_format == 'msgpack':
         data = msgpack.packb(result)
@@ -679,15 +701,41 @@ def _get_partner_relations(relations) -> Dict[int, int]:
     return partner_relations
 
 
+def _get_reduced_parents(parents:Dict[int, Optional[int]], kept_ids:Set[int]) -> List[List]:
+    """Get the nearest ancestor of each kept node that is kept as well, using a
+    dictionary of node ID vs parent ID. Returns a list of [node_id, parent_id]
+    rows, the parent ID of a node without kept ancestors is None.
+    """
+    # The nearest kept ancestor of each visited node that isn't kept, so that
+    # each path is walked only once.
+    nearest:Dict[int, Optional[int]] = {}
+    rows = []
+    for node_id in kept_ids:
+        path = []
+        current = parents.get(node_id)
+        while current is not None and current not in kept_ids:
+            if current in nearest:
+                current = nearest[current]
+                break
+            path.append(current)
+            current = parents.get(current)
+        for path_node_id in path:
+            nearest[path_node_id] = current
+        rows.append([node_id, current])
+    return rows
+
+
 def _compact_skeletons_linked_nodes(project_id, skeleton_ids, with_connectors=True,
         with_user_info=False, ordered=False, with_edition_times=False,
         with_relation_ids=False, with_link_confidence=False,
-        with_partner_counts=False) -> Dict[int, Tuple]:
+        with_partner_counts=False, split_node_ids=None) -> Tuple[Dict[int, Tuple], Dict[int, List]]:
     """Get a reduced compact representation of many skeletons at once, in the
-    format of _compact_skeleton(): only the root node and the nodes linked to
-    a returned connector link are included. Tags, reviews, annotations and
-    history aren't available. Returns a dictionary of skeleton ID vs
-    (nodes, connectors, tags, reviews, annotations).
+    format of _compact_skeleton(): only the root node, the nodes linked to a
+    returned connector link and the passed in split nodes are included. Tags,
+    reviews, annotations and history aren't available. Returns a dictionary of
+    skeleton ID vs (nodes, connectors, tags, reviews, annotations) and a
+    dictionary of skeleton ID vs reduced parent rows (see
+    _get_reduced_parents()) for the skeletons that contain split nodes.
     """
     cursor = connection.cursor()
     cursor.execute("""
@@ -757,8 +805,9 @@ def _compact_skeletons_linked_nodes(project_id, skeleton_ids, with_connectors=Tr
             row.append(counts)
         connectors[skeleton_id].append(tuple(row))
 
-    # Roots and linked nodes. Selecting the linked nodes by ID is much faster
-    # than testing each node of the skeletons for links.
+    # Roots, linked nodes and split nodes of the requested skeletons. Selecting
+    # the linked nodes by ID is much faster than testing each node of the
+    # skeletons for links.
     cursor.execute('''
         SELECT t.skeleton_id, t.id, t.parent_id, t.user_id, t.location_x,
             t.location_y, t.location_z, t.radius, t.confidence {edition_time}
@@ -769,7 +818,7 @@ def _compact_skeletons_linked_nodes(project_id, skeleton_ids, with_connectors=Tr
             t.location_y, t.location_z, t.radius, t.confidence {edition_time}
         FROM treenode t
         WHERE t.skeleton_id = ANY(%(skeleton_ids)s::bigint[])
-        AND t.parent_id IS NULL
+        AND (t.parent_id IS NULL OR t.id = ANY(%(split_node_ids)s::bigint[]))
         {order}
     '''.format(**{
         'edition_time': ', t.edition_time' if with_edition_times else '',
@@ -777,9 +826,29 @@ def _compact_skeletons_linked_nodes(project_id, skeleton_ids, with_connectors=Tr
     }), {
         'linked_ids': list(set(row[1] for row in link_rows)),
         'skeleton_ids': skeleton_ids,
+        'split_node_ids': split_node_ids or [],
     })
     for row in cursor.fetchall():
         nodes[row[0]].append(tuple(row[1:]))
+
+    # For skeletons with split nodes, map each returned node to its nearest
+    # returned ancestor. This needs the parents of all their nodes.
+    reduced_parents:Dict[int, List] = {}
+    split_node_id_set = set(split_node_ids or [])
+    split_skeleton_ids = [skeleton_id for skeleton_id, rows in nodes.items()
+            if any(row[0] in split_node_id_set for row in rows)]
+    if split_skeleton_ids:
+        cursor.execute('''
+            SELECT t.id, t.parent_id
+            FROM treenode t
+            WHERE t.skeleton_id = ANY(%(skeleton_ids)s::bigint[])
+        ''', {
+            'skeleton_ids': split_skeleton_ids,
+        })
+        parents = dict(cursor.fetchall())
+        for skeleton_id in split_skeleton_ids:
+            reduced_parents[skeleton_id] = _get_reduced_parents(parents,
+                    set(row[0] for row in nodes[skeleton_id]))
 
     # Skeletons without nodes return empty lists, if they exist
     missing = [skeleton_id for skeleton_id in skeleton_ids if skeleton_id not in nodes]
@@ -790,7 +859,7 @@ def _compact_skeletons_linked_nodes(project_id, skeleton_ids, with_connectors=Tr
                 raise Http404(f"Skeleton #{skeleton_id} doesn't exist")
 
     return {skeleton_id: (tuple(nodes[skeleton_id]), tuple(connectors[skeleton_id]),
-            {}, [], []) for skeleton_id in skeleton_ids}
+            {}, [], []) for skeleton_id in skeleton_ids}, reduced_parents
 
 
 def _compact_skeleton(project_id, skeleton_id, with_connectors=True,

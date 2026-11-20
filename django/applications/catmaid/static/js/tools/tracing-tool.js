@@ -2779,6 +2779,15 @@
       }
     }),
 
+    new CATMAID.Action({
+      helpText: "Circuit simulations",
+      buttonID: "data_button_circuit_simulations",
+      buttonName: "circuit_simulations",
+      run: function(e) {
+        WindowMaker.create('circuit-simulations');
+        return true;
+      },
+    }),
   ];
 
   // Make tracing tool in CATMAID namespace

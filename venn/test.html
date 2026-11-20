@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>venn.js v0.2.20 on d3 v3 — spike</title>
+<style>
+  .result.pass::before, .result.fail::before { display: inline-block; width: 4.5rem; }
+  .result.pass::before { content: "PASS"; color: #1a7f37; }
+  .result.fail::before { content: "FAIL"; color: #c00000; }
+  .diagram { border: 1px solid #ccc; border-radius: 4px; margin: 1rem 0; min-height: 300px; }
+</style>
+</head>
+<body>
+<h1>venn.js v0.2.20 on d3 v3 — compatibility spike</h1>
+<p class="meta">Loads <code>d3.v3.js</code> (CATMAID's vendored copy) then <code>venn.js</code>
+(upstream v0.2.20 UMD build). Green = compatible; red = something threw or a count didn't match.</p>
+
+<div id="results"></div>
+
+<h2>Diagram</h2>
+<div id="diagram" class="diagram"></div>
+<p><button id="rerender">Re-render with changed data (transition path)</button></p>
+<p class="meta" id="note"></p>
+
+<h2>Additional diagrams (6+ sets)</h2>
+<div id="extra"></div>
+
+<script src="../django/applications/catmaid/static/libs/d3/d3.v3.js"></script>
+<script src="venn.js"></script>
+<script>
+(function () {
+  var resultsEl = document.getElementById('results');
+  var noteEl = document.getElementById('note');
+  var failCount = 0;
+
+  function report(name, ok, detail) {
+    var div = document.createElement('div');
+    div.className = 'result ' + (ok ? 'pass' : 'fail');
+    div.textContent = ' ' + name + (detail ? ' — ' + detail : '');
+    resultsEl.appendChild(div);
+    if (!ok) failCount += 1;
+  }
+
+  function check(name, fn) {
+    var ok = true, detail;
+    try { detail = fn(); }
+    catch (e) { ok = false; detail = String(e); }
+    report(name, ok, detail);
+    return ok;
+  }
+
+  function updateTitle() {
+    document.title = (failCount === 0 ? 'PASS' : 'FAIL (' + failCount + ')') + ' — venn d3-v3 spike';
+  }
+
+  function clone(a) {
+    return a.map(function (d) { return { sets: d.sets.slice(), size: d.size, label: d.label }; });
+  }
+
+  // 1. libraries loaded and the right versions
+  check('d3 global present and v3', function () {
+    if (typeof d3 === 'undefined') throw new Error('no d3 global');
+    if (!/^3\./.test(d3.version)) throw new Error('d3.version = ' + d3.version + ' (expected 3.x)');
+    return 'd3.version ' + d3.version;
+  });
+  check('venn.VennDiagram present', function () {
+    if (typeof venn === 'undefined') throw new Error('no venn global');
+    if (typeof venn.VennDiagram !== 'function') throw new Error('venn.VennDiagram is not a function');
+    return 'venn.VennDiagram() is a function';
+  });
+
+  // 2. pure layout (no d3 involved)
+  var areas = [
+    { sets: ['A'], size: 2, label: 'A' },
+    { sets: ['B'], size: 2, label: 'B' },
+    { sets: ['C'], size: 1, label: 'C' },
+    { sets: ['A', 'B'], size: 1 }
+  ];
+  check('venn.venn(areas) layout is finite', function () {
+    var circles = venn.venn(clone(areas));
+    var keys = Object.keys(circles);
+    if (!keys.length) throw new Error('venn.venn returned nothing');
+    keys.forEach(function (k) {
+      var c = circles[k];
+      if (!isFinite(c.x) || !isFinite(c.y) || !isFinite(c.radius)) {
+        throw new Error('non-finite geometry for set ' + k);
+      }
+    });
+    return keys.length + ' circles laid out (' + keys.join(', ') + ')';
+  });
+
+  // 3. first render (no previous paths -> plain .attr("d") branch)
+  var div = d3.select('#diagram');
+  var chart = venn.VennDiagram().width(400).height(300).duration(400);
+  check('first render (no transition)', function () {
+    div.datum(clone(areas)).call(chart);
+    var svg = div.selectAll('svg').size();
+    var circle = div.selectAll('.venn-circle').size();
+    var area = div.selectAll('.venn-area').size();
+    var inter = div.selectAll('.venn-intersection').size();
+    if (svg !== 1) throw new Error('svg count ' + svg + ', expected 1');
+    if (circle !== 3) throw new Error('.venn-circle ' + circle + ', expected 3');
+    if (area !== 4) throw new Error('.venn-area ' + area + ', expected 4');
+    if (inter !== 1) throw new Error('.venn-intersection ' + inter + ', expected 1');
+    return 'svg=1, .venn-circle=3, .venn-intersection=1';
+  });
+
+  // 3b. four non-interactive diagrams: 6+ sets of differing sizes,
+  // exercising the greedy + constrained-MDS layout path (motivation for issue #1128).
+  function diagramCheck(name, areas, expect) {
+    check(name, function () {
+      var circles = venn.venn(clone(areas));
+      Object.keys(circles).forEach(function (k) {
+        var c = circles[k];
+        if (!isFinite(c.x) || !isFinite(c.y) || !isFinite(c.radius)) {
+          throw new Error('non-finite layout for ' + k);
+        }
+      });
+
+      var holder = document.createElement('div');
+      holder.className = 'diagram';
+      document.getElementById('extra').appendChild(holder);
+      var sel = d3.select(holder);
+      sel.datum(clone(areas)).call(venn.VennDiagram().width(420).height(320));
+
+      var circle = sel.selectAll('.venn-circle').size();
+      var inter = sel.selectAll('.venn-intersection').size();
+      var area = sel.selectAll('.venn-area').size();
+      if (circle !== expect.circle) throw new Error('.venn-circle=' + circle + ', expected ' + expect.circle);
+      if (inter !== expect.intersection) throw new Error('.venn-intersection=' + inter + ', expected ' + expect.intersection);
+      if (area !== expect.area) throw new Error('.venn-area=' + area + ', expected ' + expect.area);
+      return 'layout finite, .venn-circle=' + circle + ', .venn-intersection=' + inter;
+    });
+  }
+
+  diagramCheck('six disjoint sets (sizes 1–6)', [
+    { sets: ['A'], size: 1, label: 'A' },
+    { sets: ['B'], size: 2, label: 'B' },
+    { sets: ['C'], size: 3, label: 'C' },
+    { sets: ['D'], size: 4, label: 'D' },
+    { sets: ['E'], size: 5, label: 'E' },
+    { sets: ['F'], size: 6, label: 'F' }
+  ], { circle: 6, intersection: 0, area: 6 });
+
+  diagramCheck('six sets, four overlaps', [
+    { sets: ['A'], size: 6, label: 'A' },
+    { sets: ['B'], size: 5, label: 'B' },
+    { sets: ['C'], size: 4, label: 'C' },
+    { sets: ['D'], size: 3, label: 'D' },
+    { sets: ['E'], size: 2, label: 'E' },
+    { sets: ['F'], size: 1, label: 'F' },
+    { sets: ['A', 'B'], size: 1 },
+    { sets: ['B', 'C'], size: 1 },
+    { sets: ['C', 'D'], size: 1 },
+    { sets: ['A', 'C'], size: 0.5 }
+  ], { circle: 6, intersection: 4, area: 10 });
+
+  diagramCheck('six sets, extreme size spread', [
+    { sets: ['A'], size: 100, label: 'A' },
+    { sets: ['B'], size: 50, label: 'B' },
+    { sets: ['C'], size: 20, label: 'C' },
+    { sets: ['D'], size: 5, label: 'D' },
+    { sets: ['E'], size: 1, label: 'E' },
+    { sets: ['F'], size: 0.5, label: 'F' },
+    { sets: ['A', 'B'], size: 30 },
+    { sets: ['C', 'D'], size: 2 }
+  ], { circle: 6, intersection: 2, area: 8 });
+
+  diagramCheck('six sets, one contained', [
+    { sets: ['A'], size: 100, label: 'A' },
+    { sets: ['B'], size: 1, label: 'B' },
+    { sets: ['C'], size: 2, label: 'C' },
+    { sets: ['D'], size: 3, label: 'D' },
+    { sets: ['E'], size: 4, label: 'E' },
+    { sets: ['F'], size: 5, label: 'F' },
+    { sets: ['A', 'B'], size: 1 }
+  ], { circle: 6, intersection: 1, area: 7 });
+
+  // 4. re-render -> transition path (.transition("venn") + attrTween + exit().remove())
+  function reRender() {
+    try {
+      var next = clone(areas);
+      next[0].size = 4;   // grow A
+      next.splice(2, 1);  // drop C -> exercises exit().transition().remove()
+      div.datum(next).call(chart);
+    } catch (e) {
+      report('re-render transition path', false, 'threw during .call(chart): ' + e);
+      noteEl.textContent = 'Transition-path re-render threw — see results above.';
+      updateTitle();
+      return;
+    }
+
+    noteEl.textContent = 'Re-rendered; checking after transition…';
+    setTimeout(function () {
+      var circle = div.selectAll('.venn-circle').size();
+      var area = div.selectAll('.venn-area').size();
+      var inter = div.selectAll('.venn-intersection').size();
+      var ok = (circle === 2 && area === 3 && inter === 1);
+      report('re-render transition path', ok,
+        '.venn-circle=' + circle + ', .venn-area=' + area + ', .venn-intersection=' + inter + ' (expect 2/3/1)');
+      noteEl.textContent = ok
+        ? 'Transition path OK: C removed via exit transition, A grew.'
+        : 'Transition-path check FAILED — see results above.';
+      updateTitle();
+    }, 600);
+  }
+
+  document.getElementById('rerender').addEventListener('click', reRender);
+  if (/auto/.test(location.search)) reRender();
+
+  updateTitle();
+})();
+</script>
+</body>
+</html>
